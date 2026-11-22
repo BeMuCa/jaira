@@ -99,6 +99,18 @@ another session is actively renewing is refused.`,
 			if err != nil {
 				return err
 			}
+			if !release && t.Rejected.Kind != "" {
+				// Off every board: claiming it would be work nobody can see.
+				// A ticket rejected only on its ref has no file here to delete.
+				h := ticket.Handle(t.ID)
+				way := "delete its file here and 'jaira pull " + h + "'"
+				if t.ReadOnly {
+					way = "'jaira pull " + h + "'"
+				}
+				return &codedError{code: ExitValidation, reason: "rejected",
+					message: fmt.Sprintf("%s is rejected (%s by %s: %s) and off the board; to work it after all, %s",
+						h, t.Rejected.Kind, t.Rejected.By, t.Rejected.Why, way)}
+			}
 
 			if release {
 				// Your own claim goes at will; somebody else's only once it has

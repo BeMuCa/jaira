@@ -82,10 +82,17 @@ on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
 			// boards that were never shared and must still start private.
 			shared := hasAttributes(s) || (&gitrepo.Repo{Dir: s.Root}).Tracks(ticket.DirName)
 			var p board.Prepared
+			var msIgnored bool
+			var msIgnoreErr error
 			if !shared {
 				p = board.Prepare(s.Root, boardLanes.Facts())
 			} else {
 				p.Notes, p.NoteErr = board.AnnounceInAgentFiles(s.Root, boardLanes.Facts())
+				// A board 'share --undo' made private again is in git and
+				// excluded: its /.jaira/ covers the milestones already.
+				if !board.Ignored(s.Root) {
+					msIgnored, msIgnoreErr = board.AddMilestonesIgnore(s.Root, false)
+				}
 			}
 			// A board just prepared by this binary must not immediately be
 			// nagged about being out of date.
@@ -95,9 +102,10 @@ on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"root": s.Root, "tickets_dir": s.TicketsDir(), "created": created,
 					"private": board.Ignored(s.Root), "gitignore_written": p.Ignored,
-					"state_dir":     s.SessionsDir(),
-					"agent_notes":   p.Notes,
-					"default_board": db.Path, "lanes": boardLanes.IDs(),
+					"milestones_ignored": msIgnored,
+					"state_dir":          s.SessionsDir(),
+					"agent_notes":        p.Notes,
+					"default_board":      db.Path, "lanes": boardLanes.IDs(),
 					"lane_warnings": db.Warnings,
 				})
 			}
@@ -122,6 +130,11 @@ on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
 			} else if p.Ignored {
 				fmt.Fprintf(cmd.OutOrStdout(), "This board is private: .jaira/ is excluded in %s, so nobody else sees it.\n", board.IgnoreFileName(s.Root))
 			}
+			if msIgnoreErr != nil {
+				fmt.Fprintf(os.Stderr, "jaira: warning: could not write .gitignore: %v\n", msIgnoreErr)
+			} else if msIgnored {
+				fmt.Fprintf(cmd.OutOrStdout(), "Added %s to .gitignore: milestone files travel on their refs and stay out of git.\n", board.MilestonesIgnoreLine)
+			}
 			if p.NoteErr != nil {
 				fmt.Fprintf(os.Stderr, "jaira: warning: could not update an agent instruction file: %v\n", p.NoteErr)
 			} else if line := announceLine(p.Notes); line != "" {
@@ -135,7 +148,7 @@ on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
 			case board.Ignored(s.Root):
 				fmt.Fprintf(cmd.OutOrStdout(), "\nRun 'jaira share' when you want your team to have it.\n")
 			case shared:
-				fmt.Fprintf(cmd.OutOrStdout(), "\nThis board is shared: it is already in git, so .gitignore was left alone.\n")
+				fmt.Fprintf(cmd.OutOrStdout(), "\nThis board is shared: it is already in git, so it was not made private.\n")
 			}
 			return nil
 		},
@@ -1377,6 +1390,13 @@ func newLanesCmd() *cobra.Command {
 						"input_requires":    l.InputRequires, "output_produces": l.OutputProduces,
 						"source": l.Source, "prompt": l.Prompt, "creator": l.Creator,
 					})
+					// Only for a lane that declares its verdict words, as in the
+					// --for-lane payload: the cockpit's verdict light reads which
+					// way a review-verdict sends the ticket off these, not off
+					// words of its own.
+					if l.DeclaresVerdicts() {
+						arr[len(arr)-1]["verdicts"] = map[string][]string{"accept": l.VerdictAccept, "send_back": l.VerdictSendBack}
+					}
 				}
 				avail := make([]map[string]any, 0, len(available))
 				for _, l := range available {
@@ -1539,7 +1559,7 @@ func newLanesShowCmd() *cobra.Command {
 			// work that is not good enough yet.
 			fmt.Fprintf(w, "Rejects to:  %s\n", dash(board.OrList(l.RejectsTo)))
 			if l.MaxRounds > 0 {
-				fmt.Fprintf(w, "Max rounds:  %d in a row, then a person decides\n", l.MaxRounds)
+				fmt.Fprintf(w, "Max rounds:  %d in a row, then the teamlead decides, or a person\n", l.MaxRounds)
 			}
 			// Labelled as what it is, not as a position: column order follows
 			// Anchor, above, and never this number.

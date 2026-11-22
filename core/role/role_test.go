@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -469,6 +470,64 @@ esac
 	}
 }
 
+// TestSpawnChatRemovesTheCopyItWasHanded: the cockpit pulled the ticket into
+// the main checkout for this chat (DF46B9) and only the chat knows when it
+// wrote its last line, so --copy makes removing it the chat's last step,
+// quoted for the shell; without --copy no chat is told to remove anything.
+func TestSpawnChatRemovesTheCopyItWasHanded(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	dir := t.TempDir()
+	if _, err := install(dir, false, true, false); err != nil {
+		t.Fatal(err)
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	const copy = "/repo/.jaira/tickets/01AB12CD it's.md"
+	for _, lane := range []string{"explain", "discuss"} {
+		for _, with := range []bool{true, false} {
+			typed := filepath.Join(t.TempDir(), "typed")
+			stub := filepath.Join(t.TempDir(), "herdr")
+			script := `#!/usr/bin/env bash
+case "$1 $2" in
+  "tab create") echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
+  "pane send-text") printf '%s\n' "$4" >> "` + typed + `" ;;
+esac
+`
+			if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			args := []string{spawn, "--no-worktree"}
+			if with {
+				args = append(args, "--copy", copy)
+			}
+			cmd := exec.Command(bash, append(args, "ab12cd", "AB12CD", lane)...)
+			cmd.Dir = t.TempDir()
+			cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+jairaPath(t))
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("spawn.sh %s: %v\n%s", lane, err, out)
+			}
+			got, err := os.ReadFile(typed)
+			if err != nil {
+				t.Fatal(err)
+			}
+			line := chatRequest(t, string(got))
+			want := `git clean -fqx -- /repo/.jaira/tickets/01AB12CD\ it\'s.md - `
+			if with && !strings.Contains(line, "Als allerletzten Schritt") {
+				t.Errorf("%s with --copy: no last step that removes the copy:\n%s", lane, line)
+			}
+			if with && !strings.Contains(line, want) {
+				t.Errorf("%s with --copy: lacks %q:\n%s", lane, want, line)
+			}
+			if !with && strings.Contains(line, "git clean") {
+				t.Errorf("%s without --copy: told to remove a copy:\n%s", lane, line)
+			}
+		}
+	}
+}
+
 // fakeSocket stands in for a session's messaging socket. spawn.sh asks only
 // that the address exists, so a plain file does.
 func fakeSocket(t *testing.T) string {
@@ -544,14 +603,23 @@ esac
 		if err != nil {
 			t.Fatalf("spawn.sh %s without --parent: %v\n%s", lane, err, out)
 		}
-		if !strings.Contains(out, " ab12cd --parent uds:"+own+"\n") {
+		if !strings.Contains(out, " ab12cd --parent uds:"+own+" - every question goes to uds:"+own+" by SendMessage, never by AskUserQuestion\n") {
 			t.Errorf("spawn.sh %s without --parent did not pass the caller's socket:\n%s", lane, out)
 		}
 	}
 	// A lane that takes no parent gets none, and --no-parent — what the
-	// cockpit passes, so the worker stays in its own tab — none either.
+	// cockpit passes when its session has no socket, so the worker asks in
+	// its own tab — none either.
 	if out, err := run("ab12cd", "ab12cd", "review"); err != nil || strings.Contains(out, "--parent") {
 		t.Errorf("spawn.sh review: %v\n%s", err, out)
+	}
+	// The pr lane takes a parent only when it is given one: the cockpit
+	// passes its own session after Accept, and the role reports there.
+	if out, err := run("ab12cd", "ab12cd", "pr"); err != nil || !strings.Contains(out, "/jaira-role-pr ab12cd --by-person\n") {
+		t.Errorf("spawn.sh pr without --parent: %v\n%s", err, out)
+	}
+	if out, err := run("--parent", "uds:"+own, "ab12cd", "ab12cd", "pr"); err != nil || !strings.Contains(out, "/jaira-role-pr ab12cd --by-person --parent uds:"+own+"\n") {
+		t.Errorf("spawn.sh --parent pr: %v\n%s", err, out)
 	}
 	if out, err := run("--no-parent", "ab12cd", "ab12cd", "worker"); err != nil || !strings.Contains(out, "/jaira-worker ab12cd\n") {
 		t.Errorf("spawn.sh --no-parent worker: %v\n%s", err, out)
@@ -602,16 +670,17 @@ esac
 	// "lead" is a name, and the worker gets the address it stands for.
 	config, sock := sessionRegistry(t, "lead")
 	for lane, want := range map[string]string{
-		"worker":   "/jaira-worker ab12cd --parent uds:" + sock,
-		"dispatch": "/jaira-dispatcher ab12cd --parent uds:" + sock,
+		"worker":   "/jaira-worker ab12cd --parent uds:" + sock + " - every question goes to uds:" + sock + " by SendMessage, never by AskUserQuestion",
+		"dispatch": "/jaira-dispatcher ab12cd --parent uds:" + sock + " - every question goes to uds:" + sock + " by SendMessage, never by AskUserQuestion",
 		"review":   "/jaira-role-lane ab12cd review",
 		// A person's chats, which the cockpit mod opens: a plain request,
 		// never a role, so the tab answers and never works the ticket.
 		"explain": "Erklaere mir in einfachen Worten das Review zu Ticket ab12cd …",
 		"discuss": "Ticket ab12cd wartet auf eine Entscheidung von mir …",
 		// The cockpit's Accept, a person's press: the flag is what lets
-		// jaira-role-pr open the pull request instead of handing it back.
-		"pr": "/jaira-role-pr ab12cd --by-person",
+		// jaira-role-pr open the pull request instead of handing it back;
+		// the parent is where its stops and report go.
+		"pr": "/jaira-role-pr ab12cd --by-person --parent uds:" + sock,
 	} {
 		_ = os.Remove(typed)
 		cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "lead", "ab12cd", "ab12cd", lane)
@@ -849,6 +918,84 @@ esac
 	}
 }
 
+// Herdr App's agent list shows a terminal by its hc name alone: without one
+// every tab reads 'Claude Code' (MHCEN8). herdr-hc.sh names it <role>-<id>
+// from the label, in what hc accepts (1-32 of a-z 0-9 - _); a name a live
+// terminal holds gets -2, -3 ... and at the end no name, never no tab.
+func TestHerdrHcNamesTheTabAfterItsLabel(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	path := jairaPath(t)
+	dir := t.TempDir()
+	if _, err := install(dir, false, true, false); err != nil {
+		t.Fatal(err)
+	}
+	script := filepath.Join(dir, "jaira-dispatcher", "scripts", "herdr-hc.sh")
+	long := strings.Repeat("x", 40)
+	for _, c := range []struct {
+		name, label, taken string
+		want               []string // the --name of every hc run, in order; "" for none
+		fail               bool
+	}{
+		{"worker", "8TT890/worker", "", []string{"worker-8tt890"}, false},
+		{"pr", "WATJDQ/pr", "", []string{"pr-watjdq"}, false},
+		{"review", "AB12CD/review", "", []string{"review-ab12cd"}, false},
+		// tr works on bytes: the two of ü are two dashes.
+		{"odd characters", "AB12CD/Crit ique.ü", "", []string{"crit-ique----ab12cd"}, false},
+		{"no slash", "Explain", "", []string{"explain"}, false},
+		{"too long", "AB12CD/" + long, "", []string{long[:32]}, false},
+		{"no label", "", "", []string{""}, false},
+		{"taken once", "AB12CD/worker", "worker-ab12cd", []string{"worker-ab12cd", "worker-ab12cd-2"}, false},
+		{"taken twice", "AB12CD/worker", "worker-ab12cd worker-ab12cd-2", []string{"worker-ab12cd", "worker-ab12cd-2", "worker-ab12cd-3"}, false},
+		{"long and taken", "AB12CD/" + long, long[:32], []string{long[:32], long[:30] + "-2"}, false},
+		{"all taken", "AB12CD/worker", "*", []string{"worker-ab12cd", "worker-ab12cd-2", "worker-ab12cd-3", "worker-ab12cd-4",
+			"worker-ab12cd-5", "worker-ab12cd-6", "worker-ab12cd-7", "worker-ab12cd-8", "worker-ab12cd-9", ""}, false},
+		{"other refusal", "AB12CD/worker", "!", []string{"worker-ab12cd"}, true},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			bin := t.TempDir()
+			calls := filepath.Join(t.TempDir(), "calls")
+			// taken: names a live terminal holds; * every name; ! a refusal
+			// that is not about the name. Like hc, refusals go to stderr.
+			hc := `#!/usr/bin/env bash
+taken='` + c.taken + `'
+if [ "$1" = run ]; then
+  n=""; while [ $# -gt 0 ]; do [ "$1" = --name ] && n="$2"; shift; done
+  printf '%s\n' "$n" >> "` + calls + `"
+  if [ "$taken" = '!' ]; then echo '{"error":{"kind":"bad_cwd"}}' >&2; exit 1; fi
+  if [ -n "$n" ] && { [ "$taken" = '*' ] || [[ " $taken " == *" $n "* ]]; }; then
+    echo '{"error":{"kind":"name_taken"}}' >&2; exit 1
+  fi
+  echo '{"address":"t9","state":"live"}'
+fi
+`
+			if err := os.WriteFile(filepath.Join(bin, "hc"), []byte(hc), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			args := []string{script, "tab", "create", "--cwd", t.TempDir()}
+			if c.label != "" {
+				args = append(args, "--label", c.label)
+			}
+			cmd := exec.Command(bash, args...)
+			cmd.Env = append(os.Environ(), "HC_TERMINAL_ID=", "HC_BIN=", "PATH="+bin+string(os.PathListSeparator)+path)
+			out, err := cmd.Output()
+			if c.fail != (err != nil) {
+				t.Fatalf("herdr-hc.sh tab create: err %v, want failure %v\n%s", err, c.fail, out)
+			}
+			if !c.fail && !strings.Contains(string(out), `"pane_id":"t9"`) {
+				t.Errorf("no tab came back: %s", out)
+			}
+			b, _ := os.ReadFile(calls)
+			got := strings.Split(strings.TrimSuffix(string(b), "\n"), "\n")
+			if !slices.Equal(got, c.want) {
+				t.Errorf("hc run --name: got %q, want %q", got, c.want)
+			}
+		})
+	}
+}
+
 // A herdr.exe is the Herdr of WSL and of native Windows alike, so spawn.sh
 // tells the two apart by the machine it runs on (issue #79): in WSL the tab
 // crosses back with wsl.exe --cd; in Git Bash it starts claude where it is,
@@ -913,8 +1060,9 @@ esac
 
 // A repository with an executable .jaira/worktree-setup sets up its own
 // worktrees: spawn.sh calls it with the worktree, the slug, the port offset and
-// the root, and writes no .env of its own. Without one, spawn.sh copies the .env
-// and appends its ports as before. A setup that fails or cannot run stops the
+// the root, and writes no .env of its own. Without one, spawn.sh makes the
+// worktree and nothing else — no .env, no offset — and says so where the root
+// has a .env it used to copy. A setup that fails or cannot run stops the
 // spawn before a tab opens, and leaves no worktree that would skip the setup on
 // the next try.
 func TestSpawnLetsTheRepositorySetUpItsWorktree(t *testing.T) {
@@ -930,7 +1078,8 @@ func TestSpawnLetsTheRepositorySetUpItsWorktree(t *testing.T) {
 	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
 
 	// setup is the repository's script, "" for none; mode its permission bits.
-	run := func(t *testing.T, setup string, mode os.FileMode) (root, wt, args, created, out string, err error) {
+	// dotenv puts a .env into the root.
+	run := func(t *testing.T, setup string, mode os.FileMode, dotenv bool) (root, wt, args, created, out string, err error) {
 		t.Helper()
 		base := t.TempDir()
 		root = filepath.Join(base, "repo")
@@ -950,8 +1099,10 @@ esac
 		if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(root, ".env"), []byte("APP=1\n"), 0o644); err != nil {
-			t.Fatal(err)
+		if dotenv {
+			if err := os.WriteFile(filepath.Join(root, ".env"), []byte("APP=1\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
 		}
 		if setup != "" {
 			script := strings.ReplaceAll(setup, "<args>", args)
@@ -980,36 +1131,66 @@ esac
 		}
 	}
 
-	// Without a setup: the .env as before, offset and all.
-	_, wt, _, _, out, err := run(t, "", 0)
-	if err != nil {
-		t.Fatalf("spawn.sh without a setup: %v\n%s", err, out)
+	gitDir := func(t *testing.T, wt string) string {
+		t.Helper()
+		gd, err := exec.Command("git", "-C", wt, "rev-parse", "--absolute-git-dir").Output()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return strings.TrimSpace(string(gd))
 	}
-	env, _ := os.ReadFile(filepath.Join(wt, ".env"))
-	for _, want := range []string{"APP=1\n", "# worker stack: slug=ab12cd offset=", "COMPOSE_PROJECT_NAME=repo_ab12cd\n", "HTTP_PORT=", "DB_PORT_HOST=", "DB_PORT_TEST_HOST="} {
-		if !strings.Contains(string(env), want) {
-			t.Errorf("without a setup the worktree's .env lacks %q:\n%s", want, env)
+
+	// Without a setup: the worktree and nothing in it — no .env, no offset, no
+	// offset lock. A root with a .env, which spawn.sh used to copy, hears why
+	// and how to get it back; a root without one has nothing to hear.
+	for _, dotenv := range []bool{true, false} {
+		root, wt, _, created, out, err := run(t, "", 0, dotenv)
+		if err != nil {
+			t.Fatalf("spawn.sh without a setup (.env %v): %v\n%s", dotenv, err, out)
+		}
+		if _, err := os.Stat(created); err != nil {
+			t.Errorf(".env %v: no tab opened without a setup", dotenv)
+		}
+		for _, f := range []string{filepath.Join(wt, ".env"), filepath.Join(gitDir(t, wt), "jaira-offset"), filepath.Join(root, ".git", "jaira-offset.lock")} {
+			if _, err := os.Stat(f); err == nil {
+				t.Errorf(".env %v: without a setup spawn.sh made %s", dotenv, f)
+			}
+		}
+		said := strings.Contains(out, "no longer copies .env") && strings.Contains(out, "worktree-setup.example") && strings.Contains(out, "worktrees made from then on")
+		// No command that destroys anything: the worker this spawn starts may
+		// commit before a person reads the line.
+		for _, bad := range []string{"worktree remove", "branch -D", "branch -d"} {
+			if strings.Contains(out, bad) {
+				t.Errorf(".env %v: the hint tells to run %q:\n%s", dotenv, bad, out)
+			}
+		}
+		if said != dotenv {
+			t.Errorf(".env %v: spawn.sh said why the .env is missing: %v, want %v:\n%s", dotenv, said, dotenv, out)
 		}
 	}
-	_, off, _ := strings.Cut(string(env), "offset=")
-	off, _, _ = strings.Cut(off, "\n")
 
 	t.Run("setup", func(t *testing.T) {
-		root, wt, args, _, out, err := run(t, "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\" > '<args>'\necho 'FROM_SETUP=1' > \"$1/.env\"\necho chatter\n", 0o755)
+		root, wt, args, _, out, err := run(t, "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\" > '<args>'\necho 'FROM_SETUP=1' > \"$1/.env\"\necho chatter\n", 0o755, true)
 		if err != nil {
 			t.Fatalf("spawn.sh: %v\n%s", err, out)
 		}
+		// The only worktree of the repository: the slug's hash says which.
+		ck, err := exec.Command(bash, "-c", "printf '%s' ab12cd | cksum | cut -d' ' -f1").Output()
+		if err != nil {
+			t.Fatal(err)
+		}
+		n, err := strconv.Atoi(strings.TrimSpace(string(ck)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		off := strconv.Itoa(n%40 + 1)
 		got, _ := os.ReadFile(args)
 		// Both paths in the shell's own spelling, never the two mixed.
 		if want := strings.Join([]string{shellDir(t, bash, wt), "ab12cd", off, shellDir(t, bash, root)}, "\n") + "\n"; string(got) != want {
 			t.Errorf("the setup got\n%s\nwant worktree, slug, offset %s and root:\n%s", got, off, want)
 		}
 		// The same four, written down for reap.sh to hand the teardown.
-		gd, gerr := exec.Command("git", "-C", wt, "rev-parse", "--absolute-git-dir").Output()
-		if gerr != nil {
-			t.Fatal(gerr)
-		}
-		rec, _ := os.ReadFile(filepath.Join(strings.TrimSpace(string(gd)), "jaira-setup"))
+		rec, _ := os.ReadFile(filepath.Join(gitDir(t, wt), "jaira-setup"))
 		if want := "worktree=" + shellDir(t, bash, wt) + "\nslug=ab12cd\noffset=" + off + "\nroot=" + shellDir(t, bash, root) + "\n"; string(rec) != want {
 			t.Errorf("spawn.sh recorded\n%s\nwant\n%s", rec, want)
 		}
@@ -1022,7 +1203,7 @@ esac
 	})
 
 	t.Run("failing setup", func(t *testing.T) {
-		root, wt, _, created, out, err := run(t, "#!/usr/bin/env bash\necho 'no docker here' >&2\nexit 3\n", 0o755)
+		root, wt, _, created, out, err := run(t, "#!/usr/bin/env bash\necho 'no docker here' >&2\nexit 3\n", 0o755, true)
 		if err == nil {
 			t.Fatalf("spawn.sh went on past a failed setup:\n%s", out)
 		}
@@ -1043,7 +1224,7 @@ esac
 	// Windows has no execute bit for bash to read: every file passes -x.
 	if runtime.GOOS != "windows" {
 		t.Run("setup not executable", func(t *testing.T) {
-			root, wt, args, created, out, err := run(t, "#!/usr/bin/env bash\ntouch '<args>'\n", 0o644)
+			root, wt, args, created, out, err := run(t, "#!/usr/bin/env bash\ntouch '<args>'\n", 0o644, true)
 			if err == nil {
 				t.Fatalf("spawn.sh went on with a setup it cannot run:\n%s", out)
 			}
@@ -1060,13 +1241,241 @@ esac
 	}
 }
 
+// A ticket's work can already ride on a branch: feat/<slug> left behind when
+// its worktree was removed, or a branch of another name the cockpit's Give
+// back found by the commits naming the ticket (QTQW15). spawn.sh checks that
+// branch out again instead of refusing it as git worktree add -b does, a
+// --branch that is missing or a worktree standing on another branch stops it
+// before a tab, and a failed setup never deletes a branch it did not make.
+func TestSpawnTakesUpTheBranchTheWorkRidesOn(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	path := jairaPath(t)
+	dir := t.TempDir()
+	if _, err := install(dir, false, true, false); err != nil {
+		t.Fatal(err)
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	git := func(t *testing.T, root string, args ...string) string {
+		t.Helper()
+		b, err := exec.Command("git", append([]string{"-C", root, "-c", "user.name=t", "-c", "user.email=t@t"}, args...)...).CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, b)
+		}
+		return strings.TrimSpace(string(b))
+	}
+	// A repository whose branch holds one commit naming the ticket.
+	repo := func(t *testing.T, branch, setup string) (root, wt, bin string) {
+		t.Helper()
+		base := t.TempDir()
+		root = filepath.Join(base, "repo")
+		wt = filepath.Join(base, ".worktrees", "repo-ab12cd")
+		bin = t.TempDir()
+		herdr := "#!/usr/bin/env bash\ncase \"$1 $2\" in\n  \"tab create\") touch \"" + filepath.Join(bin, "created") + "\"; echo tab >> \"" + filepath.Join(bin, "tabs") + "\"; echo '{\"result\":{\"root_pane\":{\"pane_id\":\"p1\"}}}' ;;\n  \"pane get\") echo '{\"result\":{\"pane\":{\"agent\":\"claude\",\"agent_status\":\"idle\",\"tab_id\":\"t1\"}}}' ;;\nesac\n"
+		if err := os.WriteFile(filepath.Join(bin, "herdr"), []byte(herdr), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if setup != "" {
+			if err := os.WriteFile(filepath.Join(root, ".jaira", "worktree-setup"), []byte(setup), 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		git(t, root, "init", "-q", "-b", "master")
+		git(t, root, "commit", "-q", "--allow-empty", "-m", "base")
+		git(t, root, "branch", branch)
+		git(t, root, "checkout", "-q", branch)
+		git(t, root, "commit", "-q", "--allow-empty", "-m", "fix(AB12CD): the work")
+		git(t, root, "checkout", "-q", "master")
+		return root, wt, bin
+	}
+	run := func(root, bin string, args ...string) (string, error) {
+		cmd := exec.Command(bash, append([]string{spawn}, append(args, "ab12cd", "AB12CD", "review", root)...)...)
+		cmd.Dir = root
+		cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr"), "HERDR_WORKSPACE_ID=",
+			"JAIRA_NO_WORKTREE=", "JAIRA_SPAWN_PAUSE=0", "PATH="+bin+string(os.PathListSeparator)+path)
+		out, err := cmd.CombinedOutput()
+		return string(out), err
+	}
+	tabMade := func(bin string) bool {
+		_, err := os.Stat(filepath.Join(bin, "created"))
+		return err == nil
+	}
+
+	for _, c := range []struct {
+		name, branch string
+		args         []string
+	}{
+		{"feat/<slug> left behind", "feat/ab12cd", nil},
+		{"--branch of another name", "fix-login-page", []string{"--branch", "fix-login-page"}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			root, wt, bin := repo(t, c.branch, "")
+			if out, err := run(root, bin, c.args...); err != nil {
+				t.Fatalf("spawn.sh: %v\n%s", err, out)
+			}
+			if got := git(t, wt, "symbolic-ref", "--short", "HEAD"); got != c.branch {
+				t.Errorf("the worktree stands on %q, want %q", got, c.branch)
+			}
+			if got := git(t, wt, "log", "-1", "--format=%s"); got != "fix(AB12CD): the work" {
+				t.Errorf("the worktree's newest commit is %q, want the ticket's work", got)
+			}
+		})
+	}
+
+	// Two spawns at once on a branch that is there: no -b fails the second,
+	// so the directory itself is claimed, and only one tab opens (QTQW15).
+	for _, args := range [][]string{nil, {"--branch", "fix-login-page"}} {
+		t.Run("two at once "+strings.Join(args, " "), func(t *testing.T) {
+			branch := "feat/ab12cd"
+			if args != nil {
+				branch = "fix-login-page"
+			}
+			root, _, bin := repo(t, branch, "")
+			errs := make(chan error, 2)
+			outs := make(chan string, 2)
+			for i := 0; i < 2; i++ {
+				go func() {
+					out, err := run(root, bin, args...)
+					outs <- out
+					errs <- err
+				}()
+			}
+			failed := 0
+			for i := 0; i < 2; i++ {
+				if <-errs != nil {
+					failed++
+				}
+			}
+			all := <-outs + <-outs
+			tabs, _ := os.ReadFile(filepath.Join(bin, "tabs"))
+			if n := strings.Count(git(t, root, "worktree", "list"), "repo-ab12cd"); n != 1 {
+				t.Errorf("the worktree is registered %d times, want once:\n%s", n, all)
+			}
+			// The second either lost the claim (exit 1, no tab) or came after
+			// the first had made it and reused it, as a respawn does.
+			if failed == 1 && !strings.Contains(all, "another spawn.sh is starting AB12CD/review") && !strings.Contains(all, "is being made by another spawn.sh") {
+				t.Errorf("the losing spawn does not say why:\n%s", all)
+			}
+			if got := strings.Count(string(tabs), "tab"); got != 2-failed {
+				t.Errorf("%d tabs for %d spawns that went through:\n%s", got, 2-failed, all)
+			}
+		})
+	}
+
+	// The first spawn.sh still runs — its worktree folder stands, its tab is
+	// not open yet — when a second one for the same ticket and lane comes:
+	// the second stops before a tab, whatever it finds on disk, and once the
+	// first is done a later spawn is a respawn again (Alex, QTQW15/CRASZS).
+	t.Run("second while the first still runs", func(t *testing.T) {
+		root, wt, bin := repo(t, "feat/ab12cd", "")
+		gate := filepath.Join(bin, "go")
+		herdr := "#!/usr/bin/env bash\ncase \"$1 $2\" in\n  \"tab create\") echo tab >> \"" + filepath.Join(bin, "tabs") + "\"; for _ in $(seq 200); do [ -e \"" + gate + "\" ] && break; sleep 0.05; done; echo '{\"result\":{\"root_pane\":{\"pane_id\":\"p1\"}}}' ;;\n  \"pane get\") echo '{\"result\":{\"pane\":{\"agent\":\"claude\",\"agent_status\":\"idle\",\"tab_id\":\"t1\"}}}' ;;\nesac\n"
+		if err := os.WriteFile(filepath.Join(bin, "herdr"), []byte(herdr), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		type result struct {
+			out string
+			err error
+		}
+		first := make(chan result, 1)
+		go func() {
+			out, err := run(root, bin)
+			first <- result{out, err}
+		}()
+		claim := filepath.Join(root, ".git", "jaira", "spawning", "AB12CD-REVIEW")
+		deadline := time.Now().Add(10 * time.Second)
+		for {
+			tabs, _ := os.ReadFile(filepath.Join(bin, "tabs"))
+			if len(tabs) > 0 {
+				break
+			}
+			if time.Now().After(deadline) {
+				t.Fatal("the first spawn.sh never reached its tab")
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		if _, err := os.Stat(wt); err != nil {
+			t.Fatalf("the first spawn's worktree is not there yet: %v", err)
+		}
+		out, err := run(root, bin)
+		var exit *exec.ExitError
+		if !errors.As(err, &exit) || exit.ExitCode() != 1 || !strings.Contains(out, "another spawn.sh is starting AB12CD/review right now") {
+			t.Errorf("the second spawn went on beside the first: %v\n%s", err, out)
+		}
+		if err := os.WriteFile(gate, nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if r := <-first; r.err != nil {
+			t.Fatalf("the first spawn.sh: %v\n%s", r.err, r.out)
+		}
+		if tabs, _ := os.ReadFile(filepath.Join(bin, "tabs")); strings.Count(string(tabs), "tab") != 1 {
+			t.Errorf("%d tabs, want the first spawn's alone", strings.Count(string(tabs), "tab"))
+		}
+		// The claim is a lock, not the file: the kernel let go of it when the
+		// first exited, so a respawn goes through, whatever the file holds —
+		// a pid reused after a restart, or nothing at all.
+		for _, left := range []string{"1\n", ""} {
+			if err := os.WriteFile(claim, []byte(left), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if out, err := run(root, bin); err != nil {
+				t.Errorf("a respawn after the first, past a claim file holding %q: %v\n%s", left, err, out)
+			}
+		}
+	})
+
+	t.Run("--branch that does not exist", func(t *testing.T) {
+		root, wt, bin := repo(t, "feat/ab12cd", "")
+		out, err := run(root, bin, "--branch", "nowhere")
+		if err == nil || !strings.Contains(out, "--branch nowhere: no such branch") {
+			t.Errorf("want a refusal naming the branch, got %v:\n%s", err, out)
+		}
+		if _, err := os.Stat(wt); err == nil || tabMade(bin) {
+			t.Error("a worktree or a tab was made for a branch that does not exist")
+		}
+	})
+
+	t.Run("worktree standing on another branch", func(t *testing.T) {
+		root, wt, bin := repo(t, "fix-login-page", "")
+		git(t, root, "worktree", "add", "-q", wt, "-b", "feat/ab12cd")
+		out, err := run(root, bin, "--branch", "fix-login-page")
+		if err == nil || !strings.Contains(out, "already stands on feat/ab12cd") {
+			t.Errorf("want a refusal naming the branch the worktree stands on, got %v:\n%s", err, out)
+		}
+		if tabMade(bin) {
+			t.Error("a tab was made beside a worktree on another branch")
+		}
+	})
+
+	t.Run("failed setup keeps a branch it did not make", func(t *testing.T) {
+		root, wt, bin := repo(t, "fix-login-page", "#!/usr/bin/env bash\nexit 3\n")
+		out, err := run(root, bin, "--branch", "fix-login-page")
+		if err == nil || !strings.Contains(out, "branch fix-login-page kept") {
+			t.Errorf("want the failed setup to say the branch is kept, got %v:\n%s", err, out)
+		}
+		if _, err := os.Stat(wt); err == nil {
+			t.Error("the worktree of a failed setup is still there")
+		}
+		if got := git(t, root, "log", "-1", "--format=%s", "fix-login-page"); got != "fix(AB12CD): the work" {
+			t.Errorf("the branch lost its work: newest commit %q", got)
+		}
+	})
+}
+
 // Two worktrees of one repository never get the same port offset. 8r8vts and
 // 32ttss hash to the same one (cksum % 40 + 1 = 5); the second takes the next
 // free one instead. A worktree made before offsets were written down still
 // holds the one its .env names, and a worktree that stands keeps its offset
 // when spawn.sh is run for it again.
-// offsetRepo is a repository with a .env, so spawn.sh hands its worktrees a
-// port offset, and a herdr stub that opens tabs. spawnCmd runs spawn.sh for
+// offsetRepo is a repository with a .env and worktree-setup.example as its
+// .jaira/worktree-setup, so spawn.sh hands its worktrees a port offset and the
+// example writes it into their .env as spawn.sh itself did up to 0.6.1; its
+// path holds a space. It has a herdr stub that opens tabs. spawnCmd runs spawn.sh for
 // a slug; offset reads the offset that slug's worktree got.
 type offsetRepo struct {
 	base, root string
@@ -1088,7 +1497,7 @@ func newOffsetRepo(t *testing.T) offsetRepo {
 	}
 	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
 
-	base := t.TempDir()
+	base := filepath.Join(t.TempDir(), "with space")
 	root := filepath.Join(base, "repo")
 	bin := t.TempDir()
 	herdr := `#!/usr/bin/env bash
@@ -1100,10 +1509,17 @@ esac
 	if err := os.WriteFile(filepath.Join(bin, "herdr"), []byte(herdr), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(root, 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(root, ".env"), []byte("APP=1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	example, err := os.ReadFile(filepath.Join(dir, "jaira-dispatcher", "scripts", "worktree-setup.example"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".jaira", "worktree-setup"), example, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	git := func(args ...string) {
@@ -1164,6 +1580,15 @@ func TestSpawnGivesEveryWorktreeItsOwnOffset(t *testing.T) {
 	spawnSlug("32ttss")
 	if a, b := offset("8r8vts"), offset("32ttss"); a != "6" || b != "7" {
 		t.Errorf("8r8vts and 32ttss got offsets %s and %s, want 6 and 7: 5 is held by twb0r6, then each the next free one", a, b)
+	}
+
+	// The example writes what spawn.sh itself wrote up to 0.6.1, byte for byte.
+	env, err := os.ReadFile(filepath.Join(base, ".worktrees", "repo-8r8vts", ".env"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "APP=1\n\n# worker stack: slug=8r8vts offset=6\nCOMPOSE_PROJECT_NAME=repo_8r8vts\nHTTP_PORT=8086\nDB_PORT_HOST=5512\nDB_PORT_TEST_HOST=5513\n"; string(env) != want {
+		t.Errorf("worktree-setup.example wrote\n%s\nwant\n%s", env, want)
 	}
 
 	spawnSlug("8r8vts")
@@ -1477,6 +1902,89 @@ func TestRoleModels(t *testing.T) {
 		}
 		if got != want {
 			t.Errorf("%s: model %q, want %q", r.ID, got, want)
+		}
+	}
+}
+
+// Worker, dispatcher and bug hunt hand their parent one line — the status
+// line, and a needs-you line above it when something waits for a person —
+// and write the full report onto the ticket; the teamlead reads the details
+// there. A report that grows back into a page fills the teamlead's session,
+// which is what TT3Z11 ended.
+func TestReportsToTheParentAreOneLine(t *testing.T) {
+	t.Parallel()
+	read := func(role string) string {
+		b, err := os.ReadFile(filepath.Join("builtin", role, "SKILL.md"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(b)
+	}
+	for role, note := range map[string]string{
+		"jaira-worker":       `jaira note <id> "report: `,
+		"jaira-dispatcher":   `jaira note <id> "report: `,
+		"jaira-role-bughunt": `jaira note <id> "hunt report: `,
+	} {
+		s := read(role)
+		if !strings.Contains(s, "needs you: <what") {
+			t.Errorf("%s does not name the needs-you line of its report", role)
+		}
+		if !strings.Contains(s, note) {
+			t.Errorf("%s does not write its full report onto the ticket as %s...", role, note)
+		}
+		if strings.Contains(s, "three lines and a status line") || strings.Contains(s, "the three lines and the status line go to the parent") {
+			t.Errorf("%s still sends its three report lines to the parent", role)
+		}
+	}
+	// The hunt's report note must not read as a finding: the testing lane
+	// takes every "bughunt:" note after the last closing line for one.
+	if strings.Contains(read("jaira-role-bughunt"), `"bughunt: report:`) {
+		t.Error("jaira-role-bughunt writes its report as a bughunt: note, which the testing lane reads as a finding")
+	}
+	tl := read("jaira-teamlead")
+	for _, want := range []string{"What a worker sends you is one line, and the details are on the ticket.", "jaira show <id>"} {
+		if !strings.Contains(tl, want) {
+			t.Errorf("jaira-teamlead does not say %q", want)
+		}
+	}
+}
+
+// Three send-backs from one lane go to the teamlead before a person: the
+// worker, the dispatcher and the lane worker leave the ticket in its lane
+// with the question set and send it up; the teamlead decides and notes it, or
+// moves it to human itself. Without a parent the worker moves it as before.
+func TestThirdSendBackGoesToTheTeamleadFirst(t *testing.T) {
+	for role, want := range map[string][]string{
+		"jaira-worker": {
+			"the teamlead decides first, not the person",
+			"do not move it to `human`",
+			"leaves the move to `human --question` to you, as without a parent",
+		},
+		"jaira-dispatcher": {
+			"which is the teamlead and decides first",
+			"never in `human`",
+		},
+		"jaira-role-lane": {
+			"the dispatcher and the teamlead above it decide",
+		},
+		"jaira-teamlead": {
+			"## Three rounds of one lane: you decide first",
+			"decision (teamlead <YYYY-MM-DD>)",
+			"jaira set <id> question=",
+			"Only this move puts the ticket into a person's lane.",
+			"`jaira set <id> back-count=0` beside the decision note",
+			"`--force` does not reset the count",
+			"started by the person directly — still moves the",
+		},
+	} {
+		b, err := File(role, skillFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, w := range want {
+			if !strings.Contains(string(b), w) {
+				t.Errorf("%s does not say %q", role, w)
+			}
 		}
 	}
 }

@@ -97,7 +97,8 @@ seven days: say so in one line.
    mode=conversational`: a person decided the shape, and a dispatcher that
    asked itself would have set it in its own step 5 — the fresh one does not
    infer it from notes. Any other answer, such as the yes or no after three
-   rounds of one lane, gets the note and leaves the mode alone.
+   rounds of one lane that you took to the person (see "Three rounds of one
+   lane: you decide first"), gets the note and leaves the mode alone.
 5. **What is not worth doing.** A ticket whose reason has expired gets said out
    loud, not quietly skipped.
 
@@ -111,6 +112,46 @@ dispatcher answers them there, notes what was decided on the ticket and sends
 you one line about it. Take that line as settled: read the ticket's notes
 before you put a question to the person, and do not ask what a note already
 answers.
+
+## Three rounds of one lane: you decide first
+
+When one lane has sent a ticket back three times in a row, jaira refuses the
+next send-back, and the worker or dispatcher you started does not move the
+ticket to `human`. It leaves it in its lane with the `question` field set and
+sends you the question with its options. That question is yours first — most
+of them are not the person's, and a person who sees every one of them in the
+cockpit stops reading.
+
+1. **Decide it when the answer follows from the ticket, the code or a rule you
+   already work by** — the findings grow on one rule, so delete the rule or
+   reuse what jaira already has; the remaining finding is a known limit, so
+   accept the work as it is; the definition of done asks for more than the
+   goal, so narrow it. Write the decision onto the ticket before anything
+   moves:
+
+   ```bash
+   jaira note <id> "decision (teamlead <YYYY-MM-DD>): <what, and why>"
+   jaira set <id> question=
+   ```
+
+   A decision that changes what is built also goes into the definition of
+   done, as "A person's answer goes into the definition of done" below
+   says. Then tell the worker how to go on, with `SendMessage`. Accepting the
+   work is a move forward and needs nothing more. Letting the loop go on —
+   another round, or a send-back for a smaller design — takes
+   `jaira set <id> back-count=0` beside the decision note: it gives the lane
+   its rounds back, and the send-back then goes through without `--force`.
+   Without it the in-progress worker stops again on count 3 and the lane's
+   next send-back is refused once more. `--force` does not reset the count:
+   a worker that forces past the limit itself leaves it counting.
+2. **Take it to the person when it is theirs** — what the product should do,
+   which of two designs, whether the ticket is worth doing at all. Move the
+   ticket into `human` yourself, `jaira move <id> --to human --question
+   "<the worker's question>"`, and ask with `AskUserQuestion`, the worker's
+   options unchanged. Only this move puts the ticket into a person's lane.
+
+A worker with no parent — started by the person directly — still moves the
+ticket to `human` itself; this section is about the ones you started.
 
 ## A new ticket goes on the board its subject belongs to
 
@@ -194,9 +235,9 @@ Without Herdr, start it as a subagent instead — "the worker skill" in place of
 ```
 Agent(subagent_type: "claude",
       prompt: "Read the dispatcher skill and drive ticket <id> until it
-               reaches a human lane or blocks. Report in three lines
-               and the status line, plus the numbered options of any question you could not
-               ask.")
+               reaches a human lane or blocks. Report in the status line,
+               a needs-you line above it when something waits for a person,
+               plus the numbered options of any question you could not ask.")
 ```
 
 and say plainly that it dies with your session.
@@ -255,6 +296,24 @@ gh pr list --state open        # or glab mr list: which pull requests are still 
 
 List only what is still open, and show that list only when it changed since you
 last showed it — not appended to every message.
+
+**What a worker sends you is one line, and the details are on the ticket.** A
+worker, dispatcher or bug hunt hands back its status line (`jaira: <ID> <from>
+-> <to> · …`), with one `needs you: <what>` line above it when something waits
+for a person — nothing more. Its full report is a `report:` note on the ticket
+(`hunt report:` for a bug hunt), beside its per-lane lines and findings. Read
+what you need from there, not from the message:
+
+```bash
+jaira show <id>                          # notes: report:, lane lines, findings
+jaira show <id> --json | jaira json get review.gaps
+```
+
+Read it when you need it — to answer the human, to decide a give-back — and
+only the part you need: the reason the report shrank to a line is that your
+session holds a dozen of them. A worker's context and cache are in its
+`report:` note and, for every worker at once, in the jaira-cockpit's `workers`
+tool.
 
 Per ticket in flight, three lines and no more:
 
@@ -321,11 +380,12 @@ board.
 
 A worker or dispatcher you put in a tab cannot close that tab — you created it,
 so it is yours. But you never stop or close it while it works, and never while
-its ticket waits for a person in a human lane or signoff: read its three lines,
-tell the human, and leave the tab. Its second line says how full its context
-is and how long its prompt cache stays warm; the jaira-cockpit's `workers`
-tool (`mcp__jaira-cockpit__workers`, `/cockpit workers` for the person) says
-the same for every worker of the board at any time.
+its ticket waits for a person in a human lane or signoff: read its status line
+and its `report:` note, tell the human, and leave the tab. The note says how
+full its context is and how long its prompt cache stays warm; the
+jaira-cockpit's `workers` tool (`mcp__jaira-cockpit__workers`, `/cockpit
+workers` for the person) says the same for every worker of the board at any
+time.
 
 The tab is decided about once, when the ticket comes back into a new round —
 given back from signoff or a human lane, a review comment, a failing CI run.

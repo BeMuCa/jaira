@@ -1,6 +1,6 @@
 ---
 name: jaira-dispatcher
-description: "Drive one ticket lane by lane by handing each lane to a separate worker, then report back in three lines and a status line. Invoked with a ticket id, normally by a teamlead session. Use when handed a whole ticket to carry to a human lane."
+description: "Drive one ticket lane by lane by handing each lane to a separate worker, then report back in a status line. Invoked with a ticket id, normally by a teamlead session. Use when handed a whole ticket to carry to a human lane."
 ---
 
 # Dispatcher
@@ -205,7 +205,7 @@ option because nobody answered. Several open decisions go up together, one
 list each, in the order they would have been asked — you cannot ask the
 second after the first once you have stopped. The teamlead asks them one at a
 time in that order and drops one an earlier answer made moot. In a report the
-lists come on top of the three report lines, not in place of them.
+lists come on top of the status line, not in place of it.
 
 **Your workers' questions are yours to carry, not theirs.** A worker never
 asks the person: it writes its question onto the ticket — a `jaira note` with
@@ -439,9 +439,11 @@ root never leaves it.
 ## One worktree per ticket
 
 Two workers must never share a directory. On a project with a container stack
-they also need distinct project names and ports — `scripts/spawn.sh` names the
-stack after the repository plus the worktree slug, and offsets the ports by the
-slug.
+they also need distinct project names and ports. `scripts/spawn.sh` hands each
+new worktree a port offset no other worktree holds, but only to the
+repository's own `.jaira/worktree-setup`, which names the stack and spreads the
+offset over its ports. Without that script a worktree gets no `.env` and no
+ports of its own.
 
 Only remove a worktree or close a pane you created yourself, and a worktree not
 before its ticket is in `done` — not when the work is committed, and not when
@@ -454,8 +456,9 @@ lands the branch on the default branch once every ticket on it is in done.
 
 **Your own tab closes only through `close-tab.sh`.** Do not keep working to
 stay useful — a dispatcher whose ticket has reached a human lane is finished.
-Print the three lines and the status line and stop. Started with `--parent`,
-send them there with `SendMessage`, and once it has taken them make this the very last call of your
+Write the report onto the ticket and print the short one, as "Report" says,
+and stop. Started with `--parent`, send the short one there with
+`SendMessage`, and once it has taken it make this the very last call of your
 turn:
 
 ```bash
@@ -490,8 +493,14 @@ Stop and report the moment any of these is true:
   the person sees it once, in signoff
 - a worker is sitting at an approval dialog. Read its output, report what it is
   asking, and never answer for the human
-- **the same lane sent work back three times.** Stop there and hand it to the
-  person. This one is not yours to argue with: you may write down why you think
+- **the same lane sent work back three times.** Stop there and hand the
+  decision on — to the session that started you when you were started with
+  `--parent`, which is the teamlead and decides first; to the person only
+  without one, or when `SendMessage` cannot reach it. With a parent the ticket
+  stays in its lane with `jaira set <id> question="<...>"`, never in `human`:
+  the teamlead moves it there when it takes the question to the person.
+
+  This one is not yours to argue with: you may write down why you think
   the loop is healthy — findings shrinking, each one new, none re-raised — and
   you may not act on that reasoning and run a fourth round. A stop rule you can
   talk yourself past is not a rule, and the reasoning always sounds good from
@@ -500,10 +509,11 @@ Stop and report the moment any of these is true:
   Three rounds does not always mean the definition of done is wrong. The other
   cause is a loop that converges in size but never terminates, because each pass
   reads deeper than the last and deeper is always available. Both look identical
-  from here, and only the person can tell you which one you are in.
+  from here, and only someone outside the loop — the teamlead, or the person —
+  can tell you which one you are in.
 
-  So hand it over as a decision they can take in one word, not as a report they
-  have to take apart first. Three lines: the third round's findings, verbatim;
+  So hand it over as a decision they can take in one word, not as a report
+  they have to take apart first. Three lines: the third round's findings, verbatim;
   which of those two causes you believe it is and what makes you think so; and
   the one thing you would do about it. Then ask for yes or no as a choice — see
   "How you ask" above — and wait. You may
@@ -536,13 +546,17 @@ a large fix carried as several tickets is one acceptance page, not several.
 Say which language the person was spoken to in. A `note:` line in the
 review's `review-gaps` reaches the page as a candidate; you never create a
 ticket from one, the person does. The acceptance role answers in
-three lines; its link goes into your third report line. Reading the person's
+three lines; its link goes into your `needs you:` line. Reading the person's
 marks back is not yours: that comes later, from whoever the person tells.
 
 ## Report
 
-Three lines at the end, on top of the per-lane lines. The teamlead pastes them
-to a human:
+Three lines at the end, on top of the per-lane lines — **onto the ticket**, as
+one note, not to the parent:
+
+```bash
+jaira note <id> "report: <what changed> | <lane now>, <context and cache> | <what is open>"
+```
 
 - what changed
 - which lane the ticket sits in now, and your own context and prompt cache —
@@ -552,15 +566,19 @@ to a human:
   this line to know what sending the next round back to you would cost
 - what is open, and whether it needs a person
 
-Then one line more, always the last line of the report, in exactly the format
-`jaira-worker` describes under "Report":
+What you hand back — to the parent with `SendMessage`, or as your final answer
+— is the status line, in exactly the format `jaira-worker` describes under
+"Report", with at most one line above it when something waits for a person:
 
 ```
+needs you: <what, in one line — the decision, the question, the acceptance link>
 jaira: <ID> <from> -> <to> · branch: <branch> · commits: <first>..<last> (<n>) · gates: ok|red|none · notes: <n> · verdict: <text>
 ```
 
 `gates` is the result of the gates the worker that pushed ran (see "Before
 anything is pushed"); `<from>` is the lane the ticket was in when you took it.
 
-Everything else — which lanes ran, how long, what the diff was — stays with you
-unless it is asked for.
+Nothing else goes up: no lane list, no diff summary, no copy of the note. The
+teamlead holds a dozen such reports in one session and reads `jaira show <id>`
+when it wants more. Nothing open: no `needs you:` line at all. Started by a
+person directly in your tab, print the three lines above it too.

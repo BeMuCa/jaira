@@ -23,6 +23,13 @@ const IgnoreLine = "/.jaira/"
 // .jaira/ itself, so there is no ignored parent to negate out of.
 const LanesIgnoreLine = "/.jaira/lanes/"
 
+// MilestonesIgnoreLine keeps the milestone files out of git on a shared board.
+// A milestone travels on its ref, refs/jaira/milestones/<ID>, and every
+// command keeps the file in step with it; a committed copy only rides along
+// with a branch, falls behind the ref, and comes back in every merge as a
+// conflict nobody needs.
+const MilestonesIgnoreLine = "/.jaira/milestones/"
+
 // privateComment heads the entry; RemoveIgnore takes it out with the line,
 // recognising it by privateMarker.
 const (
@@ -30,6 +37,10 @@ const (
 	privateMarker  = "jaira board — private"
 	lanesComment   = "# this project's lane files are this machine's, not the team's"
 	lanesMarker    = "lane files are this machine's"
+	// milestonesComment heads MilestonesIgnoreLine; RemoveMilestonesIgnore
+	// knows it by milestonesMarker.
+	milestonesComment = "# jaira milestones travel on their refs; the files are working copies, never committed"
+	milestonesMarker  = "jaira milestones travel on their refs"
 )
 
 // A board starts private. Committing tickets is what makes a board visible to
@@ -426,6 +437,18 @@ func locked(exclude string, fn func() error) error {
 	return fn()
 }
 
+// lineEnding is the line ending a file at hand is written in: CRLF where most
+// of its lines end in it — a Windows checkout with core.autocrlf — so a line
+// jaira adds does not leave the file with mixed endings. Most, not any: one
+// stray CRLF line pasted into an LF file must not turn what jaira writes into
+// CRLF, or a teammate on a build that writes LF rewrites it back every time.
+func lineEnding(s string) string {
+	if 2*strings.Count(s, "\r\n") > strings.Count(s, "\n") {
+		return "\r\n"
+	}
+	return "\n"
+}
+
 // appendEntry adds a comment and one pattern to the end of path, after a blank
 // line, creating the file where it does not exist, in the line endings the
 // file already uses. Written whole and renamed into place (ticket.WriteAtomic),
@@ -438,10 +461,7 @@ func appendEntry(path, comment, line string) error {
 		return err
 	}
 	body := string(existing)
-	nl := "\n"
-	if strings.Contains(body, "\r\n") {
-		nl = "\r\n"
-	}
+	nl := lineEnding(body)
 	if body != "" && !strings.HasSuffix(body, "\n") {
 		body += nl
 	}
@@ -508,14 +528,39 @@ func dropEntry(path, marker string, match func(string) bool) (changed bool, err 
 // committed with it. Idempotent: calling it again once the line is already
 // present reports changed=false and writes nothing.
 func AddLanesIgnore(root string) (changed bool, err error) {
+	return addGitignoreLine(root, lanesComment, LanesIgnoreLine, false)
+}
+
+// AddMilestonesIgnore puts MilestonesIgnoreLine into the tracked .gitignore,
+// where a shared board's teammates get it with the next pull. It is what
+// 'jaira share', and 'jaira init' and 'jaira update' on a shared board, call;
+// a private board needs no line, its whole .jaira/ is excluded already.
+// Idempotent like AddLanesIgnore. dry reports whether it would write and
+// writes nothing.
+func AddMilestonesIgnore(root string, dry bool) (changed bool, err error) {
+	return addGitignoreLine(root, milestonesComment, MilestonesIgnoreLine, dry)
+}
+
+// RemoveMilestonesIgnore takes the milestones line out again, for 'share
+// --undo': the private board's /.jaira/ covers it.
+func RemoveMilestonesIgnore(root string) (changed bool, err error) {
+	return dropEntry(filepath.Join(root, ".gitignore"), milestonesMarker, func(t string) bool { return t == MilestonesIgnoreLine })
+}
+
+// addGitignoreLine appends line with its comment to the root .gitignore
+// unless a line there already says it.
+func addGitignoreLine(root, comment, line string, dry bool) (changed bool, err error) {
 	path := filepath.Join(root, ".gitignore")
 	existing, _ := os.ReadFile(path)
-	for _, line := range strings.Split(string(existing), "\n") {
-		if strings.TrimSpace(line) == LanesIgnoreLine {
+	for _, l := range strings.Split(string(existing), "\n") {
+		if strings.TrimSpace(l) == line {
 			return false, nil
 		}
 	}
-	return true, appendEntry(path, lanesComment, LanesIgnoreLine)
+	if dry {
+		return true, nil
+	}
+	return true, appendEntry(path, comment, line)
 }
 
 // RemoveLanesIgnore removes the lanes-only ignore line. Used by 'share

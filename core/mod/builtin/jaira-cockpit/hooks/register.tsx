@@ -2,11 +2,11 @@ import { atom, read, update } from 'claude-code'
 import type { ElementTable, EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
-  branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
-  explanationNotes, explanationOf, huntOf, isOlder, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
+  branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
+  explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
-  createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, nextChoice, standOf,
-  type Action, type Agent, type GapItem, type Hunt, type NoteClass, type Option, type Waiting,
+  createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, languageOf, nextChoice, NOTE_MARK, rephrasedOf, rephrasePrompt, standOf,
+  type Action, type Agent, type GapItem, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest, reportLine } from './digest.ts'
@@ -17,7 +17,7 @@ import {
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
 import { COLORS, HATS, overviewOf, pickOf, stoneOf, workerKey, workersOf } from './overview.ts'
-import { drawOverview, type OverviewTab } from './overview-pane.tsx'
+import { drawOverview, headRow, type OverviewTab } from './overview-pane.tsx'
 import {
   backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
   workerLines, type Role, type SessionRecord, type Tab,
@@ -55,6 +55,7 @@ const messageAtom = atom({ plugin: 'jaira-cockpit', key: 'message' } as const, n
 const explainedAtom = atom({ plugin: 'jaira-cockpit', key: 'explained' } as const, {})
 const decidedAtom = atom({ plugin: 'jaira-cockpit', key: 'decided' } as const, {})
 const verdictAtom = atom({ plugin: 'jaira-cockpit', key: 'verdictTicket' } as const, null)
+const rephrasedAtom = atom({ plugin: 'jaira-cockpit', key: 'rephrased' } as const, {})
 const huntsAtom = atom({ plugin: 'jaira-cockpit', key: 'hunts' } as const, {})
 const explainingAtom = atom({ plugin: 'jaira-cockpit', key: 'explaining' } as const, null)
 const answeringAtom = atom({ plugin: 'jaira-cockpit', key: 'answering' } as const, null)
@@ -82,6 +83,8 @@ const MESSAGE = 'cockpit-message'
 const GIVE_BACK = 'cockpit-give-back'
 const EXPLANATION = 'cockpit-explanation'
 const VERDICT = 'cockpit-verdict'
+// The Verdict pane's light in the theme's colours.
+const LIGHT_COLOUR = { green: 'success', yellow: 'warning', red: 'error' } as const
 const ANSWER = 'cockpit-answer'
 const OVERVIEW = 'cockpit-overview'
 const UPGRADE = 'cockpit-upgrade'
@@ -99,13 +102,18 @@ const BUSY_MS = 20_000
 // a reopening.
 const FRAME_MS = 250
 const READ_FRAMES = 20
-// The Overview pane's own rows, beside the Workers tab's picture: its tab
-// row, three high since the framed Close stands in it.
-const OVERVIEW_ROWS = 3
+// The Overview pane's own rows, beside the Workers tab's picture: its head,
+// the tabs and Close on one line.
+const OVERVIEW_ROWS = 1
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
 // A filter's choice with one item pressed: out if it was in, in if it was not.
 const toggled = (chosen: string[], x: string) => (chosen.includes(x) ? chosen.filter(y => y !== x) : [...chosen, x])
+// A pane left with nothing to show (its ticket gone from the board, its state
+// cleared) keeps its head: [ Close ] closes it as in every other state.
+const nothingPane = ({ Box, Button, Text }: Pick<ElementTable, 'Box' | 'Button' | 'Text'>, head: string, close: { key: string; onPress: () => void }) => (
+  <Box flexDirection="column">{headRow({ Box, Button }, head, { ...close, label: t.close })}<Text dimColor>{t.paneNothing}</Text></Box>
+)
 
 // ── what this module keeps between events (a reload starts it over) ──────
 
@@ -130,7 +138,11 @@ let personSaid: string | undefined
 let threads: Thread[] = []
 // The Explain and Discuss chats this session opened, by their tab's label
 // (`<id>/explain`), with when: the tab goes once the chat has done its part.
-const chats = new Map<string, number>()
+// copy is the ticket file pulled into the main checkout for the chat
+// (ticketHere), which the chat removes itself as its last step; a minute
+// after the chat is done (doneAt) the band names it if it is still there.
+const chats = new Map<string, { since: number; copy?: string; doneAt?: number }>()
+const COPY_CHECK_MS = 60_000
 // The Workers tab's frames, running while it is open and shown, and the
 // board the Overview was opened on.
 let frames: { cancel: () => void } | undefined
@@ -323,14 +335,14 @@ async function findBoard($: EngineInterface): Promise<{ dir: string; repo: strin
 
 // Workers and reviews are the agents that run: Herdr tabs (none where there
 // is no Herdr or its list failed), and this session's own subagents.
-async function agentsOf($: EngineInterface, dir: string): Promise<{ bin: string | undefined; tabs: Tab[]; agents: Agent[] }> {
+async function agentsOf($: EngineInterface, dir: string): Promise<{ bin: string | undefined; tabs: Tab[]; listed: boolean; agents: Agent[] }> {
   const bin = await herdr($)
   const listed = bin === undefined ? undefined : await run($, [bin, 'tab', 'list'], dir)
   let agents: Agent[] = []
   try {
     agents = await $.agent.list()
   } catch {}
-  return { bin, tabs: listed?.exitCode === 0 ? tabsOf(listed.stdout) : [], agents }
+  return { bin, tabs: listed?.exitCode === 0 ? tabsOf(listed.stdout) : [], listed: listed?.exitCode === 0, agents }
 }
 
 async function refreshBoard($: EngineInterface): Promise<void> {
@@ -382,7 +394,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   const explained: Record<string, { text: string; decided?: string }> = {}
   // The newest bug hunt of each, as jaira works it out against the checkout
   // the ticket's code is in: its own worktree, where there is one.
-  const hunts: Record<string, Hunt> = {}
+  const hunts: Record<string, HuntState> = {}
   const trees = shownIds.length > 0 ? await run($, ['git', 'worktree', 'list', '--porcelain'], board.dir) : undefined
   for (const w of shownIds) {
     const shown = await run($, ['jaira', 'show', w.id, '--json'], board.dir)
@@ -399,7 +411,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
       const held = await run($, ['git', 'merge-base', '--is-ancestor', hunt.at, 'HEAD'], dir)
       if (held?.exitCode !== 0) continue
     }
-    hunts[w.id] = hunt.state
+    hunts[w.id] = hunt
   }
   await update($, explainedAtom, () => explained)
   await update($, huntsAtom, () => hunts)
@@ -410,8 +422,15 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   // only once its agent stopped working: a Discuss chat notes the decision
   // first and then still moves the ticket and tells this session.
   const open = tabs
-  for (const [label, since] of chats) {
+  const now = await $.clock.now()
+  for (const [label, { since, copy, doneAt }] of chats) {
     const [id = '', kind] = label.split('/')
+    if (doneAt !== undefined) {
+      if (now - doneAt < COPY_CHECK_MS) continue
+      chats.delete(label)
+      if (copy !== undefined && await $.fs.exists(copy).catch(() => false)) await say($, t.copyLeft(id, copy))
+      continue
+    }
     const tab = open.find(x => x.label === label)
     if (tab?.agent_status === 'working') continue
     const from = since - (since % 60_000)
@@ -421,7 +440,10 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     const w = [...view.waiting, ...view.theirs].find(x => x.id === id)
     const done = fresh !== undefined || (kind === 'discuss' && (w === undefined || w.question === ''))
     if (!done) continue
-    chats.delete(label)
+    // The chat removes its copy itself; whether it did is looked at a
+    // minute later, when even a chat without a tab has written its last line.
+    if (copy === undefined) chats.delete(label)
+    else chats.set(label, { since, copy, doneAt: now })
     if (kind === 'discuss' && fresh !== undefined) await update($, decidedAtom, d => ({ ...d, [id]: fresh.text }))
     if (tab !== undefined) await run($, [bin!, 'tab', 'close', tab.tab_id], board.dir)
   }
@@ -518,7 +540,7 @@ async function upgradeJaira($: EngineInterface, dir: string, to: string): Promis
   await show($, t.upgraded(to), withoutWarnings(`${up.stdout}\n${up.stderr}\n${setup === undefined ? 'jaira update did not run' : `${setup.stdout}\n${setup.stderr}`}`))
 }
 
-async function noteOn($: EngineInterface, dir: string, id: string, kind: 'explain' | 'decision') {
+async function noteOn($: EngineInterface, dir: string, id: string, kind: 'explain' | 'decision' | 'parent session') {
   const shown = await run($, ['jaira', 'show', id, '--json'], dir)
   return shown?.exitCode === 0 ? noteOf(shown.stdout, kind) : undefined
 }
@@ -526,8 +548,52 @@ async function noteOn($: EngineInterface, dir: string, id: string, kind: 'explai
 // Where a ticket's work lives: running jaira anywhere else answers "on its
 // ref and not on your disk".
 async function ticketDir($: EngineInterface, b: { dir: string; repo: string }, id: string): Promise<string> {
+  return (await ownTree($, b, id)) ?? b.repo
+}
+
+async function ownTree($: EngineInterface, b: { dir: string; repo: string }, id: string): Promise<string | undefined> {
   const r = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
-  return r?.exitCode === 0 ? worktreeFor(r.stdout, id, b.repo) : b.repo
+  return r?.exitCode === 0 ? ownTreeFor(r.stdout, id) : undefined
+}
+
+// Where a press writes, with the ticket on that disk as its ref has it: a
+// file on the ref alone or older than the ref refuses every write ("on its
+// ref and not on your disk", a stale file), so it is pulled first. Pulled
+// into the ticket's own worktree it stays, as the branch's; pulled into the
+// main checkout only for this press, leave() takes it away again once the
+// press is over, refused or not: a copy left there outranks the ref and shows
+// the ticket in a lane it left long ago. Every write already sits on the ref,
+// or whole in the outbox, so nothing goes with it. A refused pull (somebody
+// else holds the ticket, no remote) stops the press: it never steals.
+// copy names the file pulled into the main checkout, the one leave() removes.
+type Here = { ok: true; dir: string; copy?: string; leave: () => Promise<void> } | { ok: false; why: string }
+
+async function ticketHere($: EngineInterface, b: { dir: string; repo: string }, id: string): Promise<Here> {
+  const own = await ownTree($, b, id)
+  const dir = own ?? b.repo
+  const stays: Here = { ok: true, dir, leave: async () => {} }
+  const disk = async () => {
+    const shown = await run($, ['jaira', 'show', id, '--json'], dir)
+    return diskOf(shown?.exitCode === 0 ? shown.stdout : '')
+  }
+  const before = await disk()
+  if (before.state === 'current') return stays
+  const pulled = await jaira($, dir, ['pull', id])
+  if (!pulled.ok) return { ok: false, why: pulled.why }
+  if (own !== undefined || before.state !== 'ref-only') return stays
+  const { path } = await disk()
+  if (path === '') return stays
+  return {
+    ok: true,
+    dir,
+    copy: path,
+    leave: async () => {
+      const r = await run($, ['git', 'clean', '-fqx', '--', path], dir)
+      // A line beside the band, never the message pane: that already holds
+      // what the press itself had to say (a refusal, a note that was lost).
+      if (r?.exitCode !== 0) await say($, t.copyNotRemoved(id, path, output(r)))
+    },
+  }
 }
 
 type Done = { ok: true; out: string } | { ok: false; why: string }
@@ -583,8 +649,11 @@ function hasVerdict(w: Waiting): boolean {
 async function showVerdict($: EngineInterface, id: string): Promise<void> {
   await update($, verdictAtom, () => id)
   const opened = await $.ui.open({ id: VERDICT, title: t.verdictOf(id), focus: true, closeOnEscape: true })
-  if (opened.isPlaced) return
   const w = (await read($, boardAtom))?.waiting.find(x => x.id === id)
+  if (opened.isPlaced) {
+    if (w !== undefined) await rephrase($, id, gapItems(w.gaps).map(x => x.text))
+    return
+  }
   if (w !== undefined) $.ui.toast(`${t.verdictOf(id)}: ${w.verdict || w.question}`)
 }
 
@@ -601,26 +670,39 @@ async function fail($: EngineInterface, what: string, why: string): Promise<void
 // an open definition-of-done item or plan step still stops the press.
 async function accept($: EngineInterface, w: Waiting, after?: (dir: string) => Promise<void>): Promise<void> {
   if (!board || w.acceptTo === null) return
-  const dir = await ticketDir($, board, w.id)
-  const dry = await run($, ['jaira', 'move', w.id, '--to', w.acceptTo, '--dry-run', '--json'], dir, 30_000)
+  const here = await ticketHere($, board, w.id)
+  if (!here.ok) return fail($, `${t.accept} ${w.id}`, here.why)
+  try {
+    await accepting($, w, w.acceptTo, here.dir, after)
+  } finally {
+    await here.leave()
+  }
+}
+
+async function accepting($: EngineInterface, w: Waiting, to: string, dir: string, after?: (dir: string) => Promise<void>): Promise<void> {
+  const dry = await run($, ['jaira', 'move', w.id, '--to', to, '--dry-run', '--json'], dir, 30_000)
   const refused = dry === undefined ? 'jaira did not run' : dry.exitCode === 0 ? undefined : otherRefusal(dry.stderr || dry.stdout)
   if (refused !== undefined) return fail($, `${t.accept} ${w.id}`, refused)
   // After the gates, never before: a ticket an open definition-of-done item
   // still refuses opens no pull request either.
   if (await heldInSignoff($, w)) return
-  const done = await jaira($, dir, ['move', w.id, '--to', w.acceptTo, '--force'])
-  if (movedBefore(done, w.id, w.acceptTo)) return movedFirst($, t.accept, w.id, w.acceptTo)
+  const done = await jaira($, dir, ['move', w.id, '--to', to, '--force'])
+  if (movedBefore(done, w.id, to)) return movedFirst($, t.accept, w.id, to)
   if (done.ok) {
     // What the person decided on the review's notes goes onto the ticket once
     // it is accepted, as Give back writes it once the ticket went back: a
     // refused or failed Accept writes nothing and creates no follow-up.
     if (after !== undefined) await after(dir)
-    await say($, t.accepted(w.id, w.acceptTo))
-    const next = await afterAccept($, w.id, w.acceptTo)
+    await say($, t.accepted(w.id, to))
+    const next = await afterAccept($, w.id, to)
     // One line into this session, the teamlead's, once the press has done
     // all it does: it goes on from there — logbook, the next worker — without
     // the person typing it, and never starts the pull request Accept started.
-    void $.prompt.submit({ text: t.toSessionAccepted(w.id, w.lane, w.acceptTo, next) })
+    void $.prompt.submit({ text: t.toSessionAccepted(w.id, w.lane, to, next) })
+    // The same line on the ticket: a teamlead in another session reads it
+    // there, where the cockpit's own session is not its own.
+    const noted = await jaira($, dir, ['note', w.id, `cockpit: ${t.acceptedNote(w.lane, to)}`])
+    if (!noted.ok) await say($, t.acceptNoteLost(w.id, noted.why))
   } else await fail($, `${t.accept} ${w.id}`, done.why)
   await refreshBoard($)
 }
@@ -751,20 +833,12 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   // branch's own word for itself.
   const land = base !== undefined && await landsWithoutPullRequest($, b.repo, base)
   if (typeof asked === 'string' && !land) return { step: stepAfterAccept(0, [], undefined), hint: t.prUnchecked(asked) }
-  let branch = found.ticket
-  // No worktree: the branch spawn.sh named <prefix>/<slug>, left behind
-  // when the worktree went; else the branch whose commits name the ticket,
-  // where it was worked on another ticket's branch.
-  if (branch === undefined) {
-    const listed = await run($, ['git', 'branch', '--list', '--format=%(refname:short)', `*/${id.toLowerCase()}`], b.repo)
-    if (listed?.exitCode === 0) branch = carrierBranch(listed.stdout, found.base ?? '')
-  }
-  if (branch === undefined && base !== undefined) {
-    const log = await run($, ['git', 'log', '--branches', '--not', base, '--format=%H %s'], b.repo)
-    const sha = log?.exitCode === 0 ? commitNaming(log.stdout, id) : undefined
-    const holders = sha ? await run($, ['git', 'branch', '--contains', sha, '--format=%(refname:short)'], b.repo) : undefined
-    if (holders?.exitCode === 0) branch = carrierBranch(holders.stdout, found.base ?? base)
-  }
+  // Several branches that could each be the ticket's: Accept picks none, as
+  // Give back picks none (Alex, QTQW15) — a pull request for a branch stacked
+  // on the ticket's proposes another ticket's work. The press says which.
+  const carrier = await ticketBranch($, b, id, porcelain, base, found.base ?? '')
+  if (carrier !== undefined && 'ambiguous' in carrier) return { step: 'none', hint: t.branchAmbiguous(id, carrier.ambiguous) }
+  const branch = carrier?.branch
   if (branch === undefined || base === undefined || branch === found.base) return { step: 'none', hint: '' }
   // One subject per commit ahead: the count and the tickets in one walk.
   const subjects = await run($, ['git', 'log', '--format=%s', `${base}..${branch}`], b.repo)
@@ -836,7 +910,7 @@ async function startPrLane($: EngineInterface, b: { dir: string; repo: string },
     const added = await run($, ['git', 'worktree', 'add', wt, branch], b.repo, 60_000)
     if (added?.exitCode !== 0) return `git worktree add ${wt} ${branch}: ${output(added)}`
   }
-  const r = await run($, [...script, '--no-worktree', id.toLowerCase(), id, 'pr', wt], wt, 120_000)
+  const r = await run($, [...script, '--no-worktree', ...await parentArgs($), id.toLowerCase(), id, 'pr', wt], wt, 120_000)
   if (r?.exitCode !== 0) return `spawn.sh: ${output(r).slice(-160)}`
   if (!land) followPullRequest($, id, branch, b.repo, PR_LOOKS)
   return undefined
@@ -995,6 +1069,19 @@ async function herdr($: EngineInterface): Promise<string | undefined> {
   return script?.[1]?.replace(/spawn\.sh$/, 'herdr-hc.sh')
 }
 
+// The parent a tab this mod starts reports to: this session, by its
+// messaging socket — the address spawn.sh and SendMessage take, as a
+// teamlead's spawn.sh hands its workers. A question or a report then arrives
+// here instead of waiting in a tab nobody looks at (T5QN9P). No socket, or
+// one whose file is gone: no parent at all, and the tab asks in itself as
+// before — spawn.sh refuses a parent nobody listens on, and would start no
+// tab at all.
+async function parentArgs($: EngineInterface): Promise<string[]> {
+  const socket = await $.env.get('CLAUDE_CODE_MESSAGING_SOCKET')
+  const live = socket ? await $.fs.exists(socket).catch(() => false) : false
+  return live ? ['--parent', `uds:${socket}`] : ['--no-parent']
+}
+
 // Explain a review finding, or talk an open question through, in a Herdr tab
 // of its own: the teamlead's chat is not where that conversation belongs.
 // Without Herdr this session is asked instead: Explain by a subagent, which
@@ -1003,21 +1090,53 @@ async function herdr($: EngineInterface): Promise<string | undefined> {
 async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discuss'): Promise<void | 'hold'> {
   const what = `${kind === 'explain' ? t.explain : t.discuss} ${id}`
   if (!board) return fail($, what, t.noBoard)
-  const dir = await ticketDir($, board, id)
+  // One chat at a time on a ticket a chat holds a copy for: that chat removes
+  // the copy when it ends, from under any other chat still writing there —
+  // held until the copy was looked at, a minute after the chat was done.
+  const holder = [...chats].find(([l, c]) => l.startsWith(`${id}/`) && c.copy !== undefined)
+  if (holder !== undefined) return fail($, what, t.chatHoldsCopy(id, holder[0].split('/')[1] === 'explain' ? t.explain : t.discuss))
+  // The chat writes its note onto the ticket, which a file on the ref alone
+  // or older than the ref refuses: pulled first, as for Accept (76ERHH). A
+  // refused pull stops the press; it never steals.
+  const here = await ticketHere($, board, id)
+  if (!here.ok) return fail($, what, here.why)
+  const { dir } = here
+  const label = `${id}/${kind}`
+  // A copy pulled into the main checkout is the chat's to remove, as its last
+  // step: only the chat knows when it wrote its last line. A press that opens
+  // no chat removes it at once.
+  const { copy } = here
+  const opened = async () => chats.set(label, { since: await $.clock.now(), copy })
   if ((await herdr($)) === undefined) {
+    await opened()
     await say($, kind === 'explain' ? t.explainAsked(id) : t.discussHere(id))
-    void $.prompt.submit({ text: kind === 'explain' ? t.explainBySubagent(id, dir) : t.discussInThisChat(id, dir) })
+    void $.prompt.submit({ text: kind === 'explain' ? t.explainBySubagent(id, dir, copy) : t.discussInThisChat(id, dir, copy) })
     return 'hold'
   }
   const script = await spawnScript($)
-  if (script === undefined) return fail($, what, t.noSpawn)
-  // A Discuss chat sends its decision to this session: its messaging socket
-  // is the address SendMessage takes.
-  const socket = kind === 'discuss' ? await $.env.get('CLAUDE_CODE_MESSAGING_SOCKET') : undefined
-  const parent = socket ? ['--parent', `uds:${socket}`] : []
-  const r = await run($, [...script, '--no-worktree', ...parent, id.toLowerCase(), id, kind, dir], dir, 120_000)
-  if (r?.exitCode !== 0) return fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
-  chats.set(`${id}/${kind}`, await $.clock.now())
+  if (script === undefined) {
+    await here.leave()
+    return fail($, what, t.noSpawn)
+  }
+  // A Discuss chat sends its decision to this session.
+  const parent = kind === 'discuss' ? await parentArgs($) : []
+  const removes = copy === undefined ? [] : ['--copy', copy]
+  // Registered before spawn.sh runs, which waits up to two minutes for
+  // claude while the row unlocks after BUSY_MS: a second press in that time
+  // already finds this chat holding the copy.
+  await opened()
+  const r = await run($, [...script, '--no-worktree', ...parent, ...removes, id.toLowerCase(), id, kind, dir], dir, 120_000)
+  if (r?.exitCode !== 0) {
+    // spawn.sh may have failed after its tab came up (claude slow to start):
+    // that chat runs and removes the copy itself, so it is not taken from
+    // under it. No such tab: no chat started, and the copy goes at once.
+    const tabs = await agentsOf($, dir)
+    if (!(copy !== undefined && tabs.listed && tabs.tabs.some(x => x.label === label))) {
+      chats.delete(label)
+      await here.leave()
+    }
+    return fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
+  }
   await say($, t.opened(id))
 }
 
@@ -1162,7 +1281,19 @@ async function askOwnAnswer($: EngineInterface, id: string): Promise<void> {
 // heard and not only left on the ticket.
 async function decide($: EngineInterface, id: string, text: string, action: Action | undefined, share: number): Promise<void> {
   if (!board) return
-  const done = await jaira($, await ticketDir($, board, id), ['note', id, `decision: ${text}`])
+  // One pull for the note and the press it carries out: the copy pulled for
+  // the note is the one Accept and Give back then find on the disk.
+  const here = await ticketHere($, board, id)
+  if (!here.ok) return fail($, `${t.decide} ${id}`, here.why)
+  try {
+    await deciding($, id, text, action, share, here.dir)
+  } finally {
+    await here.leave()
+  }
+}
+
+async function deciding($: EngineInterface, id: string, text: string, action: Action | undefined, share: number, dir: string): Promise<void> {
+  const done = await jaira($, dir, ['note', id, `decision: ${text}`])
   if (!done.ok) return fail($, `${t.decide} ${id}`, done.why)
   await update($, decidedAtom, d => ({ ...d, [id]: text }))
   // Answered from here on, before the next look at the notes says so too.
@@ -1183,7 +1314,62 @@ async function askWhatIsMissing($: EngineInterface, w: Waiting, known?: GapItem[
   const items = known ?? await reviewItems($, w)
   await update($, choosingAtom, () => (items.length === 0 ? null : { id: w.id, items }))
   const opened = await $.ui.open({ id: GIVE_BACK, title: `${t.giveBack} ${w.id}`, focus: true, closeOnEscape: true })
-  if (!opened.isPlaced) await fail($, `${t.giveBack} ${w.id}`, t.noRoom)
+  if (!opened.isPlaced) return fail($, `${t.giveBack} ${w.id}`, t.noRoom)
+  await rephrase($, w.id, items.map(x => x.text))
+}
+
+// ── review notes in the person's language ────────────────────────────────
+
+// The Verdict pane's order: what stops the ticket first.
+const CLASS_ORDER: readonly NoteClass[] = ['blocker', 'edge', 'limit', 'elsewhere']
+const REPHRASED_PREFIX = 'rephrased:'
+const REPHRASED_TICKETS = 50
+// The newest rephrase of each ticket: an older one still waiting for the
+// model shows nothing once it is answered. No call is held back for one
+// that waits - the newest press wins, a double press may ask twice
+// (decision 22.11.2026: a rule that skips calls kept growing edges).
+const newest = new Map<string, number>()
+let rephrases = 0
+
+// The review notes of a ticket in the language the person set in their own
+// settings.json, short and plain, for the Verdict and Give back panes to show
+// instead of the ticket's words. The ticket is never written: what Give back
+// and Accept write onto it stays the original text. One call of the cheap
+// model per ticket and notes: the answer is kept in the store for as long as
+// the language and the notes stay the same. No language set, a failed call
+// or an answer that does not fit: nothing is shown but the original, a
+// rewrite shown before included - the language may have been taken away.
+async function rephrase($: EngineInterface, id: string, texts: readonly string[]): Promise<void> {
+  const mine = ++rephrases
+  newest.set(id, mine)
+  const language = texts.length === 0 ? undefined : languageOf(await settingsJson($))
+  const show = (map?: Record<string, string>) =>
+    newest.get(id) !== mine ? undefined : update($, rephrasedAtom, ({ [id]: _, ...rest }) => (map === undefined ? rest : { ...rest, [id]: map }))
+  if (language === undefined) return show()
+  const shown = await rephrased($, REPHRASED_PREFIX + id, language, texts)
+  await show(shown === undefined ? undefined : Object.fromEntries(texts.map((x, i) => [x, shown[i]!])))
+}
+
+// The notes in that language: kept in the store, or asked of the cheap model
+// and kept; undefined where the call fails or its answer does not fit.
+async function rephrased($: EngineInterface, key: string, language: string, texts: readonly string[]): Promise<string[] | undefined> {
+  const kept = (await $.store.get(key)) as { language: string; source: string[]; shown: string[] } | undefined
+  if (kept?.language === language && kept.source.length === texts.length && kept.source.every((x, i) => x === texts[i])) return kept.shown
+  let shown: string[] | undefined
+  try {
+    const result = await $.model.complete({ model: 'haiku', prompt: rephrasePrompt(language, texts), maxTokens: 4000 })
+    shown = result.isAnswered ? rephrasedOf(result.text, texts.length) : undefined
+  } catch {
+    return undefined
+  }
+  if (shown === undefined) return undefined
+  // Delete first so the key moves to the end of the store's insertion order,
+  // as keep() does; the tickets read longest ago drop out.
+  await $.store.delete(key)
+  await $.store.set(key, { language, source: [...texts], shown })
+  const keys = (await $.store.keys()).filter(k => k.startsWith(REPHRASED_PREFIX))
+  for (const old of keys.slice(0, Math.max(0, keys.length - REPHRASED_TICKETS))) await $.store.delete(old)
+  return shown
 }
 
 // The review's notes, each with what it starts as: its class, or how it was
@@ -1302,13 +1488,27 @@ async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
 
 // Give back: move, then note, then the work goes to the worker that
 // carried it while that is cheaper — its tab alive, its cache warm, its
-// context small — else its tab is closed FIRST and a new worker started, so
-// a ticket never has two worker tabs. The choice and why go onto the ticket.
+// context small, and always while it is at work — else its tab is closed
+// FIRST and a new worker started, so a ticket never has two worker tabs. A
+// second press finds the ticket in in-progress already (movedBefore) and
+// starts nothing. A new worker starts on the branch the ticket's commits
+// ride on and reports to the ticket's teamlead (workPlace, spawnWorker).
+// The choice and why go onto the ticket.
 // The review lane is not touched here: the worker always hands it to a new
 // agent, whose tab run-lane.sh closes after the lane.
 async function giveBack($: EngineInterface, id: string, lane: string, given: string | ((dir: string) => Promise<string>), share: number): Promise<void> {
   if (!board) return
-  const dir = await ticketDir($, board, id)
+  const here = await ticketHere($, board, id)
+  if (!here.ok) return fail($, `${t.giveBack} ${id}`, here.why)
+  try {
+    await givingBack($, id, lane, given, share, here.dir)
+  } finally {
+    await here.leave()
+  }
+}
+
+async function givingBack($: EngineInterface, id: string, lane: string, given: string | ((dir: string) => Promise<string>), share: number, dir: string): Promise<void> {
+  if (!board) return
   // Back to an earlier lane needs no --force since jaira 0.3.7 (MIN_JAIRA),
   // so any other refusal of the move still stops it. The move goes first: a
   // note written before a refused move would say the ticket went back.
@@ -1325,13 +1525,13 @@ async function giveBack($: EngineInterface, id: string, lane: string, given: str
   const noted = await jaira($, dir, ['note', id, note])
   if (!noted.ok) await fail($, t.noteOn(id), t.noteLost(id, noted.why, note))
   // Who got it, as it happened: the note and the toast say only that.
-  const handedTo = async (who: 'old' | 'new' | 'none', why: string) => {
+  const handedTo = async (who: 'old' | 'new' | 'none', why: string, worker = '') => {
     const to = who === 'old' ? 'the old worker' : who === 'new' ? 'a new worker' : 'nobody (no worker started)'
     await jaira($, dir, ['note', id, `cockpit: given back to ${to} - ${why}`])
     await say($, t.returnedTo(id, who))
     // One line into this session, the teamlead's: the work is back and who
     // carries it now, so it starts no second worker beside this one.
-    void $.prompt.submit({ text: t.toSessionGivenBack(id, lane, who, reason) })
+    void $.prompt.submit({ text: t.toSessionGivenBack(id, lane, who, reason, worker) })
     await refreshBoard($)
   }
   const bin = await herdr($)
@@ -1340,7 +1540,14 @@ async function giveBack($: EngineInterface, id: string, lane: string, given: str
   const tabs = await run($, [bin, 'tab', 'list'], dir)
   const tab = tabs?.exitCode === 0 ? carrierTab(tabsOf(tabs.stdout), id) : undefined
   const record = carrierOf(await readRecords($), id)
-  const choice = chooseWorker({ ...(record ? { record } : {}), tabAlive: tab !== undefined, now: await $.clock.now(), share })
+  // A worker at work is never replaced: closing its tab would end it in the
+  // middle of a step, and a new one beside it is the second worker this
+  // press must never make. It gets the decision typed in like any old
+  // worker, whatever its cache and context say.
+  const working = tab?.agent_status === 'working'
+  const choice = working
+    ? { reuse: true, why: 'the old worker is at work in its tab' }
+    : chooseWorker({ ...(record ? { record } : {}), tabAlive: tab !== undefined, now: await $.clock.now(), share })
   let why = choice.why
   if (choice.reuse && record) {
     // The pane may have gone since the tab list: only text that arrived
@@ -1349,19 +1556,98 @@ async function giveBack($: EngineInterface, id: string, lane: string, given: str
     if (sent?.exitCode === 0) {
       await $.clock.sleep(1000)
       await run($, [bin, 'pane', 'send-keys', record.pane, 'enter'], dir)
-      return handedTo('old', why)
+      return handedTo('old', why, `${tab?.label ?? `${id}/worker`} (pane ${record.pane})`)
     }
     why = `${why}, but its pane took no text`
   }
+  if (working) return handedTo('none', `${why}; nothing recorded reaches its pane, tell it in tab ${tab?.label} - no second worker started`, `${tab?.label} at work, not reached: type the decision into its tab, start no other`)
   const script = await spawnScript($)
   // Nothing to start a new one with: the old tab stays, so the ticket keeps
   // whatever worker it has.
   if (script === undefined) return handedTo('none', `${why}; no spawn.sh found (jaira roles install), old tab left open`)
+  const place = await workPlace($, board, id)
+  // No branch it can tell for the ticket's own: nothing is started, the old
+  // tab stays, and the person hears which branches it is between.
+  if (place.stop) {
+    await handedTo('none', `${why}; ${place.why}, old tab left open`, `none: ${place.why}`)
+    return say($, `${id}: ${place.why}`)
+  }
   if (tab !== undefined) await run($, [bin, 'tab', 'close', tab.tab_id], dir)
-  // In its own tab, like the one after Accept: not this chat's child.
-  const started = await run($, [...script, '--no-parent', id.toLowerCase(), id, 'worker', board.repo], board.repo, 120_000)
-  if (started?.exitCode === 0) return handedTo('new', why)
-  await handedTo('none', `${why}; spawn.sh failed: ${(started?.stderr ?? '').trim().slice(-160)}`)
+  // In its own tab, on the branch the ticket's commits ride on, reporting to
+  // the ticket's teamlead.
+  const started = await spawnWorker($, script, id, place)
+  const where = `${place.why}; ${started.parentWhy}`
+  if (started.ok) return handedTo('new', `${why}; ${where}`, `${id}/worker (${started.pane ? `pane ${started.pane}, ` : ''}on ${place.branch ?? 'a new branch'})`)
+  await handedTo('none', `${why}; ${where}; spawn.sh failed: ${started.err.slice(-160)}`)
+}
+
+// Where a new worker for a ticket starts, and what spawn.sh is handed for
+// it: the worktree of the branch its commits ride on, a new worktree on that
+// branch where it has none, and only where the ticket has no branch at all a
+// new <prefix>/<slug> as before. why goes onto the ticket's note.
+type Place = { args: string[]; slug: string; root: string; branch?: string; why: string; stop?: true }
+
+// The branch a ticket's work rides on, for Accept's pull request and Give
+// back's new worker alike, as carrierFor (board.ts) settles it: its own
+// worktree's, a <prefix>/<slug>, or the one branch holding its newest own
+// commit; git is asked only as far as the answer is still open. base is
+// what the log counts against, origin's default where there is one; never
+// is the branch that is never a carrier: for Give back the local default
+// branch, so the branch the main checkout stands on counts like any other,
+// for Accept the main checkout's branch, as before QTQW15.
+async function ticketBranch($: EngineInterface, b: { dir: string; repo: string }, id: string, porcelain: string, base: string | undefined, never: string): Promise<Carrier | undefined> {
+  const found = branchesFor(porcelain, id)
+  const local = never
+  if (found.ticket !== undefined) return carrierFor({ own: found.ticket, base: local })
+  const listed = await run($, ['git', 'branch', '--list', '--format=%(refname:short)', `*/${id.toLowerCase()}`], b.repo)
+  const slugBranches = listed?.exitCode === 0 ? listed.stdout : undefined
+  const named = carrierFor({ base: local, ...(slugBranches !== undefined ? { slugBranches } : {}) })
+  if (named !== undefined || base === undefined) return named
+  const log = await run($, ['git', 'log', '--branches', '--not', base, '--format=%H %s'], b.repo)
+  const sha = log?.exitCode === 0 ? commitNaming(log.stdout, id) : undefined
+  const held = sha ? await run($, ['git', 'branch', '--contains', sha, '--format=%(refname:short)'], b.repo) : undefined
+  return carrierFor({ base: local, ...(held?.exitCode === 0 ? { holders: held.stdout } : {}) })
+}
+
+async function workPlace($: EngineInterface, b: { dir: string; repo: string }, id: string): Promise<Place> {
+  const slug = id.toLowerCase()
+  const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
+  const porcelain = trees?.exitCode === 0 ? trees.stdout : ''
+  const base = (await originDefault($, b.repo)) ?? branchesFor(porcelain, id).base
+  const carrier = await ticketBranch($, b, id, porcelain, base, (base ?? '').replace(/^[^/]+\//, ''))
+  if (carrier === undefined) return { args: [], slug, root: b.repo, why: 'no branch carries the ticket yet, a new one is made' }
+  if ('ambiguous' in carrier) return { args: [], slug, root: b.repo, why: t.branchAmbiguous(id, carrier.ambiguous), stop: true }
+  const how = carrier.by === 'commit' ? 'holds the newest commit naming the ticket' : carrier.by === 'worktree' ? "is the ticket's worktree's" : 'is named after the ticket'
+  const wt = worktreeOfBranch(porcelain, carrier.branch)
+  if (wt !== undefined) return { args: ['--no-worktree'], slug, root: wt, branch: carrier.branch, why: `branch ${carrier.branch} ${how}, worktree ${wt}` }
+  return { args: ['--branch', carrier.branch], slug, root: b.repo, branch: carrier.branch, why: `branch ${carrier.branch} ${how}, its worktree made again` }
+}
+
+// spawn.sh for a ticket's new worker, with the ticket's teamlead as its
+// parent: the session its newest 'parent session:' note names, else — that
+// session gone, or no note at all — this one, the person's, else none. A
+// parent spawn.sh refuses (exit 2, no session listens there) stops it before
+// a tab is made, so the next one is tried. parentWhy goes onto the note.
+async function spawnWorker($: EngineInterface, script: string[], id: string, place: Place): Promise<{ ok: true; pane: string; parentWhy: string } | { ok: false; err: string; parentWhy: string }> {
+  // The newest 'parent session: <address>' note — what a worker writes the
+  // first time it reads its --parent — names the ticket's teamlead.
+  const noted = (await noteOn($, place.root, id, 'parent session'))?.text.split(/\s/)[0]?.replace(/`/g, '') || undefined
+  // This session only by a socket whose file is still there (T5QN9P).
+  const socket = await $.env.get('CLAUDE_CODE_MESSAGING_SOCKET')
+  const own = socket && await $.fs.exists(socket).catch(() => false) ? socket : undefined
+  const tries: { flags: string[]; why: string }[] = []
+  if (noted !== undefined) tries.push({ flags: ['--parent', noted], why: `reports to ${noted}, the ticket's parent session` })
+  if (own && `uds:${own}` !== noted) tries.push({ flags: ['--parent', `uds:${own}`], why: `reports to this session${noted === undefined ? ' (no parent session noted on the ticket)' : ` (${noted} does not listen)`}` })
+  tries.push({ flags: ['--no-parent'], why: 'no parent session reachable, asks in its own tab' })
+  let err = ''
+  for (const tried of tries) {
+    const r = await run($, [...script, ...place.args, ...tried.flags, place.slug, id, 'worker', place.root], place.root, 120_000)
+    if (r?.exitCode === 0) return { ok: true, pane: r.stdout.trim().split('\n').at(-1) ?? '', parentWhy: tried.why }
+    err = (r?.stderr || r?.stdout || 'spawn.sh did not run').trim()
+    const refusedParent = r?.exitCode === 2 && tried.flags[0] === '--parent' && err.includes(`--parent ${tried.flags[1]}: no `)
+    if (!refusedParent) return { ok: false, err, parentWhy: tried.why }
+  }
+  return { ok: false, err, parentWhy: 'no parent session reachable' }
 }
 
 // The workers of this board, for the teamlead (the tool) and a person
@@ -1742,7 +2028,7 @@ export const register: Register = (on, options) => {
           <Box key={`row-${w.id}`} flexDirection="column">
             <Box flexDirection="row">
               <Text wrap="truncate-end">
-                <Text bold>{w.id}</Text>{SEP}{w.lane}{SEP}{marks(w, hunts[w.id])}{' '}
+                <Text bold>{w.id}</Text>{SEP}{w.lane}{SEP}{marks(w, hunts[w.id]?.state)}{' '}
               </Text>
               {/* Told apart by colour before they are read: the theme's own, so a
                   light terminal reads them too; the focus inverts them as any.
@@ -1835,20 +2121,19 @@ export const register: Register = (on, options) => {
     const table = $.ui.resolve(e)
     const { Box, Button, Text } = table
     const Input = 'Input' in table ? table.Input : undefined
-    if (w === undefined || Input === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
-    // The review's notes, one row each, when it wrote any: a press changes
-    // what happens to it. Without them the pane asks only what is missing.
-    const items = choosing?.id === w.id ? choosing.items : []
     const close = () => {
       void update($, givingAtom, () => null)
       void update($, choosingAtom, () => null)
       void $.ui.close({ id: GIVE_BACK })
     }
+    if (w === undefined || Input === undefined) return nothingPane(table, 'give-back-head', { key: 'give-back-close', onPress: close })
+    // The review's notes, one row each, when it wrote any: a press changes
+    // what happens to it. Without them the pane asks only what is missing.
+    const items = choosing?.id === w.id ? choosing.items : []
     const toggle = (n: number) =>
       void update($, choosingAtom, c => (c === null || c.id !== w.id ? c : { ...c, items: c.items.map((x, i) => (i === n ? { ...x, choice: nextChoice(x.choice) } : x)) }))
     const choiceColour = (c: GapItem['choice']) => (c === 'now' ? 'error' : c === 'later' ? 'suggestion' : 'success')
-    const noteMark = (cls: NoteClass) =>
-      cls === 'blocker' ? <Text bold color="error">[blocker] </Text> : cls === 'elsewhere' ? <Text color="suggestion">[not this ticket] </Text> : cls === 'limit' ? <Text dimColor>[known limit] </Text> : null
+    const said = (await read($, rephrasedAtom))[w.id] ?? {}
     // A blocker not marked fix now is accepted only with a reason: the
     // Accept button gives way to a field that will not take an empty one.
     const blockerKept = items.some(x => x.cls === 'blocker' && x.choice !== 'now')
@@ -1863,15 +2148,15 @@ export const register: Register = (on, options) => {
     }
     return (
       <Box flexDirection="column">
+        {headRow({ Box, Button }, 'give-back-head', { key: 'give-back-close', label: t.close, onPress: close })}
         <Text>{w.id} · {w.lane}{w.verdict !== '' ? ` · ${w.verdict}` : ''}</Text>
         {items.length > 0 ? <Box marginTop={1}><Text bold>{t.gapsHeading}</Text></Box> : null}
         {items.map((x, i) => (
-          <Button key={`gap-${w.id}-${i}`} plain label={`${t.choice[x.choice]} ${x.text}`} {...(i === 0 ? { autoFocus: true as const } : {})} onPress={() => toggle(i)}>
+          <Button key={`gap-${w.id}-${i}`} plain label={`${t.choice[x.choice]} ${NOTE_MARK[x.cls]} ${said[x.text] ?? x.text}`} {...(i === 0 ? { autoFocus: true as const } : {})} onPress={() => toggle(i)}>
             <Text wrap="wrap">
               <Text bold color={choiceColour(x.choice)}>{t.choice[x.choice]}</Text>
-              {' '}
-              {noteMark(x.cls)}
-              {x.text}
+              {` ${NOTE_MARK[x.cls]} `}
+              {said[x.text] ?? x.text}
               {x.earlier !== undefined ? <Text dimColor>{` ${t.decidedBefore}`}</Text> : null}
             </Text>
           </Button>
@@ -1920,7 +2205,7 @@ export const register: Register = (on, options) => {
   on('ui.render', { component: 'Pane', requestId: EXPLANATION }, async ($, e) => {
     const explaining = await read($, explainingAtom)
     const { Box, Button, Text } = $.ui.resolve(e)
-    if (explaining === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    if (explaining === null) return nothingPane({ Box, Button, Text }, 'explanation-head', { key: 'explanation-close', onPress: () => void $.ui.close({ id: EXPLANATION }) })
     const { id, decided } = explaining
     const x = explanationOf(explaining.text)
     const ticket = await waitingTicket($, id)
@@ -1958,6 +2243,7 @@ export const register: Register = (on, options) => {
     const ownDigit = String(x.options.length + 1)
     return (
       <Box flexDirection="column">
+        {headRow({ Box, Button }, 'explanation-head', { key: 'explanation-close', label: t.close, onPress: () => void $.ui.close({ id: EXPLANATION }) })}
         {about(Text, ticket)}
         <Box marginTop={ticket !== undefined ? 1 : 0}><Text bold>{t.explanationOf(id)}</Text></Box>
         {x.parts.map((p, i) => p.kind === 'option'
@@ -1988,7 +2274,6 @@ export const register: Register = (on, options) => {
         {open
           ? <Box marginTop={1}><Button key={`pick-${id}-own`} plain hotkey={ownDigit} {...(x.options.length === 0 ? { autoFocus: true as const } : {})} label={t.ownAnswer} onPress={() => void askOwnAnswer($, id)} /></Box>
           : <Box marginTop={1}><Text wrap="wrap"><Text bold>{t.decidedAs}</Text> {decided}</Text></Box>}
-        <Button key="explanation-close" label={t.close} onPress={() => void $.ui.close({ id: EXPLANATION })} />
       </Box>
     )
   })
@@ -2071,18 +2356,28 @@ export const register: Register = (on, options) => {
     const id = await read($, verdictAtom)
     const { Box, Button, Text } = $.ui.resolve(e)
     const w = await waitingTicket($, id)
-    if (w === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    if (w === undefined) return nothingPane({ Box, Button, Text }, 'verdict-head', { key: 'verdict-close', onPress: () => void $.ui.close({ id: VERDICT }) })
+    // The light first: whether to accept, at a glance, and the reason it names.
+    const light = lightOf(w, (await read($, huntsAtom))[w.id])
+    const first = light.reasons[0]
+    // Each note with its class mark, classed as the Give back pane classes
+    // it, in the person's language once the cheap model has answered.
+    const notes = gapItems(w.gaps, (await read($, explainedAtom))[w.id]?.text).sort((a, b) => CLASS_ORDER.indexOf(a.cls) - CLASS_ORDER.indexOf(b.cls))
+    const said = (await read($, rephrasedAtom))[w.id] ?? {}
     return (
       <Box flexDirection="column">
+        {headRow({ Box, Button }, 'verdict-head', { key: 'verdict-close', label: t.close, onPress: () => void $.ui.close({ id: VERDICT }) })}
+        <Text key="light" wrap="wrap">
+          <Text bold color={LIGHT_COLOUR[light.color]}>● {t.light[light.color]}</Text>
+          : {first === undefined ? t.lightAccept : t.lightReason(first)}{light.reasons.length > 1 ? t.lightMore(light.reasons.length - 1) : ''}
+        </Text>
         {about(Text, w)}
         <Box marginTop={1}><Text dimColor wrap="wrap">{w.id}{SEP}{w.lane}{w.reviewedIn !== undefined ? `${SEP}${t.reviewedIn(w.reviewedIn)}` : ''}</Text></Box>
         {w.question !== '' ? <Text color="warning" wrap="wrap">? {w.question}</Text> : null}
         <Box marginTop={1}><Text wrap="wrap"><Text bold>{t.verdictHeading}</Text> {w.verdict !== '' ? w.verdict : t.noVerdict}</Text></Box>
         {w.blockers.length + w.notes.length > 0 ? <Box marginTop={1}><Text bold>{t.notesHeading}</Text></Box> : null}
         {!w.findingsKnown ? <Box marginTop={1}><Text dimColor wrap="wrap">{t.notesNotKept}</Text></Box> : null}
-        {w.blockers.map((n, i) => <Text key={`blocker-${i}`} wrap="wrap"><Text bold color="error">[blocker]</Text> {n}</Text>)}
-        {w.notes.map((n, i) => <Text key={`note-${i}`} wrap="wrap">· {n}</Text>)}
-        <Button key="verdict-close" label={t.close} onPress={() => void $.ui.close({ id: VERDICT })} />
+        {notes.map((n, i) => <Text key={`note-${i}`} wrap="wrap">{NOTE_MARK[n.cls]} {said[n.text] ?? n.text}</Text>)}
       </Box>
     )
   })
@@ -2092,9 +2387,9 @@ export const register: Register = (on, options) => {
     const { Box, Button, Text } = $.ui.resolve(e)
     return (
       <Box flexDirection="column">
+        {headRow({ Box, Button }, 'message-head', { key: 'message-close', label: t.close, onPress: () => void $.ui.close({ id: MESSAGE }) })}
         <Text bold>{message?.title ?? ''}</Text>
         <Text wrap="wrap">{message?.text ?? ''}</Text>
-        <Button key="message-close" label={t.close} onPress={() => void $.ui.close({ id: MESSAGE })} />
       </Box>
     )
   })
@@ -2120,8 +2415,8 @@ export const register: Register = (on, options) => {
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const id = await read($, paneAtom)
-    const { Box, Text } = $.ui.resolve(e)
-    if (id === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    const { Box, Button, Text } = $.ui.resolve(e)
+    if (id === null) return nothingPane({ Box, Button, Text }, 'ticket-head', { key: 'ticket-close', onPress: () => void $.ui.close({ id: PANE }) })
     // Opening a ticket reads its reports: they count as read, as after report.
     const kept = await locked(async () => readReports($, keyOf(await project($), id)))
     let csv = ''
@@ -2132,6 +2427,7 @@ export const register: Register = (on, options) => {
     const waiting = (await read($, boardAtom))?.waiting.find(w => w.id === id)
     return (
       <Box flexDirection="column">
+        {headRow({ Box, Button }, 'ticket-head', { key: 'ticket-close', label: t.close, onPress: () => void $.ui.close({ id: PANE }) })}
         {waiting !== undefined ? <Text bold>{waiting.lane}{waiting.verdict !== '' ? ` · ${waiting.verdict}` : ''}</Text> : null}
         <Text bold>{t.paneReports}</Text>
         {kept.length === 0 ? <Text dimColor>{t.paneNothing}</Text> : null}

@@ -233,6 +233,14 @@ one the real move would have returned.`,
 			// called with it.
 			fireHook("move", s, res.Ticket)
 			t = res.Ticket
+			// On stderr in both modes: --json keeps stdout to the data, and the
+			// warning is for whoever drives the move, not for a parser.
+			if res.DoDUnticked > 0 {
+				fmt.Fprintf(cmd.ErrOrStderr(),
+					"warning: Definition of Done: 0 of %d ticked — the terminal lane reads this list, not the plan. "+
+						"Tick each with 'jaira dod %s <n> --done --proof \"<file:line or test>\"'.\n",
+					res.DoDUnticked, ticket.Handle(t.ID))
+			}
 
 			if g.jsonOut {
 				out := map[string]any{
@@ -828,7 +836,7 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		fmt.Fprintf(w, "round %d, sent back from %s (%s), %d in a row from that lane\n", ticket.CurrentRound(t), t.BackFrom, t.BackBy, t.BackCount)
 	}
 	if left, limited := l.RoundsLeft(t); limited {
-		fmt.Fprintf(w, "max-rounds %d: %d send-back(s) left from this lane before a person decides\n", l.MaxRounds, left)
+		fmt.Fprintf(w, "max-rounds %d: %d send-back(s) left from this lane before the teamlead decides, or a person\n", l.MaxRounds, left)
 	}
 	fmt.Fprintln(w)
 	if l.Prompt != "" {

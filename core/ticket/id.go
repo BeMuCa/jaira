@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/oklog/ulid/v2"
 )
@@ -32,6 +33,9 @@ func ValidID(id string) bool {
 	return err == nil
 }
 
+// slugMax is the most bytes a slug holds.
+const slugMax = 48
+
 // Slug renders a title into a filename-safe breadcrumb. It is a static hint for
 // humans running ls or grep, deliberately not kept in sync with later title
 // edits: renaming files on every title change would churn git history for no
@@ -52,8 +56,15 @@ func Slug(title string) string {
 		}
 	}
 	s := strings.Trim(b.String(), "-")
-	if len(s) > 48 {
-		s = strings.Trim(s[:48], "-")
+	if len(s) > slugMax {
+		// Cut at a rune boundary: a cut through a multi-byte letter (ü, ß,
+		// Cyrillic) leaves a name that is not valid UTF-8, and APFS refuses to
+		// check such a file out at all.
+		cut := slugMax
+		for cut > 0 && !utf8.RuneStart(s[cut]) {
+			cut--
+		}
+		s = strings.Trim(s[:cut], "-")
 	}
 	if s == "" {
 		s = "untitled"

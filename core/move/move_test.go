@@ -413,3 +413,108 @@ func TestForceOverridesStaleHunt(t *testing.T) {
 		t.Fatalf("forced move landed in %q", got.Status)
 	}
 }
+
+// A send-back a worker forces past a loop lane's max-rounds is no decision:
+// it stays the lane's, and the count goes on rising, so the next worker still
+// stops. Only a reset of back-count — the teamlead's or a person's decision —
+// gives the lane its rounds back, and the send-back then needs no --force.
+func TestForcePastMaxRoundsKeepsCountingUntilAReset(t *testing.T) {
+	s, env := fullBoard(t)
+	tk := mk(t, s, map[string]string{ticket.FieldStatus: "in-progress", ticket.FieldAssignee: "berk"})
+	for i := 1; i <= 3; i++ {
+		for _, to := range []string{"testing", "in-progress"} {
+			if _, err := Move(s, env, tk.ID, Request{To: to, Actor: "berk", Force: true}); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if _, err := Move(s, env, tk.ID, Request{To: "testing", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	res, err := Move(s, env, tk.ID, Request{To: "in-progress", Actor: "berk"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !refusedFor(res, gate.CodeMaxRounds) {
+		t.Fatalf("the fourth send-back from testing was not refused for max-rounds: %+v", res.Refused)
+	}
+	if _, err := Move(s, env, tk.ID, Request{To: "in-progress", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := s.Load(tk.ID)
+	if got.BackFrom != "testing" || got.BackBy != ticket.BackByLane || got.BackCount != 4 {
+		t.Fatalf("a send-back forced past max-rounds reads %q/%q/%d, want testing/lane/4", got.BackFrom, got.BackBy, got.BackCount)
+	}
+
+	if _, err := s.Mutate(tk.ID, func(t *ticket.Ticket) error {
+		return t.Doc().SetRaw(ticket.FieldBackCount, "0")
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Move(s, env, tk.ID, Request{To: "testing", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	res, err = Move(s, env, tk.ID, Request{To: "in-progress", Actor: "berk"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Refused) > 0 {
+		t.Fatalf("the send-back after back-count=0 was refused: %+v", res.Refused)
+	}
+	got, _ = s.Load(tk.ID)
+	if got.BackBy != ticket.BackByLane || got.BackCount != 1 {
+		t.Fatalf("after the reset the send-back reads %q/%d, want lane/1", got.BackBy, got.BackCount)
+	}
+}
+
+func refusedFor(res *Result, code string) bool {
+	for _, v := range res.Refused {
+		if v.Code == code {
+			return true
+		}
+	}
+	return false
+}
+
+// Leaving the implementing lane forward with not one definition-of-done item
+// ticked is reported, and the move lands anyway; one ticked item, a send-back
+// or a parked ticket is not reported (77B4GA).
+func TestMoveReportsUntickedDoDOutOfImplementing(t *testing.T) {
+	body := func(first, second string) string {
+		return "\n# t\n\n## Definition of Done\n\n- [" + first + "] a\n- [" + second + "] b\n\n## Plan\n\n- [x] step\n"
+	}
+	cases := []struct {
+		name, from, to, first, want string
+		unticked                    int
+	}{
+		{"none ticked, forward", "in-progress", "review", " ", "review", 2},
+		{"one ticked, forward", "in-progress", "review", "x", "review", 0},
+		{"one superseded, forward", "in-progress", "review", "-", "review", 0},
+		{"none ticked, sent back", "in-progress", "pre-process", " ", "pre-process", 0},
+		{"none ticked, parked", "in-progress", "blocked", " ", "blocked", 0},
+		{"none ticked, not the implementing lane", "review", "signoff", " ", "signoff", 0},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s, env := fixture(t)
+			tk, err := s.Create(map[string]string{
+				ticket.FieldID:     ticket.NewID(time.Date(2026, 9, 6, 8, 0, 0, 0, time.UTC)),
+				ticket.FieldTitle:  "t",
+				ticket.FieldStatus: c.from, ticket.FieldAssignee: "berk",
+			}, nil, body(c.first, " "))
+			if err != nil {
+				t.Fatal(err)
+			}
+			res, err := Move(s, env, tk.ID, Request{To: c.to, Actor: "berk", Force: true, Reason: "waiting"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if res.Ticket.Status != c.want {
+				t.Fatalf("status %q, want %q: the warning must not stop the move", res.Ticket.Status, c.want)
+			}
+			if res.DoDUnticked != c.unticked {
+				t.Fatalf("DoDUnticked = %d, want %d", res.DoDUnticked, c.unticked)
+			}
+		})
+	}
+}
