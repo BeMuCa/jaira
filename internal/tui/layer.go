@@ -670,6 +670,8 @@ func (m *Model) memberRows(ms *milestone.Milestone) []memberRow {
 			r.where = "logbook"
 		case link.PlaceArchive:
 			r.where = "archived"
+		case link.PlaceRejected:
+			r.where = "rejected"
 		default:
 			r.where = "not on this board"
 		}

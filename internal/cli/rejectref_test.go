@@ -445,6 +445,12 @@ func TestATicketRejectedOnItsRefStillExistsForLinksAndCannotBeClaimed(t *testing
 	if strings.Contains(out+fmt.Sprint(err), "exists nowhere") {
 		t.Errorf("validate calls a ref-rejected blocker missing: %v\n%s", err, out)
 	}
+	// And the links view names it rejected, not "on its ref · jaira pull":
+	// that pull would take the rejection off.
+	out, err = runCLI(t, clone, "links", a)
+	if err != nil || !strings.Contains(out, "rejected · off the board") || strings.Contains(out, "jaira pull "+b) {
+		t.Errorf("links on a ticket blocked by a rejected one: %v\n%s", err, out)
+	}
 
 	// A holder's file that pulled the rejection in.
 	if out, err := runCLI(t, clone, "create", "held elsewhere"); err != nil {

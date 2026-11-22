@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T17:10:08Z
-updated-at: 2026-11-22T17:45:08Z
+updated-at: 2026-11-22T17:49:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2431680
 claimed-at: 2026-11-22T17:10:39Z
@@ -28,13 +28,13 @@ outcome-what: "jaira reject and R on the board reject a ticket that lives only o
 outcome-why: "A person rejecting HS3K1E had to fetch, then pull it into an unrelated worktree, so the archive file travelled in another ticket's PR. Where a ticket lives is not the rejecter's business."
 outcome-resolves: "DoD 1: TestRejectATicketThatLivesOnlyOnAStaleRef + TUI test; DoD 2: TestRejectATicketWithAFileHereStillArchivesIt; DoD 3: TestRejectOnTheRefRefusals (unknown, already rejected on ref and in archive, archived, unreachable remote, real lost push via pre-push hook) + handle/ulid; DoD 4: core/release/notes/4539MZ.md. Checked: concurrency (lease + race test, TUI off update loop), error paths (nothing written on any refusal, asserted), input (handle/ULID/unknown), permissions (--force gate unchanged, runs before any write)."
 review-summary: "none"
-round: 6
+round: 7
 back-from: testing
 back-by: lane
-back-count: 1
-review-gaps: "round 4 (option 1): the warning text lives once in refsync.HeldByWarning for CLI and TUI; List's two rejected filters folded into one DeleteFunc over files and refs; earlier: restore's unreject delegates to ticket.Unreject, nil-refSync branch removed in the TUI, Syncer.Reject's fetch-read-parse prologue left (pre-existing pattern in Pull/Release)"
+back-count: 2
+review-gaps: "round 5: RejectedOffBoard is filled by the List every link.Build caller already makes, so no second listing; claim's refusal reuses codedError; nothing orphaned. Earlier rounds as before (shared HeldByWarning, ticket.Unreject; Syncer.Reject prologue left)"
 test-verdict: "pass: go test ./... green, -race -count=1 on core/ticket core/refsync internal/tui internal/cli green, go vet linux+windows green, shipped-history ok. DoD 1-4 re-run by their named tests. Binary in a two-clone fixture: reject by handle from a clone that never fetched -> rc 0, no file under .jaira, creator's list drops it after fetch; repeat -> rc 3 already_rejected; two parallel rejects -> one rc 0, other rc 3 race with nothing written; unknown id -> rc 5."
-hunt-verdict: "fail: round 4 - (blocker) a ref-rejected ticket dropped out of List also dropped out of the link index: validate called its blocked ticket 'blocked by X, which exists nowhere'; edge: a hidden rejected file could still be claimed"
+hunt-verdict: "fail: round 5 - (blocker) the link index showed a rejected ticket as 'on its ref · jaira pull', advice that silently takes the rejection off"
 question: ""
 ---
 
@@ -89,3 +89,6 @@ question: ""
 - **2026-11-22 17:41 · Alexander Sacharov** — bughunt: change: core/ticket/store.go:1028 - class: a rejected file here is off List() and the board but every write command still accepts it through Load; example: after 'jaira pull B' brings a ref rejection into grace's file, 'jaira claim B' and 'jaira note B x' exit 0 while 'jaira next --json' and the board show nothing, so work can be claimed and carried on a ticket nobody can see; ran: same scratch test (claim exit 0, note exit 0, next count 0)
 - **2026-11-22 17:41 · Alexander Sacharov** — bughunt: done at 66600c3aa - 2 findings (2 change, 1 of them blocker; 0 pre-existing) in 5 modules, follow-up hunt since f3c902da9; concurrency, error paths, input, permissions checked; files: core/refsync/refsync.go core/release/notes/4539MZ.md core/ticket/store.go docs/COMMANDS.md internal/cli/pull.go internal/cli/reject.go internal/cli/rejectref_test.go internal/tui/model.go internal/tui/rejectref_test.go
 - **2026-11-22 17:45 · Alexander Sacharov** — hunt round 4 fixed: Store.List remembers what it hid (RejectedOffBoard); link.Build adds those to its index like filed tickets, so validate/links/gate see a ref-rejected blocker as existing (not done); delete's referencesTo reads them too. claim refuses a ticket carrying rejected-kind (exit 3 rejected). note/set on such a file stay allowed: annotating is harmless, and 'jaira reject' there still archives it.
+- **2026-11-22 17:47 · Alexander Sacharov** — bughunt: change: blocker: core/link/link.go:161-168 with link.go:501-516 (Ref.Whereabouts) - class: a rejected ticket now enters the link index as an ordinary board/ref ticket, and every view that prints Whereabouts describes it as live: a ref-rejected one as 'on its ref · jaira pull <h>', a rejected file here as 'on the board · <lane>'; since 1b904de24 'jaira pull' takes the rejection off, so the advice the board prints silently undoes a person's rejection. Same text in 'jaira links', 'jaira show' links/children (internal/cli/tickets.go:902) and the TUI link pane (internal/tui/links.go:58). example: A blocked-by B, 'jaira reject B --force' on the ref, 'jaira links A' prints 'WBQ1TZ blocker — on its ref · jaira pull WBQ1TZ'; running that pull exits 0, prints 'the rejection is taken off', and B is back in 'jaira list'; ran: built ./cmd/jaira, scratch clone with bare origin, the four commands above
+- **2026-11-22 17:47 · Alexander Sacharov** — bughunt: done at 2fa98c03b - 1 finding (1 change, blocker; 0 pre-existing) in 6 modules, follow-up hunt since 66600c3aa (new to the change, read whole: core/link/link.go internal/cli/claim.go internal/cli/delete.go); concurrency, error paths, input, permissions checked; files: core/link/link.go core/refsync/refsync.go core/release/notes/4539MZ.md core/ticket/store.go docs/COMMANDS.md internal/cli/claim.go internal/cli/delete.go internal/cli/pull.go internal/cli/reject.go internal/cli/rejectref_test.go internal/tui/model.go internal/tui/rejectref_test.go
+- **2026-11-22 17:49 · Alexander Sacharov** — hunt round 5 fixed: new link.PlaceRejected for indexed tickets carrying rejected-kind; Whereabouts says 'rejected · off the board', TUI milestone rows say 'rejected'; jumping to it from the links pane already refuses anything not PlaceBoard.
