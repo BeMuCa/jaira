@@ -29,7 +29,12 @@ jobs:
 
   # Whether the pull request changes anything a build or a test reads. One that
   # changes only tickets or prose (scripts/ci-code-changed.sh has the list)
-  # skips every job below that needs it.
+  # skips every job below that needs it. A skipped job reports as skipped, which
+  # a required check accepts — but a skipped matrix job reports under its
+  # unexpanded name, so a required "test (ubuntu-latest)" would wait forever on
+  # such a pull request. Should master ever require a check, require a job that
+  # needs all of these with 'if: always()' and fails on any result but success
+  # or skipped.
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -156,24 +161,3 @@ jobs:
         run: |
           go vet ./...
           go build ./cmd/jaira
-
-  # The one check to make required, should master ever get one. A job skipped by
-  # its 'if' reports as skipped, which a required check accepts, but a skipped
-  # matrix job reports under its unexpanded name, so a required
-  # "test (ubuntu-latest)" would wait forever on a pull request that carries
-  # only tickets. This job always runs and is green when every job above
-  # passed or was skipped.
-  ci-done:
-    if: always()
-    needs: [ticket-commits, changes, shipped-manifest, web-dist, cockpit, test]
-    runs-on: ubuntu-latest
-    steps:
-      - env:
-          RESULTS: ${{ join(needs.*.result, ' ') }}
-        run: |
-          for r in $RESULTS; do
-            case "$r" in
-            success | skipped) ;;
-            *) echo "::error::a job ended $r: $RESULTS"; exit 1 ;;
-            esac
-          done
