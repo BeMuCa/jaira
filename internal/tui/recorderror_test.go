@@ -68,8 +68,15 @@ func TestTheBoardSaysWhenAMilestoneCouldNotBeQueued(t *testing.T) {
 	if !ok || got.err != nil {
 		t.Fatalf("background run: %#v", msg)
 	}
+	// Typing a ticket's title when the background fetch comes back: the
+	// warning must not take the keys, or Enter closes it instead of creating
+	// the ticket.
+	m.mode = modeCreate
 	m.Update(msg)
-	if !strings.Contains(m.message, `milestone "backend"`) || !strings.Contains(m.message, "could not be queued") {
-		t.Errorf("the board said %q; want the milestone it could not queue", m.message)
+	if line := m.flashLine(); !strings.Contains(line, `milestone "backend"`) || !strings.Contains(line, "could not be queued") {
+		t.Errorf("the status line is %q; want the milestone it could not queue", line)
+	}
+	if m.mode != modeCreate {
+		t.Errorf("the warning switched the board to mode %v; the person was typing a ticket", m.mode)
 	}
 }

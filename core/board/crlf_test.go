@@ -58,3 +58,21 @@ func TestACRLFAgentFileIsNotDrifted(t *testing.T) {
 		})
 	}
 }
+
+// One CRLF line pasted into an LF file does not make the file CRLF: the block
+// stays in LF, as a build that writes only LF would write it too, so two
+// builds on one board do not rewrite it back and forth.
+func TestAStrayCRLFLineLeavesTheBlockInLF(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "AGENTS.md")
+	before := "# Project\r\n\nSome notes.\n\n" + jairaMarkerStart + "\n" + noteFor(root, nil) + "\n" + jairaMarkerEnd + "\n"
+	if err := os.WriteFile(path, []byte(before), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if ok, stale := NoteIsCurrent(root, nil); !ok {
+		t.Fatalf("an LF block reads as drifted because of one CRLF line elsewhere: %v", stale)
+	}
+	if _, action, err := announceInAgentFile(root, "AGENTS.md", nil, false); err != nil || action != "unchanged" {
+		t.Errorf("update: action %q, err %v; want unchanged", action, err)
+	}
+}

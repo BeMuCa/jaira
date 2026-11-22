@@ -1135,13 +1135,21 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.notify(msg.err.Error(), true)
 			return m, nil
 		}
+		before := m.flashAt
 		m.announceMilestones(msg.milestones, msg.merged)
 		m.announceArrivals(msg.arrivals)
 		if re := msg.warn; re != nil {
 			// The same words as 'jaira fetch': without them the board retries
 			// every few minutes in silence while the person believes the
-			// milestone reaches their teammates.
-			m.notify(re.Warning(), true)
+			// milestone reaches their teammates. On the status line beside the
+			// fetch's other news, not as a message: this arrives in the
+			// background, and a message would take the keys of whatever the
+			// person is typing.
+			news := re.Warning()
+			if m.flashAt != before {
+				news = m.flashMsg + "; " + news // this fetch's own news first
+			}
+			m.flash(news)
 		}
 		_ = m.reload()
 		return m, nil
