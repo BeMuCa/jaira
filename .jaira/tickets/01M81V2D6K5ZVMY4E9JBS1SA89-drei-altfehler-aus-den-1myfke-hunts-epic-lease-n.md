@@ -1,7 +1,7 @@
 ---
 id: 01M81V2D6K5ZVMY4E9JBS1SA89
 title: "Drei Altfehler aus den 1MYFKE-Hunts: Epic-Lease nach ErrRaceLost, CRLF-AGENTS.md driftet immer, TUI verschluckt Fetch-Fehler"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,18 +19,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T14:37:54Z
-updated-at: 2026-11-22T14:45:45Z
+updated-at: 2026-11-22T14:46:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3557981
 claimed-at: 2026-11-22T14:38:23Z
 outcome-what: "rebaseEpic queues an unsent merge on the lease it was merged onto; the agent-file block follows the file's CRLF line endings; the board warns when a fetched milestone could not be queued"
 outcome-why: "three pre-existing defects from the 1MYFKE hunts: a teammate's epic change overwritten on the next flush, CRLF AGENTS.md always drifted, a milestone silently never reaching the remote"
 outcome-resolves: S1SA89
-review-summary: "core/board/announce.go managedBlock + announceInAgentFile repeat the CRLF test that core/board/gitignore.go:442 appendEntry already has inline — one helper lineEnding(s) in core/board used by all three; internal/tui/model.go copies the warning sentence of internal/cli/milestones.go:737 warnIfRecordOnly — put it once on milestone.RecordError (a Warning() method in core/milestone/write.go) and use it in both"
+review-summary: "none"
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "moved lineEnding above appendEntry's doc comment (it had split the comment from its function); left core/ticket/frontmatter.go:64 alone — it reads the first line's ending on purpose, a different rule in another package; epic.go repeats two lines of RecordEpic (QueueEpic + dirty) rather than widening the epic.Refs interface; no dead code, no repeated work on a hot path"
 ---
 
 # Drei Altfehler aus den 1MYFKE-Hunts: Epic-Lease nach ErrRaceLost, CRLF-AGENTS.md driftet immer, TUI verschluckt Fetch-Fehler
@@ -60,3 +61,4 @@ back-count: 1
 - **2026-11-22 14:40 · Alexander Sacharov** — Epic-Lease: Fix = der Text 'ours' wird mit dem Lease des Standes eingereiht, auf den er gemergt wurde (oursLease), nicht mit EpicSHA nach dem Fetch. Test: pre-receive-Hook, der den Ref bei jedem Push weiterschiebt und ablehnt; Hook muss GIT_OBJECT_DIRECTORY/QUARANTINE unsetten, sonst verschwinden seine Objekte.
 - **2026-11-22 14:44 · Alexander Sacharov** — CRLF: Regel = Datei enthält irgendwo CRLF -> Block in CRLF (wie gitignore.go appendEntry). Auch der appended-Pfad schreibt CRLF, sonst driftet ein frisch angehängter Block sofort. TUI: RecordError wird als refFetchedMsg.warn durchgereicht und mit dem Wortlaut von 'jaira fetch' per notify gezeigt; Test baut den echten Fehler (alte backend.md + Outbox read-only).
 - **2026-11-22 14:44 · Alexander Sacharov** — critique: (1) CRLF-Erkennung dreimal (announce.go x2, gitignore.go:442) -> ein Helper lineEnding(s) in core/board. (2) Warnsatz in TUI und CLI doppelt -> (*milestone.RecordError).Warning() und beide nutzen. epic.go: direktes Box.QueueEpic statt RecordEpic bleibt (RecordEpic ist Teil des epic.Refs-Interfaces, eine Lease-Variante dort wäre mehr Fläche als zwei Zeilen).
+- **2026-11-22 14:45 · Alexander Sacharov** — critique Runde 2: beide Befunde erledigt (lineEnding in gitignore.go, RecordError.Warning in write.go, CLI-Ausgabe unverändert); nichts Neues.

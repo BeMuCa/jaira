@@ -426,12 +426,6 @@ func locked(exclude string, fn func() error) error {
 	return fn()
 }
 
-// appendEntry adds a comment and one pattern to the end of path, after a blank
-// line, creating the file where it does not exist, in the line endings the
-// file already uses. Written whole and renamed into place (ticket.WriteAtomic),
-// so git never reads it half written. A file that exists but cannot be read
-// is an error, never an empty file: writing "nothing + the entry" over it
-// would lose every line a person or git put there.
 // lineEnding is the line ending a file at hand is written in: CRLF where it
 // has any — a Windows checkout with core.autocrlf — so a line jaira adds does
 // not leave the file with mixed endings.
@@ -442,6 +436,12 @@ func lineEnding(s string) string {
 	return "\n"
 }
 
+// appendEntry adds a comment and one pattern to the end of path, after a blank
+// line, creating the file where it does not exist, in the line endings the
+// file already uses. Written whole and renamed into place (ticket.WriteAtomic),
+// so git never reads it half written. A file that exists but cannot be read
+// is an error, never an empty file: writing "nothing + the entry" over it
+// would lose every line a person or git put there.
 func appendEntry(path, comment, line string) error {
 	existing, err := os.ReadFile(path)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
