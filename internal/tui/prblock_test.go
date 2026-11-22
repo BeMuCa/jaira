@@ -12,8 +12,8 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// The board answers pr#<n> from the cache list and next fill and never asks
-// the forge; a ticket waiting only on a pull request has no blocker to open.
+// The board answers pr#<n> from the cache list and next fill, read once per
+// reload, and never asks the forge; a ticket waiting only on a pull request has no blocker to open.
 func TestBoardReadsPRStateFromTheCacheOnly(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	now := time.Now()
@@ -46,8 +46,14 @@ func TestBoardReadsPRStateFromTheCacheOnly(t *testing.T) {
 	if err := os.WriteFile(file, []byte(`{"12":{"state":"merged","at":"2026-11-22T12:00:00Z"}}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	if gate.Actionable(m.gateEnv(), tk) {
+		t.Fatal("the cache is read once per reload, not per render")
+	}
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
 	if !gate.Actionable(m.gateEnv(), tk) {
-		t.Fatal("a merged pull request in the cache must clear the ticket on the board")
+		t.Fatal("after a reload a merged pull request in the cache must clear the ticket on the board")
 	}
 
 	m.selectByID(tk.ID)

@@ -19,13 +19,20 @@ related:
   - 01M263RFEQMYPPT67D40Y5SW81
 commits: []
 created-at: 2026-11-20T16:35:24Z
-updated-at: 2026-11-22T19:52:43Z
+updated-at: 2026-11-22T19:55:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-81804
 claimed-at: 2026-11-22T19:38:55Z
 outcome-what: "blocked-by takes pr#<n>; list/next/move ask gh or glab for the pull request's state (core/pr State + Checker, cached in ~/.jaira/repo/<key>/pr-state.json: merged for good, open/closed 2 min); list shows [waits for PR #12: open], list --json waiting_on, next --json waiting_on_pr; TUI reads the cache only; teamlead skill starts a worker for tickets a merge freed"
 outcome-why: "a dependency on a pull request lived only in the teamlead's notes, so a merged PR freed nothing and the follow-up waited until somebody remembered"
 outcome-resolves: "2EF48S: a ticket can wait for a PR merge and becomes actionable on the next run after it"
+review-summary: |-
+  core/pr/state.go:19-33 repeats the forge/tool/call setup of Read (core/pr/pr.go:113-128: forgeOf, look, classify closure); extract one helper (connect) both call
+  internal/tui/model.go:2005 adds a package-level sync.Map for the cache path and builds a new pr.Checker per gateEnv call; the model already caches derived state lazily in fields reset on reload (m.index, linkIndex) - keep one *pr.Checker on the model the same way, reset where m.index is reset; this also gives gateEnv its doc comment back, which the insertion detached
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Ein Ticket kann auf den Merge eines PR warten, und nach dem Merge startet sein Worker
@@ -78,3 +85,6 @@ outcome-resolves: "2EF48S: a ticket can wait for a PR merge and becomes actionab
 - **2026-11-22 19:41 · Alexander Sacharov** — decisions (worker, settled without the person; disagree at acceptance): (1) form: pr#<n>, case-insensitive, stored as pr#<n> in blocked-by beside ticket ids; anything else after pr# is refused by set/create. (2) source: core/pr from CRASZS, origin's forge (fork -> parent), gh/glab; new light pr.State asks only the state, not the whole PR. (3) cost: one forge call per PR number per process, answers cached in <git-common-dir>/jaira/pr-state.json - merged forever, open/closed for 2 minutes - so list/next stay fast and every worktree shares the answer. (4) acceptance rule: starting work before the PR merged is worse than waiting a round longer - no gh, not signed in, offline, unknown state all keep the ticket waiting, with the reason in the blocker message. (5) a PR closed without merge keeps it waiting and says so (clear blocked-by or reject). (6) TUI reads the cache only, never the network (instant startup). (7) field name is blocked-by (the board's own spelling); the DoD's blocked_by means that field.
 - **2026-11-22 19:47 · Alexander Sacharov** — cache location changed from the first decision note: ~/.jaira/repo/<key>/pr-state.json (Store.RepoStateDir, shared by every worktree of a clone, as the snapshot stamps are) instead of inside .git - jaira already keeps repo-wide state there. Blocker code: gate.CodeWaitsOnPR (exit as blocked on move), list rows '[blocked] [waits for PR #12: open]', list --json waiting_on, next --json waiting_on_pr, next text 'Waiting on a pull request:'. TUI reads the cache only (pr.Checker Offline).
 - **2026-11-22 19:52 · Alexander Sacharov** — self-check before move: concurrency - two processes writing pr-state.json: rename is atomic, last writer wins, a lost entry only costs one forge call; Checker memo is per process, gate calls are sequential, TUI builds one per call. Error paths - forge errors never cached, always 'state unknown (...)' and waiting. Input - pr ref table in core/ticket. Permissions - nothing trusted beyond gh/glab's own answer; cache 0600 via CreateTemp. Every forward move of a ticket carrying pr#n also asks (gate.CheckAdvance -> blockedBy) - cached, so a merged PR costs nothing after the first ask. Side fix in scope: create --blocked-by now resolves handles to full ids like set (it stored them raw and they never cleared).
+- **2026-11-22 19:53 · Alexander Sacharov** — critique (round 1): core/pr/state.go:19-33 repeats the forge/tool/call setup of Read (core/pr/pr.go:113-128: forgeOf, look, classify closure); extract one helper (connect) both call
+internal/tui/model.go:2005 adds a package-level sync.Map for the cache path and builds a new pr.Checker per gateEnv call; the model already caches derived state lazily in fields reset on reload (m.index, linkIndex) - keep one *pr.Checker on the model the same way, reset where m.index is reset; this also gives gateEnv its doc comment back, which the insertion detached
+- **2026-11-22 19:55 · Alexander Sacharov** — critique round 1 answered: core/pr connect() shared by Read and State; TUI keeps one pr.Checker on the model, reset on reload like m.index, cache path computed once per model; gateEnv's doc comment back on gateEnv. TUI test now reloads after writing the cache.

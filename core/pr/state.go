@@ -17,20 +17,9 @@ const stateQuery = `query($owner:String!,$name:String!,$number:Int!){
 // the repository are settled as Read settles them: git config jaira.forge or
 // origin's host, and a fork's parent.
 func State(run Run, look func(string) (string, error), dir string, number int) (string, error) {
-	forge, origin, err := forgeOf(run, dir)
+	forge, origin, call, err := connect(run, look, dir)
 	if err != nil {
 		return "", err
-	}
-	tool := map[string]string{"github": "gh", "gitlab": "glab"}[forge]
-	if _, err := look(tool); err != nil {
-		return "", fmt.Errorf("%w: %s is not installed", ErrNoTool, tool)
-	}
-	call := func(args ...string) ([]byte, error) {
-		out, err := run(dir, tool, args...)
-		if err != nil {
-			return nil, classify(tool, err)
-		}
-		return out, nil
 	}
 	if forge == "github" {
 		return githubState(call, origin, number)

@@ -16,7 +16,6 @@ import (
 	"slices"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 	"unicode"
 
@@ -193,6 +192,11 @@ type Model struct {
 	// card on screen asks the gate whether it is blocked, and rebuilding
 	// this for each of them would list the logbook once per card.
 	index *link.Index
+
+	// prCheck answers blocked-by pr#<n> from the pull request cache, read
+	// once per reload like index; prCacheFile is where that cache lives.
+	prCheck     *pr.Checker
+	prCacheFile string
 
 	// layer is the open milestone layer, nil when it is closed; see layer.go.
 	layer *layerView
@@ -458,6 +462,7 @@ func (m *Model) reload() error {
 	// The relation index is built from the tickets this reload is about to
 	// read, so it goes with them rather than outliving them.
 	m.index = nil
+	m.prCheck = nil
 	// A reload is exactly the moment the git state behind a derived commit
 	// list may have changed — a teammate's commit naming the handle arrives,
 	// the board refreshes, and a stale memo would keep the sign-off screen
@@ -2002,24 +2007,6 @@ func (m *Model) linkIndex() *link.Index {
 // renderDetail) pay nothing extra for the DeriveCommits closure: gate.Ready
 // and gate.Actionable never call it, only CheckAdvance does, and that only
 // runs at the moment a move is actually attempted.
-// prCacheFiles is the pull request cache file per board root.
-var prCacheFiles sync.Map
-
-// prWait answers a blocked-by pr#<n> from the shared cache list and next
-// fill, never from the forge. A fresh checker per call: the cache file is
-// read only when a ticket names a pull request, and a long-running board
-// sees the answer the next command wrote.
-func (m *Model) prWait(n int) gate.PRWait {
-	file, ok := prCacheFiles.Load(m.store.Root)
-	if !ok {
-		// RepoStateDir asks git; a render must not, more than once.
-		file, _ = prCacheFiles.LoadOrStore(m.store.Root, filepath.Join(m.store.RepoStateDir(), pr.CacheFile))
-	}
-	c := &pr.Checker{File: file.(string), Offline: true}
-	a := c.Ask(n)
-	return gate.PRWait{Merged: a.Merged(), Why: a.Why()}
-}
-
 func (m *Model) gateEnv() gate.Env {
 	repo := &gitrepo.Repo{Dir: m.store.Root}
 	return gate.Env{
@@ -2045,6 +2032,22 @@ func (m *Model) gateEnv() gate.Env {
 			return gate.HuntReport(repo.HuntCheck(t))
 		},
 	}
+}
+
+// prWait answers a blocked-by pr#<n> from the shared cache list and next
+// fill, never from the forge. The checker lives until the next reload, so
+// a render reads the cache file at most once, and a long-running board sees
+// what a later command wrote.
+func (m *Model) prWait(n int) gate.PRWait {
+	if m.prCheck == nil {
+		if m.prCacheFile == "" {
+			// RepoStateDir asks git: once per model, not per reload.
+			m.prCacheFile = filepath.Join(m.store.RepoStateDir(), pr.CacheFile)
+		}
+		m.prCheck = &pr.Checker{File: m.prCacheFile, Offline: true}
+	}
+	a := m.prCheck.Ask(n)
+	return gate.PRWait{Merged: a.Merged(), Why: a.Why()}
 }
 
 // applyMove runs the same gate checks and the same core mutation the CLI uses.
