@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -913,8 +914,9 @@ esac
 
 // A repository with an executable .jaira/worktree-setup sets up its own
 // worktrees: spawn.sh calls it with the worktree, the slug, the port offset and
-// the root, and writes no .env of its own. Without one, spawn.sh copies the .env
-// and appends its ports as before. A setup that fails or cannot run stops the
+// the root, and writes no .env of its own. Without one, spawn.sh makes the
+// worktree and nothing else — no .env, no offset — and says so where the root
+// has a .env it used to copy. A setup that fails or cannot run stops the
 // spawn before a tab opens, and leaves no worktree that would skip the setup on
 // the next try.
 func TestSpawnLetsTheRepositorySetUpItsWorktree(t *testing.T) {
@@ -930,7 +932,8 @@ func TestSpawnLetsTheRepositorySetUpItsWorktree(t *testing.T) {
 	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
 
 	// setup is the repository's script, "" for none; mode its permission bits.
-	run := func(t *testing.T, setup string, mode os.FileMode) (root, wt, args, created, out string, err error) {
+	// dotenv puts a .env into the root.
+	run := func(t *testing.T, setup string, mode os.FileMode, dotenv bool) (root, wt, args, created, out string, err error) {
 		t.Helper()
 		base := t.TempDir()
 		root = filepath.Join(base, "repo")
@@ -950,8 +953,10 @@ esac
 		if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(filepath.Join(root, ".env"), []byte("APP=1\n"), 0o644); err != nil {
-			t.Fatal(err)
+		if dotenv {
+			if err := os.WriteFile(filepath.Join(root, ".env"), []byte("APP=1\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
 		}
 		if setup != "" {
 			script := strings.ReplaceAll(setup, "<args>", args)
@@ -980,36 +985,59 @@ esac
 		}
 	}
 
-	// Without a setup: the .env as before, offset and all.
-	_, wt, _, _, out, err := run(t, "", 0)
-	if err != nil {
-		t.Fatalf("spawn.sh without a setup: %v\n%s", err, out)
+	gitDir := func(t *testing.T, wt string) string {
+		t.Helper()
+		gd, err := exec.Command("git", "-C", wt, "rev-parse", "--absolute-git-dir").Output()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return strings.TrimSpace(string(gd))
 	}
-	env, _ := os.ReadFile(filepath.Join(wt, ".env"))
-	for _, want := range []string{"APP=1\n", "# worker stack: slug=ab12cd offset=", "COMPOSE_PROJECT_NAME=repo_ab12cd\n", "HTTP_PORT=", "DB_PORT_HOST=", "DB_PORT_TEST_HOST="} {
-		if !strings.Contains(string(env), want) {
-			t.Errorf("without a setup the worktree's .env lacks %q:\n%s", want, env)
+
+	// Without a setup: the worktree and nothing in it — no .env, no offset, no
+	// offset lock. A root with a .env, which spawn.sh used to copy, hears why
+	// and how to get it back; a root without one has nothing to hear.
+	for _, dotenv := range []bool{true, false} {
+		root, wt, _, created, out, err := run(t, "", 0, dotenv)
+		if err != nil {
+			t.Fatalf("spawn.sh without a setup (.env %v): %v\n%s", dotenv, err, out)
+		}
+		if _, err := os.Stat(created); err != nil {
+			t.Errorf(".env %v: no tab opened without a setup", dotenv)
+		}
+		for _, f := range []string{filepath.Join(wt, ".env"), filepath.Join(gitDir(t, wt), "jaira-offset"), filepath.Join(root, ".git", "jaira-offset.lock")} {
+			if _, err := os.Stat(f); err == nil {
+				t.Errorf(".env %v: without a setup spawn.sh made %s", dotenv, f)
+			}
+		}
+		said := strings.Contains(out, "no longer copies .env") && strings.Contains(out, "worktree-setup.example")
+		if said != dotenv {
+			t.Errorf(".env %v: spawn.sh said why the .env is missing: %v, want %v:\n%s", dotenv, said, dotenv, out)
 		}
 	}
-	_, off, _ := strings.Cut(string(env), "offset=")
-	off, _, _ = strings.Cut(off, "\n")
 
 	t.Run("setup", func(t *testing.T) {
-		root, wt, args, _, out, err := run(t, "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\" > '<args>'\necho 'FROM_SETUP=1' > \"$1/.env\"\necho chatter\n", 0o755)
+		root, wt, args, _, out, err := run(t, "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\" > '<args>'\necho 'FROM_SETUP=1' > \"$1/.env\"\necho chatter\n", 0o755, true)
 		if err != nil {
 			t.Fatalf("spawn.sh: %v\n%s", err, out)
 		}
+		// The only worktree of the repository: the slug's hash says which.
+		ck, err := exec.Command(bash, "-c", "printf '%s' ab12cd | cksum | cut -d' ' -f1").Output()
+		if err != nil {
+			t.Fatal(err)
+		}
+		n, err := strconv.Atoi(strings.TrimSpace(string(ck)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		off := strconv.Itoa(n%40 + 1)
 		got, _ := os.ReadFile(args)
 		// Both paths in the shell's own spelling, never the two mixed.
 		if want := strings.Join([]string{shellDir(t, bash, wt), "ab12cd", off, shellDir(t, bash, root)}, "\n") + "\n"; string(got) != want {
 			t.Errorf("the setup got\n%s\nwant worktree, slug, offset %s and root:\n%s", got, off, want)
 		}
 		// The same four, written down for reap.sh to hand the teardown.
-		gd, gerr := exec.Command("git", "-C", wt, "rev-parse", "--absolute-git-dir").Output()
-		if gerr != nil {
-			t.Fatal(gerr)
-		}
-		rec, _ := os.ReadFile(filepath.Join(strings.TrimSpace(string(gd)), "jaira-setup"))
+		rec, _ := os.ReadFile(filepath.Join(gitDir(t, wt), "jaira-setup"))
 		if want := "worktree=" + shellDir(t, bash, wt) + "\nslug=ab12cd\noffset=" + off + "\nroot=" + shellDir(t, bash, root) + "\n"; string(rec) != want {
 			t.Errorf("spawn.sh recorded\n%s\nwant\n%s", rec, want)
 		}
@@ -1022,7 +1050,7 @@ esac
 	})
 
 	t.Run("failing setup", func(t *testing.T) {
-		root, wt, _, created, out, err := run(t, "#!/usr/bin/env bash\necho 'no docker here' >&2\nexit 3\n", 0o755)
+		root, wt, _, created, out, err := run(t, "#!/usr/bin/env bash\necho 'no docker here' >&2\nexit 3\n", 0o755, true)
 		if err == nil {
 			t.Fatalf("spawn.sh went on past a failed setup:\n%s", out)
 		}
@@ -1043,7 +1071,7 @@ esac
 	// Windows has no execute bit for bash to read: every file passes -x.
 	if runtime.GOOS != "windows" {
 		t.Run("setup not executable", func(t *testing.T) {
-			root, wt, args, created, out, err := run(t, "#!/usr/bin/env bash\ntouch '<args>'\n", 0o644)
+			root, wt, args, created, out, err := run(t, "#!/usr/bin/env bash\ntouch '<args>'\n", 0o644, true)
 			if err == nil {
 				t.Fatalf("spawn.sh went on with a setup it cannot run:\n%s", out)
 			}
@@ -1065,8 +1093,10 @@ esac
 // free one instead. A worktree made before offsets were written down still
 // holds the one its .env names, and a worktree that stands keeps its offset
 // when spawn.sh is run for it again.
-// offsetRepo is a repository with a .env, so spawn.sh hands its worktrees a
-// port offset, and a herdr stub that opens tabs. spawnCmd runs spawn.sh for
+// offsetRepo is a repository with a .env and worktree-setup.example as its
+// .jaira/worktree-setup, so spawn.sh hands its worktrees a port offset and the
+// example writes it into their .env as spawn.sh itself did up to 0.6.1; its
+// path holds a space. It has a herdr stub that opens tabs. spawnCmd runs spawn.sh for
 // a slug; offset reads the offset that slug's worktree got.
 type offsetRepo struct {
 	base, root string
@@ -1088,7 +1118,7 @@ func newOffsetRepo(t *testing.T) offsetRepo {
 	}
 	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
 
-	base := t.TempDir()
+	base := filepath.Join(t.TempDir(), "with space")
 	root := filepath.Join(base, "repo")
 	bin := t.TempDir()
 	herdr := `#!/usr/bin/env bash
@@ -1100,10 +1130,17 @@ esac
 	if err := os.WriteFile(filepath.Join(bin, "herdr"), []byte(herdr), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(root, 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(root, ".env"), []byte("APP=1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	example, err := os.ReadFile(filepath.Join(dir, "jaira-dispatcher", "scripts", "worktree-setup.example"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".jaira", "worktree-setup"), example, 0o755); err != nil {
 		t.Fatal(err)
 	}
 	git := func(args ...string) {
@@ -1164,6 +1201,15 @@ func TestSpawnGivesEveryWorktreeItsOwnOffset(t *testing.T) {
 	spawnSlug("32ttss")
 	if a, b := offset("8r8vts"), offset("32ttss"); a != "6" || b != "7" {
 		t.Errorf("8r8vts and 32ttss got offsets %s and %s, want 6 and 7: 5 is held by twb0r6, then each the next free one", a, b)
+	}
+
+	// The example writes what spawn.sh itself wrote up to 0.6.1, byte for byte.
+	env, err := os.ReadFile(filepath.Join(base, ".worktrees", "repo-8r8vts", ".env"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "APP=1\n\n# worker stack: slug=8r8vts offset=6\nCOMPOSE_PROJECT_NAME=repo_8r8vts\nHTTP_PORT=8086\nDB_PORT_HOST=5512\nDB_PORT_TEST_HOST=5513\n"; string(env) != want {
+		t.Errorf("worktree-setup.example wrote\n%s\nwant\n%s", env, want)
 	}
 
 	spawnSlug("8r8vts")

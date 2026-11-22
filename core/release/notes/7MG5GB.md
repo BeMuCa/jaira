@@ -1,0 +1,3 @@
+- ! spawn.sh no longer copies `.env` into a new worktree or appends `COMPOSE_PROJECT_NAME`, `HTTP_PORT`, `DB_PORT_HOST` and `DB_PORT_TEST_HOST`: without an executable `.jaira/worktree-setup` it makes the worktree and nothing else, and says so on stderr where the repository has a `.env`. To keep the old behaviour, run `install -m 755 <skills>/jaira-dispatcher/scripts/worktree-setup.example .jaira/worktree-setup` (after `jaira update --roles`) and rename its ports to yours.
+- Without `.jaira/worktree-setup`, spawn.sh hands out no port offset any more; with one, it still gets the offset no other worktree holds.
+- `jaira roles install --help` now says that a file you edited is frozen: it gets no later fixes until `--force` puts the built-in one back.

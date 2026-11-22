@@ -50,9 +50,11 @@ is there and executable, called as
 and spawn.sh then writes nothing into the worktree itself. The port offset is
 one no other worktree of the repository holds (0 is the main directory's); a
 worktree keeps it as long as it stands, and with all 40 taken the spawn stops
-before anything is made. Without a setup, a .env in
-the repository is copied and four port lines are appended. A setup that fails,
-or is there but not executable, stops the spawn before a tab opens.
+before anything is made. Without a setup, spawn.sh makes the worktree and
+nothing else: no .env, no ports. worktree-setup.example beside this script is
+what spawn.sh itself wrote up to jaira 0.6.1 — the .env copied, four port lines
+appended — ready to copy into .jaira/worktree-setup. A setup that fails, or is
+there but not executable, stops the spawn before a tab opens.
 Its counterpart is .jaira/worktree-teardown, which reap.sh calls with the same
 four arguments — spawn.sh writes them down in the worktree's git directory,
 as jaira-setup — before it removes the worktree, once the ticket's pull request
@@ -177,12 +179,13 @@ if [ ! -d "$wt" ]; then
   # A repository that knows what its worktrees need says so in an executable
   # .jaira/worktree-setup, and then spawn.sh writes nothing into the worktree
   # itself. One that is there but not executable is a forgotten chmod, not a
-  # repository without setup: falling back to the .env below would hand the
-  # worker the wrong ports without a word. Refused before anything is made.
+  # repository without setup: going on without it would hand the worker a
+  # worktree with no .env and no ports without a word. Refused before anything
+  # is made.
   setup="$root/.jaira/worktree-setup"
   if [ -e "$setup" ] && [ ! -x "$setup" ]; then
     echo "$setup is not executable: chmod +x it, or remove it" \
-         "to have spawn.sh write the worktree's .env itself" >&2
+         "to have spawn.sh make the worktree and set up nothing in it" >&2
     exit 1
   fi
 
@@ -197,10 +200,10 @@ if [ ! -d "$wt" ]; then
   # 32ttss and twb0r6 all the same one — and an offset another worktree of this
   # repository holds is skipped. It stays here even when the repository sets
   # up its own worktree: that two workers never share a stack is the one thing
-  # a single repository's script cannot promise. A repository with neither a
-  # setup nor a .env has no ports, and gets none.
+  # a single repository's script cannot promise. A repository without a setup
+  # has nobody to hand the offset to, and gets none.
   off=""
-  if [ -x "$setup" ] || [ -f "$root/.env" ]; then
+  if [ -x "$setup" ]; then
     common="$(cd "$root" && cd "$(git rev-parse --git-common-dir)" && pwd)"
     # Looking, making the worktree and writing its offset down are one step,
     # or two spawns at once both take the same free offset. It is flock on jaira-offset.lock, held through fd 9 as reap.sh holds its
@@ -295,26 +298,13 @@ if [ ! -d "$wt" ]; then
     rec="$(git -C "$wt" rev-parse --absolute-git-dir)/jaira-setup"
     printf 'worktree=%s\nslug=%s\noffset=%s\nroot=%s\n' "$wt" "$slug" "$off" "$root" > "$rec" \
       || echo "could not write $rec: reap.sh will not call .jaira/worktree-teardown for $wt" >&2
-  # Only a repo that carries a container stack needs its own ports. A repo
-  # without a .env has nothing to offset, and must not fail here.
+  # Up to jaira 0.6.1 spawn.sh copied the .env and appended ports named after
+  # one project. A repository that relied on that would now get a worker
+  # without them in silence: say so, once per worktree, and how to get it back.
   elif [ -f "$root/.env" ]; then
-    cp "$root/.env" "$wt/.env"
-    {
-      echo
-      echo "# worker stack: slug=$slug offset=$off"
-      # Derived from the repository, never a name written in here: a prefix
-      # baked into this script belongs to one project and silently names every
-      # other project's stack after it. Docker takes lower case only, so the
-      # name is folded before it is cleaned — a jaira slug is upper case, and
-      # `docker compose` refuses the whole stack over a single capital. printf
-      # rather than echo: the newline echo appends is a character like any
-      # other to tr, and would come back as a trailing underscore.
-      echo "COMPOSE_PROJECT_NAME=$(printf '%s_%s' "$(basename "$root")" "$slug" \
-        | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '_')"
-      echo "HTTP_PORT=$((8080 + off))"
-      echo "DB_PORT_HOST=$((5500 + off * 2))"
-      echo "DB_PORT_TEST_HOST=$((5501 + off * 2))"
-    } >> "$wt/.env"
+    echo "spawn.sh no longer copies .env into a worktree: $wt has none." \
+         "To get it back as before, install -m 755" \
+         "\"$(cd "$(dirname "$0")" && pwd)/worktree-setup.example\" \"$setup\" and adapt it" >&2
   fi
 fi
 

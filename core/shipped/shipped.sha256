@@ -624,6 +624,7 @@ e2a39ae0f4e9ac95115f99d3de737c938bf2a317528b396b7de9e26232c72054  core/role/buil
 7bda6b65f477f66af51d64a64ddc156b03d0f046fd1fb58ba04dd1c04136c858  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 7dae0e70b3a516ee2fc5cd9605d1d704160889688c3483f5a5308ea8901a7441  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 81a86339081e192dad7969a9084e7671585da97c2224a8ea8d9519c9b61e1c1c  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
+85267baef43a067aec3e6d01ac8a61ec233121afe6d4f95797b3838a95a4f241  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 86319baf96f2e0ccf5a65c3105d14655cd55ee59359880af1ec8ed565e0263f9  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 8803b382f9d6cfda32f75a31aae26bbfe68d9f048571c44cbc02a21285611be2  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 8c8ee50d61743bbd5e34b3e3dc4f10a42bd5f42ab8577b332e33f8b79adf4814  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
@@ -655,6 +656,7 @@ f51cc6f05021f5c82ecfb25833f7518a3c4a8455f43175070bf7d52348aca454  core/role/buil
 f99828571d42f11692afcb1531049bfdd28015c39abe1a4b3f260a2a655d2416  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 fdeacaf618a20237298fa33c66a259a9e8757085e4b71ae3779ce6eb027c5879  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
 a5e85fe6229c6ac419240ce9eb4ba56a7ace38e7d160cd7100145c165b3f02a5  core/role/builtin/jaira-dispatcher/scripts/uncommitted.sh
+406889830e8c88ecd5ce6ba1dc5bf76376bd4658c412f31537e407d38b718413  core/role/builtin/jaira-dispatcher/scripts/worktree-setup.example
 25d2736b0efd8ad918110f01713114d7dde88973b93810a4907ec650dd5bba22  core/role/builtin/jaira-role-acceptance/SKILL.md
 4c7b5e84c2d68b49d52df5af52623ba23dfeaea2cec80ea897a687608e30db71  core/role/builtin/jaira-role-acceptance/SKILL.md
 5961261ed1245eac9b68b196924cc7247926f19bdbf2be4ad55c5974fb95e477  core/role/builtin/jaira-role-acceptance/SKILL.md
