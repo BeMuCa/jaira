@@ -631,7 +631,7 @@ func TestPRGateMergesOnlyWhereTheBaseSaysAgentAndEveryTicketIsDone(t *testing.T)
 		wantReason string // "" means exit 0
 	}{
 		{name: "no file", status: "done", wantReason: "does not say agent"},
-		{name: "agent only on the branch's disk", onDisk: "agent", status: "done", wantReason: "does not say agent"},
+		{name: "agent only on the branch's disk", onDisk: "agent", status: "done", wantReason: "says agent here, but not in master"},
 		{name: "typo", land: "agnet", status: "done", wantReason: "does not say agent"},
 		{name: "person", land: "person", status: "done", wantReason: "does not say agent"},
 		{name: "agent, ticket in signoff", land: "agent", status: "signoff", wantReason: "(signoff); hand the merge line back"},

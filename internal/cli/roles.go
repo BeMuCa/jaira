@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -142,7 +143,7 @@ func newRolesPRGateCmd() *cobra.Command {
 	var land, merge bool
 	cmd := &cobra.Command{
 		Use:   "pr-gate <base>",
-		Short: "Say whether an agent may open this branch's pull request",
+		Short: "Say whether an agent may open, land or merge this branch's pull request",
 		Long: `Says whether an agent may open the pull request of the checked-out branch
 against <base> — the default branch of the repository it goes to, as
 <remote>/<branch>. Exit 0 only when .jaira/pr says agent or none in <base> itself, at
@@ -212,6 +213,12 @@ pending, and the person merges. --json carries may_merge and tickets.`,
 			var pr, then string
 			if merge {
 				if !settings.LandIn(repo.FileAt(args[0], settings.BoardLandPath("."))) {
+					// Agent on this checkout's disk only is a file not yet
+					// committed on the base, as for pr_person below.
+					if b, err := os.ReadFile(settings.BoardLandPath(s.Root)); err == nil && settings.LandIn(string(b)) {
+						return fail(ExitValidation, "not_agent",
+							"pr-gate --merge: .jaira/land says agent here, but not in %s — it takes effect once it is committed there; until then a person merges; hand the merge line back", args[0])
+					}
 					return fail(ExitValidation, "not_agent",
 						"pr-gate --merge: .jaira/land in %s does not say agent — a person merges; hand the merge line back", args[0])
 				}
