@@ -1137,6 +1137,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.announceMilestones(msg.milestones, msg.merged)
 		m.announceArrivals(msg.arrivals)
+		if re := msg.warn; re != nil {
+			// The same words as 'jaira fetch': without them the board retries
+			// every few minutes in silence while the person believes the
+			// milestone reaches their teammates.
+			m.notify(fmt.Sprintf("milestone %q was written here but could not be queued for the remote: %v", re.Name, re.Err), true)
+		}
 		_ = m.reload()
 		return m, nil
 
