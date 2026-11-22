@@ -17,14 +17,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T18:21:19Z
-updated-at: 2026-11-22T19:32:08Z
+updated-at: 2026-11-22T19:34:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3443254
 claimed-at: 2026-11-22T19:28:38Z
 outcome-what: "Every milestone write — create, add, rm, set, rename, and logbook/restore of a milestone — refuses with exit 3 (milestone_twin_files) naming both files when one milestone ID lies in two files"
 outcome-why: "After a rename, a stale old copy beside a hand-edited file under the new name stayed on disk unseen and the next write read whichever file sorted first"
 outcome-resolves: 8TT890
-review-summary: "New milestone.CheckTwinFiles scans .jaira/milestones for one ID carried by more than one ID-named file (case-only duplicates count once, old-format files are left to Migrate) and returns a TwinFilesError naming both files. It runs under the milestone lock after catch-up and Migrate in core lockAndMigrate (so Create/Edit/Rename from CLI and TUI) and in the CLI's migrateHeld (so logbook and restore of a milestone, and the pre-lock migrate of create/edit/rename). cli.report now goes through classify, which maps TwinFilesError to exit 3, reason milestone_twin_files. Restore that hits the refusal renames the restored file back into the logbook. Catch-up itself is unchanged: it still removes an old copy that matches the ref and leaves a hand-edited twin, which now makes the next write refuse instead of silently picking the first file. Release note added."
+review-summary: "internal/cli/archive.go:184 parses res.Moved's display string ('old -> new') to find the restored file; where the ID file already exists Migrate only removes the old file and still lists it, so the rollback would move a board file (possibly a twin) into the logbook and lose the restored content. Simpler: run milestone.CheckTwinFiles in unfileMilestone before migrateHeld, so a pair already on the board refuses before anything is migrated and dst->src is the whole rollback; drop the Moved parsing"
 review-gaps: |-
   note: internal/cli/archive.go:183 - restore rollback renames dst back to src, but Migrate inside migrateHeld may already have moved an old-format dst to <name>-<newID>.md, so the rollback misses and the file stays on the board marked filed with no logbook copy (bughunt 19:18); fix: run CheckTwinFiles before RestoreFrom moves the file, or roll back the path in res.Moved
   note: internal/cli/archive.go:181 comment says the restored file is one of the two twins - it need not be (an unrelated pre-existing pair refuses too); rollback is still right, reword the comment
@@ -32,9 +32,9 @@ review-gaps: |-
   note: refsync.go:571 background Migrate/mergeRefused does not run CheckTwinFiles - next person-facing write refuses, so no wrong result, only a delayed one
 test-verdict: "pass: round 2 — go test ./... RC=0 and go vet ./... at b6a0154bc; -race on core/milestone + internal/cli milestone/logbook/restore tests RC=0. Built binary on a scratch board: logbook q4 beside q5-<ID>.md rc=3 naming both, both files stay unfiled; without the twin logbook rc=0; restore of the filed q4-<ID>.md beside a board a1-<ID>.md rc=3, q4 back in the logbook still filed, board keeps a1 only. DoD 1-3 re-checked; round-1 rename/normal-case results stand."
 hunt-verdict: "pass: bughunt done at b6a0154bc, 1 change (not a blocker: restore of an old-format q4.md beside a twin pair misses its give-back because Migrate renamed the file first — its bughunt note stands for review and the person), 0 pre-existing"
-round: 3
-back-from: signoff
-back-by: person
+round: 4
+back-from: critique
+back-by: lane
 back-count: 1
 review-verdict: "accept: all three DoD items hold - every milestone write path (core Create/Edit/Rename via lockAndMigrate, CLI logbook/restore via migrateHeld) refuses one ID in two files with exit 3 naming both; the normal rename catch-up tests stay green; release note present. go test ./core/milestone ./core/refsync ./internal/cli green. Open findings are narrow edges, not blockers."
 review-round: 2
@@ -57,7 +57,7 @@ review-check: "1. go build -o /tmp/j ./cmd/jaira (from the worktree)  2. in a sc
 - [x] Release-Note core/release/notes/<ID>.md
   proof: core/release/notes/8TT890.md
 - [x] Restore einer alten Milestone-Datei ohne ID (q4.md) neben einem Zwilling: die Datei liegt danach wieder im Logbook, filed, nicht auf dem Board (Test)
-  proof: internal/cli/archive.go unfileMilestone rollback follows res.Moved; TestRestoreOfAnOldFormatFileBesideATwinGoesBackToTheLogbook (red without the fix)
+  proof: internal/cli/archive.go unfileMilestone runs milestone.CheckTwinFiles before migrateHeld; TestRestoreOfAnOldFormatFileBesideATwinGoesBackToTheLogbook (internal/cli/milestones_test.go)
 
 ## Options
 
@@ -88,3 +88,5 @@ angenommen:
 - note: refsync.go:571 background Migrate/mergeRefused does not run CheckTwinFiles - next person-facing write refuses, so no wrong result, only a delayed one
 - **2026-11-22 19:28 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
 - **2026-11-22 19:32 · Alexander Sacharov** — in-progress round 3 (give-back): rollback in unfileMilestone now renames from the path Migrate moved dst to (res.Moved 'old -> new'), not dst; comment reworded (the restored file need not be one of the twins). Chose this over running CheckTwinFiles before RestoreFrom: that would refuse ticket restores too whenever the board has a twin pair, and the twins are only known after catch-up/Migrate. Other migrateHeld errors (archive.go, pre-existing stranding) left as they were — not asked for.
+- **2026-11-22 19:32 · Alexander Sacharov** — critique round 3: internal/cli/archive.go:184 parses res.Moved's display string ('old -> new') to find the restored file; where the ID file already exists Migrate only removes the old file and still lists it, so the rollback would move a board file (possibly a twin) into the logbook and lose the restored content. Simpler: run milestone.CheckTwinFiles in unfileMilestone before migrateHeld, so a pair already on the board refuses before anything is migrated and dst->src is the whole rollback; drop the Moved parsing
+- **2026-11-22 19:34 · Alexander Sacharov** — in-progress round 4: critique finding applied - twin check before migrateHeld in unfileMilestone, Moved parsing dropped. Residual: a twin that only catch-up creates (inside migrateHeld) beside an old-format restored file still cannot be rolled back (rename fails loudly, joined into the error) - needs a ref rename racing a hand copy, left.

@@ -174,21 +174,22 @@ func unfileMilestone(s *ticket.Store, src, dst string) (string, error) {
 		return "", nil
 	}
 	name, id, _ := milestone.FileIdentity(strings.TrimSuffix(filepath.Base(dst), ".md"))
-	moved, err := migrateHeld(s)
-	reportMigrated(moved)
+	// A pair already on the board refuses before Migrate can move an
+	// old-format restored file to its ID name, or remove it as the older
+	// side of an ID file that is there: dst is then still where the restore
+	// put it, and moving it back leaves the board as it found it. migrateHeld
+	// checks again after its catch-up.
+	err := milestone.CheckTwinFiles(s.Root)
+	if err == nil {
+		var moved []string
+		moved, err = migrateHeld(s)
+		reportMigrated(moved)
+	}
 	var twin *milestone.TwinFilesError
 	if errors.As(err, &twin) {
-		// The refusal leaves the board as it found it: the restored file goes
-		// back to the logbook whether or not it is one of the two. An
-		// old-format file has been moved to its ID name by now, so it goes
-		// back from there.
-		here := dst
-		for _, m := range moved {
-			if target, ok := strings.CutPrefix(m, filepath.Base(dst)+" -> "); ok {
-				here = filepath.Join(filepath.Dir(dst), target)
-			}
-		}
-		if back := os.Rename(here, src); back != nil {
+		// The restored file goes back to the logbook whether or not it is
+		// one of the two.
+		if back := os.Rename(dst, src); back != nil {
 			return "", errors.Join(err, back)
 		}
 		return "", fmt.Errorf("%w; %s stays in %s", err, filepath.Base(src), filepath.Dir(src))
