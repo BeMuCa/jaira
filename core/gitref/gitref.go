@@ -590,13 +590,8 @@ func (r *Repo) ReadMany(ids []string) (map[string][]byte, error) {
 // ListHashes is List with the commit each ref points at, in one git invocation.
 // A ref's commit hash is its content's address, so a caller that remembers the
 // hash it last decoded knows without reading anything whether the ticket changed.
-func (r *Repo) ListHashes() (map[string]string, error) { return r.hashesUnder(Prefix) }
-
-// MilestoneHashes is ListHashes for the milestone refs: key to commit hash.
-func (r *Repo) MilestoneHashes() (map[string]string, error) { return r.hashesUnder(MilestonePrefix) }
-
-func (r *Repo) hashesUnder(prefix string) (map[string]string, error) {
-	out, err := r.value("for-each-ref", "--format=%(objectname) %(refname)", prefix)
+func (r *Repo) ListHashes() (map[string]string, error) {
+	out, err := r.value("for-each-ref", "--format=%(objectname) %(refname)", Prefix)
 	if err != nil {
 		return nil, err
 	}
@@ -606,7 +601,7 @@ func (r *Repo) hashesUnder(prefix string) (map[string]string, error) {
 		if !ok {
 			continue
 		}
-		if name := strings.TrimPrefix(ref, prefix); name != ref && name != "" {
+		if name := strings.TrimPrefix(ref, Prefix); name != ref && name != "" {
 			hashes[name] = hash
 		}
 	}

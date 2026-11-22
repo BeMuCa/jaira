@@ -80,13 +80,10 @@ type Syncer struct {
 	// hour ago says nothing about the milestones made since.
 	fetched atomic.Bool
 
-	// msMu guards msBefore: the milestone refs' tips as they stood right
-	// before the last fetch, nil when this process has not fetched. A ref
-	// whose tip is the same after the fetch did not move, so a file that
-	// differs from it holds an edit made here, not an old state (see
-	// IncomingMilestones).
-	msMu     sync.Mutex
-	msBefore map[string]string
+	// syncedMu orders the reads and writes of milestone-synced.json (see
+	// markSynced) within this process; across processes the milestone lock
+	// or the outbox order them.
+	syncedMu sync.Mutex
 
 	// extraMu guards extraCache: the decoded ticket of each ref-only ticket,
 	// with the commit hash it was decoded from. A hash is a content address, so
@@ -423,10 +420,13 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 		// behind a teammate's write, and keeping it would put it back over
 		// theirs.
 		if haveErr == nil && milestone.IsID(key) && !bytes.Equal(have, content) &&
-			!y.movedByFetch(key, sha) && !y.Repo.MilestoneHad(key, have) {
+			y.syncedAt(key) == sha && !y.Repo.MilestoneHad(key, have) {
 			continue
 		}
 		if haveErr == nil && bytes.Equal(have, content) {
+			if milestone.IsID(key) {
+				y.markSynced(key, sha)
+			}
 			if err := removeOthers(true); err != nil {
 				return wrote, filed, renamed, conflicts, err
 			}
@@ -444,6 +444,9 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 		}
 		if err := ticket.WriteAtomic(path, content); err != nil {
 			return wrote, filed, renamed, conflicts, err
+		}
+		if milestone.IsID(key) {
+			y.markSynced(key, sha)
 		}
 		if err := removeOthers(true); err != nil {
 			return wrote, filed, renamed, conflicts, err
@@ -484,7 +487,7 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 		if !d.IDNamed || y.pendingMilestone(d.ID) {
 			continue
 		}
-		file, content, _, err := y.Repo.ReadMilestone(d.ID)
+		file, content, sha, err := y.Repo.ReadMilestone(d.ID)
 		if err != nil || milestone.FromBytes(file, content).ID != d.ID {
 			continue // no ref for it yet, or one that is not this milestone's
 		}
@@ -511,6 +514,7 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 		if err := ticket.WriteAtomic(dst, content); err != nil {
 			return err
 		}
+		y.markSynced(d.ID, sha)
 		// Renamed on the ref since: the old name is the same milestone.
 		if renamed {
 			if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
@@ -521,13 +525,56 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 	return nil
 }
 
-// movedByFetch reports whether the last fetch moved the milestone ref key to
-// sha. Without a snapshot from a fetch of this syncer it cannot tell, and
-// answers yes: the ref wins, as it did before there was a snapshot.
-func (y *Syncer) movedByFetch(key, sha string) bool {
-	y.msMu.Lock()
-	defer y.msMu.Unlock()
-	return y.msBefore == nil || y.msBefore[key] != sha
+// syncedPath is where this working tree records, per milestone ID, the tip of
+// the ref its file last agreed with: beside the outbox, because the files are
+// per working tree while the refs are shared by all of them.
+func (y *Syncer) syncedPath() string {
+	if y.Store == nil {
+		return ""
+	}
+	return filepath.Join(y.Store.StateDir(), "milestone-synced.json")
+}
+
+// syncedAt is the ref tip the milestone file with this ID last agreed with
+// here, "" when none was recorded.
+func (y *Syncer) syncedAt(id string) string {
+	y.syncedMu.Lock()
+	defer y.syncedMu.Unlock()
+	return y.loadSynced()[id]
+}
+
+func (y *Syncer) loadSynced() map[string]string {
+	m := map[string]string{}
+	if p := y.syncedPath(); p != "" {
+		if b, err := os.ReadFile(p); err == nil {
+			_ = json.Unmarshal(b, &m)
+		}
+	}
+	return m
+}
+
+// markSynced records that the file of milestone id agrees with its ref at
+// sha: a fetch found them equal or wrote the ref into the file, or a write of
+// the file was sent and became that tip. A file that differs from its ref
+// later, while the tip is still sha, was edited here since; a tip that moved
+// on came from somewhere else — another worktree, a teammate — whatever
+// fetch brought it. Best effort: without the record the ref wins, as before.
+func (y *Syncer) markSynced(id, sha string) {
+	p := y.syncedPath()
+	if p == "" || sha == "" {
+		return
+	}
+	y.syncedMu.Lock()
+	defer y.syncedMu.Unlock()
+	m := y.loadSynced()
+	if m[id] == sha {
+		return
+	}
+	m[id] = sha
+	if b, err := json.Marshal(m); err == nil {
+		_ = os.MkdirAll(filepath.Dir(p), 0o755)
+		_ = ticket.WriteAtomic(p, append(b, '\n'))
+	}
 }
 
 // pendingMilestone reports whether a write of this milestone is queued, under
@@ -676,13 +723,6 @@ func (y *Syncer) OldRefHad(name string, content []byte) bool {
 
 // fetch is Repo.Fetch, remembering whether it reached the remote.
 func (y *Syncer) fetch() error {
-	before, herr := y.Repo.MilestoneHashes()
-	if herr != nil {
-		before = nil
-	}
-	y.msMu.Lock()
-	y.msBefore = before
-	y.msMu.Unlock()
 	err := y.Repo.Fetch()
 	y.fetched.Store(err == nil)
 	return err
@@ -874,6 +914,11 @@ func (y *Syncer) Flush() ([]Report, error) {
 			r = y.rebaseEpic(r)
 		}
 		rep := Report{Result: r}
+		if r.Outcome == outbox.Sent && r.Kind == outbox.KindMilestone {
+			if sha, err := y.Repo.MilestoneSHA(r.ID); err == nil {
+				y.markSynced(r.ID, sha)
+			}
+		}
 		if r.Outcome == outbox.Rejected && r.Kind == outbox.KindMilestone {
 			if e, ok := queued[r.ID]; ok {
 				rep.Merged, rep.Conflicts = y.mergeRefused(e)

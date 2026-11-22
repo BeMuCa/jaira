@@ -386,3 +386,42 @@ func TestARenameInCaseOnlyKeepsTheFileOnBothSides(t *testing.T) {
 		t.Fatalf("grace's milestone is called %q, want Q4", got.Name)
 	}
 }
+
+// The record is what decides, not which fetch moved the ref: a teammate's
+// write that an earlier fetch already brought in (a flush, the board's
+// Incoming, another worktree) still beats a hand edit, so the next write here
+// does not put the edit over theirs.
+func TestAHandEditLosesToARefMovedByAnEarlierFetch(t *testing.T) {
+	ada, grace, _ := twoSides(t)
+	ms, err := milestone.Create(ada.store.Root, ada.store, ada.syncer, func([]*milestone.Milestone) (*milestone.Milestone, error) {
+		return milestone.New("q4", 45, time.Now()), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+	addTo(t, ada, "q4", tkA)
+	fetchAt(t, grace)
+	path := filepath.Join(milestone.Dir(grace.store.Root), ms.FileName())
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, append(b, []byte("<!-- grace by hand -->\n")...), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	addTo(t, ada, "q4", tkB)
+	// Two fetches: the first moves the ref, the second sees it standing.
+	if !grace.syncer.FetchRefs() || !grace.syncer.FetchRefs() {
+		t.Fatal("fetch did not reach the remote")
+	}
+	if _, err := grace.syncer.FetchMilestones(grace.store); err != nil {
+		t.Fatal(err)
+	}
+	addTo(t, grace, "q4", tkC)
+	if got, want := refMembers(t, grace, ms.ID), []string{tkA, tkB, tkC}; !slices.Equal(got, want) {
+		t.Fatalf("ref holds %v, want %v: the hand edit was written over ada's add", got, want)
+	}
+}
