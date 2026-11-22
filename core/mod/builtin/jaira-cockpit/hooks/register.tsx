@@ -628,11 +628,15 @@ async function accept($: EngineInterface, w: Waiting, after?: (dir: string) => P
 // is settled. So Accept there does one of three things before any move: no
 // pull request yet — it starts the pr lane and the ticket stays in signoff;
 // one open and not settled — it says what is in the way and moves nothing;
-// settled, merged or closed — it accepts as everywhere else. Another ticket
-// on the branch not in signoff yet, or a forge that cannot be asked, holds it
-// too: done would otherwise pass a review nobody could see. Answers whether
-// it held the ticket. A board saying done, a .jaira/pr saying none, and a
-// board without a signoff lane before done are not touched.
+// settled — it accepts as everywhere else. Another ticket on the branch not
+// in signoff yet, or a forge that cannot be asked, holds it too: done would
+// otherwise pass a review nobody could see. Known limit: a pull request
+// merged or closed while its branch is still ahead of the base (a squash
+// merge, an origin not fetched) is held as well — the forge still lists it,
+// jaira pr shows none open, and which it is a person tells: they move the
+// ticket by hand. Answers whether it held the ticket. A board saying done, a
+// .jaira/pr saying none, a board without a signoff lane before done, and a
+// board whose pr-when cannot be read are not touched.
 async function heldInSignoff($: EngineInterface, w: Waiting): Promise<boolean> {
   if (!board || w.acceptTo === null) return false
   const b = board
@@ -640,11 +644,11 @@ async function heldInSignoff($: EngineInterface, w: Waiting): Promise<boolean> {
     await fail($, `${t.accept} ${w.id}`, `${why}\n${t.staysInLane(w.id, w.lane)}`)
     return true
   }
-  // Unread is not "done": a board whose pr-when cannot be read might say
-  // signoff, and done would then pass its review round unseen.
+  // A pr-when that cannot be read counts as done (decided 22.11.): Accept
+  // runs on every board, and a broken roles read must not stop every Accept
+  // everywhere for the few boards that say signoff.
   const roles = await run($, ['jaira', 'roles', 'list', '--json'], b.dir, 30_000)
-  if (roles?.exitCode !== 0) return hold(`jaira roles list: ${output(roles)}`)
-  if (prWhenOf(roles.stdout) !== 'signoff') return false
+  if (roles?.exitCode !== 0 || prWhenOf(roles.stdout) !== 'signoff') return false
   const lanes = await run($, ['jaira', 'lanes', '--json'], b.dir)
   if (lanes?.exitCode !== 0) return hold(`jaira lanes: ${output(lanes)}`)
   const arrived = lanesBetween(lanes.stdout, 'signoff', w.acceptTo)

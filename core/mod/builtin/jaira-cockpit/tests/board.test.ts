@@ -3979,13 +3979,13 @@ describe('following a pull request (CRASZS)', () => {
       expect(moved(w)).toEqual([])
     })
 
-    test('pr-when that cannot be read holds the ticket: unread is not done', async ($, on) => {
+    test('pr-when that cannot be read counts as done: Accept moves the ticket as on any board', async ($, on) => {
       const w = world(on, { herdr: true })
       w.rolesFails = true
       w.ahead = 3
       await press($)
-      expect(moved(w)).toEqual([])
-      expect(await paneText($)).toContain('jaira roles list: jaira: base unreadable')
+      expect(moved(w)).toHaveLength(1)
+      expect(ran(w, 'jaira', 'pr')).toEqual([])
     })
 
     test('a forge that cannot be asked holds the ticket too, and says why', async ($, on) => {
