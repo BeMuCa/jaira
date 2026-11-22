@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 )
 
 // LockName keys the store lock every milestone write is made under. One name
@@ -68,6 +69,61 @@ type ExistsError struct {
 }
 
 func (e *ExistsError) Error() string { return fmt.Sprintf("milestone %q already exists", e.Name) }
+
+// TwinFilesError is the refusal of every milestone write while one ID lies
+// here in more than one file named after it — what a rename leaves behind
+// when the copy under the old name fell behind its ref and the file under the
+// new name was edited by hand (8TT890). Which of them is the milestone is a
+// person's call: a write would read whichever file sorts first and put it on
+// the ref, and the other would lie there unseen.
+type TwinFilesError struct {
+	ID    string
+	Files []string // the base names, sorted (os.ReadDir's order)
+}
+
+func (e *TwinFilesError) Error() string {
+	return fmt.Sprintf("milestone %s lies in %d files here: %s — nothing was written; "+
+		"keep the one that is the milestone, delete the other, and run it again",
+		e.ID, len(e.Files), strings.Join(e.Files, " and "))
+}
+
+// CheckTwinFiles is a *TwinFilesError for the first ID that more than one
+// file named after it carries. Two names for one file where the file system
+// ignores case are one file and listed once; an old-format file without an ID
+// is Migrate's and not looked at. lockAndMigrate runs it for every write
+// through Edit, Create and Rename; a command that takes the milestone lock
+// itself (the CLI's logbook and restore) runs it the same way.
+func CheckTwinFiles(root string) error {
+	entries, err := os.ReadDir(Dir(root))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	byID := map[string][]string{}
+	var order []string
+	for _, e := range entries {
+		base, ok := strings.CutSuffix(e.Name(), ".md")
+		if !ok || e.IsDir() {
+			continue
+		}
+		_, id, idNamed := FileIdentity(base)
+		if !idNamed {
+			continue
+		}
+		if len(byID[id]) == 0 {
+			order = append(order, id)
+		}
+		byID[id] = append(byID[id], e.Name())
+	}
+	for _, id := range order {
+		if files := byID[id]; len(files) > 1 {
+			return &TwinFilesError{ID: id, Files: files}
+		}
+	}
+	return nil
+}
 
 // Edit is the one write path for a milestone that exists: lock, read, let fn
 // change it, save atomically, record the ref. The CLI and the board both
@@ -172,6 +228,13 @@ func lockAndMigrate(root string, lock Locker, rec Recorder) (func(), error) {
 			unlock()
 			return nil, err
 		}
+	}
+	// After the catch-up, which removes an old copy beside a renamed file
+	// when that file is the ref, and after Migrate, which moves old files to
+	// their IDs: what is still doubled here is for a person to sort out.
+	if err := CheckTwinFiles(root); err != nil {
+		unlock()
+		return nil, err
 	}
 	return unlock, nil
 }

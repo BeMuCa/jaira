@@ -136,6 +136,11 @@ restore fails with it rather than reporting a milestone nobody can see.`,
 			}
 			defer unlock()
 
+			if s.RestoresMilestone(args[0]) {
+				if err := checkMilestoneRestore(s, args[0]); err != nil {
+					return err
+				}
+			}
 			src, dst, err := s.RestoreFrom(args[0])
 			if err != nil {
 				return &codedError{code: ExitNotFound, reason: "not_archived", message: err.Error()}
@@ -151,6 +156,56 @@ restore fails with it rather than reporting a milestone nobody can see.`,
 			return nil
 		},
 	}
+}
+
+// checkMilestoneRestore refuses a milestone restore before the file leaves
+// the logbook, so a refusal has nothing to put back (8TT890). The catch-up
+// runs first, as in every milestone write: it clears a stale copy beside a
+// renamed file itself. Then one ID in two files on the board refuses, and so
+// does a board file that already carries the restored file's ID under any
+// name — the restore would make that pair itself, or Migrate would drop an
+// old-format file as the older side of it.
+//
+// The caller holds milestoneLockName.
+func checkMilestoneRestore(s *ticket.Store, name string) error {
+	if err := refs.CatchUpMilestones(s.Root); err != nil {
+		return err
+	}
+	if err := milestone.CheckTwinFiles(s.Root); err != nil {
+		return err
+	}
+	// By file name, as CheckTwinFiles looks: a file that cannot be read is
+	// still a file of that ID, and the pair it makes would refuse only after
+	// the move.
+	base := filepath.Base(name)
+	_, id, _ := milestone.FileIdentity(strings.TrimSuffix(base, ".md"))
+	entries, err := os.ReadDir(milestone.Dir(s.Root))
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	for _, e := range entries {
+		b, ok := strings.CutSuffix(e.Name(), ".md")
+		if !ok || e.IsDir() {
+			continue
+		}
+		// An old-format file (<name>.md) counts with the ID its name gives:
+		// Migrate would keep the restored copy and drop it.
+		_, other, idNamed := milestone.FileIdentity(b)
+		if other != id {
+			continue
+		}
+		// A `renamed-to:` marker does not: it is no milestone, and Migrate
+		// only deletes it.
+		if !idNamed {
+			c, err := os.ReadFile(filepath.Join(milestone.Dir(s.Root), e.Name()))
+			if err == nil && milestone.RenamedTo(c) != "" {
+				continue
+			}
+		}
+		return &codedError{code: ExitNotFound, reason: "not_archived",
+			message: fmt.Sprintf("%s is already on the board as %s", base, e.Name())}
+	}
+	return nil
 }
 
 // unfileMilestone takes the "filed" line back off a milestone that has just
