@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { languageOf, lightOf, rephrasedOf, rephrasePrompt, snapshotOf, type Waiting } from '../hooks/board.ts'
+import { carrierFor, clipLines, commitNaming, commitsOf, executionOf, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, rephrasePrompt, snapshotOf, storyOf, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -36,6 +36,19 @@ type World = {
   prompts: string[]
   // The cheap model gives no answer: offline, or the call failed.
   modelDown?: boolean
+  // The Acceptance pane's head calls and Explain-on-one-note calls, and what
+  // each answers; undefined: no answer.
+  headPrompts: string[]
+  head?: string
+  reasonPrompts: string[]
+  reason?: string
+  // What `jaira show --json` adds for a ticket beyond its body and lane, and
+  // what `git log --format=%h --name-only --grep=<id>` prints.
+  shows: Record<string, Record<string, unknown>>
+  idLog: string
+  // What \`git log -p\` prints; what a move to in-progress fails with.
+  patches?: string
+  moveFails?: string
   // When set, every cheap-model call waits here, in order, answering with
   // what w.model held when it was made.
   modelHeld?: (() => void)[]
@@ -109,20 +122,36 @@ type World = {
   noRoom?: boolean
   // When set, every `herdr tab list` waits here until the test lets it go.
   heldTabs?: (() => void)[]
+  // spawn.sh calls wait here until released, as one waiting for claude does.
+  heldSpawn?: (() => void)[]
   // `git worktree list --porcelain`, WORKTREES unless set.
   worktrees?: string
   // `jaira create` of a follow-up fails.
   createFails?: boolean
   // Another session's move came first: jaira answers this one 'already in'.
   movedFirst?: boolean
+  // .jaira/pr-when as `jaira roles list --json` reports it; done unless set.
+  prWhen?: string
+  // What each `jaira pr <branch> --json` answers, in turn, the last one
+  // repeating; '!' + text fails with exit 3, '?' + text with exit 1.
+  // { prs: [] } when empty.
+  prReads: string[]
+  // `jaira roles list --json` fails.
+  rolesFails?: boolean
   // Where MG677R's file is not as its ref has it, by directory ('@/...'):
   // none there ('ref-only') or an older one ('behind'), until `jaira pull`
   // there brings it. Every write there is refused, as jaira refuses it.
   disk: Record<string, 'ref-only' | 'behind'>
+  // The ticket `disk` speaks of; MG677R where unset.
+  diskId?: string
+  // What spawn.sh fails with; undefined: it opens its tab.
+  spawnFails?: string
   // What `jaira pull` refuses with; undefined: it pulls.
   pullFails?: string
   // What `git clean` refuses with; undefined: it removes the file.
   cleanFails?: string
+  // Parents spawn.sh refuses as no session listening there (exit 2).
+  deadParents?: string[]
 }
 
 const LANES = {
@@ -141,14 +170,10 @@ const HUMAN = { handle: 'K7P2QX', title: 'tags popup', status: 'human', next_lan
 const WORKING = { handle: 'T8QS1Y', title: 'filter', status: 'in-progress', question: '', review: {} }
 
 const OLDER = "jaira: this board was set up by an older version of jaira — run 'jaira update' to bring it up to date"
-const GIVE = (title: string) =>
-  ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-give-back', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as const
 const EXPLANATION = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-explanation', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 const ANSWER = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-answer', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
-const VERDICT = (title: string) =>
-  ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-verdict', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 const MESSAGE = (title: string) =>
   ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-message', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }) as never
 
@@ -159,7 +184,11 @@ const SPAWN = '/repo/.claude/skills/jaira-dispatcher/scripts/spawn.sh'
 // The release cache jaira writes under ~/.jaira, HOME being /home/a.
 const CACHE = '/home/a/.jaira/update-check.json'
 
-function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<string, unknown>; spawn?: boolean; env?: Record<string, string> } = {}): World {
+// This session's messaging socket, as Herdr tests set it; socket: false in
+// world() is a session whose socket file is gone.
+const SOCKET = '/tmp/cc-socks-1000/77.sock'
+
+function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<string, unknown>; spawn?: boolean; socket?: boolean; env?: Record<string, string> } = {}): World {
   const w: World = {
     ran: [],
     files: new Map(),
@@ -176,6 +205,10 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     model: '',
     modelCalls: 0,
     prompts: [],
+    headPrompts: [],
+    reasonPrompts: [],
+    shows: {},
+    idLog: '',
     filled: [],
     store: new Map(Object.entries(opts.store ?? {})),
     status: [],
@@ -189,6 +222,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     hunts: {},
     contains: {},
     submitted: [],
+    prReads: [],
     opened: [],
     closed: [],
     clock: mock.clock(on, { now: 1_000_000 }),
@@ -258,7 +292,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   on('session.repo', () => ({ value: { root: '/repo', remote: null, internal: false, name: null } }))
   on('session.id', () => ({ value: 'abcdef123456' }))
   on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: w.usage.tokens, window: 1_000_000 }, rateLimits: w.usage.rateLimits } }))
-  on('fs.exists', ($, e) => ({ value: (hasBoard && e.path === '/repo/.jaira') || (e.path === SPAWN && opts.spawn !== false) || w.files.has(e.path) }))
+  on('fs.exists', ($, e) => ({ value: (hasBoard && e.path === '/repo/.jaira') || (e.path === SPAWN && opts.spawn !== false) || (e.path === SOCKET && opts.socket !== false) || w.files.has(e.path) }))
   on('fs.read', ($, e) => (w.files.has(e.path) ? { value: w.files.get(e.path)! } : { deny: 'no such file' }))
   on('fs.write', ($, e) => {
     w.files.set(e.path, e.text)
@@ -268,19 +302,35 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     w.ran.push([...e.argv, `@${e.init?.cwd ?? ''}`])
     if (w.held && e.argv[0] === 'jaira' && e.argv[1] === 'move') await new Promise<void>(go => w.held!.push(go))
     if (w.heldTabs && e.argv[1] === 'tab' && e.argv[2] === 'list') await new Promise<void>(go => w.heldTabs!.push(go))
+    if (w.heldSpawn && e.argv[0] === 'bash' && e.argv[1] === SPAWN) await new Promise<void>(go => w.heldSpawn!.push(go))
     const ok = (stdout = '') => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const [cmd, ...args] = e.argv
     const here = `@${e.init?.cwd ?? ''}`
     const refuse = (stderr: string) => ({ value: { exitCode: 1, stdout: '', stderr, isStdoutTruncated: false, isStderrTruncated: false } })
+    if (cmd === 'bash' && args[0] === SPAWN && w.spawnFails !== undefined) return refuse(w.spawnFails)
     if (cmd === 'jaira' && args[0] === 'pull') {
       if (w.pullFails !== undefined) return refuse(w.pullFails)
       delete w.disk[here]
       return ok()
     }
     if (cmd === 'git' && args[0] === 'clean' && w.cleanFails !== undefined) return refuse(w.cleanFails)
-    if (cmd === 'jaira' && ['move', 'note', 'set', 'dod'].includes(args[0]!) && args[1] === 'MG677R' && w.disk[here] === 'ref-only') return refuse('jaira: MG677R: ticket: on its ref and not on your disk; pull it first')
-    if (cmd === 'jaira' && ['move', 'note', 'set', 'dod'].includes(args[0]!) && args[1] === 'MG677R' && w.disk[here] === 'behind') return refuse('jaira: MG677R: the file here is older than its ref (stale_file); jaira pull MG677R')
+    if (args[0] === SPAWN && args.includes('--parent') && w.deadParents?.includes(args[args.indexOf('--parent') + 1]!)) {
+      const p = args[args.indexOf('--parent') + 1]
+      return { value: { exitCode: 2, stdout: '', stderr: `--parent ${p}: no session listens there. Leave --parent out`, isStdoutTruncated: false, isStderrTruncated: false } }
+    }
+    if (args[0] === SPAWN) return ok('w1:p42\n')
+    const diskId = w.diskId ?? 'MG677R'
+    if (cmd === 'jaira' && ['move', 'note', 'set', 'dod'].includes(args[0]!) && args[1] === diskId && w.disk[here] === 'ref-only') return refuse(`jaira: ${diskId}: ticket: on its ref and not on your disk; pull it first`)
+    if (cmd === 'jaira' && ['move', 'note', 'set', 'dod'].includes(args[0]!) && args[1] === diskId && w.disk[here] === 'behind') return refuse(`jaira: ${diskId}: the file here is older than its ref (stale_file); jaira pull ${diskId}`)
     const on = args.includes('--board') ? w.boards[args[args.indexOf('--board') + 1] ?? ''] : undefined
+    if (cmd === 'jaira' && args[0] === 'roles' && args[1] === 'list') {
+      return w.rolesFails ? { value: { exitCode: 1, stdout: '', stderr: 'jaira: base unreadable', isStdoutTruncated: false, isStderrTruncated: false } } : ok(JSON.stringify({ pr_when: w.prWhen ?? 'done' }))
+    }
+    if (cmd === 'jaira' && args[0] === 'pr') {
+      const a = (w.prReads.length > 1 ? w.prReads.shift() : w.prReads[0]) ?? JSON.stringify({ prs: [] })
+      const code = a.startsWith('!') ? 3 : a.startsWith('?') ? 1 : 0
+      return code ? { value: { exitCode: code, stdout: '', stderr: a.slice(1), isStdoutTruncated: false, isStderrTruncated: false } } : ok(a)
+    }
     if (cmd === 'jaira' && args[0] === 'boards') return ok(JSON.stringify({ boards: ['default', ...Object.keys(w.boards)].map(name => ({ name })) }))
     if (cmd === 'jaira' && args.includes('--board') && (on === undefined || (args[0] === 'lanes' && on.lanes === undefined))) return failed('jaira: unknown flag: --board')
     if (cmd === 'jaira' && args[0] === 'lanes' && on !== undefined) return ok(JSON.stringify({ lanes: on.lanes }))
@@ -288,6 +338,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(w.oldJaira ? { lanes: LANES.lanes.map(({ human_exit, requires_question, ...l }) => l) } : LANES))
     if (cmd === 'jaira' && args[0] === 'list') return ok(JSON.stringify({ count: w.tickets.length, tickets: w.tickets }))
     if (cmd === 'jaira' && args[0] === 'move' && w.movedFirst && !args.includes('--dry-run')) return ok(`${args[1]} is already in ${args[3]}\n`)
+    if (cmd === 'jaira' && args[0] === 'move' && args[3] === 'in-progress' && w.moveFails !== undefined) return { value: { exitCode: 3, stdout: '', stderr: w.moveFails, isStdoutTruncated: false, isStderrTruncated: false } }
     if (cmd === 'jaira' && args[0] === 'move' && args.includes('--dry-run')) {
       const error = (w.warns ? `${OLDER}\n` : '') + JSON.stringify({ error: { code: 3, reason: 'gate_refused', violations: w.refusals } })
       return { value: { exitCode: 3, stdout: '', stderr: error, isStdoutTruncated: false, isStderrTruncated: false } }
@@ -329,9 +380,9 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     }
     if (cmd === 'jaira' && args[0] === 'show') {
       const status = (w.tickets.find(x => (x as { handle: string }).handle === args[1]) as { status?: string } | undefined)?.status
-      const disk = args[1] === 'MG677R' ? w.disk[here] : undefined
-      const file = disk === 'ref-only' ? {} : { path: `${e.init?.cwd ?? ''}/.jaira/tickets/01MG677R-cache-key.md` }
-      return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '', ...(status !== undefined ? { status, board: '' } : {}), 'on-ref-only': disk === 'ref-only', 'behind-ref': disk === 'behind', ...file }))
+      const disk = args[1] === (w.diskId ?? 'MG677R') ? w.disk[here] : undefined
+      const file = disk === 'ref-only' ? {} : { path: `${e.init?.cwd ?? ''}/.jaira/tickets/01${args[1]}-cache-key.md` }
+      return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ ...w.shows[args[1]!], handle: args[1], body: w.bodies[args[1]!] ?? '', ...(status !== undefined ? { status, board: '' } : {}), 'on-ref-only': disk === 'ref-only', 'behind-ref': disk === 'behind', ...file }))
     }
     if (cmd === 'git' && args[0] === 'rev-parse' && args[1] === '--abbrev-ref') return w.originHead === undefined ? { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } } : ok(`${w.originHead}\n`)
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
@@ -368,6 +419,8 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'git' && args[0] === 'branch') return ok(w.branches.join('\n'))
     // Newest first, as git prints them. A --grep reads the whole message,
     // body included; --format=%H %s prints the subject alone.
+    if (cmd === 'git' && args[0] === 'log' && args[1] === '--format=%h') return ok(w.idLog)
+    if (cmd === 'git' && args[0] === 'log' && args[1] === '-p') return ok(w.patches ?? '')
     if (cmd === 'git' && args[0] === 'log' && args.includes('--branches')) {
       const grep = args.find(a => a.startsWith('--grep='))
       if (grep) {
@@ -398,8 +451,20 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   })
   on('agent.list', () => ({ value: w.agents }) as never)
   on('model.complete', async ($, e) => {
+    const prompt = (e as { prompt: string }).prompt
+    // The Acceptance pane's head and Explain on one note are calls of their
+    // own, answered from their own fields and never held: the counts and the
+    // holds below are the review notes'.
+    if (prompt.startsWith('Translate each text')) {
+      w.headPrompts.push(prompt)
+      return (w.head === undefined ? { value: { isAnswered: false } } : { value: { isAnswered: true, text: w.head, usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }) as never
+    }
+    if (prompt.startsWith('A person decides whether to accept')) {
+      w.reasonPrompts.push(prompt)
+      return (w.reason === undefined ? { value: { isAnswered: false } } : { value: { isAnswered: true, text: w.reason, usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }) as never
+    }
     w.modelCalls++
-    w.prompts.push((e as { prompt: string }).prompt)
+    w.prompts.push(prompt)
     if (w.modelDown) return { value: { isAnswered: false } } as never
     const text = w.model
     if (w.modelHeld) await new Promise<void>(go => w.modelHeld!.push(go))
@@ -418,13 +483,73 @@ type Test$ = Parameters<Extract<Parameters<typeof test>[1], (...args: never[]) =
 const typed = (args = '') =>
   ({ command: 'cockpit', args, origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 120 } }) as const
 
-// The Verdict pane of a ticket, opened from the band: what the row leaves out.
-async function verdictOf($: Test$, band: { press: (q: { key: string }) => Promise<unknown> }, id: string) {
-  await band.press({ key: `verdict-${id}` })
-  const pane = await $.ui.mount(VERDICT(`Review verdict of ${id}`))
+// What the Acceptance pane says of a ticket, opened from the band: what the row leaves out.
+async function verdictOf($: Test$, band: Pressable, id: string) {
+  const pane = await acceptancePane($, band, id)
   const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
   await pane.unmount()
   return { texts, find: async (q: { type: 'Text'; text: string | RegExp }) => texts.find(x => (typeof q.text === 'string' ? x === q.text : q.text.test(x))) }
+}
+
+// 2V50Y5: the Acceptance pane replaced Accept, Give back, Explain and Verdict
+// in the row: its button opens the pane, whose Execute and Explain all do
+// what the row's buttons did.
+const ACCEPT = (title: string) =>
+  ({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-acceptance', props: { title, isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 40 }, view: {} } }) as const
+type Pressable = { press: (q: { key: string }) => Promise<unknown> }
+// One pane mounted at a time, as the engine allows: a second press remounts it.
+let mountedPane: { unmount: () => Promise<unknown> } | undefined
+async function acceptancePane($: Test$, band: Pressable, id: string) {
+  await band.press({ key: `acceptance-${id}` })
+  await mountedPane?.unmount().catch(() => undefined)
+  const pane = await $.ui.mount(ACCEPT(`Acceptance of ${id}`))
+  mountedPane = pane
+  return pane
+}
+// Explain sits in the Acceptance pane now; Discuss stays in the row.
+async function pressChat($: Test$, band: Pressable, kind: string, id: string, w?: World) {
+  if (kind === 'explain') return pressExplain($, band, id, w)
+  return band.press({ key: `${kind}-${id}` })
+}
+// What opening the pane ran and opened - the history's git log, the pull
+// request look - is no part of the press: dropped, so a test reads what the
+// press itself did.
+const opening = (r: string[]) =>
+  r[0] === 'gh' || r[0] === 'glab' || (r[0] === 'jaira' && r[1] === 'show' && r[3] === '--json') ||
+  (r[0] === 'git' && (['worktree', 'config', 'remote', 'fetch', 'rev-parse'].includes(r[1]!) || (r[1] === 'log' && r[2] === '--format=%h')))
+async function quietly($: Test$, band: Pressable, id: string, w?: World) {
+  const ran = w?.ran.length ?? 0
+  const opened = w?.opened.length ?? 0
+  const pane = await acceptancePane($, band, id)
+  // The pane is up once its opening read the ticket: a person sees it, and
+  // presses in it, only then.
+  await w?.clock.settle()
+  if (w !== undefined) {
+    const added = w.ran.slice(ran)
+    w.ran.splice(ran, added.length, ...added.filter(r => !opening(r)))
+    const shown = w.opened.slice(opened)
+    w.opened.splice(opened, shown.length, ...shown.filter(o => o.id !== 'cockpit-acceptance'))
+  }
+  return pane
+}
+async function pressAccept($: Test$, band: Pressable, id: string, w?: World) {
+  const pane = await quietly($, band, id, w)
+  await pane.press({ key: `execute-${id}` })
+  return pane
+}
+async function pressExplain($: Test$, band: Pressable, id: string, w?: World) {
+  const pane = await quietly($, band, id, w)
+  await pane.press({ key: `explain-all-${id}` })
+  return pane
+}
+// One step through a note's choices, as the old row's press was: fix now,
+// follow-up, accept, fix now again.
+async function cycle(pane: Pressable & { find: (q: { key: string }) => Promise<{ text: string } | undefined> }, id: string, i: number) {
+  const order = ['now', 'later', 'accept']
+  for (const c of order) {
+    if ((await pane.find({ key: `${c}-${id}-${i}` }))?.text.startsWith('[•')) return pane.press({ key: `${order[(order.indexOf(c) + 1) % 3]}-${id}-${i}` })
+  }
+  throw new Error(`no choice drawn for note ${i} of ${id}`)
 }
 
 async function startSession($: Test$) {
@@ -514,9 +639,10 @@ describe('waiting for you', () => {
     const title = texts.indexOf('cache key')
     expect(title).toBeGreaterThan(0)
     expect(texts.slice(title, title + 2)).toEqual(['cache key', 'Goal: Two branches never share a cache entry.'])
-    for (const text of ['? keep the old key?', `Verdict: ${verdict}`, '🔴 blocker: the key ignores the branch', '🟡 note: a test is missing', '🟡 note: a comment is stale']) {
+    for (const text of ['? keep the old key?', '🔴 blocker: the key ignores the branch', '🟡 note: a test is missing', '🟡 note: a comment is stale']) {
       expect(texts).toContain(text)
     }
+    expect(texts.some(x => x.endsWith(`review: ${verdict}`))).toBe(true)
     expect(texts.some(x => /review of round 2, changed since/.test(x))).toBe(true)
   })
 
@@ -582,8 +708,8 @@ describe('waiting for you', () => {
     const ui = await $.ui.mount(BAND)
     expect(await ui.find({ type: 'Text', text: /S0EG0M \| approve/ })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /V1D3OQ \| ask/ })).toBeDefined()
-    expect(await ui.find({ key: 'accept-S0EG0M' })).toBeDefined()
-    expect(await ui.find({ key: 'accept-V1D3OQ' })).toBeUndefined()
+    expect(await ui.find({ key: 'acceptance-S0EG0M' })).toBeDefined()
+    expect(await ui.find({ key: 'acceptance-V1D3OQ' })).toBeDefined()
     expect(await ui.find({ text: /V2R3ND/ })).toBeUndefined()
     expect(ran(w, 'jaira', 'list', '--board', 'video').length).toBeGreaterThan(0)
   })
@@ -599,7 +725,7 @@ describe('waiting for you', () => {
     const w = world(on)
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'accept-MG677R' })
+    await pressAccept($, ui, 'MG677R', w)
     expect(ran(w, 'jaira', 'move', 'MG677R')).toEqual([
       ['jaira', 'move', 'MG677R', '--to', 'done', '--dry-run', '--json', '@/.worktrees/repo-mg677r'],
       ['jaira', 'move', 'MG677R', '--to', 'done', '--force', '@/.worktrees/repo-mg677r'],
@@ -611,11 +737,11 @@ describe('waiting for you', () => {
     w.worktrees = WORKTREES.replace('branch refs/heads/feat/mg677r', 'detached')
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'accept-MG677R' })
+    await pressAccept($, ui, 'MG677R', w)
     expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.at(-1)).toBe('@/.worktrees/repo-mg677r')
   })
 
-  test('Accept, Give back and Explain are told apart by the theme\'s colours; Read explanation and Verdict stay plain', async ($, on) => {
+  test('Acceptance is the one coloured button of the row; Read explanation stays plain, and Accept, Give back, Explain and Verdict are gone', async ($, on) => {
     const w = world(on)
     w.bodies.MG677R = '## Progress\n\n- **2026-10-12 15:00 · Alex** — explain: The key leaves out the branch.'
     await startSession($)
@@ -626,31 +752,25 @@ describe('waiting for you', () => {
       expect(button).toBeDefined()
       return button!.children.map(c => (c as { props?: { color?: string } }).props?.color).find(Boolean)
     }
-    expect(await colour('accept-MG677R')).toBe('success')
-    // Not the accent colour of a primary Button around it: green is the mark.
-    expect((await ui.find({ key: 'accept-MG677R' }))?.props.variant).toBeUndefined()
-    expect(await colour('back-MG677R')).toBe('error')
-    expect(await colour('explain-MG677R')).toBe('warning')
+    expect(await colour('acceptance-MG677R')).toBe('claude')
     expect(await colour('read-MG677R')).toBeUndefined()
-    expect(await colour('verdict-MG677R')).toBeUndefined()
+    for (const gone of ['accept', 'back', 'explain', 'verdict']) expect(await ui.find({ key: `${gone}-MG677R` })).toBeUndefined()
   })
 
-  test('on the terminal the coloured buttons draw their brackets in the label\'s colour; elsewhere the native button stays', async ($, on) => {
+  test('on the terminal Acceptance draws its brackets in the label\'s colour; elsewhere the native button stays', async ($, on) => {
     const w = world(on)
     w.bodies.MG677R = '## Progress\n\n- **2026-10-12 15:00 · Alex** — explain: The key leaves out the branch.'
     await startSession($)
-    for (const [surface, plain, text] of [['terminal', true, '[ Accept ]'], ['desktop', undefined, 'Accept']] as const) {
+    for (const [surface, plain, text] of [['terminal', true, '[ Acceptance ]'], ['desktop', undefined, 'Acceptance']] as const) {
       const ui = await $.ui.mount({ ...BAND, surface })
-      const accept = await ui.find({ key: 'accept-MG677R' })
-      expect(accept?.props.plain).toBe(plain)
-      expect(accept?.props.label).toBe('Accept')
-      expect(accept?.children).toEqual([{ type: 'Text', props: { color: 'success', dimColor: false }, children: [text] }])
+      const button = await ui.find({ key: 'acceptance-MG677R' })
+      expect(button?.props.plain).toBe(plain)
+      expect(button?.props.label).toBe('Acceptance')
+      expect(button?.children).toEqual([{ type: 'Text', props: { color: 'claude', dimColor: false }, children: [text] }])
       await ui.unmount()
     }
     const ui = await $.ui.mount(BAND)
-    expect((await ui.find({ key: 'back-MG677R' }))?.text).toBe('[ Give back ]')
-    expect((await ui.find({ key: 'explain-MG677R' }))?.text).toBe('[ Explain ]')
-    // Read explanation and Verdict keep the engine's own brackets.
+    // Read explanation keeps the engine's own brackets.
     expect((await ui.find({ key: 'read-MG677R' }))?.props.plain).toBeUndefined()
   })
 
@@ -668,19 +788,20 @@ describe('waiting for you', () => {
     w.stay = true
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    void ui.press({ key: 'accept-MG677R' })
+    const pane = await quietly($, ui, 'MG677R', w)
+    void pane.press({ key: 'execute-MG677R' })
     await w.clock.settle()
-    for (const key of ['accept-MG677R', 'back-MG677R', 'explain-MG677R']) expect(await dimmed(ui, key)).toBe(true)
+    expect(await dimmed(ui, 'acceptance-MG677R')).toBe(true)
     // Another ticket's row is not this press's.
-    expect(await dimmed(ui, 'back-K7P2QX')).toBe(false)
-    await ui.press({ key: 'back-MG677R' })
-    void ui.press({ key: 'accept-MG677R' })
+    expect(await dimmed(ui, 'acceptance-K7P2QX')).toBe(false)
+    await ui.press({ key: 'acceptance-MG677R' })
+    void pane.press({ key: 'execute-MG677R' })
     await w.clock.settle()
     expect(w.opened).toEqual([])
     await release(w)
     await release(w)
     expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(2)
-    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
+    expect(await dimmed(ui, 'acceptance-MG677R')).toBe(false)
   })
 
   test('a row whose action has not ended is free again after 20 seconds, and the late end frees only its own lock', async ($, on) => {
@@ -689,20 +810,21 @@ describe('waiting for you', () => {
     w.stay = true
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    void ui.press({ key: 'accept-MG677R' })
+    const pane = await quietly($, ui, 'MG677R', w)
+    void pane.press({ key: 'execute-MG677R' })
     await w.clock.advance(19_999)
-    expect(await dimmed(ui, 'accept-MG677R')).toBe(true)
+    expect(await dimmed(ui, 'acceptance-MG677R')).toBe(true)
     await w.clock.advance(1)
-    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
-    void ui.press({ key: 'accept-MG677R' })
+    expect(await dimmed(ui, 'acceptance-MG677R')).toBe(false)
+    void pane.press({ key: 'execute-MG677R' })
     await w.clock.settle()
     // The first press's dry run and move answer: it ends, the second waits on.
     await release(w)
     await release(w)
-    expect(await dimmed(ui, 'accept-MG677R')).toBe(true)
+    expect(await dimmed(ui, 'acceptance-MG677R')).toBe(true)
     await release(w)
     await release(w)
-    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
+    expect(await dimmed(ui, 'acceptance-MG677R')).toBe(false)
   })
 
   test('a reload frees a row whose press it cut off', async ($, on) => {
@@ -710,40 +832,56 @@ describe('waiting for you', () => {
     w.held = []
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    void ui.press({ key: 'accept-MG677R' })
+    const pane = await quietly($, ui, 'MG677R', w)
+    void pane.press({ key: 'execute-MG677R' })
     await w.clock.settle()
-    expect(await dimmed(ui, 'accept-MG677R')).toBe(true)
+    expect(await dimmed(ui, 'acceptance-MG677R')).toBe(true)
     await startSession($)
-    expect(await dimmed(ui, 'accept-MG677R')).toBe(false)
+    expect(await dimmed(ui, 'acceptance-MG677R')).toBe(false)
     // The cut-off press ends before the test does.
     await release(w)
     await release(w)
     await w.clock.advance(20_000)
   })
 
-  test('Accept is offered only where the next lane ends the board: never in human, past review and signoff', async ($, on) => {
+  test('Acceptance is offered on every waiting ticket; where the next lane does not end the board, Execute accepts nothing and says so', async ($, on) => {
     const w = world(on)
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    expect(await ui.find({ key: 'accept-MG677R' })).toBeDefined()
-    expect(await ui.find({ key: 'accept-K7P2QX' })).toBeUndefined()
+    expect(await ui.find({ key: 'acceptance-MG677R' })).toBeDefined()
     expect(await ui.find({ key: 'discuss-K7P2QX' })).toBeDefined()
-    void w
+    const pane = await pressAccept($, ui, 'K7P2QX', w)
+    expect(ran(w, 'jaira', 'move')).toEqual([])
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('K7P2QX waits in human, which does not end the work: nothing to accept there. Mark a note fix, or type what is missing, to give it back.')
   })
 
-  test('Accept forces only the human exit: any other gate refusing moves nothing and says why', async ($, on) => {
+  // 2V50Y5 DoD 3: a gate that refuses done says so in the pane, changes
+  // nothing, and the person's choices stay as they were.
+  test('a gate refusing done is said in the Acceptance pane: nothing moves, nothing is written, the choices stay', async ($, on) => {
     const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: SIGNOFF.review.verdict, gaps: 'note: the size\nnote: pre-existing: the clock' } }]
     w.refusals = [...w.refusals, { code: 'needs_nonmodel_signal', message: 'the definition of done is not met: criterion 1 is still open' }]
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'accept-MG677R' })
+    const pane = await acceptancePane($, ui, 'MG677R')
+    // The clock: accept -> fix now -> follow-up.
+    await cycle(pane, 'MG677R', 1)
+    await cycle(pane, 'MG677R', 1)
+    const opened = w.opened.length
+    await pane.press({ key: 'execute-MG677R' })
     expect(ran(w, 'jaira', 'move').filter(r => r.includes('--force'))).toEqual([])
-    expect(w.opened).toEqual([{ id: 'cockpit-message', title: 'Accept MG677R failed', focus: true }])
-    const pane = await $.ui.mount(MESSAGE('Accept MG677R failed'))
-    expect(await pane.find({ type: 'Text', text: 'Accept MG677R failed' })).toBeDefined()
-    expect(await pane.find({ type: 'Text', text: 'the definition of done is not met: criterion 1 is still open' })).toBeDefined()
-    await pane.press({ key: 'message-close' })
-    expect(w.closed).toEqual(['cockpit-message'])
+    expect(ran(w, 'jaira', 'note')).toEqual([])
+    expect(ran(w, 'jaira', 'create')).toEqual([])
+    expect(w.opened.slice(opened)).toEqual([])
+    expect(w.closed).not.toContain('cockpit-acceptance')
+    const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+    expect(texts).toContain('MG677R was not accepted, nothing was changed:\nthe definition of done is not met: criterion 1 is still open')
+    expect((await pane.find({ key: 'later-MG677R-1' }))?.text).toBe('[•ticket]')
+    // The next press, the gate satisfied, carries the same choices out.
+    w.refusals = w.refusals.filter(r => r.code === 'needs_human')
+    await pane.press({ key: 'execute-MG677R' })
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
+    expect(ran(w, 'jaira', 'create')).toHaveLength(1)
   })
 
   test('Accept reads the dry run past the warning an older jaira prints before it', async ($, on) => {
@@ -751,70 +889,28 @@ describe('waiting for you', () => {
     w.warns = true
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'accept-MG677R' })
+    await pressAccept($, ui, 'MG677R', w)
     expect(ran(w, 'jaira', 'move', 'MG677R').map(r => r[5])).toEqual(['--dry-run', '--force'])
     expect(w.opened.filter(o => o.title === 'Accept MG677R failed')).toEqual([])
   })
 
-  test('an error is shown whole in a pane of its own, never cut to a line', async ($, on) => {
+  test('a refusal is shown whole in the Acceptance pane, never cut to a line', async ($, on) => {
     const w = world(on)
     const long = `the definition of done is not met: ${'criterion still open, '.repeat(20)}and one more`
     w.refusals = [...w.refusals, { code: 'needs_nonmodel_signal', message: long }, { code: 'needs_commits', message: 'no commit names MG677R' }]
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'accept-MG677R' })
-    const pane = await $.ui.mount(MESSAGE('Accept MG677R failed'))
-    expect(await pane.find({ type: 'Text', text: `${long}\nno commit names MG677R` })).toBeDefined()
+    const pane = await pressAccept($, ui, 'MG677R', w)
+    expect(await pane.find({ type: 'Text', text: `MG677R was not accepted, nothing was changed:\n${long}\nno commit names MG677R` })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /criterion still open/ })).toBeUndefined()
   })
 
-  test('a plain yes gets no Explain, however long the sentence', async ($, on) => {
-    const w = world(on)
-    w.tickets = [
-      { ...SIGNOFF, review: { verdict: 'Approve. Der Diff erfuellt die DoD: Befehl existiert, Test deckt ihn ab.' } },
-      { ...SIGNOFF, handle: 'AB12CD', review: { verdict: 'the diff matches the criteria; no defects found' } },
-      { ...SIGNOFF, handle: 'EF34GH', review: { verdict: 'request changes: the button skips review' } },
-    ]
-    await startSession($)
-    const ui = await $.ui.mount(BAND)
-    expect(await ui.find({ key: 'explain-MG677R' })).toBeUndefined()
-    expect(await ui.find({ key: 'explain-AB12CD' })).toBeUndefined()
-    expect(await ui.find({ key: 'explain-EF34GH' })).toBeDefined()
-  })
-
-  // The band shows three tickets, so each case below fits on it.
-  test('a negated reservation gets no Explain', async ($, on) => {
-    const w = world(on)
-    w.tickets = [
-      { ...SIGNOFF, handle: 'GH56JK', review: { verdict: 'approve, no changes needed' } },
-      { ...SIGNOFF, handle: 'JK78LM', review: { verdict: 'Approve: no open questions, ohne Vorbehalt' } },
-    ]
-    await startSession($)
-    const ui = await $.ui.mount(BAND)
-    for (const id of ['GH56JK', 'JK78LM']) {
-      expect(await ui.find({ key: `accept-${id}` })).toBeDefined()
-      expect(await ui.find({ key: `explain-${id}` })).toBeUndefined()
-    }
-  })
-
-  test('a negation ends at a comma and never takes the connective with it', async ($, on) => {
-    const w = world(on)
-    w.tickets = [
-      { ...SIGNOFF, handle: 'LM90NP', review: { verdict: 'Approve - no blockers, but the docs are missing' } },
-      { ...SIGNOFF, handle: 'NP12QR', review: { verdict: 'Approve: no defects, however the flaky test remains' } },
-      { ...SIGNOFF, handle: 'QR34ST', review: { verdict: 'Annehmen, keine Fehler, aber DoD 2 nie live gesehen' } },
-    ]
-    await startSession($)
-    const ui = await $.ui.mount(BAND)
-    for (const id of ['LM90NP', 'NP12QR', 'QR34ST']) expect(await ui.find({ key: `explain-${id}` })).toBeDefined()
-  })
-
-  test('a verdict with a reservation gets Explain, which opens a Herdr tab of its own', async ($, on) => {
+  test('Explain all in the Acceptance pane opens a Herdr tab of its own', async ($, on) => {
     const w = world(on, { herdr: true })
     await startSession($)
     const ui = await $.ui.mount(BAND)
     expect(await ui.find({ key: 'explain-K7P2QX' })).toBeUndefined()
-    await ui.press({ key: 'explain-MG677R' })
+    await pressExplain($, ui, 'MG677R', w)
     expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'explain', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
   })
 
@@ -822,11 +918,10 @@ describe('waiting for you', () => {
     const w = world(on, { herdr: true })
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    // The row marks the question; the question itself is in the Verdict pane.
+    // The row marks the question; the question itself is in the Acceptance pane.
     expect(await ui.find({ text: /Popup oder eigene Seite/ })).toBeUndefined()
     expect(await ui.find({ type: 'Text', text: /K7P2QX \| human \| .* \| \?/ })).toBeDefined()
-    await ui.press({ key: 'verdict-K7P2QX' })
-    expect(await (await $.ui.mount(VERDICT('Review verdict of K7P2QX'))).find({ type: 'Text', text: '? Popup oder eigene Seite?' })).toBeDefined()
+    expect(await (await acceptancePane($, ui, 'K7P2QX')).find({ type: 'Text', text: '? Popup oder eigene Seite?' })).toBeDefined()
     await ui.press({ key: 'discuss-K7P2QX' })
     // The chat sends its decision to this session, by its messaging socket.
     expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 8)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'k7p2qx', 'K7P2QX', 'discuss'])
@@ -902,7 +997,7 @@ describe('waiting for you', () => {
     const w = world(on)
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'explain-MG677R' })
+    await pressExplain($, ui, 'MG677R', w)
     expect(ran(w, 'bash')).toEqual([])
     expect(w.opened).toEqual([])
     expect(w.toasts).toContain('MG677R: a subagent of this session explains the finding; read it under Read explanation')
@@ -953,20 +1048,20 @@ describe('waiting for you', () => {
     await w.clock.advance(300)
     await ui.press({ key: 'discuss-K7P2QX' })
     expect(w.submitted).toHaveLength(1)
-    await ui.press({ key: 'explain-MG677R' })
+    await pressExplain($, ui, 'MG677R', w)
     await w.clock.advance(300)
-    await ui.press({ key: 'explain-MG677R' })
+    await pressExplain($, ui, 'MG677R', w)
     expect(w.submitted).toHaveLength(2)
     // Pressed again after the lock, it is asked again.
     await w.clock.advance(20_000)
-    await ui.press({ key: 'explain-MG677R' })
+    await pressExplain($, ui, 'MG677R', w)
     expect(w.submitted).toHaveLength(3)
   })
 
   test('with Herdr but no spawn.sh, Explain says spawn.sh is missing', async ($, on) => {
     const w = world(on, { herdr: true, spawn: false })
     await startSession($)
-    await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
+    await pressExplain($, await $.ui.mount(BAND), 'MG677R', w)
     expect(w.submitted).toEqual([])
     const pane = await $.ui.mount(MESSAGE('Explain MG677R failed'))
     expect(await pane.find({ type: 'Text', text: /spawn\.sh.*jaira roles install/ })).toBeDefined()
@@ -981,7 +1076,7 @@ describe('waiting for you', () => {
     const w = world(on, { herdr: true, spawn: false, env })
     w.files.set(home, '')
     await startSession($)
-    await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
+    await pressExplain($, await $.ui.mount(BAND), 'MG677R', w)
     expect(ran(w, 'C:/Program Files/Git/bin/bash.exe', home)).toEqual([['C:/Program Files/Git/bin/bash.exe', home, '--no-worktree', 'mg677r', 'MG677R', 'explain', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
   })
 
@@ -989,7 +1084,7 @@ describe('waiting for you', () => {
     const env = { OS: 'Windows_NT', HOME: '/repo', HERDR_ENV: '1', CLAUDE_CODE_GIT_BASH_PATH: 'D:\\Git\\bin\\bash.exe' }
     const w = world(on, { herdr: true, env })
     await startSession($)
-    await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
+    await pressExplain($, await $.ui.mount(BAND), 'MG677R', w)
     expect(ran(w, 'D:\\Git\\bin\\bash.exe', SPAWN)).toHaveLength(1)
     expect(ran(w, 'git', '--exec-path')).toEqual([])
   })
@@ -1159,7 +1254,7 @@ describe('waiting for you', () => {
     expect(w.closed).toEqual(['cockpit-explanation'])
     // No mark: nothing moves, and the conversation the band sits in hears it.
     expect(ran(w, 'jaira', 'move')).toEqual([])
-    expect(w.submitted).toEqual(["Decision on MG677R in the cockpit's explanation pane, noted on the ticket and not acted on: b) accept it as it is"])
+    expect(w.submitted).toEqual(['jaira-cockpit: MG677R: b) accept it as it is (Person, Cockpit) - decided in the explanation pane, noted on the ticket, not acted on'])
     const band = await $.ui.mount(BAND)
     expect(await band.find({ type: 'Text', text: /MG677R \| decided/ })).toBeDefined()
     await band.press({ key: 'decision-MG677R' })
@@ -1205,7 +1300,7 @@ describe('waiting for you', () => {
     expect(ran(w, 'jaira', 'note').map(r => r[3]).slice(0, 2)).toEqual(['decision: 1) add the branch to the key', 'Given back from signoff: 1) add the branch to the key'])
     expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress'])
     // The decision itself is not sent: only the line every Give back hands this session.
-    expect(w.submitted).toEqual(["jaira-cockpit: the person gave MG677R back in the cockpit (signoff -> in-progress), no worker started (the ticket's note says why): 1) add the branch to the key"])
+    expect(w.submitted).toEqual(["jaira-cockpit: MG677R given back: 1) add the branch to the key, worker none (the ticket's note says why) (Person, Cockpit; signoff -> in-progress)"])
   })
 
   test('an option marked [accept] accepts the ticket as the band\'s Accept does', async ($, on) => {
@@ -1214,9 +1309,9 @@ describe('waiting for you', () => {
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
     await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).press({ key: 'pick-MG677R-2' })
-    expect(ran(w, 'jaira', 'note').map(r => r[3])).toEqual(['decision: 2) accept it as it is'])
+    expect(ran(w, 'jaira', 'note').map(r => r[3])).toEqual(['decision: 2) accept it as it is', 'cockpit: accepted by the person, signoff -> done'])
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
-    expect(w.submitted).toEqual(['jaira-cockpit: the person accepted MG677R in the cockpit (signoff -> done)'])
+    expect(w.submitted).toEqual(['jaira-cockpit: MG677R: accepted, signoff -> done (Person, Cockpit)'])
   })
 
   test('after a restart an answered explanation is read with its decision, not offered again; a newer one is open', async ($, on) => {
@@ -1264,8 +1359,8 @@ describe('waiting for you', () => {
     ]
     await startSession($)
     const band = await $.ui.mount(BAND)
-    for (const id of ['OLD123', 'NEW456', 'BLK789']) expect(await band.find({ key: `explain-${id}` })).toBeDefined()
-    // The row marks it; the Verdict pane says it whole.
+    for (const id of ['OLD123', 'NEW456', 'BLK789']) expect(await band.find({ key: `acceptance-${id}` })).toBeDefined()
+    // The row marks it; the Acceptance pane says it whole.
     expect(await band.find({ type: 'Text', text: /OLD123 \| signoff \| .*review of round 1/ })).toBeDefined()
     expect(await band.find({ type: 'Text', text: /BLK789 \| signoff \| .*review of round 7/ })).toBeDefined()
     expect(await band.find({ type: 'Text', text: /review of round 2/ })).toBeUndefined()
@@ -1297,9 +1392,6 @@ describe('waiting for you', () => {
     expect(await old.find({ type: 'Text', text: /🟡 note: the export test covers 1MB/ })).toBeDefined()
     expect(await old.find({ type: 'Text', text: /removed the unused helper/ })).toBeUndefined()
     expect(await (await verdictOf($, band, 'BLK456')).find({ type: 'Text', text: /🔴 blocker: DoD 2 - an empty export writes a header/ })).toBeDefined()
-    // the blocker kept beside an earlier verdict offers Explain; notes alone do not
-    expect(await band.find({ key: 'explain-BLK456' })).toBeDefined()
-    expect(await band.find({ key: 'explain-OLD123' })).toBeUndefined()
   })
 
   test('an earlier-round verdict without a kept copy reads no blocker out of a later lane\'s gaps', async ($, on) => {
@@ -1322,7 +1414,7 @@ describe('waiting for you', () => {
     expect(await pane.find({ type: 'Text', text: 'Decided: c) clear the cache on checkout' })).toBeDefined()
   })
 
-  test('Explain is offered for a blocker or a reservation; notes alone are listed without a button', async ($, on) => {
+  test('the row counts blockers and notes; the Acceptance pane lists each with its mark', async ($, on) => {
     const w = world(on)
     const verdict = 'The diff meets all five DoD items and the tests prove each one (87 pass).'
     w.tickets = [
@@ -1354,9 +1446,7 @@ describe('waiting for you', () => {
     const band = await $.ui.mount(BAND)
     await band.press({ key: 'more' })
     const open = await $.ui.mount(BAND)
-    for (const id of ['BL0CK1', 'BL0CK2', 'BL0CK3', 'BL0CK4', 'BL0CK5', 'BL0CK6', 'RESRV1']) expect(await open.find({ key: `explain-${id}` })).toBeDefined()
-    for (const id of ['NOTES1', 'NOTES2', 'NOTES3', 'AB12CD', 'EF34GH', 'GH56JK', 'MN12PQ', 'PQ34RS', 'LM90NP']) expect(await open.find({ key: `explain-${id}` })).toBeUndefined()
-    // The row counts them; the notes themselves stand in the Verdict pane.
+    // The row counts them; the notes themselves stand in the Acceptance pane.
     expect(await open.find({ text: /export test covers/ })).toBeUndefined()
     expect(await open.find({ type: 'Text', text: /NOTES1 \| signoff \| .*0 blockers \| 2 notes/ })).toBeDefined()
     expect(await open.find({ type: 'Text', text: /BL0CK3 \| signoff \| .*1 blocker \| 1 note $/ })).toBeDefined()
@@ -1374,22 +1464,20 @@ describe('waiting for you', () => {
     expect(await open.find({ key: 'verdict-LM91NP' })).toBeUndefined()
   })
 
-  test('the whole review verdict is read from the band, with no explanation on the ticket', async ($, on) => {
+  test('the whole review verdict is read in the Acceptance pane, with no explanation on the ticket', async ($, on) => {
     const w = world(on)
     const long = 'The diff meets all five DoD items; the one weak spot is the cache key, which leaves out the branch, so two branches share an entry.'
     w.tickets = [{ ...SIGNOFF, review: { verdict: long } }, { ...HUMAN, question: '' }]
     await startSession($)
     const band = await $.ui.mount(BAND)
     expect(await band.find({ key: 'read-MG677R' })).toBeUndefined()
-    // No verdict, no notes, no question: no button.
-    expect(await band.find({ key: 'verdict-K7P2QX' })).toBeUndefined()
-    await band.press({ key: 'verdict-MG677R' })
-    expect(w.opened).toEqual([{ id: 'cockpit-verdict', title: 'Review verdict of MG677R', focus: true }])
-    const pane = await $.ui.mount(VERDICT('Review verdict of MG677R'))
-    expect(await pane.find({ type: 'Text', text: `Verdict: ${long}` })).toBeDefined()
+    await band.press({ key: 'acceptance-MG677R' })
+    expect(w.opened).toEqual([{ id: 'cockpit-acceptance', title: 'Acceptance of MG677R', focus: true }])
+    const pane = await $.ui.mount(ACCEPT('Acceptance of MG677R'))
+    const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+    expect(texts.some(x => x.endsWith(`review: ${long}`))).toBe(true)
     // It starts with the light, then what the ticket is for. No hunt was
     // read for this ticket: nobody can tell, so yellow.
-    const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
     expect(texts[0]).toBe('● yellow: bughunt unknown')
     expect(texts.filter(x => !x.startsWith('●'))[0]).toBe('cache key')
   })
@@ -1401,7 +1489,7 @@ describe('waiting for you', () => {
     w.tabs = [{ tab_id: 'w1:t4', label: 'MG677R/explain', agent_status: 'working' }]
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'explain-MG677R' })
+    await pressExplain($, ui, 'MG677R', w)
     await w.clock.advance(60_000)
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
     w.bodies.MG677R += '- **1970-01-01 00:16 · Alex** — explain: the key leaves out the branch\n'
@@ -1442,9 +1530,9 @@ describe('waiting for you', () => {
     await startSession($)
     expect(await headLine($)).toBe('0 worker | 0 review | 2 waiting for you | 5h 34%')
     const ui = await $.ui.mount(BAND)
-    expect(await ui.find({ key: 'accept-MG677R' })).toBeDefined()
-    expect(await ui.find({ key: 'accept-AB12CD' })).toBeDefined()
-    expect(await ui.find({ key: 'accept-EF34GH' })).toBeUndefined()
+    expect(await ui.find({ key: 'acceptance-MG677R' })).toBeDefined()
+    expect(await ui.find({ key: 'acceptance-AB12CD' })).toBeDefined()
+    expect(await ui.find({ key: 'acceptance-EF34GH' })).toBeUndefined()
     expect(await ui.find({ key: 'discuss-K7P2QX' })).toBeUndefined()
     expect((await ui.find({ key: 'theirs' }))?.props.label).toBe('2 waiting for Berk, Carla')
     await ui.press({ key: 'theirs' })
@@ -1453,7 +1541,7 @@ describe('waiting for you', () => {
     // A teammate's ticket: talked through, never accepted or given back from here.
     expect(await open.find({ key: 'discuss-K7P2QX' })).toBeDefined()
     for (const id of ['EF34GH', 'K7P2QX']) {
-      expect(await open.find({ key: `accept-${id}` })).toBeUndefined()
+      expect(await open.find({ key: `acceptance-${id}` })).toBeUndefined()
       expect(await open.find({ key: `back-${id}` })).toBeUndefined()
     }
   })
@@ -1493,15 +1581,15 @@ describe('waiting for you', () => {
     ]
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    expect(await ui.find({ key: 'accept-GH56JK' })).toBeUndefined()
+    expect(await ui.find({ key: 'acceptance-GH56JK' })).toBeUndefined()
     expect((await ui.find({ key: 'more' }))?.props.label).toBe('+2 more')
     await ui.press({ key: 'more' })
     const open = await $.ui.mount(BAND)
-    expect(await open.find({ key: 'accept-EF34GH' })).toBeDefined()
-    expect(await open.find({ key: 'back-GH56JK' })).toBeDefined()
+    expect(await open.find({ key: 'acceptance-EF34GH' })).toBeDefined()
+    expect(await open.find({ key: 'acceptance-GH56JK' })).toBeDefined()
     await open.press({ key: 'fewer' })
     const closed = await $.ui.mount(BAND)
-    expect(await closed.find({ key: 'accept-GH56JK' })).toBeUndefined()
+    expect(await closed.find({ key: 'acceptance-GH56JK' })).toBeUndefined()
     expect(await closed.find({ key: 'more' })).toBeDefined()
   })
 
@@ -1522,7 +1610,7 @@ describe('waiting for you', () => {
     w.tabs = [{ tab_id: 'w1:t5', label: 'K7P2QX/discuss', agent_status: 'idle' }]
     await w.clock.advance(60_000)
     // A notice: what Accept says.
-    await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+    await pressAccept($, await $.ui.mount(BAND), 'MG677R', w)
     w.usage.tokens = 80_000
     await answer($)
     await (await $.ui.mount(BAND)).press({ key: 'theirs' })
@@ -1554,16 +1642,16 @@ describe('waiting for you', () => {
     world(on)
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    expect(await ui.find({ key: 'explain-MG677R' })).toBeDefined()
+    expect(await ui.find({ key: 'acceptance-MG677R' })).toBeDefined()
     expect(await ui.find({ key: 'read-MG677R' })).toBeUndefined()
   })
 })
 
 describe('after Accept', () => {
-  const press = async ($: Test$) => {
+  const press = async ($: Test$, w?: World) => {
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'accept-MG677R' })
+    await pressAccept($, ui, 'MG677R', w)
   }
   const prLane = (w: World) => ran(w, 'bash', SPAWN).filter(r => r.includes('pr'))
   const failure = async ($: Test$) => {
@@ -1574,14 +1662,14 @@ describe('after Accept', () => {
   test('a branch ahead of the target without a pull request: the press opens one, by a person, in the ticket\'s worktree', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 3
-    await press($)
+    await press($, w)
     expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'upstream/main..feat/mg677r', '@/repo']])
     expect(ran(w, 'gh')).toEqual([
       ['gh', 'repo', 'view', 'git@github.com:acme/repo.git', '--json', 'isFork,parent,nameWithOwner,defaultBranchRef', '@/repo'],
       ['gh', 'repo', 'view', 'upstream/repo', '--json', 'isFork,parent,nameWithOwner,defaultBranchRef', '@/repo'],
       ['gh', 'pr', 'list', '--repo', 'upstream/repo', '--head', 'feat/mg677r', '--state', 'all', '--json', 'number', '@/repo'],
     ])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
     // After the move, never before it: the press accepted first.
     const order = w.ran.map(r => r[1] === SPAWN ? 'spawn' : r.includes('--force') ? 'move' : '').filter(Boolean)
     expect(order).toEqual(['move', 'spawn'])
@@ -1593,7 +1681,7 @@ describe('after Accept', () => {
     w.ahead = 3
     w.prs = [{ number: 12 }]
     w.next = ['T8QS1Y', 'AB12CD']
-    await press($)
+    await press($, w)
     // Which ticket runs next is the teamlead's call, never the button's (X6JHQX).
     expect(ran(w, 'jaira', 'next')).toEqual([])
     expect(ran(w, 'bash', SPAWN)).toEqual([])
@@ -1604,7 +1692,7 @@ describe('after Accept', () => {
   test('nothing ahead of the target: no pull request is asked for, no tab opens, and the press says accepted', async ($, on) => {
     const w = world(on, { herdr: true })
     w.next = ['AB12CD']
-    await press($)
+    await press($, w)
     expect(ran(w, 'gh', 'pr')).toEqual([])
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(w.toasts.at(-1)).toBe('MG677R accepted: done')
@@ -1614,7 +1702,7 @@ describe('after Accept', () => {
     const w = world(on, { herdr: true })
     w.ahead = 1
     w.forge = 'gitlab'
-    await press($)
+    await press($, w)
     expect(ran(w, 'glab', 'mr')).toEqual([['glab', 'mr', 'list', '--repo', 'upstream/repo', '--source-branch', 'feat/mg677r', '--all', '-F', 'json', '@/repo']])
     expect(prLane(w)).toHaveLength(1)
   })
@@ -1627,11 +1715,11 @@ describe('after Accept', () => {
     w.subjects = ['fix(ZZ99ZZ): one']
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'accept-ZZ99ZZ' })
+    await pressAccept($, ui, 'ZZ99ZZ', w)
     expect(ran(w, 'git', 'branch')).toEqual([['git', 'branch', '--list', '--format=%(refname:short)', '*/zz99zz', '@/repo']])
     expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'upstream/main..feat/zz99zz', '@/repo']])
     expect(ran(w, 'git', 'worktree', 'add')).toEqual([['git', 'worktree', 'add', '/.worktrees/repo-zz99zz', 'feat/zz99zz', '@/repo']])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-zz99zz', '@/.worktrees/repo-zz99zz']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-zz99zz', '@/.worktrees/repo-zz99zz']])
   })
 
   test('a branch left behind beside the Herdr review branch of it: the pull request opens from the ticket branch itself', async ($, on) => {
@@ -1642,7 +1730,7 @@ describe('after Accept', () => {
     w.subjects = ['fix(ZZ99ZZ): one']
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'accept-ZZ99ZZ' })
+    await pressAccept($, ui, 'ZZ99ZZ', w)
     expect(ran(w, 'git', 'worktree', 'add')).toEqual([['git', 'worktree', 'add', '/.worktrees/repo-zz99zz', 'task/zz99zz', '@/repo']])
   })
 
@@ -1651,7 +1739,7 @@ describe('after Accept', () => {
     w.ahead = 4
     w.subjects = ['feat(MG677R): cache key', 'fix(T8QS1Y): filter', 'feat(T8QS1Y): filter', 'docs: no ticket']
     w.next = ['AB12CD']
-    await press($)
+    await press($, w)
     expect(ran(w, 'gh', 'pr')).toEqual([])
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(w.toasts.at(-1)).toBe('MG677R accepted; no pull request for feat/mg677r yet: T8QS1Y not in done')
@@ -1662,29 +1750,44 @@ describe('after Accept', () => {
     w.ahead = 4
     w.tickets = [SIGNOFF, { ...WORKING, status: 'done' }]
     w.subjects = ['feat(MG677R): cache key', 'fix(T8QS1Y): filter', 'chore(OLD123): filed away long ago']
-    await press($)
+    await press($, w)
     expect(prLane(w)).toHaveLength(1)
   })
 
-  test('a ticket worked on another ticket\'s branch finds that branch by the commits naming it', async ($, on) => {
+  test('a ticket worked on another ticket\'s branch finds that branch by its own commit, the one branch holding it', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 2
     w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }, { ...WORKING, handle: 'MG677R', status: 'done' }]
     w.subjects = ['feat(MG677R): cache key', 'fix(ZZ99ZZ): on the same branch']
     w.branchCommits = [{ sha: 'abc123', subject: 'fix(ZZ99ZZ): on the same branch' }]
-    // A wip holding the same commit has fewer parts and is no reason to leave
-    // it; a main checkout detached mid-rebase lists first and is no branch.
-    w.holders = ['(HEAD detached at abc123)', 'master', 'feat/mg677r', 'wip']
+    // A main checkout detached mid-rebase lists first and is no branch.
+    w.holders = ['(HEAD detached at abc123)', 'master', 'feat/mg677r']
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'accept-ZZ99ZZ' })
+    await pressAccept($, ui, 'ZZ99ZZ', w)
     expect(ran(w, 'git', 'log', '--branches')).toEqual([['git', 'log', '--branches', '--not', 'upstream/main', '--format=%H %s', '@/repo']])
     expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
     // Its worktree is the other ticket's: the role pushes from there.
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
   })
 
-  test('the branch search finds a ticket named beside others in one subject, and never a handle that only starts the same', async ($, on) => {
+  // A wip or a branch stacked on the ticket's holds its commit as well: Accept
+  // opens no pull request for a guess, and says between which (Alex, QTQW15).
+  test('several branches hold its own commit: no pull request, the press names them', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }, { ...WORKING, handle: 'MG677R', status: 'done' }]
+    w.branchCommits = [{ sha: 'abc123', subject: 'fix(ZZ99ZZ): on the same branch' }]
+    w.holders = ['master', 'feat/mg677r', 'wip']
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await pressAccept($, ui, 'ZZ99ZZ', w)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(w.toasts.at(-1)).toContain("ZZ99ZZ accepted; feat/mg677r and wip could each be ZZ99ZZ's branch")
+    expect(w.submitted.at(-1)).toContain("feat/mg677r and wip could each be ZZ99ZZ's branch")
+  })
+
+  test('a ticket named only beside others in a subject has no commit of its own: no branch, no pull request (Alex, QTQW15)', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 2
     w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }, { ...WORKING, handle: 'MG677R', status: 'done' }]
@@ -1697,9 +1800,9 @@ describe('after Accept', () => {
     w.holders = ['feat/mg677r']
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'accept-ZZ99ZZ' })
-    expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+    await pressAccept($, ui, 'ZZ99ZZ', w)
+    expect(ran(w, 'git', 'branch', '--contains')).toEqual([])
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
   })
 
   test('the branch search reads subjects only: a merge commit quoting the ticket in its body is passed over', async ($, on) => {
@@ -1714,18 +1817,20 @@ describe('after Accept', () => {
     w.holders = ['feat/mg677r']
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'accept-ZZ99ZZ' })
+    await pressAccept($, ui, 'ZZ99ZZ', w)
     expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
   })
 
   test('in a fork, ahead counts against the parent\'s default branch, fetched first — never the lagging local master', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 3
-    await press($)
+    await press($, w)
     expect(ran(w, 'git', 'fetch')).toEqual([['git', 'fetch', 'upstream', 'main', '@/repo']])
     const order = w.ran.map(r => r[1] === 'fetch' ? 'fetch' : r[1] === 'log' ? 'log' : '').filter(Boolean)
-    expect(order).toEqual(['fetch', 'log'])
-    expect(ran(w, 'git', 'log')).toEqual([['git', 'log', '--format=%s', 'upstream/main..feat/mg677r', '@/repo']])
+    // Every log after the fetch: the branch search and the count alike.
+    expect(order[0]).toBe('fetch')
+    expect(order.slice(1).every(x => x === 'log')).toBe(true)
+    expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'upstream/main..feat/mg677r', '@/repo']])
   })
 
   test('not a fork: the base is origin\'s own default branch', async ($, on) => {
@@ -1733,7 +1838,7 @@ describe('after Accept', () => {
     w.ahead = 1
     w.origin = 'git@github.com:upstream/repo.git'
     w.remotes = 'origin\tgit@github.com:upstream/repo.git (fetch)\n'
-    await press($)
+    await press($, w)
     expect(ran(w, 'git', 'fetch')).toEqual([['git', 'fetch', 'origin', 'main', '@/repo']])
     expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'origin/main..feat/mg677r', '@/repo']])
   })
@@ -1742,7 +1847,7 @@ describe('after Accept', () => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.remotes = 'origin\tgit@github.com:acme/repo.git (fetch)\n'
-    await press($)
+    await press($, w)
     expect(ran(w, 'git', 'log')).toEqual([])
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(w.toasts.at(-1)).toContain('Pull requests go to upstream/repo, and no remote here points at it')
@@ -1752,7 +1857,7 @@ describe('after Accept', () => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.prs = null
-    await press($)
+    await press($, w)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(ran(w, 'jaira', 'move', 'MG677R').map(r => r[5])).toEqual(['--dry-run', '--force'])
     expect(w.opened).toEqual([])
@@ -1763,7 +1868,7 @@ describe('after Accept', () => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.prListFails = true
-    await press($)
+    await press($, w)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(w.toasts.at(-1)).toContain('pull requests not checked (gh: HTTP 401')
   })
@@ -1773,7 +1878,7 @@ describe('after Accept', () => {
     w.ahead = 2
     w.tickets = [SIGNOFF, WORKING, { ...WORKING, handle: 'AB12CD', status: 'done' }]
     w.subjects = ['feat(MG677R): cache key', 'chore(AB12CD,T8QS1Y): both at once']
-    await press($)
+    await press($, w)
     expect(prLane(w)).toEqual([])
     expect(w.toasts.at(-1)).toContain('no pull request for feat/mg677r yet: T8QS1Y not in done')
   })
@@ -1782,7 +1887,7 @@ describe('after Accept', () => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.origin = null
-    await press($)
+    await press($, w)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(await failure($)).toContain('needs an origin on GitHub or GitLab')
   })
@@ -1792,9 +1897,9 @@ describe('after Accept', () => {
     w.ahead = 3
     w.origin = 'git@git.example.de:acme/repo.git'
     w.basePr = '# solo\nnone\n'
-    await press($)
+    await press($, w)
     expect(ran(w, 'gh')).toEqual([])
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
     expect(w.toasts.at(-1)).toContain('MG677R: landing feat/mg677r on the default branch')
     expect(w.toasts.join('\n')).not.toContain('pull request for')
   })
@@ -1804,7 +1909,7 @@ describe('after Accept', () => {
     w.ahead = 3
     w.origin = null
     w.basePr = 'none\n'
-    await press($)
+    await press($, w)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(await failure($)).toContain('no remote origin to land on')
   })
@@ -1814,7 +1919,7 @@ describe('after Accept', () => {
     w.ahead = 2
     w.prs = null
     w.basePr = '\uFEFFnone\r\n'
-    await press($)
+    await press($, w)
     expect(prLane(w)).toEqual([])
     const why = await failure($)
     expect(why).toContain('Nothing lands from here')
@@ -1827,7 +1932,7 @@ describe('after Accept', () => {
     w.origin = null
     w.subjects = ['feat(MG677R): cache key', 'fix(T8QS1Y): filter']
     w.basePr = 'none\n'
-    await press($)
+    await press($, w)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(w.toasts.at(-1)).toBe('MG677R accepted; feat/mg677r does not land yet: T8QS1Y not in done')
   })
@@ -1837,7 +1942,7 @@ describe('after Accept', () => {
     w.ahead = 3
     w.origin = null
     w.files.set('/repo/.jaira/pr', 'none\n')
-    await press($)
+    await press($, w)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(await failure($)).toContain('needs an origin on GitHub or GitLab')
   })
@@ -1848,7 +1953,7 @@ describe('after Accept', () => {
     w.origin = 'git@git.example.de:acme/repo.git'
     w.originHead = 'origin/main'
     w.basePr = 'none\n'
-    await press($)
+    await press($, w)
     expect(ran(w, 'git', 'show')).toEqual([['git', 'show', 'origin/main:.jaira/pr', '@/repo']])
     expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'origin/main..feat/mg677r', '@/repo']])
     expect(prLane(w)).toHaveLength(1)
@@ -1859,7 +1964,7 @@ describe('after Accept', () => {
     w.ahead = 3
     w.origin = null
     w.basePr = 'nnone\n'
-    await press($)
+    await press($, w)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(await failure($)).toContain('needs an origin on GitHub or GitLab')
   })
@@ -1868,7 +1973,7 @@ describe('after Accept', () => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.origin = 'git@git.example.de:acme/repo.git'
-    await press($)
+    await press($, w)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(await failure($)).toContain('git config jaira.forge')
   })
@@ -1876,23 +1981,31 @@ describe('after Accept', () => {
   test('no pull request due and no Herdr: nothing is missing, so nothing fails, and the press says accepted', async ($, on) => {
     const w = world(on)
     w.next = ['AB12CD']
-    await press($)
+    await press($, w)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(w.opened).toEqual([])
     expect(w.toasts.at(-1)).toBe('MG677R accepted: done')
   })
 
+  test('a socket whose file is gone is no parent: the press still opens the pull request, which asks in its own tab', async ($, on) => {
+    const w = world(on, { herdr: true, socket: false })
+    w.ahead = 3
+    await press($)
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', '--no-parent', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+  })
+
   test('Herdr App (HC_TERMINAL_ID, no HERDR_ENV): the press opens the pull request through spawn.sh all the same', async ($, on) => {
     const w = world(on, { herdr: true, env: { HOME: '/home/a', HC_TERMINAL_ID: 't3' } })
     w.ahead = 3
-    await press($)
-    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+    await press($, w)
+    // No messaging socket in this session: no parent, the role asks in its tab.
+    expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', '--no-parent', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
   })
 
   test('no Herdr: nothing starts, and the pane says the step needs it', async ($, on) => {
     const w = world(on)
     w.ahead = 3
-    await press($)
+    await press($, w)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(await failure($)).toContain('needs a pull request')
   })
@@ -1901,7 +2014,7 @@ describe('after Accept', () => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     w.refusals = [...w.refusals, { code: 'needs_commits', message: 'no commit names MG677R' }]
-    await press($)
+    await press($, w)
     expect(ran(w, 'git', 'log')).toEqual([])
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(w.submitted).toEqual([])
@@ -1918,15 +2031,109 @@ describe('after Accept', () => {
   })
 })
 
+describe('the head of every pane', () => {
+  // A head row as the terminal lays it out: '[ label ]' per Button, one
+  // column between the tabs, Close pushed to the right edge.
+  type Node = { type: string; props: Record<string, unknown>; children?: Node[] }
+  const buttonsOf = (n: Node | undefined): string[] =>
+    n === undefined ? [] : n.type === 'Button' ? [n.props.label as string] : (n.children ?? []).flatMap(buttonsOf)
+  async function headOf(pane: { find: (q: { key: string }) => Promise<unknown> }, key: string) {
+    const row = (await pane.find({ key })) as Node | undefined
+    expect(row).toBeDefined()
+    // One line: a row that never wraps, its parts never shrunk to a second line.
+    expect(row!.props).toMatchObject({ flexDirection: 'row', flexWrap: 'nowrap', justifyContent: 'space-between' })
+    const [tabs, close] = row!.children
+    expect(tabs!.props).toMatchObject({ flexWrap: 'nowrap', flexShrink: 0 })
+    expect(close!.props).toMatchObject({ flexShrink: 0 })
+    const left = buttonsOf(tabs!)
+    const right = buttonsOf(close!)
+    expect(right).toEqual(['Close'])
+    // Marked as the pane's close: a desktop draws its native close for it.
+    expect(close!.children![0]!.props.role).toBe('dismiss')
+    const drawn = [...left, ...right].map(l => `[ ${l} ]`)
+    // Every button is hit across at least three columns, brackets included.
+    for (const d of drawn) expect(d.length).toBeGreaterThanOrEqual(3)
+    const width = drawn.reduce((n, d) => n + d.length, 0) + Math.max(0, left.length - 1) + (left.length > 0 ? 1 : 0)
+    return { left, width }
+  }
+
+  test('Overview: the tabs and Close on one line that fits 80 columns', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...WORKING, assignee: 'Alex', updated_at: ago(0.1) }]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    const { left, width } = await headOf(pane, 'overview-top-row')
+    expect(left).toEqual(['Queue', 'Log', 'Workers'])
+    expect(width).toBeLessThanOrEqual(80)
+  })
+
+  test('Verdict, Give back, Explanation, Message and the ticket pane: Close at the right of a one-line head, first', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = ['## Progress', '', '- **2026-10-12 15:00 · Alex** — explain: The key leaves out the branch.'].join('\n')
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    const first = async (pane: { find: (q: { type: 'Box' }) => Promise<unknown> }, key: string) =>
+      expect(((await pane.find({ type: 'Box' })) as Node).children[0]?.props.key).toBe(key)
+    const panes: [string, () => Promise<{ find: never; press: (q: { key: string }) => Promise<unknown> }>, string][] = [
+      ['acceptance', async () => { await band.press({ key: 'acceptance-MG677R' }); return $.ui.mount(ACCEPT('Acceptance of MG677R')) as never }, 'cockpit-acceptance'],
+      ['explanation', async () => { await band.press({ key: 'read-MG677R' }); return $.ui.mount(EXPLANATION('Explanation of MG677R')) as never }, 'cockpit-explanation'],
+      ['message', async () => {
+        // Another session moved it first: that is said in the message pane.
+        w.movedFirst = true
+        await (await pressAccept($, band, 'MG677R', w)).unmount()
+        return $.ui.mount(MESSAGE('Accept MG677R failed')) as never
+      }, 'cockpit-message'],
+      ['ticket', async () => {
+        await $.command.run(typed('ticket MG677R'))
+        return $.ui.mount({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-ticket', props: { title: 'Ticket MG677R', isFocused: false, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } } as never) as never
+      }, 'cockpit-ticket'],
+    ]
+    for (const [name, open, id] of panes) {
+      const pane = await open()
+      await first(pane as never, `${name}-head`)
+      const { left, width } = await headOf(pane as never, `${name}-head`)
+      expect(left).toEqual([])
+      expect(width).toBeLessThanOrEqual(80)
+      await pane.press({ key: `${name}-close` })
+      expect(w.closed.at(-1)).toBe(id)
+      await (pane as unknown as { unmount: () => Promise<unknown> }).unmount()
+    }
+  })
+
+  test('a pane left with nothing to show keeps its head, and its Close closes it', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    // Mounted with nothing opened: the state each reads is empty, as after
+    // its ticket left the board.
+    const panes: [string, unknown, string][] = [
+      ['acceptance', ACCEPT('Acceptance of MG677R'), 'cockpit-acceptance'],
+      ['explanation', EXPLANATION('Explanation of MG677R'), 'cockpit-explanation'],
+      ['ticket', { plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-ticket', props: { title: 'Ticket MG677R', isFocused: false, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }, 'cockpit-ticket'],
+    ]
+    for (const [name, element, id] of panes) {
+      const pane = await $.ui.mount(element as never)
+      expect(await pane.find({ type: 'Text', text: 'nothing recorded yet' })).toBeDefined()
+      const { left } = await headOf(pane as never, `${name}-head`)
+      expect(left).toEqual([])
+      await pane.press({ key: `${name}-close` })
+      expect(w.closed.at(-1)).toBe(id)
+      await pane.unmount()
+    }
+  })
+})
+
 describe('give back', () => {
   async function giveBack($: Test$, w: World) {
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'back-MG677R' })
-    const pane = await $.ui.mount(GIVE('Give back MG677R'))
-    const typed = pane.input({ key: 'reason-MG677R', text: 'der Branch fehlt im Schluessel' })
+    await ui.press({ key: 'acceptance-MG677R' })
+    const pane = await $.ui.mount(ACCEPT('Acceptance of MG677R'))
+    const typed = pane.input({ key: 'typed-MG677R', text: 'der Branch fehlt im Schluessel' })
     // Herdr is given a second between the text and its Enter.
     await w.clock.advance(1000)
     await typed
+    await pane.unmount()
+    await ui.unmount()
     return w
   }
 
@@ -1934,19 +2141,20 @@ describe('give back', () => {
     const w = world(on)
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'back-MG677R' })
+    await ui.press({ key: 'acceptance-MG677R' })
     // Live, the band's own field never got the ring: the press keeps it on
     // the button. A pane opened with focus hands it to its autoFocus field.
-    expect(await ui.find({ key: 'reason-MG677R' })).toBeUndefined()
-    expect(w.opened).toEqual([{ id: 'cockpit-give-back', title: 'Give back MG677R', focus: true }])
-    const pane = await $.ui.mount(GIVE('Give back MG677R'))
-    expect((await pane.find({ key: 'reason-MG677R' }))?.props.autoFocus).toBe(true)
-    // Enter on an empty field gives nothing back and keeps the pane open.
-    await pane.input({ key: 'reason-MG677R', text: '  ' })
+    expect(await ui.find({ key: 'typed-MG677R' })).toBeUndefined()
+    expect(w.opened).toEqual([{ id: 'cockpit-acceptance', title: 'Acceptance of MG677R', focus: true }])
+    const pane = await $.ui.mount(ACCEPT('Acceptance of MG677R'))
+    expect((await pane.find({ key: 'typed-MG677R' }))?.props.autoFocus).toBe(true)
+    // Enter on an empty field gives nothing back, accepts nothing, and keeps the pane open.
+    await pane.input({ key: 'typed-MG677R', text: '  ' })
     expect(ran(w, 'jaira', 'note')).toEqual([])
+    expect(ran(w, 'jaira', 'move')).toEqual([])
     expect(w.closed).toEqual([])
-    await pane.input({ key: 'reason-MG677R', text: 'fehlt' })
-    expect(w.closed).toEqual(['cockpit-give-back'])
+    await pane.input({ key: 'typed-MG677R', text: 'fehlt' })
+    expect(w.closed).toEqual(['cockpit-acceptance'])
     expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress'])
   })
 
@@ -2007,7 +2215,7 @@ describe('give back', () => {
     await startSession($)
     await giveBack($, w)
     expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
-    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe("cockpit: given back to a new worker - old worker's context 300k >= 250k (50% of its window)")
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toStartWith("cockpit: given back to a new worker - old worker's context 300k >= 250k (50% of its window); ")
   })
 
   test('the share is a setting', { options: { workerContextShare: 70 } }, async ($, on) => {
@@ -2032,6 +2240,129 @@ describe('give back', () => {
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to the old worker - tab alive, cache warm for 40 more min, context 80k')
   })
 
+  // QTQW15: the new worker reports to the ticket's teamlead, starts where the
+  // ticket's commits are, and is never a second one beside a worker at work.
+  const PARENT = '- **2026-11-20 10:00 · Alex** — parent session: uds:/run/lead.sock\n'
+  const spawned = (w: World) => ran(w, 'bash', SPAWN).map(r => r.slice(2, -1))
+  const lastNote = (w: World) => ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3] ?? ''
+
+  test('the new worker reports to the parent session the ticket names, and the teamlead hears who took it', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.bodies.MG677R = `## Progress\n- **2026-11-19 09:00 · Alex** — parent session: uds:/run/old.sock\n${PARENT}`
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w)).toEqual([['--no-worktree', '--parent', 'uds:/run/lead.sock', 'mg677r', 'MG677R', 'worker', '/.worktrees/repo-mg677r']])
+    expect(lastNote(w)).toContain("reports to uds:/run/lead.sock, the ticket's parent session")
+    expect(w.submitted).toEqual(['jaira-cockpit: MG677R given back: der Branch fehlt im Schluessel, worker new MG677R/worker (pane w1:p42, on feat/mg677r) (Person, Cockpit; signoff -> in-progress)'])
+  })
+
+  test('a parent session that is gone: this session takes the reports, never no parent at once', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.bodies.MG677R = PARENT
+    w.deadParents = ['uds:/run/lead.sock']
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w).map(a => a.slice(1, 3))).toEqual([['--parent', 'uds:/run/lead.sock'], ['--parent', 'uds:/tmp/cc-socks-1000/77.sock']])
+    expect(lastNote(w)).toContain('reports to this session (uds:/run/lead.sock does not listen)')
+  })
+
+  test('no parent anywhere: the worker asks in its own tab, and the note says so', async ($, on) => {
+    const w = world(on, { herdr: true, env: { HOME: '/home/a', HERDR_ENV: '1', HERDR_BIN_PATH: 'herdr', HERDR_PANE_ID: 'w1:p1' } })
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w).map(a => a[1])).toEqual(['--no-parent'])
+    expect(lastNote(w)).toContain('no parent session reachable')
+  })
+
+  test('no worktree of its own: the one branch holding its commit, in the worktree that branch has', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.worktrees = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-fix-login\nHEAD 3\nbranch refs/heads/fix-login\n'
+    w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }, { sha: 'c1', subject: 'chore(X1Y2Z3): other' }]
+    w.holders = ['fix-login']
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w)).toEqual([['--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'worker', '/.worktrees/repo-fix-login']])
+    expect(lastNote(w)).toContain('branch fix-login holds the newest commit naming the ticket, worktree /.worktrees/repo-fix-login')
+  })
+
+  test('several branches hold the commit and none is the ticket\'s own: nothing is started, the teamlead hears which', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.worktrees = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-0gmyqb\nHEAD 4\nbranch refs/heads/feat/0gmyqb\n\nworktree /.worktrees/repo-fix-login\nHEAD 3\nbranch refs/heads/fix-login\n'
+    w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }]
+    w.holders = ['feat/0gmyqb', 'fix-login']
+    // No tip lies under the other: master was merged into fix-login after
+    // feat/0gmyqb was stacked on it.
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w)).toEqual([])
+    expect(lastNote(w)).toContain("feat/0gmyqb and fix-login could each be MG677R's branch and none is its worktree's")
+    expect(w.submitted[0]).toContain('worker none: feat/0gmyqb and fix-login could each be')
+    // The band says why, not only the note.
+    expect(w.toasts.at(-1)).toContain("MG677R: feat/0gmyqb and fix-login could each be MG677R's branch")
+  })
+
+  test('a branch whose worktree was removed is checked out again', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.worktrees = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n'
+    w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }]
+    w.holders = ['fix-login']
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w)).toEqual([['--branch', 'fix-login', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'worker', '/repo']])
+  })
+
+  test('two branches hold the commit: the ticket\'s own worktree branch, not the one stacked on it', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }]
+    w.holders = ['stacked-on-it', 'feat/mg677r']
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w)[0]?.at(-1)).toBe('/.worktrees/repo-mg677r')
+  })
+
+  test('no branch of the ticket\'s at all: spawn.sh makes one, as before', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.worktrees = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n'
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w)).toEqual([['--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'worker', '/repo']])
+    expect(lastNote(w)).toContain('no branch carries the ticket yet')
+  })
+
+  test('a worker at work gets the decision, however full its context: its tab is never closed, no second one starts', async ($, on) => {
+    const w = world(on, { herdr: true, store: big(500_000) })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker', agent_status: 'working' }]
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
+    expect(spawned(w)).toEqual([])
+    expect(lastNote(w)).toBe('cockpit: given back to the old worker - the old worker is at work in its tab')
+  })
+
+  test('a worker at work with nothing recorded to reach it: still no second one, and the note says where it is', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker', agent_status: 'working' }]
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
+    expect(spawned(w)).toEqual([])
+    expect(lastNote(w)).toContain('tell it in tab MG677R/worker - no second worker started')
+    // The teamlead hears there is one, so it starts none either.
+    expect(w.submitted).toEqual(['jaira-cockpit: MG677R given back: der Branch fehlt im Schluessel, worker MG677R/worker at work, not reached: type the decision into its tab, start no other (Person, Cockpit; signoff -> in-progress)'])
+  })
+
+  test('Give back twice in a row: one worker, the second press finds the ticket already back', async ($, on) => {
+    const w = world(on, { herdr: true })
+    await startSession($)
+    await giveBack($, w)
+    w.movedFirst = true
+    await w.clock.advance(60_000)
+    await giveBack($, w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(2)
+    expect(spawned(w)).toHaveLength(1)
+  })
+
   test('otherwise closes the old worker\'s tab first, then starts a new one', async ($, on) => {
     const w = world(on, { herdr: true, store: { 'session:old': {
       session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
@@ -2044,9 +2375,21 @@ describe('give back', () => {
     const spawn = w.ran.findIndex(r => r[1] === SPAWN)
     expect(w.ran[close]?.[3]).toBe('w1:t9')
     expect(close).toBeLessThan(spawn)
-    expect(w.ran[spawn]?.slice(0, 7)).toEqual(['bash', SPAWN, '--no-parent', 'mg677r', 'MG677R', 'worker', '/repo'])
+    expect(w.ran[spawn]?.slice(0, 8)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'worker'])
     expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
-    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to a new worker - old worker\'s prompt cache cold for 10 min')
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toStartWith('cockpit: given back to a new worker - old worker\'s prompt cache cold for 10 min; ')
+  })
+  test('a session without a messaging socket starts the new worker with no parent: it asks in its own tab', async ($, on) => {
+    const w = world(on, { herdr: true, env: { HOME: '/home/a', HERDR_ENV: '1', HERDR_BIN_PATH: 'herdr', HERDR_PANE_ID: 'w1:p1' } })
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 7)).toEqual(['bash', SPAWN, '--no-worktree', '--no-parent', 'mg677r', 'MG677R', 'worker'])
+  })
+  test('a socket whose file is gone is no parent: the new worker still starts, asking in its own tab', async ($, on) => {
+    const w = world(on, { herdr: true, socket: false })
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 7)).toEqual(['bash', SPAWN, '--no-worktree', '--no-parent', 'mg677r', 'MG677R', 'worker'])
   })
   test('a pane gone since the tab list takes no text: the old tab is closed and a new worker started', async ($, on) => {
     const w = world(on, { herdr: true, store: { 'session:old': {
@@ -2059,9 +2402,59 @@ describe('give back', () => {
     await giveBack($, w)
     expect(ran(w, 'herdr', 'pane', 'send-keys')).toEqual([])
     expect(ran(w, 'herdr', 'tab', 'close')[0]?.[3]).toBe('w1:t9')
-    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 7)).toEqual(['bash', SPAWN, '--no-parent', 'mg677r', 'MG677R', 'worker', '/repo'])
-    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to a new worker - tab alive, cache warm for 40 more min, context 80k, but its pane took no text')
+    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 8)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'worker'])
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toStartWith('cockpit: given back to a new worker - tab alive, cache warm for 40 more min, context 80k, but its pane took no text; ')
   })
+})
+
+// Of several branches that hold the ticket's newest commit, the ticket's own
+// wins — its worktree's, else the one named after it — so a branch stacked on
+// top of it never takes the work, whatever order git lists them in (QTQW15).
+// Give back takes the ticket's own worktree, else its <prefix>/<slug>, else
+// the one branch holding its own commit — and guesses at nothing else
+// (Alex, QTQW15, after three rounds of guessing rules).
+describe('the branch a ticket rides on', () => {
+  const cases: [string, Parameters<typeof carrierFor>[0], string | undefined][] = [
+    ['its worktree, whatever holds the commit', { own: 'feat/qtqw15', base: 'master', holders: 'feat/0gmyqb\nfix-login\n' }, 'feat/qtqw15'],
+    ['its worktree on a branch of another name', { own: 'fix-login', base: 'master' }, 'fix-login'],
+    ['no worktree, its branch left behind', { base: 'master', slugBranches: 'review/feat/qtqw15\nfeat/qtqw15\n', holders: 'feat/0gmyqb\n' }, 'feat/qtqw15'],
+    ['one holder of another name', { base: 'master', holders: 'fix-login\n' }, 'fix-login'],
+    ['one holder and its review wrapper', { base: 'master', holders: 'review/fix-login\nfix-login\n' }, 'fix-login'],
+    ['the branch the main checkout stands on holds it alone', { base: 'master', holders: 'fix-login\nmaster\n' }, 'fix-login'],
+    ['a detached HEAD is no holder', { base: 'master', holders: '(HEAD detached at c2)\nfix-login\n' }, 'fix-login'],
+    ['nothing at all', { base: 'master', holders: '', slugBranches: '' }, undefined],
+    ['only the default branch holds it', { base: 'master', holders: 'master\n' }, undefined],
+  ]
+  for (const [name, input, want] of cases) test(name, () => {
+    const got = carrierFor(input)
+    expect(got !== undefined && 'branch' in got ? got.branch : undefined).toBe(want)
+  })
+  test('two branches named after it, feat/ and fix/, nothing picked', () => {
+    const got = carrierFor({ base: 'master', slugBranches: 'feat/qtqw15\nfix/qtqw15\nreview/feat/qtqw15\n', holders: 'feat/qtqw15\n' })
+    expect(got !== undefined && 'ambiguous' in got ? got.ambiguous : undefined).toEqual(['feat/qtqw15', 'fix/qtqw15'])
+  })
+  for (const holders of ['feat/0gmyqb\nfix-login\n', 'fix-login\nfeat/0gmyqb\n', 'fix-login\nreview/fix-login\nwip\n']) {
+    test(`several holders, none its own, nothing picked: ${holders.trim().replaceAll('\n', ', ')}`, () => {
+      const got = carrierFor({ base: 'master', holders })
+      expect(got !== undefined && 'ambiguous' in got ? got.ambiguous : undefined).toEqual(holders.trim().split('\n').filter(b => !b.startsWith('review/')))
+    })
+  }
+})
+
+describe('the commit that is a ticket\'s own', () => {
+  const log = (...subjects: string[]) => subjects.map((s, i) => `c${i} ${s}`).join('\n')
+  const cases: [string, string, string | undefined][] = [
+    ['its own scope', log('fix(QTQW15): the key'), 'c0'],
+    ['breaking mark', log('feat(QTQW15)!: the key'), 'c0'],
+    ['a newer follow-up listing it is passed by', log('chore(0GMYQB,QTQW15): stack', 'fix(QTQW15): the key'), 'c1'],
+    ['a list with spaces is passed by', log('fix(QTQW15, 0GMYQB): both', 'fix(QTQW15): own'), 'c1'],
+    ['no commit of its own: a list naming it is still not its own', log('fix(0GMYQB): other', 'chore(0GMYQB,QTQW15): both'), undefined],
+    ['the handle in the text only', log('fix(0GMYQB): builds on QTQW15', 'feat(QTQW15): own'), 'c1'],
+    ['another handle that contains it', log('fix(XQTQW15): no'), undefined],
+    ['no scope at all', log('QTQW15: no scope'), undefined],
+    ['nothing names it', log('fix(0GMYQB): other'), undefined],
+  ]
+  for (const [name, input, want] of cases) test(name, () => expect(commitNaming(input, 'QTQW15')).toBe(want))
 })
 
 describe('the jaira it runs beside', () => {
@@ -2292,16 +2685,21 @@ describe('give back with the review notes', () => {
   }
   async function openPane($: Test$) {
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'back-MG677R' })
-    return $.ui.mount(GIVE('Give back MG677R'))
+    await ui.press({ key: 'acceptance-MG677R' })
+    return $.ui.mount(ACCEPT('Acceptance of MG677R'))
   }
   type Mounted = Awaited<ReturnType<typeof openPane>>
+  // Each note as '[choice] mark text': the choice its bold button names.
+  const LABEL: Record<string, string> = { now: '[fix now]', later: '[follow-up]', accept: '[accept]' }
   async function rows(pane: Mounted) {
     const out: string[] = []
+    // A note's own line opens with its mark; the marks inside it are its children's.
+    const own = (await pane.findAll({ type: 'Text' })).map(x => x.text).filter(x => /^[🔴🟡⚪🔵] /u.test(x))
     for (let i = 0; ; i++) {
-      const row = await pane.find({ key: `gap-MG677R-${i}` })
-      if (row === undefined) return out
-      out.push(row.text)
+      if ((await pane.find({ key: `accept-MG677R-${i}` })) === undefined) return out
+      let chosen = ''
+      for (const c of ['now', 'later', 'accept']) if ((await pane.find({ key: `${c}-MG677R-${i}` }))?.text.startsWith('[•')) chosen = c
+      out.push(`${LABEL[chosen] ?? '[?]'} ${own[i] ?? ''}`)
     }
   }
   const notes = (w: World) => ran(w, 'jaira', 'note', 'MG677R').map(r => r[3])
@@ -2316,8 +2714,8 @@ describe('give back with the review notes', () => {
       '[accept] 🔵 note: pre-existing: the log rotates at midnight UTC',
     ])
     // The first row takes the keyboard; the field below is for anything else.
-    expect((await pane.find({ key: 'gap-MG677R-0' }))?.props.autoFocus).toBe(true)
-    expect((await pane.find({ key: 'reason-MG677R' }))?.props.autoFocus).toBeUndefined()
+    expect((await pane.find({ key: 'accept-MG677R-0' }))?.props.autoFocus).toBe(true)
+    expect((await pane.find({ key: 'typed-MG677R' }))?.props.autoFocus).toBeUndefined()
   })
 
   test('the Explain note classes a known limit, which starts as accepted, when it classes every note', async ($, on) => {
@@ -2353,7 +2751,7 @@ describe('give back with the review notes', () => {
     const seen: string[] = []
     for (let i = 0; i < 4; i++) {
       seen.push((await rows(pane))[0]!.split(']')[0]! + ']')
-      await pane.press({ key: 'gap-MG677R-0' })
+      await cycle(pane, 'MG677R', 0)
       }
     expect(seen).toEqual(['[accept]', '[fix now]', '[follow-up]', '[accept]'])
   })
@@ -2363,9 +2761,9 @@ describe('give back with the review notes', () => {
     await startSession($)
     const pane = await openPane($)
     // The clock note: accept -> fix now -> follow-up.
-    await pane.press({ key: 'gap-MG677R-2' })
-    await pane.press({ key: 'gap-MG677R-2' })
-    await pane.input({ key: 'reason-MG677R', text: '' })
+    await cycle(pane, 'MG677R', 2)
+    await cycle(pane, 'MG677R', 2)
+    await pane.input({ key: 'typed-MG677R', text: '' })
     expect(notes(w)[0]).toBe([
       'Given back from signoff: beheben:',
       '- blocker: DoD 2 - an empty export still writes a header',
@@ -2380,16 +2778,16 @@ describe('give back with the review notes', () => {
     // The move first: a follow-up only for a ticket that really went back.
     const at = (verb: string) => w.ran.findIndex(r => r[0] === 'jaira' && r[1] === verb)
     expect(at('move')).toBeLessThan(at('create'))
-    expect(w.closed).toContain('cockpit-give-back')
+    expect(w.closed).toContain('cockpit-acceptance')
   })
 
   test("a follow-up's title drops the review's fix-now mark as it drops pre-existing", async ($, on) => {
     const w = withGaps(on, 'blocker: the header\nnote: fix-now: the guard misses an empty name')
     await startSession($)
     const pane = await openPane($)
-    await pane.press({ key: 'gap-MG677R-1' })
-    await pane.press({ key: 'gap-MG677R-1' })
-    await pane.input({ key: 'reason-MG677R', text: '' })
+    await cycle(pane, 'MG677R', 1)
+    await cycle(pane, 'MG677R', 1)
+    await pane.input({ key: 'typed-MG677R', text: '' })
     const create = ran(w, 'jaira', 'create')[0]!
     expect(create[create.indexOf('--') + 1]).toBe('the guard misses an empty name')
   })
@@ -2398,19 +2796,22 @@ describe('give back with the review notes', () => {
     const w = withGaps(on, 'note: the size')
     await startSession($)
     const pane = await openPane($)
-    await pane.press({ key: 'gap-MG677R-0' })
-    await pane.input({ key: 'reason-MG677R', text: 'and the docs' })
+    await cycle(pane, 'MG677R', 0)
+    await pane.input({ key: 'typed-MG677R', text: 'and the docs' })
     expect(notes(w)[0]).toBe('Given back from signoff: beheben:\n- note: the size\ndazu: and the docs')
   })
 
-  test('nothing marked fix now and nothing typed gives nothing back and keeps the pane open', async ($, on) => {
+  test('nothing marked fix now and nothing typed: Enter in the field accepts nothing, Execute accepts', async ($, on) => {
     const w = withGaps(on, 'note: the size')
     await startSession($)
     const pane = await openPane($)
-    await pane.input({ key: 'reason-MG677R', text: ' ' })
+    await pane.input({ key: 'typed-MG677R', text: ' ' })
     expect(ran(w, 'jaira', 'move')).toEqual([])
     expect(w.closed).toEqual([])
-    expect(w.toasts.at(-1)).toBe('MG677R: no note is marked fix now and nothing is typed - mark one, type what is missing, or press Accept')
+    expect(w.toasts.at(-1)).toBe('MG677R: no note is marked fix now and nothing is typed - mark one, type what is missing, or press Execute to accept')
+    await pane.press({ key: 'execute-MG677R' })
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
+    expect(w.closed).toContain('cockpit-acceptance')
   })
 
   test('a follow-up that could not be created is named so, and the note is still written', async ($, on) => {
@@ -2418,10 +2819,10 @@ describe('give back with the review notes', () => {
     w.createFails = true
     await startSession($)
     const pane = await openPane($)
-    await pane.press({ key: 'gap-MG677R-0' })
-    await pane.press({ key: 'gap-MG677R-1' })
-    await pane.press({ key: 'gap-MG677R-1' })
-    await pane.input({ key: 'reason-MG677R', text: '' })
+    await cycle(pane, 'MG677R', 0)
+    await cycle(pane, 'MG677R', 1)
+    await cycle(pane, 'MG677R', 1)
+    await pane.input({ key: 'typed-MG677R', text: '' })
     expect(notes(w)[0]).toBe('Given back from signoff: beheben:\n- note: the size\nFolge-Ticket:\n- (not created: jaira: the board is locked): note: pre-existing: the clock')
     // Heard, not only noted: the toast after it says the ticket went back.
     expect(w.opened).toContainEqual({ id: 'cockpit-message', title: 'Follow-up tickets of MG677R failed', focus: true })
@@ -2431,9 +2832,9 @@ describe('give back with the review notes', () => {
     const w = withGaps(on, '-race fails in core/gitref')
     await startSession($)
     const pane = await openPane($)
-    await pane.press({ key: 'gap-MG677R-0' })
-    await pane.press({ key: 'gap-MG677R-0' })
-    await pane.input({ key: 'reason-MG677R', text: 'and the docs' })
+    await cycle(pane, 'MG677R', 0)
+    await cycle(pane, 'MG677R', 0)
+    await pane.input({ key: 'typed-MG677R', text: 'and the docs' })
     // jaira create takes the title only as its argument: after '--', where
     // jaira itself (checked by hand: exit 0) reads '-race' as a title.
     expect(ran(w, 'jaira', 'create')[0]?.slice(2, 7)).toEqual(['--context=-race fails in core/gitref', '--follows=MG677R', '--json', '--', '-race fails in core/gitref'])
@@ -2443,7 +2844,7 @@ describe('give back with the review notes', () => {
     const w = withGaps(on, 'note: the size\nnote: pre-existing: the clock')
     w.bodies.MG677R = '## Progress\n- **2026-11-20 10:00 · Alex** — Given back from signoff: beheben:\n- note: the size\nFolge-Ticket:\n- A1B2C3: note: pre-existing: the clock\n'
     await startSession($)
-    await (await openPane($)).input({ key: 'reason-MG677R', text: '' })
+    await (await openPane($)).input({ key: 'typed-MG677R', text: '' })
     expect(ran(w, 'jaira', 'create')).toEqual([])
     expect(notes(w)[0]).toBe('Given back from signoff: beheben:\n- note: the size\nFolge-Ticket:\n- A1B2C3: note: pre-existing: the clock')
   })
@@ -2452,7 +2853,7 @@ describe('give back with the review notes', () => {
     const w = withGaps(on, 'note: the size')
     await startSession($)
     const pane = await openPane($)
-    await pane.input({ key: 'reason-MG677R', text: 'the docs are missing' })
+    await pane.input({ key: 'typed-MG677R', text: 'the docs are missing' })
     expect(notes(w)[0]).toBe('Given back from signoff: beheben:\ndazu: the docs are missing\nangenommen:\n- note: the size')
   })
 
@@ -2463,14 +2864,15 @@ describe('give back with the review notes', () => {
     expect(await rows(await openPane($))).toEqual(['[accept] 🟡 note: the size (decided before)'])
   })
 
-  test('Accept with notes still marked fix now is refused and says so', async ($, on) => {
+  test('a note marked fix now: Execute gives the ticket back, accepts nothing', async ($, on) => {
     const w = withGaps(on, 'note: the size')
     await startSession($)
     const pane = await openPane($)
-    await pane.press({ key: 'gap-MG677R-0' })
-    await pane.press({ key: 'gaps-accept-MG677R' })
-    expect(ran(w, 'jaira', 'move')).toEqual([])
-    expect(w.toasts.at(-1)).toBe('MG677R: 1 note is marked fix now - press Give back, or mark it follow-up or accept')
+    await cycle(pane, 'MG677R', 0)
+    await pane.press({ key: 'execute-MG677R' })
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'in-progress')).toHaveLength(1)
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toEqual([])
+    expect(notes(w)[0]).toBe('Given back from signoff: beheben:\n- note: the size')
   })
 
   test('a note that is no blocker, not marked fix now, does not hold Accept: the decisions go onto the ticket once it is accepted', async ($, on) => {
@@ -2478,9 +2880,9 @@ describe('give back with the review notes', () => {
     await startSession($)
     const pane = await openPane($)
     // the clock: accept -> fix now -> follow-up
-    await pane.press({ key: 'gap-MG677R-1' })
-    await pane.press({ key: 'gap-MG677R-1' })
-    await pane.press({ key: 'gaps-accept-MG677R' })
+    await cycle(pane, 'MG677R', 1)
+    await cycle(pane, 'MG677R', 1)
+    await pane.press({ key: 'execute-MG677R' })
     expect(notes(w)[0]).toBe('Accepted from signoff: Folge-Ticket:\n- F00001: note: pre-existing: the clock\nangenommen:\n- note: the size')
     const forced = w.ran.findIndex(r => r[1] === 'move' && r.includes('--force'))
     const noted = w.ran.findIndex(r => r[1] === 'note')
@@ -2492,7 +2894,7 @@ describe('give back with the review notes', () => {
     const w = withGaps(on, 'note: pre-existing: the clock')
     w.refusals.push({ code: 'dod_open', message: 'DoD 2 is not ticked' })
     await startSession($)
-    await (await openPane($)).press({ key: 'gaps-accept-MG677R' })
+    await (await openPane($)).press({ key: 'execute-MG677R' })
     expect(ran(w, 'jaira', 'note')).toEqual([])
     expect(ran(w, 'jaira', 'create')).toEqual([])
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toEqual([])
@@ -2503,33 +2905,34 @@ describe('give back with the review notes', () => {
     const w = withGaps(on, 'blocker: the header\nnote: the size')
     await startSession($)
     const pane = await openPane($)
-    // Fix now: no field for a reason, the plain Accept.
-    expect(await pane.find({ key: 'why-MG677R' })).toBeUndefined()
-    await pane.press({ key: 'gap-MG677R-0' })
-    await pane.press({ key: 'gap-MG677R-0' })
-    // Not fix now: the Accept button gives way to the required field.
-    expect(await pane.find({ key: 'gaps-accept-MG677R' })).toBeUndefined()
+    // Fix now: the field asks for anything else, Execute gives back.
+    expect((await pane.find({ key: 'typed-MG677R' }))?.props.label).toBe('Anything else?')
+    await cycle(pane, 'MG677R', 0)
+    await cycle(pane, 'MG677R', 0)
+    // Not fix now: the field asks why, and Execute without a reason does nothing.
+    expect((await pane.find({ key: 'typed-MG677R' }))?.props.label).toBe('Why accept it with the blocker?')
     for (const empty of ['', '   ', '\n']) {
-      await pane.input({ key: 'why-MG677R', text: empty })
+      await pane.input({ key: 'typed-MG677R', text: empty })
       expect(ran(w, 'jaira', 'move')).toEqual([])
       expect(w.closed).toEqual([])
-      expect(w.toasts.at(-1)).toBe('MG677R: a blocker is not marked fix now - type why it is accepted anyway, or mark it fix now and press Give back')
+      expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('MG677R: a blocker is not marked fix - type why it is accepted anyway, or mark it fix')
     }
-    await pane.input({ key: 'why-MG677R', text: 'the header is\nharmless for now' })
+    await pane.input({ key: 'typed-MG677R', text: 'the header is\nharmless for now' })
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
     expect(notes(w)).toEqual([
       'Accepted from signoff: angenommen:\n- blocker: the header\n- note: the size',
       'decision: accepted with a blocker not fixed: the header is harmless for now',
+      'cockpit: accepted by the person, signoff -> done',
     ])
   })
 
-  test('the band\'s Accept accepts at once without a blocker', async ($, on) => {
+  test('Execute accepts at once without a blocker, the pane closing behind it', async ($, on) => {
     const w = withGaps(on, 'note: the header')
     w.bodies.MG677R = '## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok\n[small edge] the header\n'
     await startSession($)
-    await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+    await (await openPane($)).press({ key: 'execute-MG677R' })
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
-    expect(w.opened.map(o => o.id)).not.toContain('cockpit-give-back')
+    expect(w.closed).toContain('cockpit-acceptance')
   })
 
   // A blocker by its prefix, in markdown, or by the Explain note's class;
@@ -2540,32 +2943,31 @@ describe('give back with the review notes', () => {
     ['- **Blocker:** the header\nnote: the size', ''],
     ['note: the header\nnote: the size', '[blocker] the header\n[small edge] the size'],
   ] as const) {
-    test(`the band's Accept with a blocker in the review opens the notes and moves nothing: ${JSON.stringify(gaps)}${explain === '' ? '' : ` (Explain: ${JSON.stringify(explain)})`}`, async ($, on) => {
+    test(`a blocker in the review starts as fix now: Execute gives back and accepts nothing: ${JSON.stringify(gaps)}${explain === '' ? '' : ` (Explain: ${JSON.stringify(explain)})`}`, async ($, on) => {
       const w = withGaps(on, gaps)
       if (explain !== '') w.bodies.MG677R = `## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: DoD 3/3 ok\n${explain}\n`
       await startSession($)
-      await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
-      expect(ran(w, 'jaira', 'move')).toEqual([])
-      expect(w.opened.at(-1)).toEqual({ id: 'cockpit-give-back', title: 'Give back MG677R', focus: true })
+      await (await openPane($)).press({ key: 'execute-MG677R' })
+      expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toEqual([])
+      expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'in-progress')).toHaveLength(1)
     })
   }
 
-  for (const press of ['back', 'accept', 'band-accept'] as const) {
+  for (const press of ['back', 'accept'] as const) {
     test(`a move another session made first: the second press writes nothing (${press})`, async ($, on) => {
       const w = withGaps(on, 'note: the size\nnote: pre-existing: the clock')
       w.movedFirst = true
       await startSession($)
-      if (press === 'band-accept') await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
-      else {
+      {
         const pane = await openPane($)
-        await pane.press({ key: 'gap-MG677R-0' })
-        await pane.press({ key: 'gap-MG677R-1' })
-        await pane.press({ key: 'gap-MG677R-1' })
-        if (press === 'back') await pane.input({ key: 'reason-MG677R', text: 'and the docs' })
+        await cycle(pane, 'MG677R', 0)
+        await cycle(pane, 'MG677R', 1)
+        await cycle(pane, 'MG677R', 1)
+        if (press === 'back') await pane.input({ key: 'typed-MG677R', text: 'and the docs' })
         else {
-          await pane.press({ key: 'gap-MG677R-0' })
-          await pane.press({ key: 'gap-MG677R-0' })
-          await pane.press({ key: 'gaps-accept-MG677R' })
+          await cycle(pane, 'MG677R', 0)
+          await cycle(pane, 'MG677R', 0)
+          await pane.press({ key: 'execute-MG677R' })
         }
       }
       expect(ran(w, 'jaira', 'move').filter(r => !r.includes('--dry-run'))).toHaveLength(1)
@@ -2617,14 +3019,15 @@ describe('give back with the review notes', () => {
     await startSession($)
     const pane = await openPane($)
     expect(await rows(pane)).toEqual([])
-    expect((await pane.find({ key: 'reason-MG677R' }))?.props.autoFocus).toBe(true)
-    expect(await pane.find({ key: 'gaps-accept-MG677R' })).toBeUndefined()
+    expect((await pane.find({ key: 'typed-MG677R' }))?.props.autoFocus).toBe(true)
+    expect((await pane.find({ key: 'typed-MG677R' }))?.props.label).toBe('What is missing?')
   })
 
   test('a note wrapped over lines is one row, a blank line and a none dropped, CRLF and emphasis read', async ($, on) => {
     withGaps(on, '- note: a long finding\n  that wraps here\n- **blocker:** the header\r\n\nnone')
     await startSession($)
-    expect(await rows(await openPane($))).toEqual(['[accept] 🟡 note: a long finding that wraps here', '[fix now] 🔴 **blocker:** the header'])
+    // What stops the ticket first: the blocker on top.
+    expect(await rows(await openPane($))).toEqual(['[fix now] 🔴 **blocker:** the header', '[accept] 🟡 note: a long finding that wraps here'])
   })
 
   test('gaps without prefixes, as an older review wrote them, are a row per line, none merged', async ($, on) => {
@@ -2652,8 +3055,8 @@ describe('give back with the review notes', () => {
     await startSession($)
     const pane = await openPane($)
     w.tickets = w.tickets.map(x => ((x as { handle: string }).handle === 'MG677R' ? { ...(x as object), status: 'in-progress' } : x))
-    await pane.press({ key: 'gap-MG677R-0' })
-    await pane.input({ key: 'reason-MG677R', text: '' })
+    await cycle(pane, 'MG677R', 0)
+    await pane.input({ key: 'typed-MG677R', text: '' })
     expect(ran(w, 'jaira', 'move')).toEqual([])
     expect(ran(w, 'jaira', 'create')).toEqual([])
     expect(ran(w, 'jaira', 'note')).toEqual([])
@@ -2669,9 +3072,9 @@ describe('give back with the review notes', () => {
     w.tickets = [{ ...SIGNOFF, review: { verdict: SIGNOFF.review.verdict, gaps: 'note: the size\nnote: the docs' } }]
     await startSession($)
     const pane = await openPane($)
-    await pane.press({ key: 'gap-MG677R-0' })
-    await pane.press({ key: 'gap-MG677R-1' })
-    const typed = pane.input({ key: 'reason-MG677R', text: '' })
+    await cycle(pane, 'MG677R', 0)
+    await cycle(pane, 'MG677R', 1)
+    const typed = pane.input({ key: 'typed-MG677R', text: '' })
     await w.clock.advance(1000)
     await typed
     const sent = ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')[0]?.[4] ?? ''
@@ -2687,16 +3090,16 @@ describe('the line a press hands this session', () => {
     const w = world(on, { herdr: true })
     w.ahead = 3
     await startSession($)
-    await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
-    expect(w.submitted).toEqual(['jaira-cockpit: the person accepted MG677R in the cockpit (signoff -> done); MG677R: opening the pull request for feat/mg677r in a Herdr tab'])
+    await pressAccept($, await $.ui.mount(BAND), 'MG677R', w)
+    expect(w.submitted).toEqual(['jaira-cockpit: MG677R: accepted, signoff -> done (Person, Cockpit); MG677R: opening the pull request for feat/mg677r in a Herdr tab'])
   })
 
   test('Accept whose next step fails: still one line, since the ticket is in done', async ($, on) => {
     const w = world(on)
     w.ahead = 3
     await startSession($)
-    await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
-    expect(w.submitted).toEqual(['jaira-cockpit: the person accepted MG677R in the cockpit (signoff -> done); the next step after MG677R failed, see the cockpit'])
+    await pressAccept($, await $.ui.mount(BAND), 'MG677R', w)
+    expect(w.submitted).toEqual(['jaira-cockpit: MG677R: accepted, signoff -> done (Person, Cockpit); the next step after MG677R failed, see the cockpit'])
   })
 
   test('Give back: one line naming who carries the work now, the reason on one line', async ($, on) => {
@@ -2706,23 +3109,23 @@ describe('the line a press hands this session', () => {
     } } })
     w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
     await startSession($)
-    await (await $.ui.mount(BAND)).press({ key: 'back-MG677R' })
-    await (await $.ui.mount(GIVE('Give back MG677R'))).input({ key: 'reason-MG677R', text: 'der Branch\nfehlt   im Schluessel ' + 'x'.repeat(200) })
+    await (await $.ui.mount(BAND)).press({ key: 'acceptance-MG677R' })
+    await (await $.ui.mount(ACCEPT('Acceptance of MG677R'))).input({ key: 'typed-MG677R', text: 'der Branch\nfehlt   im Schluessel ' + 'x'.repeat(200) })
     expect(w.submitted).toHaveLength(1)
     const line = w.submitted[0]!
-    expect(line.startsWith('jaira-cockpit: the person gave MG677R back in the cockpit (signoff -> in-progress), a new worker started: der Branch fehlt im Schluessel xx')).toBe(true)
+    expect(line.startsWith('jaira-cockpit: MG677R given back: der Branch fehlt im Schluessel xx')).toBe(true)
     expect(line).not.toContain('\n')
-    expect(line.endsWith('…')).toBe(true)
+    expect(line.endsWith('…, worker new MG677R/worker (pane w1:p42, on feat/mg677r) (Person, Cockpit; signoff -> in-progress)')).toBe(true)
   })
 
   test('a reason cut at its limit never splits a character outside the BMP', async ($, on) => {
     const w = world(on)
     await startSession($)
-    await (await $.ui.mount(BAND)).press({ key: 'back-MG677R' })
+    await (await $.ui.mount(BAND)).press({ key: 'acceptance-MG677R' })
     // 118 characters, then emoji: the cut at 119 falls inside a surrogate pair by UTF-16 index.
-    await (await $.ui.mount(GIVE('Give back MG677R'))).input({ key: 'reason-MG677R', text: 'x'.repeat(118) + '\u{1F44D}\u{1F44D}\u{1F44D} passt nicht' })
+    await (await $.ui.mount(ACCEPT('Acceptance of MG677R'))).input({ key: 'typed-MG677R', text: 'x'.repeat(118) + '\u{1F44D}\u{1F44D}\u{1F44D} passt nicht' })
     const line = w.submitted[0]!
-    expect(line.endsWith('x\u{1F44D}…')).toBe(true)
+    expect(line).toContain('x\u{1F44D}…, worker')
     expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(line)).toBe(false)
   })
 })
@@ -2741,8 +3144,8 @@ describe('give back, the edges', () => {
     const w = world(on)
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'back-MG677R' })
-    await (await $.ui.mount(GIVE('Give back MG677R'))).input({ key: 'reason-MG677R', text: 'fehlt' })
+    await ui.press({ key: 'acceptance-MG677R' })
+    await (await $.ui.mount(ACCEPT('Acceptance of MG677R'))).input({ key: 'typed-MG677R', text: 'fehlt' })
     expect(await ui.find({ type: 'Text', text: "MG677R back in in-progress; no worker started (the ticket's note says why)" })).toBeDefined()
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to nobody (no worker started) - no Herdr in this session')
     expect(ran(w, 'bash', SPAWN)).toEqual([])
@@ -2758,8 +3161,8 @@ describe('give back with nothing to start a worker', () => {
     w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker' }]
     await startSession($)
     const ui = await $.ui.mount(BAND)
-    await ui.press({ key: 'back-MG677R' })
-    await (await $.ui.mount(GIVE('Give back MG677R'))).input({ key: 'reason-MG677R', text: 'fehlt' })
+    await ui.press({ key: 'acceptance-MG677R' })
+    await (await $.ui.mount(ACCEPT('Acceptance of MG677R'))).input({ key: 'typed-MG677R', text: 'fehlt' })
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toStartWith('cockpit: given back to nobody (no worker started) - old worker\'s prompt cache cold for 10 min; no spawn.sh found')
   })
@@ -2989,7 +3392,7 @@ describe('the head line, in the band\'s frame', () => {
     await startSession($)
     expect(await headLine($)).toBe('0 worker | 0 review | 2 waiting for you | 5h 34%')
     const ui = await $.ui.mount(BAND)
-    expect(await ui.find({ key: 'accept-MG677R' })).toBeDefined()
+    expect(await ui.find({ key: 'acceptance-MG677R' })).toBeDefined()
     expect(await ui.find({ key: 'discuss-K7P2QX' })).toBeDefined()
   })
 
@@ -3479,48 +3882,36 @@ describe('the overview', () => {
     expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBe('primary')
   })
 
-  test('the top row is one row of framed buttons alike — the tabs and Close — and the open tab is the one highlighted', async ($, on) => {
+  test('the top row is one line of buttons alike — the tabs on the left, Close at the right — and the open tab is the one highlighted', async ($, on) => {
     const w = world(on)
     w.tickets = [{ ...WORKING, assignee: 'Alex', updated_at: ago(0.1) }]
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'overview' })
     const pane = await $.ui.mount(OVERVIEW)
-    const KEYS = ['overview-tab-queue', 'overview-tab-log', 'overview-tab-workers', 'overview-close']
     for (const tab of ['queue', 'log', 'workers']) {
       await pane.press({ key: `overview-tab-${tab}` })
-      // One row, in this order, every button in a frame of its own with the
-      // same border and padding: none stands higher or lower than another.
-      const frames = await Promise.all(KEYS.map(k => pane.find({ key: `${k}-frame` })))
-      for (const frame of frames) {
-        expect(frame?.props).toMatchObject({ borderStyle: 'round', paddingX: 1 })
-        expect(frame?.children.length).toBe(1)
-      }
-      const row = await pane.find({ key: 'overview-top-row' })
-      expect(row?.children.map(c => c.props)).toEqual(frames.map(f => f?.props))
-      // It never wraps: the pane budgets it three rows (OVERVIEW_ROWS).
-      expect(row?.props).toMatchObject({ flexDirection: 'row' })
-      expect(row?.props.flexWrap).toBeUndefined()
+      // No frame anywhere: every button is drawn as the terminal draws a
+      // Button, '[ label ]', one line high.
+      expect(await pane.find({ key: 'overview-close-frame' })).toBeUndefined()
+      expect(await pane.find({ key: `overview-tab-${tab}-frame` })).toBeUndefined()
       const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
       expect(labels.slice(0, 4)).toEqual(['Queue', 'Log', 'Workers', 'Close'])
-      // The open tab, and only it, is highlighted: a coloured frame and the
-      // primary variant; the others are dimmed. Close is never a tab.
-      for (const [i, other] of ['queue', 'log', 'workers'].entries()) {
+      // The open tab, and only it, is the primary button; the others are
+      // dimmed. Close is never a tab.
+      for (const other of ['queue', 'log', 'workers']) {
         const open = other === tab
-        expect(frames[i]?.props.borderColor).toBe(open ? 'claude' : undefined)
-        expect(frames[i]?.props.borderDimColor).toBe(!open)
-        expect((await pane.find({ key: `overview-tab-${other}` }))?.props.variant).toBe(open ? 'primary' : undefined)
+        const b = await pane.find({ key: `overview-tab-${other}` })
+        expect(b?.props.variant).toBe(open ? 'primary' : undefined)
+        expect(b?.props.dimColor).toBe(!open)
       }
-      expect(frames[3]?.props.borderColor).toBeUndefined()
-      expect(frames[3]?.props.borderDimColor).toBe(false)
+      expect((await pane.find({ key: 'overview-close' }))?.props.variant).toBeUndefined()
     }
-    // What Close draws is longer than the longest tab's label.
-    const closeText = (await pane.find({ type: 'Text', text: /^ +Close +$/ }))?.text ?? ''
-    expect(closeText.length).toBeGreaterThan('Workers'.length)
     await pane.press({ key: 'overview-close' })
     await pane.unmount()
+    // An unread board keeps the same head, Close alone at its right.
     w.nextFails = true
     await (await $.ui.mount(BAND)).press({ key: 'overview' })
-    expect(await (await $.ui.mount(OVERVIEW)).find({ key: 'overview-close-frame' })).toBeDefined()
+    expect(await (await $.ui.mount(OVERVIEW)).find({ key: 'overview-top-row-close' })).toBeDefined()
   })
 
   test('every Log line starts with its kind\'s sign, one wide code point, so no column shifts', async ($, on) => {
@@ -3718,8 +4109,8 @@ describe('the workers tab', () => {
       const picture = await pictureOf(pane, 100)
       const lines = await linesOf(pane)
       expect(lines).toHaveLength(n)
-      // 40 rows less the tab row, three high with the framed Close in it.
-      expect(picture.length + lines.length).toBeLessThanOrEqual(37)
+      // 40 rows less the head: the tabs and Close, one line.
+      expect(picture.length + lines.length).toBeLessThanOrEqual(39)
       const crabs = picture.join('\n')
       const big = crabs.split('▐▛███▜▌').length - 1
       const small = crabs.split('▐▛▜▌').length - 1
@@ -3891,6 +4282,186 @@ describe('the workers tab', () => {
   })
 })
 
+describe('following a pull request (CRASZS)', () => {
+  const press = async ($: Test$) => {
+    await startSession($)
+    await pressAccept($, await $.ui.mount(BAND), 'MG677R')
+  }
+  const open = (n: number, extra: Record<string, unknown> = {}) =>
+    JSON.stringify({ prs: [{ number: n, state: 'open', tickets: ['MG677R'], settled: true, unsettled: [], ...extra }] })
+  const prReads = (w: World) => ran(w, 'jaira', 'pr')
+  const follow = (n: number) =>
+    `jaira-cockpit: pull request #${n} for MG677R is open - follow it: run 'jaira pr --watch --number ${n}' under a Monitor (one line per change, it ends when the pull request is merged or closed)`
+
+  test('the pr lane Accept started: the pull request is looked for each minute and handed to this session once it is there, once', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.prReads = [JSON.stringify({ prs: [] }), open(12)]
+    await press($)
+    // Nothing is asked at the press itself: the lane has only just started.
+    expect(prReads(w)).toEqual([])
+    await w.clock.advance(60_000)
+    expect(prReads(w)).toEqual([['jaira', 'pr', 'feat/mg677r', '--json', '@/repo']])
+    expect(w.submitted.filter(x => x.includes('pull request #'))).toEqual([])
+    await w.clock.advance(60_000)
+    expect(w.submitted.filter(x => x.includes('pull request #'))).toEqual([follow(12)])
+    await w.clock.advance(10 * 60_000)
+    expect(prReads(w)).toHaveLength(2)
+  })
+
+  test('a pull request that never appears is looked for twenty times, then no more', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    await press($)
+    for (let i = 0; i < 40; i++) await w.clock.advance(60_000)
+    expect(prReads(w)).toHaveLength(20)
+    expect(w.submitted.filter(x => x.includes('pull request #'))).toEqual([])
+  })
+
+  test('jaira pr refusing (no gh, no sign-in) ends the looking at once', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.prReads = ['!jaira: pr: not signed in']
+    await press($)
+    for (let i = 0; i < 5; i++) await w.clock.advance(60_000)
+    expect(prReads(w)).toHaveLength(1)
+  })
+
+  test('a forge failing for a minute (exit 1) is asked again; the pull request is handed over once it answers', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.prReads = ['?jaira: pr: gh: HTTP 502', open(12)]
+    await press($)
+    await w.clock.advance(60_000)
+    await w.clock.advance(60_000)
+    expect(prReads(w)).toHaveLength(2)
+    expect(w.submitted.filter(x => x.includes('pull request #'))).toEqual([follow(12)])
+  })
+
+  test('a pull request handed over before is not handed over again, also by a later session', async ($, on) => {
+    const w = world(on, { herdr: true, store: { 'pr-followed:/repo:12': true } })
+    w.ahead = 3
+    w.prReads = [open(12)]
+    await press($)
+    await w.clock.advance(60_000)
+    expect(prReads(w)).toHaveLength(1)
+    expect(w.submitted.filter(x => x.includes('pull request #'))).toEqual([])
+  })
+
+  describe('.jaira/pr-when says signoff', () => {
+    const paneText = async ($: Test$) => {
+      const pane = await $.ui.mount(MESSAGE('Accept MG677R failed'))
+      return (await pane.findAll({ type: 'Text' })).map(x => x.text).join('\n')
+    }
+    const moved = (w: World) => ran(w, 'jaira', 'move').filter(r => r.includes('--force'))
+
+    test('no pull request yet: Accept opens it through the pr lane and the ticket stays in signoff', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 3
+      await press($)
+      expect(moved(w)).toEqual([])
+      expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+      expect(w.toasts.at(-1)).toContain('MG677R stays in signoff: opening the pull request for feat/mg677r')
+      expect(w.submitted).toEqual(['jaira-cockpit: the person pressed Accept on MG677R; this board opens the pull request in signoff, so the pr lane is opening it for feat/mg677r and MG677R stays in signoff until the review round is settled'])
+    })
+
+    test('a pull request open and not settled: nothing moves, and the pane says what is in the way', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 3
+      w.prs = [{ number: 12 }]
+      w.prReads = [open(12, { settled: false, unsettled: ['2 open threads', 'review pending: copilot'] })]
+      await press($)
+      expect(moved(w)).toEqual([])
+      expect(ran(w, 'bash', SPAWN)).toEqual([])
+      const text = await paneText($)
+      expect(text).toContain('#12: 2 open threads')
+      expect(text).toContain('#12: review pending: copilot')
+      expect(text).toContain('MG677R stays in signoff; nothing was moved.')
+    })
+
+    test('a pull request settled: Accept moves the ticket to done as everywhere', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 3
+      w.prs = [{ number: 12 }]
+      w.prReads = [open(12)]
+      await press($)
+      expect(moved(w)).toHaveLength(1)
+    })
+
+    test('the forge lists a pull request jaira pr does not show open from origin: held, a person tells whose it is', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 3
+      w.prs = [{ number: 12 }]
+      w.prReads = [JSON.stringify({ prs: [] })]
+      await press($)
+      expect(moved(w)).toEqual([])
+      expect(ran(w, 'bash', SPAWN)).toEqual([])
+      expect(await paneText($)).toContain('none is open from this repository')
+    })
+
+    test('another ticket on the branch not in signoff yet: nothing opens and nothing moves', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 2
+      w.subjects = ['feat(MG677R): cache key', 'fix(AB12CD): other']
+      w.tickets = [SIGNOFF, { ...SIGNOFF, handle: 'AB12CD', status: 'critique' }]
+      await press($)
+      expect(moved(w)).toEqual([])
+      expect(ran(w, 'bash', SPAWN)).toEqual([])
+      expect(await paneText($)).toContain('the pull request for feat/mg677r waits: AB12CD not in signoff yet')
+    })
+
+    test('no lock against a second press: each press starts the pr lane, no tab state is read, nothing moves', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 3
+      await press($)
+      w.tabs = [{ tab_id: 'w1:t7', label: 'MG677R/pr', agent_status: 'blocked' }]
+      await w.clock.advance(3_000)
+      await pressAccept($, await $.ui.mount(BAND), 'MG677R')
+      expect(ran(w, 'bash', SPAWN)).toHaveLength(2)
+      expect(moved(w)).toEqual([])
+    })
+
+    test('an open definition-of-done item refuses the press before any pull request is opened', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 3
+      w.refusals = [...w.refusals, { code: 'needs_nonmodel_signal', message: 'the definition of done is not met: criterion 1 is still open' }]
+      await startSession($)
+      const pane = await pressAccept($, await $.ui.mount(BAND), 'MG677R')
+      expect(ran(w, 'bash', SPAWN)).toEqual([])
+      expect(ran(w, 'jaira', 'roles')).toEqual([])
+      expect(moved(w)).toEqual([])
+      // A gate's refusal is said in the Acceptance pane (2V50Y5), not the message pane.
+      expect((await pane.findAll({ type: 'Text' })).map(x => x.text).join('\n')).toContain('criterion 1 is still open')
+    })
+
+    test('pr-when that cannot be read counts as done: Accept moves the ticket as on any board', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.rolesFails = true
+      w.ahead = 3
+      await press($)
+      expect(moved(w)).toHaveLength(1)
+      expect(ran(w, 'jaira', 'pr')).toEqual([])
+    })
+
+    test('a forge that cannot be asked holds the ticket too, and says why', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 3
+      w.prs = null
+      await press($)
+      expect(moved(w)).toEqual([])
+      expect(await paneText($)).toContain('pull requests not checked')
+    })
+  })
+})
+
 // 76ERHH: a press writes from a disk that holds the ticket as its ref has it.
 // A file on the ref alone, or one older than the ref, refused every Accept and
 // Give back ("on its ref and not on your disk"); the cockpit pulls it first.
@@ -3901,9 +4472,9 @@ describe('a ticket not on the disk the press writes from', () => {
   const ALONE = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n'
   const press = async ($: Test$, w: World, how: 'accept' | 'give back') => {
     const ui = await $.ui.mount(BAND)
-    if (how === 'accept') return void (await ui.press({ key: 'accept-MG677R' }))
-    await ui.press({ key: 'back-MG677R' })
-    const typed = (await $.ui.mount(GIVE('Give back MG677R'))).input({ key: 'reason-MG677R', text: 'fehlt' })
+    if (how === 'accept') return void (await pressAccept($, ui, 'MG677R', w))
+    await ui.press({ key: 'acceptance-MG677R' })
+    const typed = (await $.ui.mount(ACCEPT('Acceptance of MG677R'))).input({ key: 'typed-MG677R', text: 'fehlt' })
     await w.clock.advance(1000)
     await typed
   }
@@ -3948,7 +4519,8 @@ describe('a ticket not on the disk the press writes from', () => {
     await startSession($)
     await press($, w, 'accept')
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toEqual([])
-    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Accept MG677R failed', focus: true })
+    // The refusal is said in the Acceptance pane, which stays open.
+    expect(w.closed).not.toContain('cockpit-acceptance')
     expect(ran(w, 'git', 'clean')).toHaveLength(1)
   })
 
@@ -3960,8 +4532,8 @@ describe('a ticket not on the disk the press writes from', () => {
     w.refusals = [{ code: 'dod_open', message: 'definition of done item 2 is open' }]
     await startSession($)
     await press($, w, 'accept')
-    // The refusal stays the last pane opened: nothing the copy says replaces it.
-    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Accept MG677R failed', focus: true })
+    // The refusal is said in the Acceptance pane; the copy beside the band.
+    expect(w.closed).not.toContain('cockpit-acceptance')
     const said = w.toasts.at(-1) ?? ''
     expect(said).toContain('Permission denied')
     expect(said).toContain("git clean -fqx -- '/repo/.jaira/tickets/01MG677R-cache-key.md'")
@@ -4024,7 +4596,7 @@ describe('a ticket not on the disk the press writes from', () => {
 describe('the verdict light', () => {
   const ready: Waiting = {
     id: 'MG677R', title: 'cache key', goal: '', lane: 'signoff', verdict: 'approve', question: '', dodComplete: true,
-    dodOpen: { person: 0, other: 0 }, acceptTo: 'done', assignee: '', explainable: false, blockers: [], notes: [], findingsKnown: true, gaps: '',
+    dodOpen: { person: 0, other: 0 }, acceptTo: 'done', assignee: '', blockers: [], notes: [], findingsKnown: true, gaps: '',
   }
   const first = (w: Waiting, hunt: Parameters<typeof lightOf>[1]) => {
     const l = lightOf(w, hunt)
@@ -4128,17 +4700,18 @@ describe('review notes as a person reads them', () => {
     return texts.filter(x => /^\p{Extended_Pictographic}/u.test(x))
   }
   async function giveBackRows($: Test$) {
-    await (await $.ui.mount(BAND)).press({ key: 'back-MG677R' })
-    const pane = await $.ui.mount(GIVE('Give back MG677R'))
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    const marks = (await pane.findAll({ type: 'Text' })).map(x => x.text).filter(x => /^[🔴🟡⚪🔵] /u.test(x))
     const out: string[] = []
-    for (let i = 0; ; i++) {
-      const row = await pane.find({ key: `gap-MG677R-${i}` })
-      if (row === undefined) return { out, pane }
-      out.push(row.text)
+    for (let i = 0; i < marks.length; i++) {
+      let label = ''
+      for (const [c, l] of [['now', '[fix now]'], ['later', '[follow-up]'], ['accept', '[accept]']] as const) if ((await pane.find({ key: `${c}-MG677R-${i}` }))?.text.startsWith('[•')) label = l
+      out.push(`${label} ${marks[i]}`)
     }
+    return { out, pane }
   }
 
-  test('each class has its mark, in the Verdict pane and in the Give back pane; without a language nothing is sent', async ($, on) => {
+  test('each class has its mark in the Acceptance pane; without a language nothing is sent', async ($, on) => {
     const w = withNotes(on)
     await startSession($)
     expect(await verdictNotes($)).toEqual([
@@ -4175,7 +4748,7 @@ describe('review notes as a person reads them', () => {
     await startSession($)
     const { out, pane } = await giveBackRows($)
     expect(out).toEqual([`[fix now] 🔴 ${ru[0]}`, `[accept] 🟡 ${ru[1]}`, `[accept] ⚪ ${ru[2]}`, `[accept] 🔵 ${ru[3]}`])
-    await pane.input({ key: 'reason-MG677R', text: '' })
+    await pane.input({ key: 'typed-MG677R', text: '' })
     const written = ran(w, 'jaira', 'note', 'MG677R').map(r => r[3]).join('\n')
     expect(written).toContain('- blocker: the header is written twice')
     expect(written).not.toContain(ru[0])
@@ -4228,12 +4801,12 @@ describe('review notes as a person reads them', () => {
     w.modelHeld = []
     await startSession($)
     const band = await $.ui.mount(BAND)
-    void band.press({ key: 'verdict-MG677R' })
+    void band.press({ key: 'acceptance-MG677R' })
     await w.clock.settle()
     expect(w.modelHeld).toHaveLength(1)
     // The language taken away while the Deutsch call waits.
     w.files.set(SETTINGS, JSON.stringify({ dispatch: 'worker' }))
-    await band.press({ key: 'verdict-MG677R' })
+    await band.press({ key: 'acceptance-MG677R' })
     w.modelHeld.shift()!()
     await w.clock.settle()
     expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
@@ -4242,17 +4815,17 @@ describe('review notes as a person reads them', () => {
     // the older press's and shows nothing.
     w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
     w.model = JSON.stringify(ru)
-    void band.press({ key: 'verdict-MG677R' })
+    void band.press({ key: 'acceptance-MG677R' })
     await w.clock.settle()
     w.files.set(SETTINGS, JSON.stringify({ language: 'Deutsch' }))
-    await band.press({ key: 'verdict-MG677R' })
+    await band.press({ key: 'acceptance-MG677R' })
     expect(w.modelHeld).toHaveLength(1)
     w.modelHeld.shift()!()
     await w.clock.settle()
     w.modelHeld = undefined
     // Read off the pane as it stands, without a press that would ask again.
     const shownNow = async () => {
-      const pane = await $.ui.mount(VERDICT('Review verdict of MG677R'))
+      const pane = await $.ui.mount(ACCEPT('Acceptance of MG677R'))
       const first = (await pane.findAll({ type: 'Text' })).map(x => x.text).find(x => x.startsWith('🔴'))
       await pane.unmount()
       return first
@@ -4263,8 +4836,9 @@ describe('review notes as a person reads them', () => {
     w.files.set(SETTINGS, JSON.stringify({ language: 'English' }))
     w.model = JSON.stringify(['The header twice.', 'No size check.', 'Long Windows paths.', 'load.go:41 takes an empty file.'])
     w.modelHeld = []
-    void band.press({ key: 'verdict-MG677R' })
-    void band.press({ key: 'verdict-MG677R' })
+    void band.press({ key: 'acceptance-MG677R' })
+    await w.clock.settle()
+    void band.press({ key: 'acceptance-MG677R' })
     await w.clock.settle()
     expect(w.modelHeld).toHaveLength(2)
     w.modelHeld.splice(1, 1)[0]!()
@@ -4303,5 +4877,565 @@ describe('the language and the rephrased answer, read alone', () => {
     expect(p).toContain('in Русский')
     expect(p).toContain('exactly 2 strings')
     expect(p).toContain(JSON.stringify(['blocker: `x` in a.go:3', 'note: "quoted"']))
+  })
+})
+
+// DF46B9: Explain and Discuss open a chat that writes its note onto the
+// ticket, which a file on the ref alone or older than the ref refuses. They
+// pull it first through the same ticketHere as Accept (76ERHH). A copy pulled
+// into the main checkout is the chat's to remove, as its last step: the
+// cockpit removes it only when no chat started, and names it a minute after
+// the chat is done if it is still there.
+describe('Explain and Discuss on a ticket not on the disk the chat writes from', () => {
+  const MAIN = '@/repo'
+  const PATH = (id: string) => `/repo/.jaira/tickets/01${id}-cache-key.md`
+  const ALONE = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n'
+  const KINDS = [
+    { kind: 'explain', id: 'MG677R', title: 'Explain MG677R failed' },
+    { kind: 'discuss', id: 'K7P2QX', title: 'Discuss K7P2QX failed' },
+  ] as const
+  const setUp = (w: World, id: string, state: 'ref-only' | 'behind') => {
+    w.worktrees = ALONE
+    w.diskId = id
+    w.disk[MAIN] = state
+    // The file jaira pull writes there.
+    w.files.set(PATH(id), '')
+  }
+  // The chat has done its part: its note on the ticket (1_000_000 ms is
+  // 00:16 UTC, the minute it was opened), its tab no longer working.
+  const finish = (w: World, kind: 'explain' | 'discuss', id: string) => {
+    w.bodies[id] = `## Progress\n\n- **1970-01-01 00:16 · Alex** — ${kind === 'explain' ? 'explain' : 'decision'}: done\n`
+    w.tabs = [{ tab_id: 'w1:t4', label: `${id}/${kind}`, agent_status: 'idle' }]
+  }
+  const copyLine = (w: World, id: string) => w.toasts.filter(x => x.startsWith(`${id}: the copy pulled into the main checkout for a chat`))
+
+  for (const { kind, id } of KINDS) {
+    test(`${kind}, no worktree, file ref-only: pulled before the chat opens, which is handed the copy to remove itself`, async ($, on) => {
+      const w = world(on, { herdr: true })
+      setUp(w, id, 'ref-only')
+      w.tabs = [{ tab_id: 'w1:t4', label: `${id}/${kind}`, agent_status: 'working' }]
+      await startSession($)
+      await pressChat($, await $.ui.mount(BAND), kind, id, w)
+      expect(ran(w, 'jaira', 'pull', id)).toEqual([['jaira', 'pull', id, MAIN]])
+      const spawned = w.ran.findIndex(r => r[0] === 'bash' && r[1] === SPAWN)
+      expect(spawned).toBeGreaterThan(w.ran.findIndex(r => r[1] === 'pull'))
+      const argv = w.ran[spawned]!
+      expect(argv.at(-1)).toBe(MAIN)
+      expect(argv[argv.indexOf('--copy') + 1]).toBe(PATH(id))
+      expect(argv.indexOf('--copy')).toBeLessThan(argv.indexOf(id.toLowerCase()))
+      expect(w.opened.filter(o => o.id === 'cockpit-message')).toEqual([])
+      // The cockpit never removes it under a chat.
+      finish(w, kind, id)
+      w.files.delete(PATH(id))
+      for (let i = 0; i < 4; i++) await w.clock.advance(60_000)
+      expect(ran(w, 'git', 'clean')).toEqual([])
+      expect(copyLine(w, id)).toEqual([])
+    })
+
+    test(`${kind}, no worktree, file behind: pulled before the chat opens, no copy to hand over`, async ($, on) => {
+      const w = world(on, { herdr: true })
+      setUp(w, id, 'behind')
+      await startSession($)
+      await pressChat($, await $.ui.mount(BAND), kind, id, w)
+      expect(ran(w, 'jaira', 'pull', id)).toEqual([['jaira', 'pull', id, MAIN]])
+      expect(ran(w, 'bash', SPAWN)[0]).not.toContain('--copy')
+      finish(w, kind, id)
+      for (let i = 0; i < 4; i++) await w.clock.advance(60_000)
+      expect(copyLine(w, id)).toEqual([])
+    })
+
+    test(`${kind}: a copy the chat left behind is named beside the band a minute after the chat is done, once`, async ($, on) => {
+      const w = world(on, { herdr: true })
+      setUp(w, id, 'ref-only')
+      w.tabs = [{ tab_id: 'w1:t4', label: `${id}/${kind}`, agent_status: 'working' }]
+      await startSession($)
+      await pressChat($, await $.ui.mount(BAND), kind, id, w)
+      await w.clock.advance(60_000)
+      finish(w, kind, id)
+      await w.clock.advance(60_000)
+      // Done this minute: the chat may still be writing its last line.
+      expect(copyLine(w, id)).toEqual([])
+      await w.clock.advance(60_000)
+      await w.clock.advance(60_000)
+      expect(copyLine(w, id)).toEqual([`${id}: the copy pulled into the main checkout for a chat is still there and hides its ref; once no chat on ${id} runs any more, remove it: git clean -fqx -- '${PATH(id)}'`])
+      expect(ran(w, 'git', 'clean')).toEqual([])
+    })
+
+    test(`${kind}: a refused pull stops the press with its reason, opens no chat and never steals`, async ($, on) => {
+      const w = world(on, { herdr: true })
+      setUp(w, id, 'ref-only')
+      w.pullFails = `jaira: ${id} is taken by Berk; --steal takes it anyway`
+      await startSession($)
+      await pressChat($, await $.ui.mount(BAND), kind, id, w)
+      expect(ran(w, 'jaira', 'pull', id)).toEqual([['jaira', 'pull', id, MAIN]])
+      expect(ran(w, 'bash', SPAWN)).toEqual([])
+      expect(ran(w, 'git', 'clean')).toEqual([])
+      expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: KINDS.find(k => k.kind === kind)!.title, focus: true })
+      const pane = await $.ui.mount(MESSAGE(KINDS.find(k => k.kind === kind)!.title))
+      expect(await pane.find({ type: 'Text', text: /--steal/ })).toBeDefined()
+      expect(w.submitted).toEqual([])
+    })
+  }
+
+  for (const { kind, id } of KINDS) {
+    test(`without Herdr, ${kind} pulls and asks this session to remove the copy as its last step`, async ($, on) => {
+      const w = world(on)
+      setUp(w, id, 'ref-only')
+      await startSession($)
+      await pressChat($, await $.ui.mount(BAND), kind, id, w)
+      expect(ran(w, 'jaira', 'pull', id)).toEqual([['jaira', 'pull', id, MAIN]])
+      expect(w.submitted).toHaveLength(1)
+      expect(w.submitted[0]).toEndWith(`As the very last step, once you write nothing more onto the ticket, decided or not: git clean -fqx -- '${PATH(id)}' - the copy of the ticket the cockpit pulled for this chat; left there, it hides the ticket's ref.`)
+      finish(w, kind, id)
+      w.files.delete(PATH(id))
+      for (let i = 0; i < 4; i++) await w.clock.advance(60_000)
+      expect(ran(w, 'git', 'clean')).toEqual([])
+      expect(copyLine(w, id)).toEqual([])
+    })
+  }
+
+  test('a ticket already on the disk: no copy is mentioned to the chat', async ($, on) => {
+    const w = world(on)
+    w.worktrees = ALONE
+    await startSession($)
+    await pressExplain($, await $.ui.mount(BAND), 'MG677R', w)
+    expect(ran(w, 'jaira', 'pull')).toEqual([])
+    expect(w.submitted[0]).not.toContain('git clean')
+  })
+
+  test('a chat that cannot be opened takes the pulled copy away at once', async ($, on) => {
+    const w = world(on, { herdr: true, spawn: false })
+    setUp(w, 'MG677R', 'ref-only')
+    await startSession($)
+    await pressExplain($, await $.ui.mount(BAND), 'MG677R', w)
+    expect(w.opened.at(-1)?.title).toBe('Explain MG677R failed')
+    expect(ran(w, 'git', 'clean')).toEqual([['git', 'clean', '-fqx', '--', PATH('MG677R'), MAIN]])
+  })
+
+  test('a spawn.sh that failed before its tab came up takes the pulled copy away at once', async ($, on) => {
+    const w = world(on, { herdr: true })
+    setUp(w, 'MG677R', 'ref-only')
+    w.spawnFails = 'unknown flag: --copy'
+    await startSession($)
+    await pressExplain($, await $.ui.mount(BAND), 'MG677R', w)
+    expect(w.opened.at(-1)?.title).toBe('Explain MG677R failed')
+    expect(ran(w, 'git', 'clean')).toEqual([['git', 'clean', '-fqx', '--', PATH('MG677R'), MAIN]])
+  })
+
+  test('a spawn.sh that failed after its tab came up leaves the copy to that chat', async ($, on) => {
+    const w = world(on, { herdr: true })
+    setUp(w, 'MG677R', 'ref-only')
+    w.spawnFails = 'claude did not come up in p1: none'
+    w.tabs = [{ tab_id: 'w1:t4', label: 'MG677R/explain', agent_status: 'working' }]
+    await startSession($)
+    await pressExplain($, await $.ui.mount(BAND), 'MG677R', w)
+    expect(w.opened.at(-1)?.title).toBe('Explain MG677R failed')
+    expect(ran(w, 'git', 'clean')).toEqual([])
+    // Still running: nothing is named under it.
+    for (let i = 0; i < 3; i++) await w.clock.advance(60_000)
+    expect(copyLine(w, 'MG677R')).toEqual([])
+  })
+
+  test('a second press while spawn.sh still waits for claude is refused: the chat holds the copy from before spawn.sh runs', async ($, on) => {
+    const w = world(on, { herdr: true })
+    setUp(w, 'MG677R', 'ref-only')
+    w.tickets = [{ ...SIGNOFF, question: 'Branch in den Schluessel?' }, HUMAN, WORKING]
+    const held: (() => void)[] = []
+    w.heldSpawn = held
+    await startSession($)
+    const pane = await quietly($, await $.ui.mount(BAND), 'MG677R', w)
+    const first = pane.press({ key: 'explain-all-MG677R' })
+    await w.clock.settle()
+    expect(held).toHaveLength(1)
+    // The row unlocks after BUSY_MS while spawn.sh still waits.
+    await w.clock.advance(21_000)
+    await (await $.ui.mount(BAND)).press({ key: 'discuss-MG677R' })
+    expect(ran(w, 'bash', SPAWN)).toHaveLength(1)
+    expect(w.opened.at(-1)?.title).toBe('Discuss MG677R failed')
+    held[0]!()
+    await first
+    await w.clock.settle()
+    expect(ran(w, 'git', 'clean')).toEqual([])
+  })
+
+  test('a failed spawn.sh frees the ticket for the next chat', async ($, on) => {
+    const w = world(on, { herdr: true })
+    setUp(w, 'MG677R', 'ref-only')
+    w.spawnFails = 'unknown flag: --copy'
+    await startSession($)
+    await pressExplain($, await $.ui.mount(BAND), 'MG677R', w)
+    w.spawnFails = undefined
+    w.disk['@/repo'] = 'ref-only'
+    await w.clock.advance(21_000)
+    await pressExplain($, await $.ui.mount(BAND), 'MG677R', w)
+    expect(ran(w, 'bash', SPAWN)).toHaveLength(2)
+  })
+
+  for (const second of ['explain', 'discuss'] as const) {
+    test(`a second chat (${second}) on a ticket whose copy an Explain chat holds is refused until that copy was looked at`, async ($, on) => {
+      const w = world(on, { herdr: true })
+      setUp(w, 'MG677R', 'ref-only')
+      // MG677R with an open question too, so it offers Discuss beside Explain.
+      w.tickets = [{ ...SIGNOFF, question: 'Branch in den Schluessel?' }, HUMAN, WORKING]
+      w.tabs = [{ tab_id: 'w1:t4', label: 'MG677R/explain', agent_status: 'working' }]
+      await startSession($)
+      await pressExplain($, await $.ui.mount(BAND), 'MG677R', w)
+      expect(ran(w, 'bash', SPAWN)).toHaveLength(1)
+      const before = w.ran.length
+      await pressChat($, await $.ui.mount(BAND), second, 'MG677R', w)
+      expect(ran(w, 'bash', SPAWN)).toHaveLength(1)
+      expect(w.ran.slice(before).filter(r => r[1] === 'pull')).toEqual([])
+      expect(w.opened.at(-1)?.title).toBe(`${second === 'explain' ? 'Explain' : 'Discuss'} MG677R failed`)
+      const pane = await $.ui.mount(MESSAGE(`${second === 'explain' ? 'Explain' : 'Discuss'} MG677R failed`))
+      expect(await pane.find({ type: 'Text', text: /The Explain chat on MG677R is still open/ })).toBeDefined()
+    })
+  }
+})
+
+// 2V50Y5: the Acceptance pane's rules, read alone.
+describe('the Acceptance pane, read alone', () => {
+  const item = (cls: GapItem['cls'], choice: GapItem['choice'], follow?: string): GapItem => ({ text: `${cls}-${choice}`, cls, choice, ...(follow ? { follow } : {}) })
+  // Every combination of what the notes say, words typed or not, and a lane
+  // that ends the work or not: what Execute does.
+  const TABLE: [string, GapItem[], string, string | null, string, number, number][] = [
+    ['no notes, nothing typed', [], '', 'done', 'accept', 0, 0],
+    ['no notes, words typed', [], 'fehlt', 'done', 'giveBack', 0, 0],
+    ['all ok', [item('edge', 'accept'), item('limit', 'accept')], '', 'done', 'accept', 0, 0],
+    ['all ok, words typed', [item('edge', 'accept')], 'noch was', 'done', 'giveBack', 0, 0],
+    ['one to fix', [item('edge', 'now'), item('limit', 'accept')], '', 'done', 'giveBack', 1, 0],
+    ['one to fix and a follow-up', [item('edge', 'now'), item('elsewhere', 'later')], '', 'done', 'giveBack', 1, 1],
+    ['a follow-up with ok', [item('edge', 'later'), item('limit', 'accept')], '', 'done', 'accept', 0, 1],
+    ['a follow-up made before', [item('edge', 'later', 'AB12CD')], '', 'done', 'accept', 0, 0],
+    ['blocker to fix', [item('blocker', 'now')], '', 'done', 'giveBack', 1, 0],
+    ['blocker kept, no reason', [item('blocker', 'accept')], '', 'done', 'needWhy', 0, 0],
+    ['blocker kept with a reason', [item('blocker', 'accept')], 'ist bekannt', 'done', 'accept', 0, 0],
+    ['blocker to a follow-up with a reason', [item('blocker', 'later')], 'später', 'done', 'accept', 0, 1],
+    ['blocker kept, another to fix', [item('blocker', 'accept'), item('edge', 'now')], '', 'done', 'giveBack', 1, 0],
+    ['all ok in a lane that does not end', [item('edge', 'accept')], '', null, 'notTerminal', 0, 0],
+    ['to fix in a lane that does not end', [item('edge', 'now')], '', null, 'giveBack', 1, 0],
+    ['words in a lane that does not end', [], 'fehlt', null, 'giveBack', 0, 0],
+    ['blocker kept, words typed, in a lane that does not end', [item('blocker', 'accept')], 'fehlt', null, 'giveBack', 0, 0],
+    ['blocker kept, nothing typed, in a lane that does not end', [item('blocker', 'later')], '', null, 'notTerminal', 0, 1],
+  ]
+  for (const [name, items, typed, to, step, fix, followUps] of TABLE) {
+    test(`Execute: ${name} -> ${step}`, () => {
+      const e = executionOf(items, typed, to)
+      expect([e.step, e.fix, e.followUps]).toEqual([step, fix, followUps])
+    })
+  }
+
+  test('the field asks why exactly while a blocker is kept and nothing is to fix', () => {
+    expect(executionOf([item('blocker', 'accept')], '', 'done').asksWhy).toBe(true)
+    expect(executionOf([item('blocker', 'later')], '', 'done').asksWhy).toBe(true)
+    expect(executionOf([item('blocker', 'now')], '', 'done').asksWhy).toBe(false)
+    expect(executionOf([item('blocker', 'accept'), item('edge', 'now')], '', 'done').asksWhy).toBe(false)
+    expect(executionOf([item('edge', 'accept')], '', 'done').asksWhy).toBe(false)
+    // Where nothing can be accepted, nothing asks why.
+    expect(executionOf([item('blocker', 'accept')], '', null).asksWhy).toBe(false)
+  })
+
+  test('the story is read off one show: head, rounds, the DoD with superseded items, the verdict, when it was created', () => {
+    const story = storyOf(JSON.stringify({
+      title: 'cache  key', goal: 'a key per branch', outcome: { what: 'the key names the branch', why: 'two branches shared one' }, round: 3,
+      back: { by: 'person', count: 2, from: 'signoff' }, created_at: '2026-11-20T10:00:00Z', review: { verdict: 'accept' },
+      dod_items: [{ done: true, state: 'done' }, { done: false, state: 'todo' }, { done: false, state: 'superseded' }],
+    }))
+    expect(story).toEqual({
+      title: 'cache key', goal: 'a key per branch', what: 'the key names the branch', why: 'two branches shared one', round: 3,
+      back: { count: 2, from: 'signoff' }, dod: { done: 1, superseded: 1, total: 3 }, verdict: 'accept', created: Date.parse('2026-11-20T10:00:00Z'),
+    })
+    // Never back, no rounds counted, no date: nothing made up.
+    expect(storyOf(`${OLDER}\n{"title": "t", "back": {"count": 0, "from": ""}}`)).toEqual({ title: 't', goal: '', what: '', why: '', round: 1, dod: { done: 0, superseded: 0, total: 0 }, verdict: '' })
+    expect(storyOf('{broken')).toBeUndefined()
+  })
+
+  test('a release note gives its change lines, the mark to act on kept; commits and their files are counted once', () => {
+    expect(releaseLines('<!-- x -->\n- one change\n\nprose\n- ! act on this\n-not a change\n')).toEqual(['one change', '! act on this'])
+    expect(commitsOf('abc1234\na.ts\nb.ts\n\ndef5678\na.ts\n')).toEqual({ commits: 2, files: 2 })
+    expect(commitsOf('')).toEqual({ commits: 0, files: 0 })
+  })
+
+  test('Explain on one note asks one sentence in the language, the note word for word; the answer is one line', () => {
+    const ctx = { title: 'cache key', goal: '', what: '', diff: '' }
+    const p = reasonPrompt('Русский', ctx, 'note: `x` in a.go:3')
+    expect(p).toContain('In Русский')
+    expect(p).toContain('note: `x` in a.go:3')
+    expect(reasonPrompt(undefined, { ...ctx, title: 't' }, 'n')).toContain('the language the note is written in')
+    // DoD 14: the goal, what was done and the diff go along, the diff cut short.
+    const full = reasonPrompt('Deutsch', { title: 't', goal: 'a key per branch', what: 'the key names the branch', diff: '+const key = branch' }, 'note: register.tsx:12 x')
+    for (const part of ["The ticket's goal: a key per branch", 'What was done: the key names the branch', '+const key = branch', 'name concretely what the code does']) expect(full).toContain(part)
+    expect(reasonPrompt('Deutsch', ctx, 'n')).not.toContain('The change to the files')
+    // A placeholder names no file; a file named twice is one.
+    expect(notePaths('note: register.tsx:1214 reads core/release/notes/<ID>.md and hooks/board.ts, not register.tsx')).toEqual(['register.tsx', 'hooks/board.ts'])
+    expect(notePaths('nothing named here')).toEqual([])
+    expect(notePaths('see /home/a/repo/core/mod/hooks/register.tsx:9')).toEqual(['register.tsx'])
+    expect(clipLines('a\nb\nc\n', 2)).toBe('a\nb\n... 1 more lines')
+    expect(clipLines('a\nb', 2)).toBe('a\nb')
+    expect(reasonOf('  Это\nважно. ')).toBe('Это важно.')
+    expect(reasonOf('  ')).toBeUndefined()
+  })
+
+  test('an explanation a give-back came after is none, until a new one is written', () => {
+    const note = (at: string, text: string) => `- **2026-11-22 ${at} · Alex** — ${text}`
+    const show = (...notes: string[]) => JSON.stringify({ body: `# t\n\n## Progress\n${notes.join('\n')}\n` })
+    expect(explanationNotes(show(note('10:00', 'explain: Status: ok')))).toEqual({ text: 'Status: ok' })
+    expect(explanationNotes(show(note('10:00', 'explain: Status: ok'), note('10:05', 'Given back from signoff: beheben:')))).toBeUndefined()
+    expect(explanationNotes(show(note('10:00', 'explain: old'), note('10:05', 'Given back from signoff: x'), note('11:00', 'explain: new')))).toEqual({ text: 'new' })
+    // A note that only mentions a give-back is no give-back.
+    expect(explanationNotes(show(note('10:00', 'explain: Status: ok'), note('10:05', 'testing: Given back from signoff earlier')))).toEqual({ text: 'Status: ok' })
+  })
+})
+
+// 2V50Y5: what the Acceptance pane shows of a ticket, and what its buttons do
+// beside Execute.
+describe('the Acceptance pane', () => {
+  const SETTINGS = '/home/a/.jaira/settings.json'
+  const texts = async (pane: { findAll: (q: { type: 'Text' }) => Promise<{ text: string }[]> }) => (await pane.findAll({ type: 'Text' })).map(x => x.text)
+
+  test('the head says what the ticket is for, what was done and why; the history how it got here', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...SIGNOFF, goal: 'Two branches never share a cache entry.', review: { verdict: 'accept', gaps: 'note: a test is missing' } }, HUMAN, WORKING]
+    w.shows.MG677R = {
+      title: 'cache key', goal: 'Two branches never share a cache entry.', outcome: { what: 'the key names the branch', why: 'two branches shared one entry' },
+      round: 2, back: { by: 'person', count: 1, from: 'signoff' }, created_at: new Date(1_000_000 - 3 * 86_400_000).toISOString(), review: { verdict: 'accept' },
+      dod_items: [{ done: true, state: 'done' }, { done: true, state: 'done' }, { done: false, state: 'superseded' }],
+    }
+    w.hunts = { MG677R: { at: 'abc1234', state: 'ok' } }
+    w.contains = { '@/.worktrees/repo-mg677r': ['abc1234'] }
+    w.idLog = 'abc1234\nhooks/a.ts\nhooks/b.ts\n\ndef5678\nhooks/a.ts\n'
+    w.files.set('/.worktrees/repo-mg677r/core/release/notes/MG677R.md', '<!-- x -->\n- Press Acceptance to decide a ticket.\n')
+    w.prs = [{ number: 12 }]
+    await startSession($)
+    await w.clock.advance(60_000)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await w.clock.settle()
+    const all = await texts(pane)
+    expect(all).toContain('cache key')
+    expect(all).toContain('Goal: Two branches never share a cache entry.')
+    expect(all).toContain('Done: the key names the branch')
+    expect(all).toContain('Why: two branches shared one entry')
+    expect(all).toContain('round 2 | back 1x from signoff | 3 days')
+    expect(all).toContain('DoD 2/2 (1 superseded) | bughunt ✓ on HEAD | review: accept')
+    expect(all).toContain('2 commits, 2 files | pull request exists')
+    expect(all).toContain('Release note: Press Acceptance to decide a ticket.')
+    // The light follows the marks: one 🟡 note makes it yellow.
+    expect(all[0]).toBe('● yellow: 1 review note to weigh')
+    // Looked up from the ticket's own worktree, without a fetch.
+    expect(ran(w, 'git', 'log', '--format=%h')[0]?.at(-1)).toBe('@/.worktrees/repo-mg677r')
+    expect(ran(w, 'git', 'fetch')).toEqual([])
+  })
+
+  test('the head comes in the person\'s language, the notes in theirs too, and no word of it reaches the ticket', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: a test is missing' } }, HUMAN, WORKING]
+    w.shows.MG677R = { title: 'cache key', goal: 'a key per branch', outcome: { what: 'the key names the branch', why: 'two branches shared one' } }
+    w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
+    w.model = JSON.stringify(['Нет теста.'])
+    w.head = JSON.stringify(['ключ кэша', 'ключ на ветку', 'ключ называет ветку', 'две ветки делили один', 'одна заметка'])
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await w.clock.settle()
+    const all = await texts(pane)
+    expect(w.headPrompts.at(-1)).toContain('into Русский')
+    expect(w.headPrompts.at(-1)).toContain(JSON.stringify(['cache key', 'a key per branch', 'the key names the branch', 'two branches shared one', '1 review note to weigh']))
+    for (const text of ['ключ кэша', 'Goal: ключ на ветку', 'Done: ключ называет ветку', 'Why: две ветки делили один', '🟡 Нет теста.']) expect(all).toContain(text)
+    expect(all.some(x => x.includes('одна заметка'))).toBe(true)
+    expect(JSON.stringify(w.ran)).not.toContain('ключ')
+  })
+
+  test('Explain on one note asks the cheap model once for a sentence, shown under the note', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: a test is missing\nnote: pre-existing: the clock' } }, HUMAN, WORKING]
+    w.files.set(SETTINGS, JSON.stringify({ language: 'Deutsch' }))
+    w.reason = 'Unwichtig fürs Annehmen: es fehlt nur ein Test.'
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    expect(await pane.find({ key: 'why-MG677R-0' })).toBeDefined()
+    expect(await pane.find({ key: 'why-MG677R-1' })).toBeDefined()
+    await pane.press({ key: 'why-MG677R-0' })
+    expect(w.reasonPrompts).toHaveLength(1)
+    expect(w.reasonPrompts[0]).toContain('In Deutsch')
+    expect(w.reasonPrompts[0]).toContain('note: a test is missing')
+    expect(await texts(pane)).toContain('  Unwichtig fürs Annehmen: es fehlt nur ein Test.')
+    // Asked once: a second press, or the pane opened again, asks nothing.
+    await pane.press({ key: 'why-MG677R-0' })
+    await (await acceptancePane($, await $.ui.mount(BAND), 'MG677R')).unmount()
+    expect(w.reasonPrompts).toHaveLength(1)
+    // Nothing goes onto the ticket.
+    expect(ran(w, 'jaira', 'note')).toEqual([])
+  })
+
+  test('a model that gives no sentence says so under the note, and a later press asks again', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: a test is missing' } }, HUMAN, WORKING]
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await pane.press({ key: 'why-MG677R-0' })
+    expect(await texts(pane)).toContain('  no explanation came back')
+    // Without a language set, the sentence is asked in the note's own.
+    expect(w.reasonPrompts[0]).toContain('the language the note is written in')
+    // A failure is not kept: the next press asks again.
+    w.reason = 'Only a test is missing.'
+    await pane.press({ key: 'why-MG677R-0' })
+    expect(w.reasonPrompts).toHaveLength(2)
+    expect(await texts(pane)).toContain('  Only a test is missing.')
+  })
+
+  test('a sentence kept in one language is not shown once the language changed: the pane opened again asks in the new one', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: a test is missing' } }, HUMAN, WORKING]
+    w.files.set(SETTINGS, JSON.stringify({ language: 'Deutsch' }))
+    w.reason = 'Nur ein Test fehlt.'
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await pane.press({ key: 'why-MG677R-0' })
+    w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
+    w.reason = 'Не хватает только теста.'
+    const again = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    expect((await texts(again)).some(x => x.includes('Nur ein Test fehlt.'))).toBe(false)
+    await again.press({ key: 'why-MG677R-0' })
+    expect(w.reasonPrompts.at(-1)).toContain('In Русский')
+    expect(await texts(again)).toContain('  Не хватает только теста.')
+  })
+
+  test('Execute while an Explain chat still opens is said, not dropped, and writes nothing', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.heldSpawn = []
+    await startSession($)
+    const pane = await quietly($, await $.ui.mount(BAND), 'MG677R', w)
+    void pane.press({ key: 'explain-all-MG677R' })
+    await w.clock.settle()
+    expect(w.heldSpawn).toHaveLength(1)
+    await pane.press({ key: 'execute-MG677R' })
+    expect(ran(w, 'jaira', 'move')).toEqual([])
+    expect(w.toasts.at(-1)).toBe('MG677R: an earlier press or an Explain chat is still at work on it - press Execute again once it is done')
+    w.heldSpawn.shift()!()
+    await w.clock.settle()
+    await pane.press({ key: 'execute-MG677R' })
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
+  })
+
+  test('a known limit or a note for another ticket colours nothing: the light follows the marks', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, dod_complete: true, review: { verdict: 'accept', gaps: 'note: windows paths\nnote: pre-existing: load.go' } }, HUMAN, WORKING]
+    w.bodies.MG677R = '## Progress\n- **2026-11-21 10:00 · Alex** — explain: Status: ok\n[known limit] the paths\n[not this ticket] load.go\n'
+    w.hunts = { MG677R: { at: 'abc1234', state: 'ok' } }
+    w.contains = { '@/.worktrees/repo-mg677r': ['abc1234'] }
+    await startSession($)
+    await w.clock.advance(60_000)
+    const all = await texts(await acceptancePane($, await $.ui.mount(BAND), 'MG677R'))
+    expect(all[0]).toBe('● green: accept')
+    expect(all).toContain('⚪ note: windows paths')
+    expect(all).toContain('🔵 note: pre-existing: load.go')
+  })
+
+  test('Explain on a note hands the model the goal, what was done and the diff of the file the note names', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: register.tsx:12 closes the pane early' } }, HUMAN, WORKING]
+    w.shows.MG677R = { title: 'cache key', goal: 'a key per branch', outcome: { what: 'the key names the branch', why: 'x' } }
+    w.patches = 'abc1234 fix(MG677R): x\n+  closeAcceptance($)\n'
+    w.reason = 'Das Fenster schließt vor dem Schritt.'
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await w.clock.settle()
+    await pane.press({ key: 'why-MG677R-0' })
+    const prompt = w.reasonPrompts.at(-1) ?? ''
+    expect(prompt).toContain("The ticket's goal: a key per branch")
+    expect(prompt).toContain('What was done: the key names the branch')
+    expect(prompt).toContain('+  closeAcceptance($)')
+    // Only the ticket's own commits, the name matched at any depth.
+    expect(ran(w, 'git', 'log', '-p')[0]?.slice(0, 9)).toEqual(['git', 'log', '-p', '--format=%h %s', '-F', '--grep=MG677R', 'HEAD', '--', ':(glob)**/register.tsx'])
+  })
+
+  test('a give-back the move refuses keeps the pane open with the person\'s marks', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: the size\nnote: the docs' } }, HUMAN, WORKING]
+    w.moveFails = 'jaira: lane "in-progress" refuses: the board is locked'
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await cycle(pane, 'MG677R', 0)
+    await pane.press({ key: 'execute-MG677R' })
+    expect(w.closed).not.toContain('cockpit-acceptance')
+    expect((await pane.find({ key: 'now-MG677R-0' }))?.text).toBe('[•fix]')
+    expect(ran(w, 'jaira', 'note')).toEqual([])
+    // Once the move goes through, the pane closes.
+    w.moveFails = undefined
+    await pane.press({ key: 'execute-MG677R' })
+    expect(w.closed).toContain('cockpit-acceptance')
+  })
+
+  test('a repository that keeps no release notes shows no release note line', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    const all = await texts(await acceptancePane($, await $.ui.mount(BAND), 'MG677R'))
+    await w.clock.settle()
+    expect(all.some(x => x.startsWith('Release note:'))).toBe(false)
+  })
+
+  test('the pull request is asked once in five minutes, however often the pane opens', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    for (let i = 0; i < 3; i++) {
+      await (await acceptancePane($, await $.ui.mount(BAND), 'MG677R')).unmount()
+      await w.clock.settle()
+    }
+    expect(ran(w, 'gh', 'pr', 'list')).toHaveLength(1)
+    await w.clock.advance(5 * 60_000)
+    await (await acceptancePane($, await $.ui.mount(BAND), 'MG677R')).unmount()
+    await w.clock.settle()
+    expect(ran(w, 'gh', 'pr', 'list')).toHaveLength(2)
+  })
+
+  test('a forge that does not answer is asked again at the next opening, not taken for no pull request', async ($, on) => {
+    const w = world(on)
+    w.prListFails = true
+    await startSession($)
+    for (let i = 0; i < 2; i++) {
+      await (await acceptancePane($, await $.ui.mount(BAND), 'MG677R')).unmount()
+      await w.clock.settle()
+    }
+    expect(ran(w, 'gh', 'pr', 'list')).toHaveLength(2)
+  })
+
+  test('two notes explained one after the other both keep their sentence in the store', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: a\nnote: b' } }, HUMAN, WORKING]
+    w.reason = 'one sentence'
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await Promise.all([pane.press({ key: 'why-MG677R-0' }), pane.press({ key: 'why-MG677R-1' })])
+    await w.clock.settle()
+    expect(Object.keys((w.store.get('reason:MG677R') ?? {}) as object)).toHaveLength(2)
+  })
+
+  test('Explain all opens the explaining chat from the pane', async ($, on) => {
+    const w = world(on, { herdr: true })
+    await startSession($)
+    await pressExplain($, await $.ui.mount(BAND), 'MG677R', w)
+    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 6)).toEqual(['bash', SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'explain'])
+  })
+
+  // DoD 10: an explanation of an earlier round is gone once the ticket was
+  // given back, and back with a new one.
+  test('Read explanation goes once the ticket was given back after it, and comes back with a new explanation', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = '## Progress\n- **2026-11-22 10:00 · Alex** — explain: Status: DoD 3/3 ok\n[small edge] the size\n'
+    await startSession($)
+    expect(await (await $.ui.mount(BAND)).find({ key: 'read-MG677R' })).toBeDefined()
+    w.bodies.MG677R += '- **2026-11-22 10:05 · Alex** — Given back from signoff: beheben:\n- note: the size\n'
+    await w.clock.advance(60_000)
+    expect(await (await $.ui.mount(BAND)).find({ key: 'read-MG677R' })).toBeUndefined()
+    w.bodies.MG677R += '- **2026-11-22 11:00 · Alex** — explain: Status: DoD 3/3 ok\n[known limit] the size\n'
+    await w.clock.advance(60_000)
+    expect(await (await $.ui.mount(BAND)).find({ key: 'read-MG677R' })).toBeDefined()
+  })
+
+  test('the classes of an explanation a give-back came after no longer class the notes', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: the size' } }, HUMAN, WORKING]
+    w.bodies.MG677R = '## Progress\n- **2026-11-22 10:00 · Alex** — explain: Status: ok\n[known limit] the size\n- **2026-11-22 10:05 · Alex** — Given back from signoff: dazu: more\n'
+    await startSession($)
+    const all = await texts(await acceptancePane($, await $.ui.mount(BAND), 'MG677R'))
+    expect(all).toContain('🟡 note: the size')
   })
 })

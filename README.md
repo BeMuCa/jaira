@@ -1019,6 +1019,7 @@ grows by one with every send-back (parking in blocked does not count);
 jaira                      open the home screen: your boards, and what each needs
 jaira board                open the board here directly
 jaira web                  the page in the browser: sort tickets into epics, read a ticket and its notes
+jaira pr [<branch>]        where the branch's pull request stands (threads, CI, reviews); --watch follows it line by line
 jaira init                 prepare a repository
 jaira update               re-apply setup after upgrading
 jaira self upgrade         replace the jaira binary with the latest release

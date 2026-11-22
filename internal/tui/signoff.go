@@ -148,7 +148,7 @@ func (m *Model) renderSignOff() string {
 	// long verdict and a long checklist is exactly the ticket that outgrows a
 	// small terminal, and this is the screen where it must be readable.
 	return m.clipToWindow(b.String(),
-		"a accept → done · f follow-up ticket · e edit · E editor · esc back")
+		"a accept → done · m send back · f follow-up ticket · e edit · E editor · esc back")
 }
 
 func firstNonEmpty(vals ...string) string {

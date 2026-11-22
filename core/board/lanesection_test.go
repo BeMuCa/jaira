@@ -170,7 +170,7 @@ func TestLaneSectionSaysAQuestionLaneIsPassedBy(t *testing.T) {
 		{ID: "human", Question: true},
 		{ID: "review", Agentic: true},
 	})
-	if !strings.Contains(got, "- `human` — **a person's, not yours** — you may move work in, never out; only with an open question (`--question`); without one, work passes it by") {
+	if !strings.Contains(got, "- `human` — **a person answers here** — you may move work in, and move it on once the question is answered; only with an open question (`--question`); without one, work passes it by") {
 		t.Errorf("the human lane does not say it is passed by without a question:\n%s", got)
 	}
 	if strings.Contains(got, "- `review` — yours to work; only with an open question") {
@@ -188,5 +188,16 @@ func TestLaneSectionMarksAFreshLane(t *testing.T) {
 	}
 	if strings.Contains(got, "`review` — yours to work") {
 		t.Errorf("a fresh lane is still offered to the carrying agent:\n%s", got)
+	}
+}
+
+// A lane with max-rounds says who takes the decision once it stops: the
+// teamlead first, a person only when there is none or it cannot decide.
+func TestLaneSectionSaysTheTeamleadDecidesFirst(t *testing.T) {
+	facts := demoFacts()
+	facts[2].MaxRounds = 3
+	got := laneSection(facts)
+	if !strings.Contains(got, "At most 3 times in a row: the next send-back is refused, and the teamlead decides, or a person.") {
+		t.Errorf("the loop line does not name the teamlead before the person:\n%s", got)
 	}
 }

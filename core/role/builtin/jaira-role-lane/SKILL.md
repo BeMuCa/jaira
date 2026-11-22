@@ -327,6 +327,11 @@ goes onto the ticket, and then you stop:
 The answer comes back as a `jaira note` on the ticket, and the lane runs again
 in a fresh worker that reads it there.
 
+The third send-back from one lane is such a decision too. Where the lane's
+prompt or a `max_rounds` refusal tells you to move the ticket to `human`, do
+the three steps above instead: the dispatcher and the teamlead above it decide
+first, and only they take it on to a person.
+
 A question about your role — which of the two critiques you are, see above —
 is not one of these: only the dispatcher knows that answer, and the person does
 not. You have no line to the dispatcher, though — nothing tells you its name.

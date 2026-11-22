@@ -15,10 +15,62 @@ function inLine(text: string, max: number): string {
   return chars.length <= max ? chars.join('') : `${chars.slice(0, max - 1).join('').trimEnd()}…`
 }
 
+// A path in single quotes for a shell line a person or a chat pastes.
+function shellQuoted(path: string): string {
+  return `'${path.replaceAll("'", `'\\''`)}'`
+}
+
+// The last step of a chat the cockpit pulled the ticket for (DF46B9): only the
+// chat knows when it wrote its last line, so it removes the copy itself.
+function removeCopy(copy: string | undefined): string {
+  return copy === undefined ? '' : ` As the very last step, once you write nothing more onto the ticket, decided or not: git clean -fqx -- ${shellQuoted(copy)} - the copy of the ticket the cockpit pulled for this chat; left there, it hides the ticket's ref.`
+}
+
 export const t = {
   waiting: 'Waiting for you',
   accept: 'Accept',
   giveBack: 'Give back',
+  // The Acceptance pane (2V50Y5): one window for Accept, Give back and the
+  // verdict - the ticket, how it got here, and what happens to each note.
+  acceptance: 'Acceptance',
+  acceptanceOf: (id: string) => `Acceptance of ${id}`,
+  done: 'Done:',
+  why: 'Why:',
+  historyHeading: 'History',
+  round: (n: number) => `round ${n}`,
+  backFrom: (count: number, from: string) => `back ${count}x${from ? ` from ${from}` : ''}`,
+  age: (ms: number) => {
+    const min = Math.max(0, Math.floor(ms / 60_000))
+    return min < 60 ? `${min} min` : min < 48 * 60 ? `${Math.floor(min / 60)} h` : `${Math.floor(min / 1440)} days`
+  },
+  dodCount: (done: number, total: number, superseded: number) => `DoD ${done}/${total - superseded}${superseded > 0 ? ` (${superseded} superseded)` : ''}`,
+  huntOnHead: (state: string) => `bughunt ${state === 'ok' ? '✓ on HEAD' : state === 'fail' ? '✗ not on HEAD' : state === 'skipped' ? '– skipped' : '?'}`,
+  review: (verdict: string) => `review: ${verdict || 'none yet'}`,
+  commitsFiles: (commits: number, files: number) => `${commits} commit${commits === 1 ? '' : 's'}, ${files} file${files === 1 ? '' : 's'}`,
+  prOpen: 'pull request exists',
+  releaseNote: 'Release note:',
+  notesChoose: 'Review notes - choose for each:',
+  choiceOk: 'ok',
+  choiceFix: 'fix',
+  choiceTicket: 'ticket',
+  explainNote: '?',
+  explaining: 'explaining…',
+  noReason: 'no explanation came back',
+  explainAll: 'Explain all',
+  execute: 'Execute',
+  busyRow: (id: string) => `${id}: an earlier press or an Explain chat is still at work on it - press Execute again once it is done`,
+  // What Execute will do, in the pane's last line before the button.
+  summary: (step: 'giveBack' | 'accept' | 'needWhy' | 'notTerminal', fix: number, followUps: number, to: string) => {
+    const tickets = followUps > 0 ? ` + ${followUps} follow-up ticket${followUps === 1 ? '' : 's'}` : ''
+    switch (step) {
+      case 'giveBack': return `Execute: give back${fix > 0 ? ` with ${fix} note${fix === 1 ? '' : 's'} to fix` : ' with what you typed'}${tickets}`
+      case 'accept': return `Execute: ${to}${tickets}`
+      case 'needWhy': return `Execute: type why the blocker is accepted${tickets}`
+      case 'notTerminal': return 'Execute: nothing to accept in this lane - mark a note fix, or type what is missing'
+    }
+  },
+  notTerminal: (id: string, lane: string) => `${id} waits in ${lane}, which does not end the work: nothing to accept there. Mark a note fix, or type what is missing, to give it back.`,
+  refused: (id: string) => `${id} was not accepted, nothing was changed:`,
   explain: 'Explain',
   discuss: 'Discuss',
   more: (n: number) => `+${n} more`,
@@ -26,20 +78,16 @@ export const t = {
   theirs: (n: number, names: string[]) => `${n} waiting for ${names.join(', ')}`,
   reasonLabel: 'What is missing?',
   reasonPlaceholder: 'goes onto the ticket as a note',
-  // The Give back pane with the review's notes, one row each.
-  gapsHeading: 'Review notes - press a row to change what happens to it:',
-  choice: { now: '[fix now]', later: '[follow-up]', accept: '[accept]' } as Record<string, string>,
   decidedBefore: '(decided before)',
   moreLabel: 'Anything else?',
   morePlaceholder: 'optional, goes onto the ticket with the notes',
-  acceptWithNow: (id: string, n: number) => `${id}: ${n} note${n === 1 ? ' is' : 's are'} marked fix now - press Give back, or mark ${n === 1 ? 'it' : 'them'} follow-up or accept`,
-  blockerNeedsWhy: (id: string) => `${id}: a blocker is not marked fix now - type why it is accepted anyway, or mark it fix now and press Give back`,
-  blockerNeedsTyping: (id: string) => `${id}: the review names a blocker - accepting it needs a reason typed in a terminal or on the desktop; nothing was accepted`,
+  blockerNeedsWhy: (id: string) => `${id}: a blocker is not marked fix - type why it is accepted anyway, or mark it fix`,
+  blockerNeedsTyping: (id: string) => `${id}: a blocker is not marked fix - accepting it needs a reason typed in a terminal or on the desktop; nothing was accepted`,
   whyLabel: 'Why accept it with the blocker?',
   whyPlaceholder: 'required - goes onto the ticket as a decision',
   acceptedDespite: 'accepted with a blocker not fixed',
   alreadyIn: (id: string, lane: string) => `${id} is already in ${lane}: someone else decided it meanwhile. Nothing was written.`,
-  nothingToFix: (id: string) => `${id}: no note is marked fix now and nothing is typed - mark one, type what is missing, or press Accept`,
+  nothingToFix: (id: string) => `${id}: no note is marked fix now and nothing is typed - mark one, type what is missing, or press Execute to accept`,
   followUpsOf: (id: string) => `Follow-up tickets of ${id}`,
   followUpsLost: (id: string, texts: string[]) => `These notes of ${id} were marked follow-up, but jaira created no ticket for them; the note on ${id} names each as not created:\n${texts.map(x => `- ${x}`).join('\n')}`,
   movedMeanwhile: (id: string, lane: string, now: string) => `${id} is no longer in ${lane} but in ${now}: someone else decided it meanwhile. Nothing was written.`,
@@ -48,14 +96,33 @@ export const t = {
     who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
   // The one line Accept and Give back hand this session, the teamlead's,
   // after a move that went through: what happened, and what already runs.
+  // Each says who decided — '(Person, Cockpit)' — and leads with the
+  // ticket, so a teamlead stops listing it as open the moment it arrives.
   toSessionAccepted: (id: string, from: string, to: string, next: string) =>
-    `jaira-cockpit: the person accepted ${id} in the cockpit (${from} -> ${to})${next ? `; ${inLine(next, 200)}` : ''}`,
-  toSessionGivenBack: (id: string, from: string, who: 'old' | 'new' | 'none', reason: string) =>
-    `jaira-cockpit: the person gave ${id} back in the cockpit (${from} -> in-progress), ${who === 'old' ? 'handed to the worker that carried it' : who === 'new' ? 'a new worker started' : "no worker started (the ticket's note says why)"}: ${inLine(reason, 120)}`,
+    `jaira-cockpit: ${id}: accepted, ${from} -> ${to} (Person, Cockpit)${next ? `; ${inLine(next, 200)}` : ''}`,
+  acceptedNote: (from: string, to: string) => `accepted by the person, ${from} -> ${to}`,
+  // Two named after the ticket, or several holding its newest commit: both
+  // are 'could each be its branch', and the line says only that.
+  branchAmbiguous: (id: string, branches: string[]) => `${branches.join(' and ')} could each be ${id}'s branch and none is its worktree's: no branch picked for it - start its worker or pull request on the right one by hand`,
+  acceptNoteLost: (id: string, why: string) => `${id} accepted; the note saying so was not written: ${oneLine(why).slice(0, 120)}`,
+  toSessionGivenBack: (id: string, from: string, who: 'old' | 'new' | 'none', reason: string, worker: string) =>
+    `jaira-cockpit: ${id} given back: ${inLine(reason, 120)}, worker ${who === 'none' ? worker || "none (the ticket's note says why)" : `${who === 'old' ? 'that carried it' : 'new'} ${worker}`} (Person, Cockpit; ${from} -> in-progress)`,
   afterAcceptFailed: (id: string) => `the next step after ${id} failed, see the cockpit`,
   failed: (what: string) => `${what} failed`,
   afterAccept: (id: string) => `Next step after ${id}`,
   staysDone: (id: string) => `${id} stays in done; start the next step by hand.`,
+  // A pull request handed to the teamlead to follow (CRASZS): once each.
+  followPr: (n: number, tickets: string[]) =>
+    `jaira-cockpit: pull request #${n} for ${tickets.join(', ')} is open - follow it: run 'jaira pr --watch --number ${n}' under a Monitor (one line per change, it ends when the pull request is merged or closed)`,
+  // .jaira/pr-when says signoff: Accept opens the pull request first, and
+  // done waits for its review round.
+  prOpensInSignoff: (id: string, branch: string) => `${id} stays in signoff: opening the pull request for ${branch} in a Herdr tab; press Accept again once its review round is settled`,
+  toSessionPrInSignoff: (id: string, branch: string) =>
+    `jaira-cockpit: the person pressed Accept on ${id}; this board opens the pull request in signoff, so the pr lane is opening it for ${branch} and ${id} stays in signoff until the review round is settled`,
+  prElsewhere: (branch: string) => `the forge lists a pull request for ${branch}, but none is open from this repository's origin - merged, closed, or another fork's branch of the same name; check it and move the ticket by hand`,
+  prWaitsSignoff: (branch: string, pending: string[]) => `the pull request for ${branch} waits: ${pending.join(', ')} not in signoff yet`,
+  notSettled: (branch: string, unsettled: string[]) => `the review round of ${branch} is not settled:\n${unsettled.map(u => `- ${u}`).join('\n')}`,
+  staysInLane: (id: string, lane: string) => `${id} stays in ${lane}; nothing was moved.`,
   prStarted: (id: string, branch: string) => `${id}: opening the pull request for ${branch} in a Herdr tab`,
   acceptedNoPr: (id: string, hint: string) => `${id} accepted; ${hint}`,
   prWaits: (branch: string, pending: string[]) => `no pull request for ${branch} yet: ${pending.join(', ')} not in done`,
@@ -69,7 +136,7 @@ export const t = {
   landNeedsHerdr: (branch: string) => `${branch} lands on the default branch from a Herdr tab of its own (HERDR_ENV=1 or Herdr App, and spawn.sh from jaira roles install).`,
   prNeedsHerdr: (branch: string) => `${branch} needs a pull request, which opens in a Herdr tab of its own (HERDR_ENV=1 or Herdr App, and spawn.sh from jaira roles install).`,
   noteOn: (id: string) => `Note on ${id}`,
-  copyNotRemoved: (id: string, path: string, why: string) => `${id}: the copy pulled into the main checkout is still there and hides its ref (${oneLine(why)}); remove it: git clean -fqx -- '${path.replaceAll("'", `'\\''`)}'`,
+  copyNotRemoved: (id: string, path: string, why: string) => `${id}: the copy pulled into the main checkout is still there and hides its ref (${oneLine(why)}); remove it: git clean -fqx -- ${shellQuoted(path)}`,
   noteLost: (id: string, why: string, note: string) => `${id} went back to in-progress, but the note with your reason was not written: ${why}\nAdd it by hand: jaira note ${id} '${note.replaceAll("'", `'\\''`)}'`,
   tooOld: (installed: string, needed: string) => `jaira ${installed} is too old for this cockpit: it needs ${needed} or later. Give back will be refused until you update jaira.`,
   released: (latest: string, installed: string) => `jaira ${latest} is released (this is ${installed})`,
@@ -89,7 +156,7 @@ export const t = {
   dryRunFailed: "Nothing was written and no update is offered: 'jaira update --roles --lanes --dry-run' gave no preview. It said:",
   close: 'Close',
   bandTitle: 'jaira-cockpit',
-  noRoom: 'No room for a pane here: widen the terminal and press Give back again.',
+  noRoom: 'No room for a pane here: widen the terminal and press Acceptance again.',
   readExplanation: 'Read explanation',
   reviewedIn: (round: number) => `review of round ${round}, changed since`,
   // The band's row: one mark per check, counts for the review's findings.
@@ -100,10 +167,9 @@ export const t = {
   markOldReview: (round: number) => `review of round ${round}`,
   markBlockersUnknown: '? blockers',
   markNotesUnknown: '? notes',
-  // The Verdict pane: what the ticket is for, then the review whole.
+  // The Acceptance pane: what the ticket is for, then how it got here.
   goal: 'Goal:',
-  verdictHeading: 'Verdict:',
-  // The light on top of the Verdict pane: its colour, the reason it names
+  // The light on top of the Acceptance pane: its colour, the reason it names
   // first, and how many more there are.
   light: { green: 'green', yellow: 'yellow', red: 'red' } as Record<'green' | 'yellow' | 'red', string>,
   lightAccept: 'accept',
@@ -128,7 +194,6 @@ export const t = {
       case 'huntUnknown': return 'bughunt unknown'
     }
   },
-  notesHeading: 'Review notes:',
   noVerdict: 'not reviewed yet',
   notesNotKept: 'The notes of that review were not kept: a later lane rewrote them.',
   explanationOf: (id: string) => `Explanation of ${id}`,
@@ -143,10 +208,8 @@ export const t = {
   actionGiveBack: '[give back]',
   actionAccept: '[accept]',
   decisionFor: (id: string, text: string) =>
-    `Decision on ${id} in the cockpit's explanation pane, noted on the ticket and not acted on: ${text}`,
+    `jaira-cockpit: ${id}: ${text} (Person, Cockpit) - decided in the explanation pane, noted on the ticket, not acted on`,
   answerOn: (id: string) => `Answer on ${id}`,
-  verdict: 'Verdict',
-  verdictOf: (id: string) => `Review verdict of ${id}`,
   readDecision: 'Read decision',
   decisionOf: (id: string) => `Decision on ${id}`,
   noSpawn: 'A chat of its own opens in a Herdr tab through spawn.sh, and none was found: run jaira roles install.',
@@ -157,18 +220,22 @@ export const t = {
   // types into a tab of its own (lane explain and discuss there) — a change to
   // one belongs in the other. jaira runs with -C: a ticket in a worktree is
   // "on its ref and not on your disk" anywhere else.
-  explainBySubagent: (id: string, dir: string) =>
+  explainBySubagent: (id: string, dir: string, copy?: string) =>
     `The cockpit's Explain on ${id}, without Herdr: start one subagent (Agent tool) with exactly the prompt below and do nothing on ${id} yourself. When it is done, tell me in one line that the explanation of ${id} is on the ticket, under Read explanation in the cockpit.\n\n` +
     `Read ticket ${id} with jaira -C '${dir}' show ${id} --brief (title, goal, question, review, the newest bug hunt and the latest notes). Explain the review on ${id} in plain words: where it stands, what each note in review-gaps means in one everyday sentence, which options there are and which you recommend. Where review.verdict_gaps is not empty and differs from review.gaps, the verdict is from an earlier round and a later lane rewrote review-gaps: the review's notes are those in review.verdict_gaps - read them wherever this says review-gaps, and say that the ticket changed since. ` +
     `Then write the same explanation onto the ticket as one note with exactly these lines: jaira -C '${dir}' note ${id} "explain: Status: DoD <done>/<all> ok|fail | tests ok|fail | blockers ok|fail | bughunt on HEAD ok|fail|unknown|skipped\n[<class>] <one note, one everyday sentence>\n1) <option, one line> [accept]\n2) <option, one line> [give back]\nRecommendation: <number> - <why, one sentence, naming the note it is about>" - with real line breaks in the text. ` +
     `The status line: DoD, tests and blockers each end in ok or fail, bughunt on HEAD in one of ok, fail, unknown or skipped; blockers is ok when review-gaps has no blocker: line; bughunt on HEAD ends in the brief's bughunt.state word as it stands - ok, fail, unknown (a hunted file is changed and not committed, so nobody can tell; never write fail for it) or skipped (the ticket runs no hunt after a fix, by choice) - and in fail when bughunt is null (no hunt finished); only a brief without a bughunt key, from an older jaira, falls back to: ok when the newest 'bughunt: done at <commit>' note names the commit git -C '${dir}' rev-parse --short HEAD prints. ` +
     `One [<class>] line per note in review-gaps, the class exactly one of: [blocker] - a wrong result, data loss, a crash, a security hole; [small edge] - formally fine, one round of about ten minutes closes it; [known limit] - cannot be solved here and is documented; [not this ticket] - belongs elsewhere, say where. Classify first; nothing else per note, no line on why it matters. ` +
     `Two to four options with 1) 2) 3) 4) at the start of the line - the numbers the person picks by in the cockpit - in the order you recommend them, no fixed order. Each option ends in [give back] when it means giving the work back to change something, [accept] when it means accepting the ticket as it is, and no mark when it is neither. When no note is a blocker, the recommendation says plainly that the ticket can be accepted as it is. ` +
-    `Change nothing else, commit nothing, do not move the ticket. Answer in the language the person speaks with this session; keep the words Status:, Recommendation:, ok, fail and the class marks in English, the cockpit reads them.`,
-  discussInThisChat: (id: string, dir: string) =>
+    `Change nothing else, commit nothing, do not move the ticket. Answer in the language the person speaks with this session; keep the words Status:, Recommendation:, ok, fail and the class marks in English, the cockpit reads them.` +
+    removeCopy(copy),
+  discussInThisChat: (id: string, dir: string, copy?: string) =>
     `The cockpit's Discuss on ${id}, without Herdr: ticket ${id} waits for a decision of mine. Read it with jaira -C '${dir}' show ${id} --brief (the question field and the latest notes), explain the question and the options to me in plain words and ask me. ` +
     `When I have decided: write the decision in one sentence onto the ticket with jaira -C '${dir}' note ${id} "decision: <decision>" and clear the question with jaira -C '${dir}' set ${id} question=. If the decision means the work goes on, move the ticket back yourself, exactly so: jaira -C '${dir}' move ${id} --to in-progress (without --what/--why/--resolves: the ticket has its outcome already, and the decision is in the note). ` +
-    `Accept it into the next lane only when I say yes to that explicitly. Change no code. Answer in the language I speak with you.`,
+    `Accept it into the next lane only when I say yes to that explicitly. Change no code. Answer in the language I speak with you.` +
+    removeCopy(copy),
+  copyLeft: (id: string, path: string) => `${id}: the copy pulled into the main checkout for a chat is still there and hides its ref; once no chat on ${id} runs any more, remove it: git clean -fqx -- ${shellQuoted(path)}`,
+  chatHoldsCopy: (id: string, kind: string) => `The ${kind} chat on ${id} is still open and removes the copy of the ticket pulled for it when it ends. Finish that chat first.`,
   opened: (id: string) => `${id}: opened in a Herdr tab of its own`,
   context: (k: number) => `context ${k}k`,
   cacheLeft: (min: number) => `cache ${min} min left`,

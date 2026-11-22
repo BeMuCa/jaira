@@ -31,9 +31,6 @@ export type Waiting = {
   acceptTo: string | null
   // Whose it is; '' for nobody's.
   assignee: string
-  // Whether the band offers Explain: the verdict names a reservation, or
-  // the review's gaps hold a blocker: line.
-  explainable: boolean
   // The review's findings, one per line: its blocker lines, and every other
   // one. The band counts them; the Verdict pane lists them whole.
   blockers: string[]
@@ -157,7 +154,6 @@ export function snapshotOf(
       ...(t.dod_items !== undefined && t.dod_items.length > 0 ? { dodOpen: dodOpenOf(t.dod_items) } : {}),
       acceptTo: next?.terminal === true ? next.id : null,
       assignee,
-      explainable: explainable(verdict, reviewGaps(t)),
       // Before a review there are no review notes; after a later round's
       // optimize lane rewrote review-gaps they are in the copy jaira kept.
       blockers: verdict === '' ? [] : blockersOf(reviewGaps(t)),
@@ -257,14 +253,20 @@ export type LightReason =
   | { kind: 'notes'; n: number } | { kind: 'byAPerson'; n: number } | { kind: 'dodIncomplete' } | { kind: 'question' } | { kind: 'huntUnknown' }
 export type Light = { color: 'green' | 'yellow' | 'red'; reasons: LightReason[] }
 
-export function lightOf(w: Waiting, hunt: HuntState | undefined): Light {
+// classes: the notes' marks as the Acceptance pane shows them, where it
+// knows them. Then the light follows the marks (Alex 22.11.2026): a 🔴 makes
+// it red, a 🟡 yellow; a known limit ⚪ or a note for another ticket 🔵 colours
+// nothing. Without them the review's prefixes count, as on the band's row.
+export function lightOf(w: Waiting, hunt: HuntState | undefined, classes?: readonly NoteClass[]): Light {
+  const blockers = classes === undefined ? w.blockers.length : classes.filter(c => c === 'blocker').length
+  const notes = classes === undefined ? w.notes.length : classes.filter(c => c === 'edge').length
   const red: LightReason[] = []
   const yellow: LightReason[] = []
   // The lane's own words where it declares them; a jaira that does not say
   // them leaves only the verdict's wording to go by.
   const refused = w.verdictWay !== undefined ? w.verdictWay === 'sendBack' : w.verdict !== '' && REFUSAL.test(w.verdict)
   if (refused) red.push({ kind: 'refused' })
-  if (w.blockers.length > 0) red.push({ kind: 'blockers', n: w.blockers.length })
+  if (blockers > 0) red.push({ kind: 'blockers', n: blockers })
   // A hunt that ran and no longer covers HEAD is red; none finished at all
   // (at '') is a look: a ticket that changed no code has none, and one that
   // did reaches a person's lane without one only past the gate, by --force.
@@ -278,7 +280,7 @@ export function lightOf(w: Waiting, hunt: HuntState | undefined): Light {
   else if (!refused && hasReservation(w.verdict)) yellow.push({ kind: 'reservation' })
   if (w.reviewedIn !== undefined) yellow.push({ kind: 'oldReview', round: w.reviewedIn })
   if (!w.findingsKnown) yellow.push({ kind: 'notesUnknown' })
-  if (w.notes.length > 0) yellow.push({ kind: 'notes', n: w.notes.length })
+  if (notes > 0) yellow.push({ kind: 'notes', n: notes })
   if (w.dodOpen !== undefined && w.dodOpen.person > 0) yellow.push({ kind: 'byAPerson', n: w.dodOpen.person })
   if (w.dodOpen === undefined && w.dodComplete === false) yellow.push({ kind: 'dodIncomplete' })
   if (w.question !== '') yellow.push({ kind: 'question' })
@@ -338,17 +340,6 @@ function sameRound(t: Ticket): boolean {
   return !t.review_round || t.review_round === (t.round ?? 1)
 }
 
-// Whether the band offers Explain: for a blocker the review wrote into its
-// gaps, or a verdict that names a reservation or refuses the work. Notes
-// alone — a review always has a few — are listed, not explained: an Explain
-// on every ticket read as "this must be changed". A verdict of an earlier
-// round keeps its Explain, under a line saying the ticket changed since: a
-// ticket the teamlead moved on past a refusing review must not reach the
-// person silent.
-function explainable(verdict: string, gaps: string | undefined): boolean {
-  return hasReservation(verdict) || (verdict !== '' && blockersOf(gaps).length > 0)
-}
-
 // A jaira older than the board it reads says so on a line of its own before
 // anything else it prints; that line is no part of an answer or an error.
 const OLDER_BUILD = /^jaira: this board was set up by an older version.*$\n?/gm
@@ -381,7 +372,7 @@ export function otherRefusal(errorJson: string): string | undefined {
 // Discuss chat's `decision:` note, up to the next note or section, and when
 // it was written (jaira stamps notes to the minute, in UTC). undefined when
 // there is none yet.
-export function noteOf(showJson: string, kind: 'explain' | 'decision'): { text: string; at: number; line: number } | undefined {
+export function noteOf(showJson: string, kind: 'explain' | 'decision' | 'parent session'): { text: string; at: number; line: number } | undefined {
   const lead = new RegExp(`^- \\*\\*(\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d) · [^*]*\\*\\* — ${kind}:\\s*`)
   const body = parse<{ body?: string }>(withoutWarnings(showJson))?.body ?? ''
   const lines = body.split('\n')
@@ -399,10 +390,18 @@ export function noteOf(showJson: string, kind: 'explain' | 'decision'): { text: 
 // notes, never off a session, so a restart cannot offer an answered choice
 // again. Answered means a decision: note written after the explain: note —
 // by its place in the notes, since both are stamped to the minute. A newer
-// explanation, a new round's finding, is open again.
+// explanation, a new round's finding, is open again. An explanation a give-
+// back came after explains a review of a round that is over: it is no
+// explanation any more, until a new one is written (Alex 22.11.2026). jaira
+// stamps no round change, so the give-back is read off the note every Give
+// back of the cockpit writes; a ticket moved back by hand without one keeps
+// its explanation.
+const GIVEN_BACK = /^- \*\*\d{4}-\d\d-\d\d \d\d:\d\d · [^*]*\*\* — Given back from /
 export function explanationNotes(showJson: string): { text: string; decided?: string } | undefined {
   const explain = noteOf(showJson, 'explain')
   if (explain === undefined) return undefined
+  const lines = (parse<{ body?: string }>(withoutWarnings(showJson))?.body ?? '').split('\n')
+  if (lines.some((l, i) => i > explain.line && GIVEN_BACK.test(l))) return undefined
   const decision = noteOf(showJson, 'decision')
   return decision !== undefined && decision.line > explain.line ? { text: explain.text, decided: decision.text } : { text: explain.text }
 }
@@ -563,6 +562,42 @@ export function worktreeOfBranch(porcelain: string, branch: string): string | un
   return worktreesOf(porcelain).find(w => w.branch === branch)?.path
 }
 
+// Which branch a ticket's work rides on, in this order and nothing more:
+// the branch its own worktree stands on, else a branch named <prefix>/<slug>
+// (its worktree removed), else the one branch that holds the newest commit
+// that is the ticket's own. Several holding that commit, none of them the
+// ticket's by worktree or name, is never guessed at: ambiguous names them and
+// the person picks (Alex, QTQW15). Three rounds of rules that guessed —
+// git's order, the distance to a tip, which tip lies under which — each
+// started a worker in another ticket's worktree in a case the next round
+// found. undefined: no branch of the ticket's at all, and spawn.sh makes
+// <prefix>/<slug>. base is the default branch, never a carrier; holders is
+// `git branch --contains <that commit>`, slugBranches `git branch --list
+// '*/<slug>'`, both as --format=%(refname:short) lists them.
+export type Carrier = { branch: string; by: 'commit' | 'worktree' | 'name' } | { ambiguous: string[] }
+
+export function carrierFor(input: { own?: string; base: string; holders?: string; slugBranches?: string }): Carrier | undefined {
+  const { own, base, holders, slugBranches } = input
+  if (own !== undefined && own !== base) return { branch: own, by: 'worktree' }
+  // Two named after it — feat/<slug> and fix/<slug> — are as much a guess as
+  // two holders: neither is picked.
+  const named = slugBranches === undefined ? [] : holdersOf(slugBranches, base)
+  if (named.length === 1) return { branch: named[0]!, by: 'name' }
+  if (named.length > 1) return { ambiguous: named }
+  const branches = holders === undefined ? [] : holdersOf(holders, base)
+  if (branches.length === 1) return { branch: branches[0]!, by: 'commit' }
+  return branches.length > 1 ? { ambiguous: branches } : undefined
+}
+
+// The branches a `git branch --format=%(refname:short)` listing names, in
+// its order, without the default branch, a detached HEAD — listed as "(HEAD
+// detached at <sha>)", which is no branch — or a branch that only wraps
+// another one listed, Herdr's review/<branch>.
+function holdersOf(holders: string, base: string): string[] {
+  const listed = holders.split('\n').map(l => l.trim()).filter(b => b && b !== base && !b.startsWith('('))
+  return listed.filter(b => !listed.some(o => b.endsWith(`/${o}`)))
+}
+
 export function newWorktreeFor(repo: string, branch: string): string {
   const cut = repo.lastIndexOf('/')
   return `${repo.slice(0, cut)}/.worktrees/${repo.slice(cut + 1)}-${branch.slice(branch.lastIndexOf('/') + 1)}`
@@ -604,42 +639,31 @@ export function ticketsNamed(subjects: string): string[] {
   return out
 }
 
-// The newest commit whose subject names a ticket, off `git log --format=%H
-// %s`, read as ticketsNamed reads a subject: the handle alone or among
-// others in the scope. The body is never read — a merge commit quotes the
-// subjects it brought in there, and would name every ticket it merged.
+// The newest commit that is the ticket's own, off `git log --format=%H %s`:
+// its subject's scope is the handle and nothing else, `fix(A3K9QP): ...`.
+// A scope that lists it beside others — `chore(0GMYQB,A3K9QP)`, a follow-up's
+// commit on the follow-up's branch — is not its own and never counts, nor
+// does the handle in the text (Alex, QTQW15). The body is never read — a
+// merge commit quotes the subjects it brought in there.
 export function commitNaming(log: string, id: string): string | undefined {
   for (const line of log.split('\n')) {
     const cut = line.indexOf(' ')
-    if (cut > 0 && ticketsNamed(line.slice(cut + 1)).includes(id)) return line.slice(0, cut)
+    if (cut > 0 && /^[a-z]+\(([^)]*)\)!?:/.exec(line.slice(cut + 1).trim())?.[1]?.trim() === id) return line.slice(0, cut)
   }
   return undefined
 }
 
-// Which of those are not in the terminal lane yet, off `jaira list --json`.
-// A handle the board does not list is filed away in the logbook — past done
+// Which of those are not in the terminal lane yet — or, given several lanes,
+// in none of them (signoff up to done, where .jaira/pr-when says signoff) —
+// off `jaira list --json`. A handle the board does not list is filed away in the logbook — past done
 // — or no ticket of this board, and holds nothing up.
-export function pendingOf(listJson: string, named: readonly string[], terminal: string): string[] {
+export function pendingOf(listJson: string, named: readonly string[], arrived: string | readonly string[]): string[] {
   const tickets = parse<{ tickets?: { handle?: string; status?: string }[] }>(withoutWarnings(listJson))?.tickets ?? []
+  const lanes = typeof arrived === 'string' ? [arrived] : arrived
   return named.filter(id => {
     const status = tickets.find(t => t.handle === id)?.status
-    return status !== undefined && status !== terminal
+    return status !== undefined && !lanes.includes(status)
   })
-}
-
-// A ticket's branch without a worktree of its own, off a branch listing
-// (`--format=%(refname:short)`): the first that is not the base. Read from
-// `git branch --list '*/<slug>'` — spawn.sh names it <prefix>/<slug>, and a
-// worktree removed after done leaves it behind — and from `git branch
-// --contains <a commit naming it>`, where it was worked on another ticket's
-// branch. A branch that only wraps another listed one — Herdr's
-// review/<branch> — is passed by: it lists before task/<slug> and
-// work/<slug>. Depth alone decides nothing; in the --contains listing a wip
-// or a detached HEAD has fewer parts than the branch the work rode on. A
-// detached HEAD lists as "(HEAD detached at <sha>)", which is no branch.
-export function carrierBranch(listing: string, base: string): string | undefined {
-  const branches = listing.split('\n').map(l => l.trim()).filter(b => b && b !== base && !b.startsWith('('))
-  return branches.find(b => !branches.some(o => b.endsWith(`/${o}`)))
 }
 
 // The forge jaira-role-pr would open a pull request on: `git config
@@ -814,11 +838,6 @@ export function gapItems(gaps: string | undefined, explainText?: string, decided
   })
 }
 
-// One press on a row: fix now, then later, then accept, then fix now again.
-export function nextChoice(c: Choice): Choice {
-  return c === 'now' ? 'later' : c === 'later' ? 'accept' : 'now'
-}
-
 // The headings of the decision lines, in the words the ticket asked for.
 const HEADINGS: Record<Choice, string> = { now: 'beheben:', later: 'Folge-Ticket:', accept: 'angenommen:' }
 const EXTRA = 'dazu: '
@@ -914,6 +933,59 @@ export function huntOf(briefJson: string): HuntState | undefined {
   return HUNTS.has(state) ? { state: state as Hunt, at: brief.bughunt?.at ?? '' } : undefined
 }
 
+// ── following a pull request (CRASZS) ────────────────────────────────────
+
+// The pull requests a report names by address — GitHub's /pull/<n>,
+// GitLab's /-/merge_requests/<n> — once each, in order. A bare "#12" is not
+// taken: an issue, a list item and a pull request all write it. Whose they
+// are, jaira pr says (followNamed).
+export function pullRequestsIn(text: string): { number: number; url: string }[] {
+  const out: { number: number; url: string }[] = []
+  for (const m of text.matchAll(/https?:\/\/[^\s)>\]]+?\/(?:pull|-\/merge_requests)\/(\d+)\b/g)) {
+    if (!out.some(x => sameAddress(x.url, m[0]))) out.push({ number: Number(m[1]), url: m[0] })
+  }
+  return out
+}
+
+// Whether two addresses of a pull request are the same one: scheme and case
+// aside.
+export function sameAddress(a: string, b: string): boolean {
+  const norm = (u: string) => u.toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '')
+  return norm(a) === norm(b)
+}
+
+// One pull request as `jaira pr --json` prints it, as far as the cockpit
+// reads it.
+export type PullRequest = { number: number; url: string; tickets: string[]; settled: boolean; unsettled: string[] }
+
+// The open pull requests `jaira pr --json` lists; undefined where the
+// answer is not that command's.
+export function pullRequestsOf(prJson: string): PullRequest[] | undefined {
+  const st = parse<{ prs?: (Partial<PullRequest> & { state?: string })[] }>(withoutWarnings(prJson))
+  if (!Array.isArray(st?.prs)) return undefined
+  return st.prs
+    .filter(p => typeof p.number === 'number' && (p.state ?? 'open') === 'open')
+    .map(p => ({ number: p.number!, url: p.url ?? '', tickets: p.tickets ?? [], settled: p.settled === true, unsettled: p.unsettled ?? [] }))
+}
+
+// When a board's pull request opens, from `jaira roles list --json`:
+// 'signoff' where .jaira/pr-when says so, 'done' otherwise and for a jaira
+// too old to say.
+export function prWhenOf(rolesJson: string): 'signoff' | 'done' {
+  return parse<{ pr_when?: string }>(withoutWarnings(rolesJson))?.pr_when === 'signoff' ? 'signoff' : 'done'
+}
+
+// The lanes from `from` up to `to`, both included, in the board's order off
+// `jaira lanes --json` — where a ticket has arrived once the pull request may
+// open in signoff. Empty where either lane is not on the board, or `to`
+// comes first.
+export function lanesBetween(lanesJson: string, from: string, to: string): string[] {
+  const ids = (parse<{ lanes?: { id?: string }[] }>(withoutWarnings(lanesJson))?.lanes ?? []).map(l => l.id ?? '')
+  const a = ids.indexOf(from)
+  const b = ids.indexOf(to)
+  return a < 0 || b < a ? [] : ids.slice(a, b + 1)
+}
+
 // ── review notes as a person reads them ─────────────────────────────────
 
 // The mark each note opens with, the one the teamlead's signoff reports use:
@@ -944,6 +1016,20 @@ export function rephrasePrompt(language: string, notes: readonly string[]): stri
   ].join('\n')
 }
 
+// The same for the Acceptance pane's head: the ticket's title, goal, what
+// was done and why, and the reason the light names - a call of its own, so
+// a note's rewrite never waits for, or fails with, the head's.
+export function headPrompt(language: string, texts: readonly string[]): string {
+  return [
+    `Translate each text below into ${language}, plainly, for a person who reads slowly and was not there.`,
+    'They are the title of a ticket, its goal, what was done and why, and the reason a traffic light shows; a title stays short.',
+    'Keep code identifiers, file paths, commands and ticket handles exactly as written. Add nothing.',
+    `Answer with a JSON array of exactly ${texts.length} strings, in the same order, and nothing else.`,
+    '',
+    JSON.stringify(texts),
+  ].join('\n')
+}
+
 // The model's answer as one shown text per note, or undefined when it is no
 // array of exactly that many non-empty strings: a note shown wrong, or two
 // notes swapped, is worse than the original text.
@@ -955,4 +1041,126 @@ export function rephrasedOf(answer: string, n: number): string[] | undefined {
   if (!Array.isArray(out) || out.length !== n) return undefined
   if (!out.every(x => typeof x === 'string' && oneLine(x) !== '')) return undefined
   return out.map(x => oneLine(x as string))
+}
+
+// ── the Acceptance pane ─────────────────────────────────────────────────
+
+// What Execute does with the person's choices: one rule over every
+// combination, so the pane's summary line and the press agree. A note marked
+// fix now gives the ticket back, follow-ups and all; words typed beside no
+// such note are what is missing, and give it back too. A blocker not marked
+// fix now is accepted only with a reason, which the field then asks for: its
+// words are that reason, not work to do. Nothing to fix accepts — through the
+// same gates as Accept — where the next lane ends the work; in a lane that
+// does not (human -> review) there is nothing to accept: words typed give it
+// back, nothing typed does nothing.
+export type Step = 'giveBack' | 'accept' | 'needWhy' | 'notTerminal'
+export type Execution = { step: Step; fix: number; followUps: number; asksWhy: boolean }
+
+export function executionOf(items: readonly GapItem[], typed: string, acceptTo: string | null): Execution {
+  const fix = items.filter(i => i.choice === 'now').length
+  const followUps = items.filter(i => i.choice === 'later' && i.follow === undefined).length
+  // Only where the ticket can be accepted at all: elsewhere words typed are
+  // what is missing, never a reason to accept.
+  const asksWhy = acceptTo !== null && fix === 0 && items.some(i => i.cls === 'blocker' && i.choice !== 'now')
+  const words = typed.trim() !== ''
+  const step: Step = fix > 0 || (words && !asksWhy) ? 'giveBack' : acceptTo === null ? 'notTerminal' : asksWhy && !words ? 'needWhy' : 'accept'
+  return { step, fix, followUps, asksWhy }
+}
+
+// The pane's head and history, read off one `jaira show --json`: what the
+// ticket is for, what was done and why, and how it got here. Commits, files,
+// the bug hunt, the pull request and the release note come from elsewhere
+// and are added by the caller.
+export type Story = {
+  title: string
+  goal: string
+  what: string
+  why: string
+  round: number
+  // How often in a row it came back, and from where; undefined: never.
+  back?: { count: number; from: string }
+  dod: { done: number; superseded: number; total: number }
+  verdict: string
+  // created_at in ms; undefined where jaira did not say.
+  created?: number
+}
+
+export function storyOf(showJson: string): Story | undefined {
+  type Shown = {
+    title?: string; goal?: string; outcome?: { what?: string; why?: string }; round?: number
+    back?: { count?: number; from?: string }; dod_items?: Item[]; review?: { verdict?: string }; created_at?: string
+  }
+  const s = parse<Shown>(withoutWarnings(showJson))
+  if (s === undefined || s === null || typeof s !== 'object') return undefined
+  const items = s.dod_items ?? []
+  const superseded = items.filter(i => i.state === 'superseded').length
+  const created = s.created_at === undefined ? NaN : Date.parse(s.created_at)
+  const count = s.back?.count ?? 0
+  return {
+    title: oneLine(s.title),
+    goal: oneLine(s.goal),
+    what: oneLine(s.outcome?.what),
+    why: oneLine(s.outcome?.why),
+    round: s.round ?? 1,
+    ...(count > 0 ? { back: { count, from: s.back?.from ?? '' } } : {}),
+    dod: { done: items.filter(i => i.state !== 'superseded' && i.done === true).length, superseded, total: items.length },
+    verdict: oneLine(s.review?.verdict),
+    ...(Number.isNaN(created) ? {} : { created }),
+  }
+}
+
+// The lines of a release note file that are changes ('- ...'), the mark of
+// one the reader must act on ('- ! ') kept; prose and comments read past.
+export function releaseLines(note: string): string[] {
+  return note.split(/\r?\n/).filter(l => l.startsWith('- ')).map(l => oneLine(l.slice(2))).filter(l => l !== '')
+}
+
+// The commits and the files they changed, from `git log --format=%h
+// --name-only` over the commits naming the ticket: a hash line opens each.
+export function commitsOf(log: string): { commits: number; files: number } {
+  const lines = log.split(/\r?\n/).map(l => l.trim()).filter(l => l !== '')
+  const hashes = lines.filter(l => /^[0-9a-f]{7,40}$/.test(l))
+  return { commits: hashes.length, files: new Set(lines.filter(l => !hashes.includes(l))).size }
+}
+
+// Explain on one note: the cheap model says in one everyday sentence why it
+// matters for accepting the ticket, or why it does not - told what the
+// ticket is for, what was done, and the change to the files the note names,
+// so it can say what happens in the code rather than repeat the note.
+export type NoteContext = { title: string; goal: string; what: string; diff: string }
+export const DIFF_LINES = 200
+
+export function reasonPrompt(language: string | undefined, ctx: NoteContext, note: string): string {
+  return [
+    `A person decides whether to accept the ticket "${ctx.title}". A reviewer left the note below.`,
+    ...(ctx.goal !== '' ? [`The ticket's goal: ${ctx.goal}`] : []),
+    ...(ctx.what !== '' ? [`What was done: ${ctx.what}`] : []),
+    `In ${language ?? 'the language the note is written in'}, say in one short everyday sentence why this note matters for that decision, or why it does not - name concretely what the code does, as the change below shows.`,
+    'Keep code identifiers, file paths and ticket handles exactly as written. Answer with the sentence alone.',
+    '',
+    note,
+    ...(ctx.diff !== '' ? ['', `The change to the files the note names (at most ${DIFF_LINES} lines):`, ctx.diff] : []),
+  ].join('\n')
+}
+
+// The files a note names: words with a file extension, a ':line' after them
+// dropped - 'register.tsx:1214', 'core/release/notes/<ID>.md'. A placeholder
+// with '<' or '>' names no file. An absolute path names the file by its
+// name: it is matched at any depth, and a checkout elsewhere has another root.
+export function notePaths(note: string): string[] {
+  const found = note.match(/[\w./-]+\.(?:tsx?|jsx?|go|md|sh|py|json|ya?ml|toml|css|html)(?::\d+)?\b/g) ?? []
+  return [...new Set(found.map(p => p.replace(/:\d+$/, '')).map(p => (p.startsWith('/') ? p.slice(p.lastIndexOf('/') + 1) : p)))]
+}
+
+// A diff cut to its first n lines, with a line saying how many were left out.
+export function clipLines(text: string, n: number): string {
+  const lines = text.replace(/\n$/, '').split('\n')
+  return lines.length <= n ? lines.join('\n') : [...lines.slice(0, n), `... ${lines.length - n} more lines`].join('\n')
+}
+
+// The model's sentence, on one line; undefined when it said nothing.
+export function reasonOf(answer: string): string | undefined {
+  const line = oneLine(answer)
+  return line === '' ? undefined : line.length <= 400 ? line : `${line.slice(0, 399).trimEnd()}…`
 }

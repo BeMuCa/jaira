@@ -33,8 +33,8 @@ rejects-to: ""                   # the lane work goes back to when this one find
                                   # [in-progress, human] — declares two back edges: a flaw goes back to
                                   # be fixed, a decision goes to a person.
 # max-rounds: 3                  # optional, a whole number above 0: how many times in a row this lane may
-                                  # send work back; the next send-back is refused and names the lane a person
-                                  # answers in. Leave it out for no limit.
+                                  # send work back; the next send-back is refused: the teamlead decides, or a
+                                  # person in the lane it names. Leave it out for no limit.
 input-requires: [goal]           # ticket fields assembled into a subagent's bounded input.
 output-produces: [outcome]       # ticket fields the subagent must return before it can move on.
 creator: you                     # optional provenance; left empty if you'd rather not say.

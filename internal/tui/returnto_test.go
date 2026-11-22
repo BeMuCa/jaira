@@ -185,6 +185,12 @@ func TestMoveFromAnOpenTicketLeavesItOpenAndFresh(t *testing.T) {
 	press(m, "m")
 	m.moveTarget = laneOrder(t, m, "todo")
 	press(m, "enter")
+	// Out of a person's lane and backwards: the move asks what is still open.
+	if m.mode != modeSendBack {
+		t.Fatalf("a send-back out of human did not ask for its reason: mode = %v", m.mode)
+	}
+	typeInto(m, "needs a spec first")
+	press(m, "enter")
 
 	if m.mode != modeDetail {
 		t.Fatalf("the move closed the ticket: mode = %v", m.mode)

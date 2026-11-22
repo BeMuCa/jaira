@@ -397,12 +397,21 @@ Stop and report the moment any of these is true:
   into one, never out of it
 - an agent you started is at an approval dialog — report what it asks, never
   answer for the human
-- **the same lane sent work back three times.** Stop and hand it to the person,
-  whatever you think of the loop. Three lines: the third round's findings,
+- **the same lane sent work back three times.** Stop and hand the decision
+  on, whatever you think of the loop. Three lines: the third round's findings,
   verbatim; whether you think the definition of done is wrong or the loop
   reads deeper every round without ever ending, and why; the one thing you
   would do. Then ask yes or no, as a choice, and wait. You may recommend; you
-  may not act on your own recommendation
+  may not act on your own recommendation.
+
+  **Started with `--parent`, the teamlead decides first, not the person.** The
+  ticket stays in the lane it is in — do not move it to `human`. Put the three
+  lines and the options on it with `jaira set <id> question="<...>"` and a
+  `jaira note`, send the same to the parent with `SendMessage`, and end your
+  turn. The parent either decides — a `decision (teamlead <date>):` note, then
+  clears the question and tells you how to go on — or takes it to the person
+  and moves the ticket into `human` itself. Only a parent `SendMessage` cannot
+  reach leaves the move to `human --question` to you, as without a parent
 - you touched, or are about to touch, a file outside your worktree
 
 ## Do not swallow what the human should hear

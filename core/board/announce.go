@@ -251,7 +251,7 @@ func laneSection(facts []LaneFact) string {
 			fmt.Fprintf(&b, "Loop: %s sends work back to %s, and that repeats until %s has nothing left to say.",
 				f.ID, OrList(f.RejectsTo), f.ID)
 			if f.MaxRounds > 0 {
-				fmt.Fprintf(&b, " At most %d times in a row: the next send-back is refused, and a person decides.", f.MaxRounds)
+				fmt.Fprintf(&b, " At most %d times in a row: the next send-back is refused, and the teamlead decides, or a person.", f.MaxRounds)
 			}
 			b.WriteString("\n")
 		}
@@ -270,7 +270,11 @@ func laneSection(facts []LaneFact) string {
 		case f.HumanExit:
 			marks = append(marks, "**a person's, not yours** — you may move work in, or send it back to an earlier lane, never on")
 		case f.Question:
-			marks = append(marks, "**a person's, not yours** — you may move work in, never out")
+			// Nothing in the gate holds a ticket here — requires-question
+			// guards the way in, not the way out — so the line says what the
+			// lane is for, and that leaving it waits on the answer, not on a
+			// refusal.
+			marks = append(marks, "**a person answers here** — you may move work in, and move it on once the question is answered")
 		default:
 			marks = append(marks, "no agent step; move through it")
 		}

@@ -806,9 +806,9 @@ func TestReapTearsDownWhatTheSetupBuilt(t *testing.T) {
 			}
 			// A failed teardown is called again in the next round.
 			if c.name == "fails" {
-				r.run(t, r.repo, "reap.sh")
+				again := r.run(t, r.repo, "reap.sh")
 				if b, _ := os.ReadFile(calls); strings.Count(string(b), "\n") != 2 {
-					t.Errorf("the next round did not call the teardown again: %q", b)
+					t.Errorf("the next round did not call the teardown again: %q\n%s", b, again)
 				}
 			}
 		})
