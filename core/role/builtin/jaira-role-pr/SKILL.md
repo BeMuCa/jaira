@@ -389,10 +389,15 @@ requests whose head lives on `origin` — your fork's owner, not the target's.
 On GitHub:
 
 ```bash
-gh pr list --repo <owner/repo> --head "$(git branch --show-current)" --state open \
+gh pr list --repo <owner/repo> --head "$(git branch --show-current)" --state open --limit 1000 \
   --json number,url,headRepositoryOwner \
-  --jq '.[] | select(.headRepositoryOwner.login == "<owner-of-origin>") | .url'
+  --jq '.[] | select((.headRepositoryOwner.login | ascii_downcase) == ("<owner-of-origin>" | ascii_downcase)) | .url'
 ```
+
+`<owner-of-origin>` is the part of `nameWithOwner` before the slash, from the
+`gh repo view` of `origin` above. GitHub logins ignore case, so the filter does
+too, and `--limit` lifts gh's default of 30 — past it your own request can fall
+off the list and look like none.
 
 `gh pr list --head` takes the bare branch name: given `<owner>:<branch>` — the
 form `gh pr create` accepts — it lists nothing, and an open pull request looks
@@ -402,7 +407,7 @@ or on GitLab, where `<origin's project id>` is `id` from the `glab repo view`
 of `origin` above:
 
 ```bash
-glab mr list --repo <owner/repo> --source-branch "$(git branch --show-current)" \
+glab mr list --repo <owner/repo> --source-branch "$(git branch --show-current)" --per-page 100 \
   -F json --jq '.[] | select(.source_project_id == <origin's project id>) | .web_url'
 ```
 
