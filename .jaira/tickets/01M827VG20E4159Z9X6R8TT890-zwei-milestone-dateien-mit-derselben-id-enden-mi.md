@@ -17,21 +17,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T18:21:19Z
-updated-at: 2026-11-22T19:55:16Z
+updated-at: 2026-11-22T20:06:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3443254
 claimed-at: 2026-11-22T19:28:38Z
 outcome-what: "Every milestone write — create, add, rm, set, rename, and logbook/restore of a milestone — refuses with exit 3 (milestone_twin_files) naming both files when one milestone ID lies in two files"
 outcome-why: "After a rename, a stale old copy beside a hand-edited file under the new name stayed on disk unseen and the next write read whichever file sorted first"
 outcome-resolves: 8TT890
-review-summary: "nothing to change: internal/cli/archive.go unfileMilestone restores the taken bytes to the logbook and removes only an untouched dst; the board keeps the catch-up's result like every refused milestone write (note round 6). Standing on the give-back notes for reads and refsync."
-review-gaps: "none - round 6 adds a byte read, a WriteAtomic and a guarded Remove in unfileMilestone, and one test; nothing duplicated or unused"
-test-verdict: "fail: suite green (go test -race ./... RC=0), bughunt change at 6f7ad1e1a - refused restore whose catch-up rewrote dst leaves the milestone on board and in the logbook"
-hunt-verdict: "change: internal/cli/archive.go:194-199 catch-up-rewritten dst stays on the board beside the logbook copy; 'nothing was written' false after catch-up (bughunt 19:43)"
-round: 7
+review-summary: "nothing to change: internal/cli/archive.go checkMilestoneRestore refuses before s.RestoreFrom moves anything, so unfileMilestone needs no rollback; core/ticket/store.go RestoresMilestone reuses logbookFolders rather than a second glob. The ID-on-board refusal reuses RestoreFrom's exit 5/not_archived shape instead of a new reason."
+review-gaps: "none - round 7 deleted the rollback (net shorter unfileMilestone); RestoresMilestone has one caller but sits beside RestoreFrom's own lookup it mirrors"
+test-verdict: "fail: suite green, bughunt change at 6d2e096ec (unreadable board file of the ID)"
+hunt-verdict: "change: internal/cli/archive.go:179 ID-on-board check uses milestone.Load, which skips unreadable files; the post-move CheckTwinFiles sees the pair by name -> file stranded on the board, logbook empty (bughunt at 6d2e096ec)"
+round: 8
 back-from: testing
 back-by: lane
-back-count: 3
+back-count: 4
 review-verdict: "accept: all three DoD items hold - every milestone write path (core Create/Edit/Rename via lockAndMigrate, CLI logbook/restore via migrateHeld) refuses one ID in two files with exit 3 naming both; the normal rename catch-up tests stay green; release note present. go test ./core/milestone ./core/refsync ./internal/cli green. Open findings are narrow edges, not blockers."
 review-round: 2
 review-verdict-gaps: |-
@@ -55,7 +55,7 @@ review-check: "1. go build -o /tmp/j ./cmd/jaira (from the worktree)  2. in a sc
 - [x] Restore einer alten Milestone-Datei ohne ID (q4.md) neben einem Zwilling: die Datei liegt danach wieder im Logbook, filed, nicht auf dem Board (Test)
   proof: internal/cli/archive.go checkMilestoneRestore runs before RestoreFrom; TestRestoreOfAnOldFormatFileBesideATwinGoesBackToTheLogbook, TestRestoreClearsAStaleCopyBesideARenamedMilestone, TestARefusedRestoreKeepsTheLogbookCopyTheCatchUpRemoved
 - [x] Restore prüft Zwillinge (nach Catch-up) bevor die Datei aus dem Logbook bewegt wird; keine Rückroll-Logik in unfileMilestone (Entscheidung 22.11.)
-  proof: internal/cli/archive.go checkMilestoneRestore (catch-up, CheckTwinFiles, ID already on the board) before s.RestoreFrom; unfileMilestone has no rollback; core/ticket/store.go RestoresMilestone; TestRestoreRefusesAnIDAlreadyOnTheBoard, TestLogbookAndRestoreRefuseOneIDInTwoFiles
+  proof: internal/cli/archive.go checkMilestoneRestore (catch-up, CheckTwinFiles, ID on the board by file name) before s.RestoreFrom; unfileMilestone has no rollback; core/ticket/store.go RestoresMilestone; TestRestoreRefusesAnIDAlreadyOnTheBoard, TestRestoreRefusesAnUnreadableFileOfItsID, TestLogbookAndRestoreRefuseOneIDInTwoFiles
 
 ## Options
 
@@ -99,3 +99,7 @@ angenommen:
 - **2026-11-22 19:44 · Alexander Sacharov** — worker: testing sent back the 3rd time in a row, every round on the same rule - the restore rollback after migrateHeld (Moved path, catch-up removal, catch-up rewrite). Stopped for the person. Smaller design on the table: check twins (after catch-up) under the lock BEFORE RestoreFrom moves the file, and delete the rollback branch in unfileMilestone - nothing moved, nothing to put back.
 - **2026-11-22 19:50 · Alexander Sacharov** — decision (Alex, 22.11.): smaller design - restore checks twins after catch-up, under the lock, BEFORE RestoreFrom moves the file; the rollback branch in unfileMilestone goes.
 - **2026-11-22 19:55 · Alexander Sacharov** — in-progress round 7 (smaller design, Alex): restore under the lock asks ticket.Store.RestoresMilestone, then checkMilestoneRestore - catch-up, CheckTwinFiles, and refuse when the restored file's ID (computed for an old-format name too) is already on the board under any name (exit 5 not_archived, as RestoreFrom's same-name refusal). Rollback branch in unfileMilestone deleted. Second release-note line for the new refusal.
+- **2026-11-22 19:58 · Alexander Sacharov** — bughunt: change: blocker: internal/cli/archive.go:179 - class: the pre-check asks milestone.Load whether the ID is on the board, and Load's scan (core/milestone/milestone.go:328) skips any file it cannot read, while the refusal after the move (CheckTwinFiles in migrateHeld, internal/cli/milestones.go:650) goes by file names alone; a board file named after the ID that scan skips passes the pre-check, the file leaves the logbook, then the twin check refuses, and since 6d2e096ec removed the rollback nothing puts it back; example: z9-KAC7YZ.md on the board with mode 000, jaira restore a1-KAC7YZ.md -> exit 3 'nothing was written', but a1-KAC7YZ.md is now in .jaira/milestones/ (still filed) and gone from the logbook - a person following the message and deleting the 'other' file can delete the only copy; ran: built ./cmd/jaira, chmod 000 on the board file, restore, ls logbook (empty) and board (both files)
+- **2026-11-22 19:58 · Alexander Sacharov** — bughunt: done at 6d2e096ec - 1 finding (1 change, 0 pre-existing) in 3 modules, follow-up hunt since 6f7ad1e1a, core/ticket/store.go read whole as new; concurrency, error paths, input, permissions checked; files: core/milestone/write.go core/milestone/write_test.go core/refsync/catchup_test.go core/refsync/refsync.go core/release/notes/8TT890.md core/ticket/store.go internal/cli/archive.go internal/cli/milestones.go internal/cli/milestones_test.go internal/cli/root.go
+- **2026-11-22 20:02 · Alexander Sacharov** — decision (Alex, 22.11.): send back past the 3-round limit (--force on his word) and fix the ID-on-board check by file names, as CheckTwinFiles does.
+- **2026-11-22 20:06 · Alexander Sacharov** — in-progress round 8 (bughunt 6d2e096ec): ID-on-board check reads file names (FileIdentity over ReadDir) instead of milestone.Load, which skips unreadable files. Test skips on Windows (wintrap gate) and as root.

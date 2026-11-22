@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -1328,5 +1329,39 @@ func TestRestoreRefusesAnIDAlreadyOnTheBoard(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(milestone.Dir(dir), filepath.Base(logged))); !os.IsNotExist(err) {
 		t.Errorf("the restored file is on the board: %v", err)
+	}
+}
+
+// A board file of the ID that cannot be read refuses the restore all the
+// same: it is found by its name.
+func TestRestoreRefusesAnUnreadableFileOfItsID(t *testing.T) {
+	// chmod 0 makes a file unreadable only on POSIX: on Windows os.Chmod
+	// flips the read-only attribute and the file still reads.
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("needs POSIX permission bits and a user that is not root")
+	}
+	dir := emptyStore(t)
+	if out, err := runCLI(t, dir, "milestone", "create", "z9"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, _ := milestone.Load(dir, "z9")
+	logDir := filepath.Join(dir, ".jaira", "logbook", "me-2026-01-01", "milestones")
+	if err := os.MkdirAll(logDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	logged := filepath.Join(logDir, "a1-"+ms.ID+".md")
+	if err := os.WriteFile(logged, []byte("---\ncolor: 45\nstatus: filed\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(ms.Path(dir), 0); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(ms.Path(dir), 0o644) })
+	_, err := runCLI(t, dir, "restore", filepath.Base(logged))
+	if code, _ := classify(err); code != ExitNotFound || !strings.Contains(err.Error(), ms.FileName()) {
+		t.Fatalf("restore beside an unreadable file of its ID: exit %d, want %d naming %s: %v", code, ExitNotFound, ms.FileName(), err)
+	}
+	if _, err := os.Stat(logged); err != nil {
+		t.Errorf("the logbook copy went: %v", err)
 	}
 }

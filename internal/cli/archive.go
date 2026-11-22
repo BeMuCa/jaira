@@ -174,11 +174,24 @@ func checkMilestoneRestore(s *ticket.Store, name string) error {
 	if err := milestone.CheckTwinFiles(s.Root); err != nil {
 		return err
 	}
+	// By file name, as CheckTwinFiles looks: a file that cannot be read is
+	// still a file of that ID, and the pair it makes would refuse only after
+	// the move.
 	base := filepath.Base(name)
 	_, id, _ := milestone.FileIdentity(strings.TrimSuffix(base, ".md"))
-	if on, err := milestone.Load(s.Root, id); err == nil {
-		return &codedError{code: ExitNotFound, reason: "not_archived",
-			message: fmt.Sprintf("%s is already on the board as %s", base, on.FileName())}
+	entries, err := os.ReadDir(milestone.Dir(s.Root))
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	for _, e := range entries {
+		b, ok := strings.CutSuffix(e.Name(), ".md")
+		if !ok || e.IsDir() {
+			continue
+		}
+		if _, other, idNamed := milestone.FileIdentity(b); idNamed && other == id {
+			return &codedError{code: ExitNotFound, reason: "not_archived",
+				message: fmt.Sprintf("%s is already on the board as %s", base, e.Name())}
+		}
 	}
 	return nil
 }
