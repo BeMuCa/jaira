@@ -459,3 +459,35 @@ func TestAHandEditInAnotherWorktreeLosesToTheSharedRef(t *testing.T) {
 		t.Fatalf("ref holds %v, want %v: the old worktree's hand edit went over the main checkout's add", got, want)
 	}
 }
+
+// Without a record — an upgrade, another JAIRA_HOME, a deleted state
+// directory — a hand edit on the current tip is kept, not thrown away.
+func TestAHandEditIsKeptWhenThereIsNoRecord(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	ms, err := milestone.Create(ada.store.Root, ada.store, ada.syncer, func([]*milestone.Milestone) (*milestone.Milestone, error) {
+		return milestone.New("q4", 45, time.Now()), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+	addTo(t, ada, "q4", tkA)
+	addTo(t, ada, "q4", tkB)
+	if err := os.Remove(filepath.Join(ada.store.StateDir(), "milestone-synced.json")); err != nil {
+		t.Fatalf("no record to remove: %v", err)
+	}
+	path := ms.Path(ada.store.Root)
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(strings.Replace(string(b), "- "+tkA+"\n", "", 1)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	addTo(t, ada, "q4", tkC)
+	if got, want := refMembers(t, ada, ms.ID), []string{tkB, tkC}; !slices.Equal(got, want) {
+		t.Fatalf("ref holds %v, want %v: the hand edit was thrown away", got, want)
+	}
+}

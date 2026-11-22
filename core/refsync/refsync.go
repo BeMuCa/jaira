@@ -419,7 +419,7 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 		// ref that did move wins, as it always has — the file is now
 		// behind a teammate's write, and keeping it would put it back over
 		// theirs.
-		if haveErr == nil && milestone.IsID(key) && !bytes.Equal(have, content) && y.keepsHandEdit(key, have, sha) {
+		if haveErr == nil && milestone.IsID(key) && !bytes.Equal(have, content) && y.keepsHandEdit(key, have, sha, false) {
 			continue
 		}
 		if haveErr == nil && bytes.Equal(have, content) {
@@ -492,7 +492,7 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 		}
 		path := filepath.Join(milestone.Dir(root), d.File)
 		have, err := os.ReadFile(path)
-		if err != nil || bytes.Equal(have, content) || y.keepsHandEdit(d.ID, have, sha) {
+		if err != nil || bytes.Equal(have, content) || y.keepsHandEdit(d.ID, have, sha, true) {
 			continue
 		}
 		dst := filepath.Join(milestone.Dir(root), file)
@@ -531,8 +531,23 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 // holds an earlier state of the ref fell behind; one edited on a state the
 // ref has moved on from would put that old state back over somebody's write.
 // Both get the ref.
-func (y *Syncer) keepsHandEdit(id string, have []byte, sha string) bool {
-	return y.syncedAt(id) == sha && !y.Repo.MilestoneHad(id, have)
+//
+// With no record — a worktree last written by an older build, another
+// JAIRA_HOME, a state directory deleted — each side does what it did before
+// the record existed: the catch-up before a write keeps the hand edit
+// (unknown is the one case where it might be the edit the write is for), and
+// a fetch lets the ref win, so a teammate's filing or edit still arrives. The
+// record is written on the first fetch that finds the file equal to its ref,
+// and on the first write sent from here.
+func (y *Syncer) keepsHandEdit(id string, have []byte, sha string, unknownKeeps bool) bool {
+	if y.Repo.MilestoneHad(id, have) {
+		return false
+	}
+	at := y.syncedAt(id)
+	if at == "" {
+		return unknownKeeps
+	}
+	return at == sha
 }
 
 // syncedPath is where this working tree records, per milestone ID, the tip of
