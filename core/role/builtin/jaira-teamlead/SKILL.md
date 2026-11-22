@@ -325,9 +325,10 @@ A worker or dispatcher you put in a tab cannot close that tab — you created it
 so it is yours. But you never stop or close it while it works, and never while
 its ticket waits for a person in a human lane or signoff: read its status line
 and its `report:` note, tell the human, and leave the tab. The note says how
-full its context is and how long its prompt cache stays warm; the jaira-cockpit's `workers`
-tool (`mcp__jaira-cockpit__workers`, `/cockpit workers` for the person) says
-the same for every worker of the board at any time.
+full its context is and how long its prompt cache stays warm; the
+jaira-cockpit's `workers` tool (`mcp__jaira-cockpit__workers`, `/cockpit
+workers` for the person) says the same for every worker of the board at any
+time.
 
 The tab is decided about once, when the ticket comes back into a new round —
 given back from signoff or a human lane, a review comment, a failing CI run.

@@ -467,8 +467,8 @@ The cockpit shortens the report to this line and keeps the rest for
 Started with `--parent`, the short report — the status line, and the
 `needs you:` line where there is one — goes to the parent with `SendMessage`.
 Started by a person directly in your tab, print the three lines above it too:
-there the reader is the person, not a teamlead's context. Once it has taken them, close your own tab as the very
-last call of your turn:
+there the reader is the person, not a teamlead's context. Once it has taken
+the report, close your own tab as the very last call of your turn:
 
 ```bash
 jaira-dispatcher/scripts/close-tab.sh --parent <session> <ticket id>

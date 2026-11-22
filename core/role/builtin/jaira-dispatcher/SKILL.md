@@ -455,7 +455,8 @@ lands the branch on the default branch once every ticket on it is in done.
 **Your own tab closes only through `close-tab.sh`.** Do not keep working to
 stay useful — a dispatcher whose ticket has reached a human lane is finished.
 Write the report onto the ticket and print the short one, as "Report" says,
-and stop. Started with `--parent`, send the short one there with `SendMessage`, and once it has taken them make this the very last call of your
+and stop. Started with `--parent`, send the short one there with
+`SendMessage`, and once it has taken it make this the very last call of your
 turn:
 
 ```bash
