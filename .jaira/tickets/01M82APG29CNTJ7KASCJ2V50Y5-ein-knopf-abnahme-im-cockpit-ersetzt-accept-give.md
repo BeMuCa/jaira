@@ -1,7 +1,7 @@
 ---
 id: 01M82APG29CNTJ7KASCJ2V50Y5
 title: "Ein Knopf 'Abnahme' im Cockpit ersetzt Accept, Give back und Verdict: pro Notiz ok / beheben / Ticket wählen, dann ausführen"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,19 +22,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T19:11:01Z
-updated-at: 2026-11-22T20:53:01Z
+updated-at: 2026-11-22T21:03:02Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6414
 claimed-at: 2026-11-22T19:38:15Z
-outcome-what: "One Acceptance button per waiting ticket opens a pane (register.tsx ACCEPTANCE) with the light, the ticket's head and history, and each review note with ok/fix/ticket/?; Execute carries the choices out through executionOf (board.ts): give back, accept through the same gates, follow-ups. Accept, Give back, Explain and Verdict left the row; Verdict and Give back panes are gone."
-outcome-why: Alex read the same notes in three panes and decided in one while acting in another; one window that explains the ticket and does what is chosen in it replaces them (22.11.2026).
-outcome-resolves: "DoD 1-4, 6-12; 5 and 13 are a person's"
+outcome-what: "Fixed the four bughunt findings: asksWhy only where the ticket can be accepted (executionOf), the release note's Enter line, explainNote asks again after a failure and after a language change, Explain all under its own lock."
+outcome-why: bughunt round 1 found them in the change
+outcome-resolves: "bughunt notes of round 1"
 review-summary: "none"
-round: 2
-back-from: critique
+round: 3
+back-from: testing
 back-by: lane
 back-count: 1
 review-gaps: "removed nextChoice (board.ts), orphaned with the old Give back rows; removed Waiting.explainable and explainable() (band has no Explain button any more), the Verdict pane, its atom and seven texts nobody reads; folded the store-and-trim of rephrased() and explainNote into storeNewest (register.tsx); left codeDir beside refreshBoard's worktree loop (that loop reads one listing for many tickets); proofs now name symbols instead of line numbers"
+test-verdict: "fail: suite green (plugin test 407/407 on 2.1.330 and on CI's 2.1.329, go vet, go test core/mod core/shipped core/release RC=0); bughunt found 4 change findings - see bughunt notes"
+hunt-verdict: "fail: 4 change findings (executionOf in a lane that does not end; release note on Enter; explainNote caches a failure and ignores language; Explain all holds the row lock Execute needs)"
 ---
 
 # Ein Knopf 'Abnahme' im Cockpit ersetzt Accept, Give back und Verdict: pro Notiz ok / beheben / Ticket wählen, dann ausführen
@@ -115,3 +117,9 @@ Zusatz: Bau startet erst nach Merge von QTQW15 (signoff), DF46B9 und T5QN9P (don
 - **2026-11-22 20:40 · Alexander Sacharov** — in-progress: Fenster gebaut, alte Tests migriert (399 grün). Gefunden und behoben: (a) das Öffnen hielt die Zeilen-Sperre, bis git log/PR-Abfrage fertig waren - ein Execute in der Zeit ging verloren; jetzt füllt readStory die Historie nach dem Öffnen außerhalb der Sperre. (b) pullTarget macht git fetch - für die reine Anzeige zu schwer; openPullRequest fragt nur gh/glab (repo view + pr list), ohne fetch. (c) Enter im Feld nimmt nie an (ein Enter zu viel brächte das Ticket nach done) - nur der Knopf Execute; mit Text oder 'fix' führt Enter aus. (d) Kopf-Übersetzung ist ein eigener Modellaufruf (headPrompt, Store-Key <id>:head), damit die Notiz-Übersetzung unverändert bleibt. Tests: Hilfen acceptancePane/pressAccept/pressExplain/cycle in board.test.ts; quietly() filtert, was das Öffnen ausführt, aus w.ran.
 - **2026-11-22 20:49 · Alexander Sacharov** — critique: openPullRequest (register.tsx) kopiert die erste Hälfte von pullTarget (forge, origin, repo view, targetRepoOf) - in einen gemeinsamen Helfer forgeRepo ziehen. Bewusst stehen gelassen: Give back schließt das Fenster vor dem Move wie bisher (DoD 3 betrifft die done-Gates); der Release-Note-Pfad core/release/notes/<ID>.md ist jaira-spezifisch und fehlt in anderen Repos einfach (DoD 7 verlangt ihn); canType-Rückfall stammt aus dem bisherigen hasInput.
 - **2026-11-22 20:50 · Alexander Sacharov** — critique round 2: forgeRepo ist jetzt der eine Ort für forge+Ziel-Repo (pullTarget und openPullRequest), Fehlertexte unverändert; nichts weiter.
+- **2026-11-22 21:00 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/board.ts:144 (executionOf) with hooks/texts.ts:269,272 - class: a lane that does not end the work (acceptTo null, e.g. human) while a blocker is not marked fix: typed words are read as the reason for accepting (asksWhy), and accepting is impossible there, so Execute refuses and the refusal tells the person to 'type what is missing' - which they did; the field is also labelled 'Why accept it with the blocker?' in a lane where nothing can be accepted, and on mobile (no field) the same text asks for typing that cannot happen. Only marking the blocker fix gets the ticket back. example: human lane, gaps 'blocker: x' set to ok (or ticket), typed 'the docs are missing', Execute -> step notTerminal, nothing moves. ran: node --experimental-strip-types on executionOf([{cls:'blocker',choice:'accept'}],'the docs are missing',null) -> {step:'notTerminal',asksWhy:true}; same for choice 'later'
+- **2026-11-22 21:00 · Alexander Sacharov** — bughunt: change: core/release/notes/2V50Y5.md:4 against hooks/register.tsx:2069-2076 - class: the release note promises a safety property the code does not keep; 'Enter in the pane's field never accepts - press Execute' is false whenever a blocker is not marked fix and a reason is typed: onSubmit lets step 'accept' with asksWhy through to execute(), which moves the ticket to done. example: signoff, 'blocker: the header' set to ok, type a reason, press Enter -> jaira move --to done --force. read; the shipped test 'a blocker not marked fix now is accepted only with a reason...' (tests/board.test.ts:2675) proves exactly that Enter accepts. Either the note line or the onSubmit guard is wrong
+- **2026-11-22 21:00 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1255 (explainNote) - class: a failed model call is cached as the answer for the rest of the session; put(t.noReason) writes 'no explanation came back' into reasonsAtom, and the guard at :1256 returns early on any value but undefined, so the ? beside that note can never ask again until a restart; reasonsAtom is also keyed by ticket and note text only, so after the notes language changes the old-language sentence stays. example: haiku times out once -> every later press of ? on that note shows 'no explanation came back'. read (store is skipped on failure, atom is not cleared)
+- **2026-11-22 21:00 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:2084-2085 with :895 (once) and :983 (openChat returns 'hold') - class: Explain all and Execute now sit side by side under the same row lock; Explain all without Herdr returns 'hold', which keeps the lock for BUSY_MS (20 s), and with Herdr spawn.sh holds it until it ends or 20 s pass; an Execute pressed in that time is dropped by once() without a word, and the pane's Execute is not drawn dim the way the band's button is, so the person sees nothing happen and the ticket stays. example: press Explain all, then Execute within 20 s -> no move, no message. read
+- **2026-11-22 21:00 · Alexander Sacharov** — bughunt: done at 592e88dc6 - 4 findings (4 change, 0 blocker, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/2V50Y5.md core/shipped/shipped.sha256
+- **2026-11-22 21:01 · Alexander Sacharov** — testing: zurück an in-progress für die 4 bughunt-Funde: (1) asksWhy nur, wo angenommen werden kann (acceptTo != null) - sonst ist Text 'was fehlt' und gibt zurück; (2) Release-Note: Enter nimmt nur mit Grund für einen behaltenen Blocker an; (3) explainNote: Fehler nicht als Antwort festhalten, beim Öffnen des Fensters die Sätze zurücksetzen, damit ein Sprachwechsel neu fragt; (4) Explain all unter eigener Sperre <id>:chat, damit Execute nicht 20 s verloren geht.

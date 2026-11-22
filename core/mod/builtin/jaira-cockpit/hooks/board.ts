@@ -974,14 +974,17 @@ export function rephrasedOf(answer: string, n: number): string[] | undefined {
 // fix now is accepted only with a reason, which the field then asks for: its
 // words are that reason, not work to do. Nothing to fix accepts — through the
 // same gates as Accept — where the next lane ends the work; in a lane that
-// does not (human -> review) there is nothing to accept and nothing happens.
+// does not (human -> review) there is nothing to accept: words typed give it
+// back, nothing typed does nothing.
 export type Step = 'giveBack' | 'accept' | 'needWhy' | 'notTerminal'
 export type Execution = { step: Step; fix: number; followUps: number; asksWhy: boolean }
 
 export function executionOf(items: readonly GapItem[], typed: string, acceptTo: string | null): Execution {
   const fix = items.filter(i => i.choice === 'now').length
   const followUps = items.filter(i => i.choice === 'later' && i.follow === undefined).length
-  const asksWhy = fix === 0 && items.some(i => i.cls === 'blocker' && i.choice !== 'now')
+  // Only where the ticket can be accepted at all: elsewhere words typed are
+  // what is missing, never a reason to accept.
+  const asksWhy = acceptTo !== null && fix === 0 && items.some(i => i.cls === 'blocker' && i.choice !== 'now')
   const words = typed.trim() !== ''
   const step: Step = fix > 0 || (words && !asksWhy) ? 'giveBack' : acceptTo === null ? 'notTerminal' : asksWhy && !words ? 'needWhy' : 'accept'
   return { step, fix, followUps, asksWhy }

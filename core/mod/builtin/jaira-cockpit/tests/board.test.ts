@@ -4688,7 +4688,8 @@ describe('the Acceptance pane, read alone', () => {
     ['all ok in a lane that does not end', [item('edge', 'accept')], '', null, 'notTerminal', 0, 0],
     ['to fix in a lane that does not end', [item('edge', 'now')], '', null, 'giveBack', 1, 0],
     ['words in a lane that does not end', [], 'fehlt', null, 'giveBack', 0, 0],
-    ['blocker kept in a lane that does not end', [item('blocker', 'accept')], 'grund', null, 'notTerminal', 0, 0],
+    ['blocker kept, words typed, in a lane that does not end', [item('blocker', 'accept')], 'fehlt', null, 'giveBack', 0, 0],
+    ['blocker kept, nothing typed, in a lane that does not end', [item('blocker', 'later')], '', null, 'notTerminal', 0, 1],
   ]
   for (const [name, items, typed, to, step, fix, followUps] of TABLE) {
     test(`Execute: ${name} -> ${step}`, () => {
@@ -4703,6 +4704,8 @@ describe('the Acceptance pane, read alone', () => {
     expect(executionOf([item('blocker', 'now')], '', 'done').asksWhy).toBe(false)
     expect(executionOf([item('blocker', 'accept'), item('edge', 'now')], '', 'done').asksWhy).toBe(false)
     expect(executionOf([item('edge', 'accept')], '', 'done').asksWhy).toBe(false)
+    // Where nothing can be accepted, nothing asks why.
+    expect(executionOf([item('blocker', 'accept')], '', null).asksWhy).toBe(false)
   })
 
   test('the story is read off one show: head, rounds, the DoD with superseded items, the verdict, when it was created', () => {
@@ -4834,6 +4837,42 @@ describe('the Acceptance pane', () => {
     expect(await texts(pane)).toContain('  no explanation came back')
     // Without a language set, the sentence is asked in the note's own.
     expect(w.reasonPrompts[0]).toContain('the language the note is written in')
+    // A failure is not kept: the next press asks again.
+    w.reason = 'Only a test is missing.'
+    await pane.press({ key: 'why-MG677R-0' })
+    expect(w.reasonPrompts).toHaveLength(2)
+    expect(await texts(pane)).toContain('  Only a test is missing.')
+  })
+
+  test('a sentence kept in one language is not shown once the language changed: the pane opened again asks in the new one', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: a test is missing' } }, HUMAN, WORKING]
+    w.files.set(SETTINGS, JSON.stringify({ language: 'Deutsch' }))
+    w.reason = 'Nur ein Test fehlt.'
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await pane.press({ key: 'why-MG677R-0' })
+    w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
+    w.reason = 'Не хватает только теста.'
+    const again = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    expect((await texts(again)).some(x => x.includes('Nur ein Test fehlt.'))).toBe(false)
+    await again.press({ key: 'why-MG677R-0' })
+    expect(w.reasonPrompts.at(-1)).toContain('In Русский')
+    expect(await texts(again)).toContain('  Не хватает только теста.')
+  })
+
+  test('Execute right after Explain all is carried out: the chat holds a lock of its own', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.heldSpawn = []
+    await startSession($)
+    const pane = await quietly($, await $.ui.mount(BAND), 'MG677R', w)
+    void pane.press({ key: 'explain-all-MG677R' })
+    await w.clock.settle()
+    expect(w.heldSpawn).toHaveLength(1)
+    await pane.press({ key: 'execute-MG677R' })
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
+    w.heldSpawn.shift()!()
+    await w.clock.settle()
   })
 
   test('a known limit or a note for another ticket colours nothing: the light follows the marks', async ($, on) => {

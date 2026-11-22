@@ -84,6 +84,9 @@ const workersFrameAtom = atom({ plugin: 'jaira-cockpit', key: 'workersFrame' } a
 const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
 const ACCEPTANCE = 'cockpit-acceptance'
+// Explain all's lock, beside the row's: a chat holds its press until it is
+// done, and Execute in the same pane must not wait on it.
+const CHAT = ':chat'
 const EXPLANATION = 'cockpit-explanation'
 // The Acceptance pane's light in the theme's colours.
 const LIGHT_COLOUR = { green: 'success', yellow: 'warning', red: 'error' } as const
@@ -1187,6 +1190,9 @@ async function openAcceptance($: EngineInterface, w: Waiting): Promise<void> {
   await update($, givingAtom, () => w.id)
   await update($, typedAtom, () => '')
   await update($, refusalAtom, () => null)
+  // The sentences Explain gave on its notes: asked again on a press, so a
+  // changed language or a failed call is not shown on.
+  await update($, reasonsAtom, ({ [w.id]: _, ...rest }) => rest)
   const dir = await ticketDir($, board, w.id)
   const shown = await run($, ['jaira', 'show', w.id, '--json'], dir)
   const json = shown?.exitCode === 0 ? shown.stdout : undefined
@@ -1244,7 +1250,9 @@ async function openPullRequest($: EngineInterface, id: string): Promise<boolean>
 // language set the sentence comes in the note's own.
 const REASON_PREFIX = 'reason:'
 async function explainNote($: EngineInterface, id: string, title: string, text: string): Promise<void> {
-  if ((await read($, reasonsAtom))[id]?.[text] !== undefined) return
+  // Asked already and waiting: nothing twice. A sentence shown, or a failure,
+  // is asked again - from the store where it is kept, in today's language.
+  if ((await read($, reasonsAtom))[id]?.[text] === '') return
   const put = (said: string | undefined) => update($, reasonsAtom, r => {
     const { [text]: _, ...rest } = r[id] ?? {}
     return { ...r, [id]: said === undefined ? rest : { ...rest, [text]: said } }
@@ -2080,7 +2088,7 @@ export const register: Register = (on, options) => {
           : null}
         <Box flexDirection="row">
           <Button key={`execute-${w.id}`} label={t.execute} onPress={go} />
-          <Button key={`explain-all-${w.id}`} label={t.explainAll} onPress={() => void once($, w.id, () => openChat($, w.id, 'explain'))} />
+          <Button key={`explain-all-${w.id}`} label={t.explainAll} onPress={() => void once($, `${w.id}${CHAT}`, () => openChat($, w.id, 'explain'))} />
         </Box>
       </Box>
     )
