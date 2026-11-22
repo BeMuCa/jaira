@@ -6,16 +6,25 @@ name: ci
 # that exact tree, and testing it again on three platforms bought nothing.
 # master has no required status checks, so a skipped run blocks no merge; if
 # one is ever made required, replace paths-ignore with a job that ends green.
+#
+# A pull request runs everything below on three platforms. Its run tested it
+# merged into master as master stood then, and master does not require a pull
+# request to be up to date before it merges: two pull requests green against
+# the same master can land as a combination nothing ran. So a push to master
+# runs one short job, 'master' (Linux, go test -race), and nothing else; the
+# macOS and Windows runs stay with the pull request.
 on:
-  push:
-    branches: [main, master]
-    paths-ignore: ["core/release/notes/**"]
   pull_request:
+    paths-ignore: ["core/release/notes/**"]
+  push:
+    branches: [master]
     paths-ignore: ["core/release/notes/**"]
 
 jobs:
   # A ticket file goes into a commit only together with code; a ticket nobody
   # works yet lives on its ref. See scripts/check-ticket-commits.sh for why.
+  # It runs on every pull request, the ones that carry only .jaira/ included:
+  # those are the ones it exists for.
   ticket-commits:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -25,12 +34,34 @@ jobs:
           fetch-depth: 0
       - run: scripts/check-ticket-commits.sh "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
 
+  # Whether the pull request, or the push to master, changes anything a build or
+  # a test reads. One that changes only tickets or prose
+  # (scripts/ci-code-changed.sh has the list) skips every job below that needs
+  # it. On a push the range is the old master tip to the new one. A skipped job reports as skipped, which
+  # a required check accepts — but a skipped matrix job reports under its
+  # unexpanded name, so a required "test (ubuntu-latest)" would wait forever on
+  # such a pull request. Should master ever require a check, require a job that
+  # needs all of these with 'if: always()' and fails on any result but success
+  # or skipped.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: diff
+        run: scripts/ci-code-changed.sh "${{ github.event.pull_request.base.sha || github.event.before }}" "${{ github.event.pull_request.head.sha || github.sha }}"
+
   # core/shipped/shipped.sha256 must hold every version of every installed file
   # a release tag carried, or 'jaira update --roles' takes an untouched older
   # install for one a person edited and skips it. The manifest is merged by hand
   # (or by merge=union), and a merge that drops a line is invisible in review.
   # fetch-depth: 0 brings the tags; a clone without them fails the check.
   shipped-manifest:
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -43,6 +74,8 @@ jobs:
   # the Svelte sources and fails when the committed build is not what they make,
   # and runs the page's own unit tests (npm test).
   web-dist:
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -71,6 +104,8 @@ jobs:
   # and a new release has changed it under them before (2.1.329 wraps the band
   # in a Box of its own). Raise the pin on purpose, with the tests green.
   cockpit:
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -101,6 +136,8 @@ jobs:
           - { os: windows-latest, shard: 0, shards: 3, race: "" }
           - { os: windows-latest, shard: 1, shards: 3, race: "" }
           - { os: windows-latest, shard: 2, shards: 3, race: "" }
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.code == 'true'
     name: test (${{ matrix.os }}${{ matrix.shards > 1 && format(' {0}/{1}', matrix.shard, matrix.shards) || '' }})
     runs-on: ${{ matrix.os }}
     steps:
@@ -132,3 +169,21 @@ jobs:
         run: |
           go vet ./...
           go build ./cmd/jaira
+
+  # The push to master: one Linux run with the race detector over the merged
+  # tree, to catch two pull requests that were green apart and are not together.
+  master:
+    needs: changes
+    if: github.event_name == 'push' && needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26'
+      - name: Configure git for fixture repositories
+        run: |
+          git config --global user.name jaira-ci
+          git config --global user.email ci@example.invalid
+      - run: scripts/test-shard.sh 0 1 -race -timeout 20m
+        shell: bash
