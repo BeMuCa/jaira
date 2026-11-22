@@ -3839,6 +3839,16 @@ describe('the verdict light', () => {
     expect(lightOf({ ...ready, question: 'why?', notes: ['note: x'] }, { state: 'fail', at: 'abc1234' }).reasons.map(r => r.kind)).toEqual(['staleHunt', 'notes', 'question'])
   })
 
+  // A ticket in human waits for an answer: its open items are no reason to
+  // give it back, so the question decides the light.
+  test('a question in a lane that does not end the work makes the light yellow, the question first', () => {
+    const asking = { ...ready, lane: 'human', acceptTo: null, question: 'keep the old key?', dodComplete: false, dodOpen: { person: 1, other: 2 } }
+    const l = lightOf(asking, { state: 'fail', at: 'abc1234' })
+    expect([l.color, l.reasons.map(r => r.kind)]).toEqual(['yellow', ['question', 'staleHunt', 'dodOpen', 'byAPerson']])
+    // In signoff, where Accept ends the work, the same open items stay red.
+    expect(first({ ...asking, lane: 'signoff', acceptTo: 'done' }, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'dodOpen'])
+  })
+
   // No hunt finished (jaira's null) is a look, never red: a ticket that
   // changed no code has none, and the brief cannot tell it from one owed.
   test('no hunt at all is yellow; a hunt that no longer covers HEAD is red', () => {

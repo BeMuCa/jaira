@@ -15,21 +15,40 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T11:27:46Z
-updated-at: 2026-11-22T11:51:18Z
+updated-at: 2026-11-22T11:59:35Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1232016
 claimed-at: 2026-11-22T11:29:15Z
 outcome-what: "Verdict-Pane des Cockpits zeigt als erste Zeile eine Ampel (grün/gelb/rot) mit dem ersten Grund und '+N more'"
 outcome-why: "Alex soll ohne Urteil, Gaps und Notizen zu lesen sehen, ob er annehmen kann"
 outcome-resolves: "AJ41SC: fehlende Ampel im Verdict"
-review-summary: none
-round: 4
-back-from: testing
+review-summary: "Das Verdict-Pane des Cockpits beginnt jetzt mit einer Zeile '● green|yellow|red: <erster Grund> (+N more)'. board.ts lightOf rechnet die Farbe aus dem, was schon am Ticket steht: rot bei send-back-Urteil, blocker:-Zeilen in review-gaps, einem Bughunt, der nicht mehr HEAD deckt, oder einem offenen DoD-Punkt ausser 'seen by a person:' (das Gate des Terminal-Lanes); gelb bei kein/altem Review, Freitext-Urteil, Vorbehalt, note:-Zeilen, offenem 'seen by a person:'-Punkt, offener Frage, keinem oder unbekanntem Bughunt; sonst gruen. Welche Richtung ein Urteil hat, liest das Cockpit nicht mehr aus eigenen Wortlisten, sondern aus den Woertern der Lane: jaira lanes --json gibt dafuer neu 'verdicts' {accept, send_back} aus (tickets.go), und wayOf portiert lane.SendsBackBy; nur ohne diese Woerter (alte jaira) bleibt die alte REFUSAL-Heuristik. huntsAtom haelt jetzt {state, at}, damit 'nie gehuntet' (gelb) von 'Hunt nicht auf HEAD' (rot) getrennt wird. openOf zog von overview.ts nach board.ts. Tests pro Farbe in board.test.ts, Go-Test fuer verdicts in context_test.go, Release-Note mit zwei Zeilen."
+round: 5
+back-from: review
 back-by: lane
-back-count: 2
-review-gaps: "round 2: nichts entfernt. Geprueft: wayOf vs core/lane/verdict.go (TS kann Go nicht rufen, bewusst portiert); BriefHunt vs HuntCheck (wiederverwendet, keine Kopie); freeVerdict-Text neu, kein vorhandener Text passt. Kein toter Code."
-test-verdict: "fail: suite green; the hunt's blocker gives a wrong (green) light"
-hunt-verdict: "fail: 1 change blocker - BriefHunt says none whenever the ticket's commits are not visible from the checkout (master, uncommitted work): a ticket with code and no hunt lights green"
+back-count: 1
+review-gaps: |-
+  note: ein Ticket in human mit offener Frage hat fast immer offene DoD-Punkte und oft keinen aktuellen Hunt - das Licht zeigt dort rot 'N DoD items open' (Rat: zurueckgeben), obwohl der Mensch nur die Frage beantworten soll; Fix: in einem Lane ohne terminalen next (acceptTo null) die Frage als ersten Grund zeigen oder dodOpen/staleHunt dort gelb werten (board.ts lightOf)
+  note: snapshotOf sammelt verdicts aller Lanes eines Boards in eine Liste und prueft send_back vor accept ueber alle - heute deklariert nur review Woerter, mit einer zweiten Lane koennte ein Wort der einen das Urteil der anderen kippen; Fix: die Woerter des Lanes nehmen, aus dem das Urteil kommt (board.ts:135)
+  note: Hunts werden nur fuer die im Band gezeigten Tickets gelesen (register.tsx shownIds); ein Verdict-Pane fuer ein Ticket ausserhalb zeigt gelb 'bughunt unknown' - sichere Richtung, aber nicht die Wahrheit
+  note: nicht dieses Ticket: der Worktree traegt uncommittete Aenderungen an .jaira/lanes/*.md, AGENTS.md, CLAUDE.md (Lane-Texte aus einem jaira update) - nicht in einen AJ41SC-Commit mitnehmen
+test-verdict: "pass: round 3 - go test ./... RC=0, cockpit 'claude plugin test .' 301/301 RC=0. Binary on scratch repo: lanes --json review verdicts {accept:[accept], send_back:[send-back]}; brief bughunt back to null for a ticket with no hunt (as on master). Light: null hunt -> yellow 'no bughunt yet', hunt at a commit not covering HEAD -> red 'bughunt not on HEAD' (tests). DoD 1-3 verified, proofs re-checked; DoD 4 'seen by a person' left for Alex. Change writes nothing."
+hunt-verdict: "pass: bughunt done at c347e752b, 0 change, 0 pre-existing; round-2 blocker (none state) closed"
+review-verdict: "accept: DoD 1-3 erfuellt, lightOf deckt die Ticketdaten ab und liest die Urteilsrichtung wie jairas Gate; 301 Cockpit-Tests und Go-Tests gruen; vier note:-Ränder, kein Blocker"
+review-round: 4
+review-verdict-gaps: |-
+  note: ein Ticket in human mit offener Frage hat fast immer offene DoD-Punkte und oft keinen aktuellen Hunt - das Licht zeigt dort rot 'N DoD items open' (Rat: zurueckgeben), obwohl der Mensch nur die Frage beantworten soll; Fix: in einem Lane ohne terminalen next (acceptTo null) die Frage als ersten Grund zeigen oder dodOpen/staleHunt dort gelb werten (board.ts lightOf)
+  note: snapshotOf sammelt verdicts aller Lanes eines Boards in eine Liste und prueft send_back vor accept ueber alle - heute deklariert nur review Woerter, mit einer zweiten Lane koennte ein Wort der einen das Urteil der anderen kippen; Fix: die Woerter des Lanes nehmen, aus dem das Urteil kommt (board.ts:135)
+  note: Hunts werden nur fuer die im Band gezeigten Tickets gelesen (register.tsx shownIds); ein Verdict-Pane fuer ein Ticket ausserhalb zeigt gelb 'bughunt unknown' - sichere Richtung, aber nicht die Wahrheit
+  note: nicht dieses Ticket: der Worktree traegt uncommittete Aenderungen an .jaira/lanes/*.md, AGENTS.md, CLAUDE.md (Lane-Texte aus einem jaira update) - nicht in einen AJ41SC-Commit mitnehmen
+review-check: |-
+  1. cd /home/alex/projects/.worktrees/jaira-aj41sc && go install ./cmd/jaira
+  2. claude --plugin-dir /home/alex/projects/.worktrees/jaira-aj41sc/core/mod/builtin/jaira-cockpit (im Repo)
+  3. Im Cockpit-Band AJ41SC (in signoff) waehlen und das Verdict-Pane oeffnen
+  4. Erste Zeile: '● yellow: 4 review notes to weigh (+N more)' in Gelb, vor dem Titel - das ist DoD 4 (seen by a person)
+  5. Optional rot pruefen: jaira lanes --json | grep -A3 verdicts zeigt accept/send_back; ein Ticket mit 'send-back: ...'-Urteil im Pane zeigt '● red: the review gives it back'
+  6. Ohne UI: cd core/mod/builtin/jaira-cockpit && claude plugin test . -> 301 pass, Block 'the verdict light'
+question: ""
 ---
 
 # Das Verdict im Cockpit zeigt oben eine Ampel: grün annehmen, gelb ansehen, rot zurückgeben
@@ -39,7 +58,7 @@ hunt-verdict: "fail: 1 change blocker - BriefHunt says none whenever the ticket'
 - [x] Das Verdict zeigt als erste Zeile eine Ampel (grün/gelb/rot) mit einem kurzen Grund
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1945; test 'a ticket in the band is one row' expects '● red: 1 blocker in the review (+4 more)' as first pane line
 - [x] Die Farbe wird aus vorhandenen Ticketdaten berechnet (review-verdict, Bughunt auf HEAD, Gates, Notizen, seen by a person:), Regeln mit Test pro Farbe
-  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:260 lightOf; core/mod/builtin/jaira-cockpit/tests/board.test.ts 'the verdict light' (green/yellow/red, declared verdict words, no hunt vs stale hunt); verdicts from jaira lanes --json (internal/cli/context_test.go)
+  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:260 lightOf; core/mod/builtin/jaira-cockpit/tests/board.test.ts 'the verdict light' (green/yellow/red, declared verdict words, no hunt vs stale hunt, question in human); verdicts from jaira lanes --json (internal/cli/context_test.go)
 - [x] Release-Note core/release/notes/<ID>.md, shipped.sha256
   proof: core/release/notes/AJ41SC.md (2 lines); core/shipped/shipped.sha256 via scripts/shipped-history.sh --write; go test ./... RC=0
 - [ ] seen by a person: Alex sieht die Ampel im laufenden Cockpit an einem Ticket in signoff
@@ -67,3 +86,10 @@ hunt-verdict: "fail: 1 change blocker - BriefHunt says none whenever the ticket'
 - **2026-11-22 11:48 · Alexander Sacharov** — bughunt: change: blocker: core/gitrepo/hunt.go:63-71 (BriefHunt) with core/gitrepo/derive.go:42,66 and core/mod/builtin/jaira-cockpit/hooks/board.ts:268,284 - class: 'no code change visible from this checkout' is reported as 'nothing to hunt' (state none). HuntCheck finds commits with git log on HEAD only and returns CodeChanged=false when it finds none or git fails, so any checkout that does not hold the ticket's code commits yields none: the main checkout on master while the code sits on an unmerged feat branch (the cockpit falls back to board.repo whenever worktreeFor finds no tree for the id, register.tsx:390), and a worktree whose code is still uncommitted (conversational mode). lightOf treats none like skipped: no noHunt (red) and no huntUnknown (yellow), so a ticket with code and no hunt can show a green light and a '–' hunt mark; before f7dfca8a4 the same case was bughunt null -> fail -> red. example: ticket with code committed on feat/<id>, no hunt note, cockpit reading from master -> green. ran: scratch repo, binary built from HEAD: uncommitted code.go -> {"state":"none"}; committed on feat branch -> null; same ticket from master -> {"state":"none"}
 - **2026-11-22 11:48 · Alexander Sacharov** — bughunt: done at f7dfca8a4 - 1 finding (1 change, 0 pre-existing) in 6 modules, follow-up hunt since c2eab0fab (diff for files read before, new files whole); concurrency, error paths, input, permissions checked; files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/optimize.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/gitrepo/hunt.go core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/AJ41SC.md core/shipped/shipped.sha256 internal/cli/context_test.go internal/cli/loopbrake_test.go internal/cli/tickets.go
 - **2026-11-22 11:49 · Alexander Sacharov** — decision (round 3, nach bughunt 2): 'none' im Brief wieder raus - HuntCheck sieht Commits nur von HEAD aus, also rät es auf master/uncommitted falsch. Kleinere Form: Cockpit unterscheidet 'kein Hunt fertig' (brief null) von 'Hunt nicht auf HEAD' (fail mit at). Null -> gelb 'no bughunt yet' (ein Ticket ohne Code hat keinen, eines mit Code kommt ohne Hunt nur per --force in signoff); fail mit at -> rot. Weicht von 'rot: Bughunt fehlt' im Kontext ab; Alex kann widersprechen.
+- **2026-11-22 11:51 · Alexander Sacharov** — critique pass 4 (nur Fix c347e752b): huntsAtom haelt jetzt jairas {state, at} statt nur state - noetig, um 'keiner fertig' von 'nicht auf HEAD' zu trennen; Go-Seite zurueck auf master-Stand bis auf lanes --json verdicts. Nichts weiter.
+- **2026-11-22 11:53 · Alexander Sacharov** — bughunt: done at c347e752b - 0 findings in 6 modules, follow-up hunt since f7dfca8a4 (diff only, no new files; uncommitted .jaira/lanes, AGENTS.md, CLAUDE.md are lane text, read as diff); concurrency, error paths, input, permissions checked; ran: claude plugin test . (301 pass), go test ./core/gitrepo ./internal/cli ./core/shipped (ok); files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/optimize.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/gitrepo/hunt.go core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/AJ41SC.md core/shipped/shipped.sha256 internal/cli/context_test.go internal/cli/loopbrake_test.go internal/cli/tickets.go
+- **2026-11-22 11:56 · Alexander Sacharov** — review: accept geschrieben, aber move nach signoff verweigert: der letzte Hunt (c347e752b) las auch die uncommitteten .jaira/lanes/*.md, AGENTS.md, CLAUDE.md, die nicht zu diesem Ticket gehoeren (Lane-Texte aus jaira update). Frage: wie weiter?
+1. (empfohlen) Alex committet die Lane-Texte separat (z.B. chore: jaira update lanes) oder verwirft sie mit git restore, dann move --to signoff ohne neuen Hunt - kein Code dabei
+2. Alex: jaira move AJ41SC --to signoff --force - schnell, Worktree bleibt dreckig
+3. Lane-Texte in einen AJ41SC-Commit - vermischt fremde Aenderung mit diesem Ticket
+- **2026-11-22 11:57 · Alexander Sacharov** — decision (parent/teamlead 11:57): Lane-Texte verworfen (git checkout), sie kommen ueber GPSAR2 nach master. Gap 1 jetzt fixen: in einer Lane ohne terminalen next (acceptTo null, z.B. human) mit offener Frage entscheidet die Frage das Licht - gelb, Frage als erster Grund, rote Gruende nur mitgezaehlt. Uebrige Review-Notizen bleiben bekannte Grenzen.

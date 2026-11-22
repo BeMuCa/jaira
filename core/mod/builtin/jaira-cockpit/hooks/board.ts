@@ -286,6 +286,12 @@ export function lightOf(w: Waiting, hunt: HuntState | undefined): Light {
   // unknown: a hunted file is changed and not committed; undefined: a jaira
   // that does not say, or a fail in a checkout without the hunt's commit.
   if (hunt === undefined || hunt.state === 'unknown') yellow.push({ kind: 'huntUnknown' })
+  // A ticket waiting on a question in a lane that does not end the work
+  // (human: Accept would not move it to done) is there for the answer, not
+  // for acceptance: the question decides, yellow, whatever else is open.
+  if (w.question !== '' && w.acceptTo === null) {
+    return { color: 'yellow', reasons: [{ kind: 'question' }, ...red, ...yellow.filter(r => r.kind !== 'question')] }
+  }
   const color = red.length > 0 ? 'red' : yellow.length > 0 ? 'yellow' : 'green'
   return { color, reasons: [...red, ...yellow] }
 }
