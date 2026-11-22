@@ -134,6 +134,10 @@ let threads: Thread[] = []
 // The Explain and Discuss chats this session opened, by their tab's label
 // (`<id>/explain`), with when: the tab goes once the chat has done its part.
 const chats = new Map<string, number>()
+// What such a chat leaves behind once it has done its part: the copy pulled
+// into the main checkout for it (ticketHere), by the same label. It stays
+// while the chat runs, since the chat writes its note from there.
+const leaves = new Map<string, () => Promise<void>>()
 // The Workers tab's frames, running while it is open and shown, and the
 // board the Overview was opened on.
 let frames: { cancel: () => void } | undefined
@@ -423,6 +427,8 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     const done = fresh !== undefined || (kind === 'discuss' && (w === undefined || w.question === ''))
     if (!done) continue
     chats.delete(label)
+    await leaves.get(label)?.()
+    leaves.delete(label)
     if (kind === 'discuss' && fresh !== undefined) await update($, decidedAtom, d => ({ ...d, [id]: fresh.text }))
     if (tab !== undefined) await run($, [bin!, 'tab', 'close', tab.tab_id], board.dir)
   }
@@ -927,21 +933,41 @@ async function herdr($: EngineInterface): Promise<string | undefined> {
 async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discuss'): Promise<void | 'hold'> {
   const what = `${kind === 'explain' ? t.explain : t.discuss} ${id}`
   if (!board) return fail($, what, t.noBoard)
-  const dir = await ticketDir($, board, id)
+  // The chat writes its note onto the ticket, which a file on the ref alone
+  // or older than the ref refuses: pulled first, as for Accept (76ERHH). A
+  // refused pull stops the press; it never steals.
+  const here = await ticketHere($, board, id)
+  if (!here.ok) return fail($, what, here.why)
+  const { dir } = here
+  const label = `${id}/${kind}`
+  // A copy pulled into the main checkout goes once the chat has done its
+  // part (refreshBoard), not when the press ends; a press that opens no chat
+  // takes it away at once.
+  const opened = async (at: number) => {
+    chats.set(label, at)
+    if (!leaves.has(label)) leaves.set(label, here.leave)
+  }
   if ((await herdr($)) === undefined) {
+    await opened(await $.clock.now())
     await say($, kind === 'explain' ? t.explainAsked(id) : t.discussHere(id))
     void $.prompt.submit({ text: kind === 'explain' ? t.explainBySubagent(id, dir) : t.discussInThisChat(id, dir) })
     return 'hold'
   }
   const script = await spawnScript($)
-  if (script === undefined) return fail($, what, t.noSpawn)
+  if (script === undefined) {
+    await here.leave()
+    return fail($, what, t.noSpawn)
+  }
   // A Discuss chat sends its decision to this session: its messaging socket
   // is the address SendMessage takes.
   const socket = kind === 'discuss' ? await $.env.get('CLAUDE_CODE_MESSAGING_SOCKET') : undefined
   const parent = socket ? ['--parent', `uds:${socket}`] : []
   const r = await run($, [...script, '--no-worktree', ...parent, id.toLowerCase(), id, kind, dir], dir, 120_000)
-  if (r?.exitCode !== 0) return fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
-  chats.set(`${id}/${kind}`, await $.clock.now())
+  if (r?.exitCode !== 0) {
+    await here.leave()
+    return fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
+  }
+  await opened(await $.clock.now())
   await say($, t.opened(id))
 }
 
