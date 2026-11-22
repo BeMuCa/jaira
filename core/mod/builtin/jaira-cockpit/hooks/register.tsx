@@ -711,17 +711,26 @@ function output(r: Awaited<ReturnType<typeof run>>): string {
 // pull request cannot be opened anyway); a string says why it failed.
 type Target = { on: Forge; repo: string; base: string }
 
-async function pullTarget($: EngineInterface, repoDir: string): Promise<Target | string | undefined> {
+// The forge of origin and the repository its pull requests go to - the
+// parent in a fork; undefined where no forge can be told, a string where the
+// forge did not answer.
+async function forgeRepo($: EngineInterface, repoDir: string): Promise<{ on: Forge; repo: string } | string | undefined> {
   // Unset, `git config` exits 1 and the host of origin decides.
   const forge = await run($, ['git', 'config', 'jaira.forge'], repoDir)
   const origin = await run($, ['git', 'remote', 'get-url', 'origin'], repoDir)
   const url = origin?.exitCode === 0 ? origin.stdout.trim() : ''
   const on = url ? forgeOf(forge?.exitCode === 0 ? forge.stdout : '', url) : undefined
   if (on === undefined) return undefined
-  const tool = on === 'github' ? 'gh' : 'glab'
   const view = await run($, repoViewCommand(on, url), repoDir, 30_000)
   const repo = view?.exitCode === 0 ? targetRepoOf(on, view.stdout) : undefined
-  if (repo === undefined) return `${tool} repo view: ${output(view)}`
+  return repo === undefined ? `${on === 'github' ? 'gh' : 'glab'} repo view: ${output(view)}` : { on, repo }
+}
+
+async function pullTarget($: EngineInterface, repoDir: string): Promise<Target | string | undefined> {
+  const found = await forgeRepo($, repoDir)
+  if (found === undefined || typeof found === 'string') return found
+  const { on, repo } = found
+  const tool = on === 'github' ? 'gh' : 'glab'
   const targetView = await run($, repoViewCommand(on, repo), repoDir, 30_000)
   const branch = targetView?.exitCode === 0 ? defaultBranchOf(on, targetView.stdout) : undefined
   if (branch === undefined) return `${tool} repo view ${repo}: ${(targetView?.stderr || 'no default branch').trim()}`
@@ -1220,18 +1229,12 @@ async function codeDir($: EngineInterface, id: string): Promise<string> {
 // it out. Two calls to the forge and no fetch: the pane only looks.
 async function openPullRequest($: EngineInterface, id: string): Promise<boolean> {
   if (!board) return false
-  const forge = await run($, ['git', 'config', 'jaira.forge'], board.repo)
-  const origin = await run($, ['git', 'remote', 'get-url', 'origin'], board.repo)
-  const url = origin?.exitCode === 0 ? origin.stdout.trim() : ''
-  const on = url ? forgeOf(forge?.exitCode === 0 ? forge.stdout : '', url) : undefined
-  if (on === undefined) return false
   const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], board.repo)
   const branch = trees?.exitCode === 0 ? branchesFor(trees.stdout, id).ticket : undefined
   if (branch === undefined) return false
-  const view = await run($, repoViewCommand(on, url), board.repo, 30_000)
-  const repo = view?.exitCode === 0 ? targetRepoOf(on, view.stdout) : undefined
-  if (repo === undefined) return false
-  const listed = await run($, pullRequestsCommand(on, repo, branch), board.repo, 30_000)
+  const found = await forgeRepo($, board.repo)
+  if (found === undefined || typeof found === 'string') return false
+  const listed = await run($, pullRequestsCommand(found.on, found.repo, branch), board.repo, 30_000)
   return listed?.exitCode === 0 && hasPullRequest(listed.stdout) === true
 }
 
