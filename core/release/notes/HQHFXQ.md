@@ -1,1 +1,1 @@
-- In the cockpit's Overview, the tabs Queue, Log and Workers are now framed buttons of the same height as Close in one row at the top; the open tab is the one with the coloured frame.
+- In the cockpit's Overview, the tabs Queue, Log and Workers and Close now sit together in one row at the top; the open tab is the highlighted one.
