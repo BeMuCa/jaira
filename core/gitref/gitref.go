@@ -281,41 +281,58 @@ func (r *Repo) ReadMilestone(key string) (file string, content []byte, sha strin
 	if err != nil {
 		return "", nil, "", err
 	}
-	out, errb, runErr := r.run("", "ls-tree", "--name-only", sha)
+	out, errb, runErr := r.run("", "ls-tree", "-z", "--name-only", sha)
 	if runErr != nil {
 		if errors.Is(runErr, ErrNoGit) {
 			return "", nil, "", runErr
 		}
 		return "", nil, "", fmt.Errorf("gitref: ref %s: %s", ref, strings.TrimSpace(errb))
 	}
-	entries := strings.Fields(out)
-	if len(entries) != 1 || !strings.HasSuffix(entries[0], ".md") {
+	file, ok := soleMarkdown(out)
+	if !ok {
 		return "", nil, "", fmt.Errorf("gitref: ref %s does not carry exactly one .md file", ref)
 	}
-	content, err = r.readEntry(ref, sha, entries[0])
+	content, err = r.readEntry(ref, sha, file)
 	if err != nil {
 		return "", nil, "", err
 	}
-	return entries[0], content, sha, nil
+	return file, content, sha, nil
+}
+
+// soleMarkdown reads the output of 'ls-tree -z --name-only' over a milestone
+// commit: the one .md file it carries. -z because without it git quotes a
+// name with a space or a non-ASCII letter, and a name somebody gave a file by
+// hand may have either.
+func soleMarkdown(out string) (string, bool) {
+	var entries []string
+	for _, e := range strings.Split(out, "\x00") {
+		if e != "" {
+			entries = append(entries, e)
+		}
+	}
+	if len(entries) != 1 || !strings.HasSuffix(entries[0], ".md") {
+		return "", false
+	}
+	return entries[0], true
 }
 
 // ReadMilestoneFileAt returns the milestone file the commit sha carries, and
 // the name it carries it under: the state a write was leased on, which is what
 // a refused write is merged from.
 func (r *Repo) ReadMilestoneFileAt(sha string) (string, []byte, error) {
-	out, errb, err := r.run("", "ls-tree", "--name-only", sha)
+	out, errb, err := r.run("", "ls-tree", "-z", "--name-only", sha)
 	if err != nil {
 		if errors.Is(err, ErrNoGit) {
 			return "", nil, err
 		}
 		return "", nil, fmt.Errorf("gitref: commit %s: %s", sha, strings.TrimSpace(errb))
 	}
-	entries := strings.Fields(out)
-	if len(entries) != 1 || !strings.HasSuffix(entries[0], ".md") {
+	file, ok := soleMarkdown(out)
+	if !ok {
 		return "", nil, fmt.Errorf("gitref: commit %s does not carry exactly one .md file", sha)
 	}
-	content, err := r.readEntry(sha, sha, entries[0])
-	return entries[0], content, err
+	content, err := r.readEntry(sha, sha, file)
+	return file, content, err
 }
 
 // ReadEpic returns the epic file carried by the local ref, with its lease.
