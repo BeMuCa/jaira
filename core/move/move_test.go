@@ -413,3 +413,50 @@ func TestForceOverridesStaleHunt(t *testing.T) {
 		t.Fatalf("forced move landed in %q", got.Status)
 	}
 }
+
+// A send-back forced past a loop lane's max-rounds is the decision the
+// refusal asked for — the teamlead's or a person's — and is recorded as one:
+// back-by person, the count starting again, so the next in-progress worker
+// works instead of stopping, and the lane may send back again. A forced
+// send-back the limit did not refuse still counts as the lane's.
+func TestForcePastMaxRoundsIsRecordedAsADecision(t *testing.T) {
+	s, env := fullBoard(t)
+	tk := mk(t, s, map[string]string{ticket.FieldStatus: "in-progress", ticket.FieldAssignee: "berk"})
+	for i := 1; i <= 3; i++ {
+		for _, to := range []string{"testing", "in-progress"} {
+			if _, err := Move(s, env, tk.ID, Request{To: to, Actor: "berk", Force: true}); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	got, _ := s.Load(tk.ID)
+	if got.BackBy != ticket.BackByLane || got.BackCount != 3 {
+		t.Fatalf("after three forced send-backs under the limit: %q/%d, want lane/3", got.BackBy, got.BackCount)
+	}
+	if _, err := Move(s, env, tk.ID, Request{To: "testing", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	res, err := Move(s, env, tk.ID, Request{To: "in-progress", Actor: "berk"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !refusedFor(res, gate.CodeMaxRounds) {
+		t.Fatalf("the fourth send-back from testing was not refused for max-rounds: %+v", res.Refused)
+	}
+	if _, err := Move(s, env, tk.ID, Request{To: "in-progress", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	got, _ = s.Load(tk.ID)
+	if got.BackFrom != "testing" || got.BackBy != ticket.BackByPerson || got.BackCount != 1 {
+		t.Fatalf("a send-back forced past max-rounds reads %q/%q/%d, want testing/person/1", got.BackFrom, got.BackBy, got.BackCount)
+	}
+}
+
+func refusedFor(res *Result, code string) bool {
+	for _, v := range res.Refused {
+		if v.Code == code {
+			return true
+		}
+	}
+	return false
+}

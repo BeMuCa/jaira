@@ -87,7 +87,12 @@ move recorded it:
 
 `by: person` is the person's word, not a loop: do what they asked, whatever
 the count. Their reason is in the newest `Given back from <lane>:` or
-`decision:` note.
+`decision:` note. A send-back forced past a lane's `max-rounds` is recorded
+the same way: it is the decision the refusal asked for.
+
+A `decision (teamlead <date>):` note written after the newest send-back is
+the same word, whatever `by` and `count` say: the teamlead answered the
+question the third return raised. Do what it says and start no new question.
 
 `by: lane` with `count` 3 or more means the same lane has sent it back three
 times or more: do not start another round. The decision goes on, with the

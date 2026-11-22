@@ -144,7 +144,7 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 			if err := t.Doc().SetRaw(ticket.FieldRound, strconv.Itoa(ticket.CurrentRound(t)+1)); err != nil {
 				return err
 			}
-			if err := recordBack(t, env.Lanes, t.Status, req.Interactive || req.ByPerson); err != nil {
+			if err := recordBack(t, env.Lanes, t.Status, req.Interactive || req.ByPerson || overridesMaxRounds(req, vs)); err != nil {
 				return err
 			}
 		}
@@ -199,6 +199,23 @@ func recordBack(t *ticket.Ticket, lanes *lane.Set, from string, byPerson bool) e
 		return err
 	}
 	return d.SetRaw(ticket.FieldBackCount, strconv.Itoa(n))
+}
+
+// overridesMaxRounds reports a send-back forced past a loop lane's
+// max-rounds. Passing --force there is the decision the refusal asks for —
+// the teamlead's or a person's — so it is recorded as one, like a person's
+// send-back: the loop gets its rounds again instead of being refused, and
+// the next worker reading back-by: lane, count 4 stopping once more.
+func overridesMaxRounds(req Request, vs []gate.Violation) bool {
+	if !req.Force {
+		return false
+	}
+	for _, v := range vs {
+		if v.Code == gate.CodeMaxRounds {
+			return true
+		}
+	}
+	return false
 }
 
 // isPersons reports a lane whose work a person does: one no agent steps

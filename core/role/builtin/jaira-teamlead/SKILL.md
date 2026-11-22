@@ -127,7 +127,11 @@ cockpit stops reading.
    says. Then tell the worker how to go on, with `SendMessage`. Accepting the
    work is a move forward and needs nothing more; sending it back for a
    smaller design is a send-back past the limit, which you or the worker
-   passes `--force` for, the decision note naming why.
+   passes `--force` for, the decision note naming why. jaira records that
+   forced send-back as a decision (`back-by: person`, the count at 1), so
+   the loop gets its rounds again. Where the third return already sits in
+   `in-progress`, no move is needed: the in-progress worker reads your
+   decision note, written after the send-back, as the decider's word.
 2. **Take it to the person when it is theirs** — what the product should do,
    which of two designs, whether the ticket is worth doing at all. Move the
    ticket into `human` yourself, `jaira move <id> --to human --question
