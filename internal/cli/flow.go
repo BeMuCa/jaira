@@ -233,6 +233,14 @@ one the real move would have returned.`,
 			// called with it.
 			fireHook("move", s, res.Ticket)
 			t = res.Ticket
+			// On stderr in both modes: --json keeps stdout to the data, and the
+			// warning is for whoever drives the move, not for a parser.
+			if res.DoDUnticked > 0 {
+				fmt.Fprintf(cmd.ErrOrStderr(),
+					"warning: Definition of Done: 0 of %d ticked — the terminal lane reads this list, not the plan. "+
+						"Tick each with 'jaira dod %s <n> --done --proof \"<file:line or test>\"'.\n",
+					res.DoDUnticked, ticket.Handle(t.ID))
+			}
 
 			if g.jsonOut {
 				out := map[string]any{

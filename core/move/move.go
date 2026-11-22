@@ -8,6 +8,7 @@
 package move
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -77,6 +78,11 @@ type Result struct {
 	Filed     bool
 	Holds     int
 	SettleErr error
+	// DoDUnticked is the size of a definition of done not one item of which
+	// is ticked, when the move left the implementing lane forward; 0 when
+	// there is nothing to warn about. The move lands regardless — the caller
+	// says it out loud. See untickedDoD.
+	DoDUnticked int
 }
 
 // Moved, when set, is called after every move that wrote: the CLI's, the
@@ -162,7 +168,7 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 		return nil, err
 	}
 
-	res := &Result{Ticket: t, Claimed: claiming}
+	res := &Result{Ticket: t, Claimed: claiming, DoDUnticked: untickedDoD(env.Lanes, t, from, req.To)}
 	if req.Force && len(vs) > 0 {
 		res.Overrode = vs
 	}
@@ -174,6 +180,35 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 		Moved(s, t, from, env.Lanes)
 	}
 	return res, nil
+}
+
+// untickedDoD returns the number of definition-of-done items when a move out
+// of the implementing lane goes on with none of them ticked, and 0 otherwise.
+//
+// The terminal lane's gate reads the definition of done, not the plan, and an
+// agent once carried a ticket through eight lanes ticking only the plan: the
+// nine refusals arrived at once, at signoff, when finding out cost the most.
+// The gate stays as strict as it is; this only moves the news to the step
+// where the work was supposed to tick them.
+//
+// The implementing lane is the one whose output names outcome-what. Only a
+// move forward counts — a send-back or a parked ticket has not left the work
+// behind it. Ticked means settled: a superseded item satisfies the gate too.
+func untickedDoD(lanes *lane.Set, t *ticket.Ticket, from, to string) int {
+	l, ok := lanes.Get(from)
+	if !ok || !slices.Contains(l.OutputProduces, ticket.FieldOutcomeWhat) || len(t.DoDItems) == 0 {
+		return 0
+	}
+	dst, ok := lanes.Get(to)
+	if !ok || dst.RequiresBlockedReason || lanes.Index(to) <= lanes.Index(from) {
+		return 0
+	}
+	for _, it := range t.DoDItems {
+		if it.Settled() {
+			return 0
+		}
+	}
+	return len(t.DoDItems)
 }
 
 // recordBack writes who sent the ticket back: the lane it leaves, whether a
