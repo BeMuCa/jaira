@@ -1218,3 +1218,40 @@ func TestRestoreOfAnOldFormatFileBesideATwinGoesBackToTheLogbook(t *testing.T) {
 		t.Errorf("a second restore does not find q4.md in the logbook: %v\n%s", err, out)
 	}
 }
+
+// A stale copy under the old name beside a renamed milestone is the catch-up's
+// to clear, not a twin: restore clears it and goes ahead, as every other
+// milestone write does.
+func TestRestoreClearsAStaleCopyBesideARenamedMilestone(t *testing.T) {
+	ada, _ := twoBoards(t)
+	if out, err := runAndSend(t, ada, "milestone", "create", "a1"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, _ := milestone.Load(ada, "a1")
+	stale, err := os.ReadFile(ms.Path(ada))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runAndSend(t, ada, "milestone", "rename", "a1", "z9"); err != nil {
+		t.Fatalf("rename: %v\n%s", err, out)
+	}
+	if err := os.WriteFile(ms.Path(ada), stale, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	logDir := filepath.Join(ada, ".jaira", "logbook", "me-2026-01-01", "milestones")
+	if err := os.MkdirAll(logDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(logDir, "q4.md"), []byte("---\ncolor: 45\nstatus: filed\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runCLI(t, ada, "restore", "q4.md"); err != nil {
+		t.Fatalf("restore beside a stale copy: %v\n%s", err, out)
+	}
+	if _, err := os.Stat(ms.Path(ada)); !os.IsNotExist(err) {
+		t.Errorf("the stale copy %s is still on disk: %v", ms.FileName(), err)
+	}
+	if q4, err := milestone.Load(ada, "q4"); err != nil || q4.Filed() {
+		t.Errorf("q4 is not back on the board: %v", err)
+	}
+}

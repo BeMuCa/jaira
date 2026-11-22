@@ -17,23 +17,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T18:21:19Z
-updated-at: 2026-11-22T19:34:15Z
+updated-at: 2026-11-22T19:38:17Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3443254
 claimed-at: 2026-11-22T19:28:38Z
 outcome-what: "Every milestone write — create, add, rm, set, rename, and logbook/restore of a milestone — refuses with exit 3 (milestone_twin_files) naming both files when one milestone ID lies in two files"
 outcome-why: "After a rename, a stale old copy beside a hand-edited file under the new name stayed on disk unseen and the next write read whichever file sorted first"
 outcome-resolves: 8TT890
-review-summary: "internal/cli/archive.go:184 parses res.Moved's display string ('old -> new') to find the restored file; where the ID file already exists Migrate only removes the old file and still lists it, so the rollback would move a board file (possibly a twin) into the logbook and lose the restored content. Simpler: run milestone.CheckTwinFiles in unfileMilestone before migrateHeld, so a pair already on the board refuses before anything is migrated and dst->src is the whole rollback; drop the Moved parsing"
-review-gaps: |-
-  note: internal/cli/archive.go:183 - restore rollback renames dst back to src, but Migrate inside migrateHeld may already have moved an old-format dst to <name>-<newID>.md, so the rollback misses and the file stays on the board marked filed with no logbook copy (bughunt 19:18); fix: run CheckTwinFiles before RestoreFrom moves the file, or roll back the path in res.Moved
-  note: internal/cli/archive.go:181 comment says the restored file is one of the two twins - it need not be (an unrelated pre-existing pair refuses too); rollback is still right, reword the comment
-  note: reads (jaira milestone ls, the board) still show only the first file of a twin (milestone.scan dedups by ID) - nothing warns until a write; a ls warning line would surface it earlier
-  note: refsync.go:571 background Migrate/mergeRefused does not run CheckTwinFiles - next person-facing write refuses, so no wrong result, only a delayed one
-test-verdict: "pass: round 2 — go test ./... RC=0 and go vet ./... at b6a0154bc; -race on core/milestone + internal/cli milestone/logbook/restore tests RC=0. Built binary on a scratch board: logbook q4 beside q5-<ID>.md rc=3 naming both, both files stay unfiled; without the twin logbook rc=0; restore of the filed q4-<ID>.md beside a board a1-<ID>.md rc=3, q4 back in the logbook still filed, board keeps a1 only. DoD 1-3 re-checked; round-1 rename/normal-case results stand."
-hunt-verdict: "pass: bughunt done at b6a0154bc, 1 change (not a blocker: restore of an old-format q4.md beside a twin pair misses its give-back because Migrate renamed the file first — its bughunt note stands for review and the person), 0 pre-existing"
-round: 4
-back-from: critique
+review-summary: "nothing to change: internal/cli/archive.go unfileMilestone checks twins before migrateHeld, so the rollback is a plain dst->src rename; the second check inside migrateHeld stays for twins catch-up creates (note round 4). Standing on the give-back notes: reads, refsync background merge left as accepted notes."
+review-gaps: none - round 3/4 diff adds one CheckTwinFiles call and one test; the Moved-string rollback was already removed in round 4
+test-verdict: "pass: go build/vet ./... clean, go test -race internal/cli core/milestone core/refsync RC=0 (full suite green earlier this round); DoD 1-4 verified (TestRestoreOfAnOldFormatFileBesideATwinGoesBackToTheLogbook red without the fix); scratch board: restore of old-format q4.md beside q5/q6 twin exits 3, q4.md stays filed in the logbook, board files unchanged; without the twin it restores (q4-<ID>.md, not filed); two parallel restores (a1.md, b1.md) both land"
+hunt-verdict: "change: internal/cli/archive.go:182 twin pre-check runs before catch-up, so restore refuses a pair catch-up would clear (see bughunt note at 521ba40eb)"
+round: 5
+back-from: testing
 back-by: lane
 back-count: 1
 review-verdict: "accept: all three DoD items hold - every milestone write path (core Create/Edit/Rename via lockAndMigrate, CLI logbook/restore via migrateHeld) refuses one ID in two files with exit 3 naming both; the normal rename catch-up tests stay green; release note present. go test ./core/milestone ./core/refsync ./internal/cli green. Open findings are narrow edges, not blockers."
@@ -57,7 +53,7 @@ review-check: "1. go build -o /tmp/j ./cmd/jaira (from the worktree)  2. in a sc
 - [x] Release-Note core/release/notes/<ID>.md
   proof: core/release/notes/8TT890.md
 - [x] Restore einer alten Milestone-Datei ohne ID (q4.md) neben einem Zwilling: die Datei liegt danach wieder im Logbook, filed, nicht auf dem Board (Test)
-  proof: internal/cli/archive.go unfileMilestone runs milestone.CheckTwinFiles before migrateHeld; TestRestoreOfAnOldFormatFileBesideATwinGoesBackToTheLogbook (internal/cli/milestones_test.go)
+  proof: internal/cli/milestones.go migrateHeld checks twins after catch-up, before Migrate; TestRestoreOfAnOldFormatFileBesideATwinGoesBackToTheLogbook, TestRestoreClearsAStaleCopyBesideARenamedMilestone (internal/cli/milestones_test.go)
 
 ## Options
 
@@ -90,3 +86,6 @@ angenommen:
 - **2026-11-22 19:32 · Alexander Sacharov** — in-progress round 3 (give-back): rollback in unfileMilestone now renames from the path Migrate moved dst to (res.Moved 'old -> new'), not dst; comment reworded (the restored file need not be one of the twins). Chose this over running CheckTwinFiles before RestoreFrom: that would refuse ticket restores too whenever the board has a twin pair, and the twins are only known after catch-up/Migrate. Other migrateHeld errors (archive.go, pre-existing stranding) left as they were — not asked for.
 - **2026-11-22 19:32 · Alexander Sacharov** — critique round 3: internal/cli/archive.go:184 parses res.Moved's display string ('old -> new') to find the restored file; where the ID file already exists Migrate only removes the old file and still lists it, so the rollback would move a board file (possibly a twin) into the logbook and lose the restored content. Simpler: run milestone.CheckTwinFiles in unfileMilestone before migrateHeld, so a pair already on the board refuses before anything is migrated and dst->src is the whole rollback; drop the Moved parsing
 - **2026-11-22 19:34 · Alexander Sacharov** — in-progress round 4: critique finding applied - twin check before migrateHeld in unfileMilestone, Moved parsing dropped. Residual: a twin that only catch-up creates (inside migrateHeld) beside an old-format restored file still cannot be rolled back (rename fails loudly, joined into the error) - needs a ref rename racing a hand copy, left.
+- **2026-11-22 19:36 · Alexander Sacharov** — bughunt: change: internal/cli/archive.go:182 (unfileMilestone, commit 521ba40eb) - class: the new CheckTwinFiles before migrateHeld runs before refs.CatchUpMilestones, so restore refuses pairs that catch-up removes by design (core/refsync/refsync.go:493-521: a stale old-name copy beside a file under the ref's new name that is the ref or a state it had); every other milestone write (lockAndMigrate, core/milestone/write.go:219-235; migrateHeld) heals that pair silently and succeeds. Restore instead exits 3 milestone_twin_files and tells the person to delete one of the two by hand. example: q4 created+sent, renamed to q5, stale q4-<ID>.md written back beside q5-<ID>.md (the state a worktree whose file fell behind is in) -> 'jaira restore old-<ID>.md' exit 3 naming q4/q5, while 'jaira milestone create x' in the same state exits 0 and removes q4-<ID>.md; not a blocker: nothing is lost, the file goes back to the logbook, and any other milestone write first clears the pair so a retry succeeds - but the refusal and its 'delete the other' advice are wrong for this state; fix direction: run refs.CatchUpMilestones before the pre-check (or check only for twins Migrate could not have produced); ran: scratch test in internal/cli with twoBoards (removed), restore vs create in the same state
+- **2026-11-22 19:36 · Alexander Sacharov** — bughunt: done at 521ba40eb - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since b6a0154bc; concurrency, error paths, input, permissions checked; files: core/milestone/write.go core/milestone/write_test.go core/refsync/catchup_test.go core/refsync/refsync.go core/release/notes/8TT890.md internal/cli/archive.go internal/cli/milestones.go internal/cli/milestones_test.go internal/cli/root.go
+- **2026-11-22 19:38 · Alexander Sacharov** — in-progress round 5 (bughunt 521ba40eb): twin check moved inside migrateHeld between CatchUpMilestones and Migrate; own pre-check in unfileMilestone dropped. Catch-up clears a stale copy first, Migrate cannot make a pair, so one check covers logbook, restore and create/edit/rename's migrateMilestones. Also closes the round-4 residual (catch-up-made twin beside an old-format restore).
