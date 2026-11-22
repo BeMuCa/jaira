@@ -1,6 +1,6 @@
 ---
 name: jaira-role-pr
-description: "Push finished ticket work to its branch, open the pull request when a person invoked this role, and answer review comments on it — never merge, never approve. Works on GitHub through `gh` and on GitLab through `glab`. Invoked as /jaira-role-pr <ticket-id>. Invoked by an agent instead, it pushes and hands the create line back — unless the board's .jaira/pr says agent: then it opens the pull request once every ticket on the branch is in done, asks for the board's reviewer and answers one round of comments; where it says none, the project takes no pull requests and the branch lands on the default branch once every ticket on it is in done. Use when a branch is ready to leave for review."
+description: "Push finished ticket work to its branch, open the pull request when a person invoked this role, and answer review comments on it — never merge, never approve. Works on GitHub through `gh` and on GitLab through `glab`. Invoked as /jaira-role-pr <ticket-id> [--parent <session>]; started with --parent, its questions and its report go to that session. Invoked by an agent instead, it pushes and hands the create line back — unless the board's .jaira/pr says agent: then it opens the pull request once every ticket on the branch is in done, asks for the board's reviewer and answers one round of comments; where it says none, the project takes no pull requests and the branch lands on the default branch once every ticket on it is in done. Use when a branch is ready to leave for review."
 ---
 
 # Push it, open it, never accept it

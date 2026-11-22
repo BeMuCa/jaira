@@ -18,21 +18,31 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T18:31:11Z
-updated-at: 2026-11-22T18:43:10Z
+updated-at: 2026-11-22T19:15:32Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-4095349
-claimed-at: 2026-11-22T18:31:38Z
-outcome-what: "Tabs the cockpit opens (pr lane after Accept, give-back worker) get the cockpit session as --parent via parentArgs, only when its socket file exists; spawn.sh passes --parent to the pr lane; jaira-role-pr sends stops and report to its parent"
-outcome-why: "Questions of cockpit-started tabs sat unseen in their own tabs; round 2: a gone socket made spawn.sh refuse and no tab started (bughunt)"
-outcome-resolves: "T5QN9P: no question stays silent in a cockpit-started tab; without a live socket the tab asks itself as before"
-review-summary: none
-review-gaps: "none: one helper parentArgs replaces the inline socket lookup Discuss had (register.tsx openChat), so the socket is read in one place; no orphaned code; spawn.sh's own auto-parent (dispatch/worker only) left as is, it serves teamlead callers"
-test-verdict: "pass: go build + go test -race -count=1 ./... RC=0; claude plugin test (cockpit) 343 pass; DoD 1-4 verified in the tree (proof tests run); spawn.sh pr by hand: live parent types '/jaira-role-pr X1 --by-person --parent uds:...' rc=0, --no-parent types it without, dead uds: exits 2 before a tab; the change writes no file or ticket itself (it starts tabs), so no two-writer case"
-hunt-verdict: "fail: bughunt done at 7803b3e4f, 1 change: parentArgs passes a socket path without checking it exists; spawn.sh exits 2, Accept starts no pr tab and Give back has already closed the old worker tab (breaks DoD 3)"
-round: 2
-back-from: testing
-back-by: lane
+claimed-by: DESKTOP-RFTCH11-2629852
+claimed-at: 2026-11-22T19:14:24Z
+outcome-what: "jaira-role-pr's description now names --parent and that a started-with-parent tab sends its questions and report to that session"
+outcome-why: "give-back from signoff: the description, which is what a caller reads, did not mention --parent"
+outcome-resolves: "DoD 5"
+review-summary: "The cockpit now hands its own session to the tabs it starts as their parent. A new helper parentArgs (register.tsx) reads CLAUDE_CODE_MESSAGING_SOCKET and passes '--parent uds:<socket>' only when that socket file exists; otherwise '--no-parent'. It is used for the pr lane after Accept (before: no parent), the give-back worker (before: always --no-parent, which is why CRASZS's review question stuck) and Discuss (before: a socket was passed unchecked). spawn.sh forwards --parent into the pr prompt (/jaira-role-pr <id> --by-person --parent <s>), and jaira-role-pr gets a section: with --parent, every stop and the final report go onto the ticket as a note and to the parent via SendMessage; an unreachable parent falls back to asking in its own tab. A Review tab is not started by the cockpit (the worker starts it via run-lane.sh), so it reaches the cockpit through its worker, whose parent this now sets."
+review-gaps: |-
+  note: known limit: every test mocks $.fs.exists; whether the mod engine answers it for a path outside the project (/run/user/1000/cc-socks/*.sock or /tmp) is unverified - if it denies, the .catch turns that into --no-parent and the feature is silently off (tabs behave as before, no breakage); check live once, see review-check
+  note: jaira-role-pr frontmatter description does not mention --parent; harmless, the Arguments line does
+  note: an older installed spawn.sh with the new cockpit drops --parent for the pr lane (prompt without it) - harmless, the release note already says to rerun jaira roles install
+test-verdict: "pass (round 2): cockpit claude plugin test 345 pass incl. 'a socket whose file is gone is no parent' for pr and give-back (neighbour of the example: no socket env at all, also --no-parent); go test ./core/role ./core/shipped ok; round 1 full go -race suite green"
+hunt-verdict: "pass: bughunt done at f10d21b87, 0 change, 0 pre-existing"
+round: 3
+back-from: signoff
+back-by: person
 back-count: 1
+review-verdict: "accept: all four DoD items met in the diff (parentArgs for pr/give-back/discuss, role text + TestPRReportsToItsParent, missing/gone socket -> --no-parent with tests, release note + shipped hashes); go test ./core/role ./core/shipped ok, claude plugin test 345 pass; only open point is the live check that $.fs.exists sees the socket path"
+review-round: 2
+review-verdict-gaps: |-
+  note: known limit: every test mocks $.fs.exists; whether the mod engine answers it for a path outside the project (/run/user/1000/cc-socks/*.sock or /tmp) is unverified - if it denies, the .catch turns that into --no-parent and the feature is silently off (tabs behave as before, no breakage); check live once, see review-check
+  note: jaira-role-pr frontmatter description does not mention --parent; harmless, the Arguments line does
+  note: an older installed spawn.sh with the new cockpit drops --parent for the pr lane (prompt without it) - harmless, the release note already says to rerun jaira roles install
+review-check: "1. jaira roles install in the repo, then restart the Claude session that runs the cockpit (in Herdr)  2. In the cockpit, Give back a ticket that sits in signoff  3. Look at the first line of the new worker tab: it must contain '--parent uds:' (the socket path). If it says --no-parent, the mod cannot see the socket file - the feature is off  4. Have that worker ask a question: it must arrive in the cockpit session as a message, not only in its tab  5. Optional: Accept a ticket with a branch ahead; the pr tab's prompt reads '/jaira-role-pr <ID> --by-person --parent uds:...'"
 ---
 
 # Tabs, die das Cockpit öffnet (pr-Lane nach Accept, Review, Give back), melden Fragen und Ergebnis an die Teamlead-Session
@@ -47,6 +57,8 @@ back-count: 1
   proof: register.tsx parentArgs checks $.fs.exists(socket); board.test.ts 'a socket whose file is gone is no parent' (pr and give-back), 'Herdr App (HC_TERMINAL_ID, no HERDR_ENV)', 'a session without a messaging socket starts the new worker with no parent'; jaira-role-pr SKILL.md unreachable-parent rule
 - [x] Release-Note core/release/notes/<ID>.md, shipped.sha256
   proof: core/release/notes/T5QN9P.md; core/shipped/shipped.sha256 +3 lines; go test ./core/role ./core/shipped ok
+- [x] Die description von jaira-role-pr nennt --parent und wohin Fragen und Bericht dann gehen (Give-back 22.11.)
+  proof: core/role/builtin/jaira-role-pr/SKILL.md:3 description; shipped.sha256 +1 line; go test ./core/role ./core/shipped ok
 
 ## Options
 
@@ -65,3 +77,15 @@ back-count: 1
 - **2026-11-22 18:38 · Alexander Sacharov** — bughunt: done at 7803b3e4f - 1 finding (1 change, 0 pre-existing) in 5 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/T5QN9P.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/pr_round_test.go core/role/role_test.go core/shipped/shipped.sha256
 - **2026-11-22 18:38 · Alexander Sacharov** — testing: suite green (go -race RC=0, cockpit 343 pass), spawn.sh pr parent exercised by hand; waiting for the bug hunt
 - **2026-11-22 18:41 · Alexander Sacharov** — testing: class: a parent address handed on without checking it is reachable; example: CLAUDE_CODE_MESSAGING_SOCKET set but its file gone -> spawn.sh exit 2 'no session listens there', give-back closed the old tab first (register.tsx giveBack), Accept leaves the pr unstarted; fix: parentArgs returns --no-parent unless $.fs.exists(socket), test with a socket env whose file is missing for pr and give-back
+- **2026-11-22 18:46 · Alexander Sacharov** — bughunt: done at f10d21b87 - 0 findings in 3 modules, follow-up hunt since 7803b3e4f (diff only: parentArgs socket check, its two tests, shipped hash - hash matches sha256 of register.tsx); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/T5QN9P.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-role-pr/SKILL.md core/role/pr_round_test.go core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-22 18:46 · Alexander Sacharov** — testing: note: known limit; unverifiable here whether the mod engine's $.fs.exists answers for a path under /run/user or /tmp (sandboxed?). If it cannot, parentArgs quietly gives --no-parent and tabs behave as before this ticket - check live: accept a ticket in the cockpit and look for '--parent uds:' on the pr tab's first line. Native Windows socket visibility also unverified.
+- **2026-11-22 18:54 · Alexander Sacharov** — explain: Status: DoD 4/4 ok | tests ok | blockers ok | bughunt on HEAD ok
+[known limit] Все тесты подменяют проверку файла сокета; вживую не проверено, видит ли движок модов путь вне проекта, и если нет, фича молча выключена (табы работают как раньше).
+[small edge] В описании jaira-role-pr нет упоминания --parent, но в строке Arguments он есть, так что вреда нет.
+[known limit] Старый установленный spawn.sh с новым cockpit теряет --parent для pr-лейна; лечится повторным jaira roles install.
+1) Принять тикет как есть; живую проверку сделать после принятия: Accept в cockpit и взгляд на первую строку pr-таба [accept]
+2) Вернуть и сначала проверить живьём, что $.fs.exists видит сокет, потом принимать [give back]
+Recommendation: 1 - блокеров нет, тикет можно принять так; единственная открытая точка (живая проверка $.fs.exists) не ломает ничего, а только оставляет поведение как до тикета.
+- **2026-11-22 19:13 · Alexander Sacharov** — decision: [small edge] В описании jaira-role-pr нет упоминания --parent, но в строке Arguments он есть, так что вреда нет.
+- **2026-11-22 19:14 · Alexander Sacharov** — Given back from signoff: [small edge] В описании jaira-role-pr нет упоминания --parent, но в строке Arguments он есть, так что вреда нет.
+- **2026-11-22 19:14 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown)
