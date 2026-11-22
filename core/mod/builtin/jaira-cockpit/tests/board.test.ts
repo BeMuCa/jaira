@@ -3426,18 +3426,39 @@ describe('the overview', () => {
     expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBe('primary')
   })
 
-  test('Close stands in the tab row, framed and wider than a tab, on every tab and on an unread board', async ($, on) => {
+  test('the top row is one row of framed buttons alike — the tabs and Close — and the open tab is the one highlighted', async ($, on) => {
     const w = world(on)
     w.tickets = [{ ...WORKING, assignee: 'Alex', updated_at: ago(0.1) }]
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'overview' })
     const pane = await $.ui.mount(OVERVIEW)
+    const KEYS = ['overview-tab-queue', 'overview-tab-log', 'overview-tab-workers', 'overview-close']
     for (const tab of ['queue', 'log', 'workers']) {
       await pane.press({ key: `overview-tab-${tab}` })
-      const frame = await pane.find({ key: 'overview-close-frame' })
-      expect(frame?.props).toMatchObject({ borderStyle: 'round', paddingX: 1 })
+      // One row, in this order, every button in a frame of its own with the
+      // same border and padding: none stands higher or lower than another.
+      const frames = await Promise.all(KEYS.map(k => pane.find({ key: `${k}-frame` })))
+      for (const frame of frames) {
+        expect(frame?.props).toMatchObject({ borderStyle: 'round', paddingX: 1 })
+        expect(frame?.children.length).toBe(1)
+      }
+      const row = await pane.find({ key: 'overview-top-row' })
+      expect(row?.children.map(c => c.props)).toEqual(frames.map(f => f?.props))
+      // It never wraps: the pane budgets it three rows (OVERVIEW_ROWS).
+      expect(row?.props).toMatchObject({ flexDirection: 'row' })
+      expect(row?.props.flexWrap).toBeUndefined()
       const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
       expect(labels.slice(0, 4)).toEqual(['Queue', 'Log', 'Workers', 'Close'])
+      // The open tab, and only it, is highlighted: a coloured frame and the
+      // primary variant; the others are dimmed. Close is never a tab.
+      for (const [i, other] of ['queue', 'log', 'workers'].entries()) {
+        const open = other === tab
+        expect(frames[i]?.props.borderColor).toBe(open ? 'claude' : undefined)
+        expect(frames[i]?.props.borderDimColor).toBe(!open)
+        expect((await pane.find({ key: `overview-tab-${other}` }))?.props.variant).toBe(open ? 'primary' : undefined)
+      }
+      expect(frames[3]?.props.borderColor).toBeUndefined()
+      expect(frames[3]?.props.borderDimColor).toBe(false)
     }
     // What Close draws is longer than the longest tab's label.
     const closeText = (await pane.find({ type: 'Text', text: /^ +Close +$/ }))?.text ?? ''
