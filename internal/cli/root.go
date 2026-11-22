@@ -74,6 +74,16 @@ func minArgs(n int) cobra.PositionalArgs {
 	}
 }
 
+func maxArgs(n int) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if len(args) > n {
+			return fail(ExitUsage, "usage", "%s accepts at most %d argument(s), received %d\n\nUsage: %s",
+				cmd.Name(), n, len(args), cmd.UseLine())
+		}
+		return nil
+	}
+}
+
 func noArgs() cobra.PositionalArgs {
 	return func(cmd *cobra.Command, args []string) error {
 		if len(args) > 0 {
@@ -249,6 +259,7 @@ Exit codes:
 		newReleaseCmd(),
 		newSnapshotCmd(),
 		newWebCmd(),
+		newPRCmd(),
 	)
 	// Usage errors must exit 2 rather than 1.
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
