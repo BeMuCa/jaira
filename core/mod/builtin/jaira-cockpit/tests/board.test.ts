@@ -1,5 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
+import { lightOf, snapshotOf, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -474,7 +475,12 @@ describe('waiting for you', () => {
     expect(colours).toContain('"color":"error"')
     // Everything left out of the row is in the Verdict pane, the goal on top.
     const { texts } = await verdictOf($, band, 'MG677R')
-    expect(texts.slice(0, 2)).toEqual(['cache key', 'Goal: Two branches never share a cache entry.'])
+    // The light comes first, before the title: red for the blocker, the
+    // other reasons counted.
+    expect(texts[0]).toBe('● red: 1 blocker in the review (+4 more)')
+    const title = texts.indexOf('cache key')
+    expect(title).toBeGreaterThan(0)
+    expect(texts.slice(title, title + 2)).toEqual(['cache key', 'Goal: Two branches never share a cache entry.'])
     for (const text of ['? keep the old key?', `Verdict: ${verdict}`, '[blocker] blocker: the key ignores the branch', '· note: a test is missing', '· note: a comment is stale']) {
       expect(texts).toContain(text)
     }
@@ -1348,9 +1354,11 @@ describe('waiting for you', () => {
     expect(w.opened).toEqual([{ id: 'cockpit-verdict', title: 'Review verdict of MG677R', focus: true }])
     const pane = await $.ui.mount(VERDICT('Review verdict of MG677R'))
     expect(await pane.find({ type: 'Text', text: `Verdict: ${long}` })).toBeDefined()
-    // It starts with what the ticket is for.
+    // It starts with the light, then what the ticket is for. No hunt was
+    // read for this ticket: nobody can tell, so yellow.
     const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
-    expect(texts[0]).toBe('cache key')
+    expect(texts[0]).toBe('● yellow: bughunt unknown')
+    expect(texts.filter(x => !x.startsWith('●'))[0]).toBe('cache key')
   })
 
   test('the Explain tab closes once its explanation is on the ticket, not on an older one', async ($, on) => {
@@ -3835,5 +3843,90 @@ describe('the workers tab', () => {
     before = reads()
     await w.clock.advance(20_000)
     expect(reads()).toBe(before)
+  })
+})
+
+// The Verdict pane's light, worked out from the ticket alone: one rule set per
+// colour, the reason it names first.
+describe('the verdict light', () => {
+  const ready: Waiting = {
+    id: 'MG677R', title: 'cache key', goal: '', lane: 'signoff', verdict: 'approve', question: '', dodComplete: true,
+    dodOpen: { person: 0, other: 0 }, acceptTo: 'done', assignee: '', explainable: false, blockers: [], notes: [], findingsKnown: true, gaps: '',
+  }
+  const first = (w: Waiting, hunt: Parameters<typeof lightOf>[1]) => {
+    const l = lightOf(w, hunt)
+    return [l.color, l.reasons[0]?.kind ?? '-']
+  }
+
+  test('green: an accepting review, a hunt on HEAD, the definition of done ticked, nothing open', () => {
+    expect(first(ready, { state: 'ok', at: 'abc1234' })).toEqual(['green', '-'])
+    // A ticket that runs no hunt after a fix, by choice, is no reason to look.
+    expect(first(ready, { state: 'skipped', at: 'abc1234' })).toEqual(['green', '-'])
+    expect(first({ ...ready, verdict: 'approve, no changes needed' }, { state: 'ok', at: 'abc1234' })).toEqual(['green', '-'])
+  })
+
+  test('yellow: accepted, but something wants a look first', () => {
+    expect(first({ ...ready, dodComplete: false, dodOpen: { person: 1, other: 0 } }, { state: 'ok', at: 'abc1234' })).toEqual(['yellow', 'byAPerson'])
+    expect(first({ ...ready, notes: ['note: a test is missing'] }, { state: 'ok', at: 'abc1234' })).toEqual(['yellow', 'notes'])
+    expect(first({ ...ready, verdict: 'approve, but the docs are thin' }, { state: 'ok', at: 'abc1234' })).toEqual(['yellow', 'reservation'])
+    expect(first({ ...ready, question: 'keep the old key?' }, { state: 'ok', at: 'abc1234' })).toEqual(['yellow', 'question'])
+    expect(first({ ...ready, reviewedIn: 2 }, { state: 'ok', at: 'abc1234' })).toEqual(['yellow', 'oldReview'])
+    expect(first({ ...ready, verdict: '' }, { state: 'ok', at: 'abc1234' })).toEqual(['yellow', 'notReviewed'])
+    // Nobody can tell: a hunted file changed and not committed, or a jaira that does not say.
+    expect(first(ready, { state: 'unknown', at: 'abc1234' })).toEqual(['yellow', 'huntUnknown'])
+    expect(first(ready, undefined)).toEqual(['yellow', 'huntUnknown'])
+  })
+
+  test('red: the review gives it back, a blocker, a hunt not on HEAD, or a gate that refuses', () => {
+    expect(first({ ...ready, verdict: 'request changes: the key ignores the branch' }, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'refused'])
+    expect(first({ ...ready, blockers: ['blocker: the key ignores the branch'] }, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'blockers'])
+    expect(first(ready, { state: 'fail', at: 'abc1234' })).toEqual(['red', 'staleHunt'])
+    // An open item other than a person's own: the terminal lane's gate refuses it.
+    expect(first({ ...ready, dodComplete: false, dodOpen: { person: 1, other: 1 } }, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'dodOpen'])
+    // Every red reason counts before any yellow one.
+    expect(lightOf({ ...ready, question: 'why?', notes: ['note: x'] }, { state: 'fail', at: 'abc1234' }).reasons.map(r => r.kind)).toEqual(['staleHunt', 'notes', 'question'])
+  })
+
+  // A ticket in human waits for an answer: its open items are no reason to
+  // give it back, so the question decides the light.
+  test('a question in a lane that does not end the work makes the light yellow, the question first', () => {
+    const asking = { ...ready, lane: 'human', acceptTo: null, question: 'keep the old key?', dodComplete: false, dodOpen: { person: 1, other: 2 } }
+    const l = lightOf(asking, { state: 'fail', at: 'abc1234' })
+    expect([l.color, l.reasons.map(r => r.kind)]).toEqual(['yellow', ['question', 'staleHunt', 'dodOpen', 'byAPerson']])
+    // In signoff, where Accept ends the work, the same open items stay red.
+    expect(first({ ...asking, lane: 'signoff', acceptTo: 'done' }, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'dodOpen'])
+  })
+
+  // No hunt finished (jaira's null) is a look, never red: a ticket that
+  // changed no code has none, and the brief cannot tell it from one owed.
+  test('no hunt at all is yellow; a hunt that no longer covers HEAD is red', () => {
+    expect(first(ready, { state: 'fail', at: '' })).toEqual(['yellow', 'noHunt'])
+    expect(first(ready, { state: 'fail', at: 'abc1234' })).toEqual(['red', 'staleHunt'])
+  })
+
+  // Which way a verdict goes is read off the words the review lane declares,
+  // as jaira's own gate reads them, never off its wording.
+  test('the review lane\'s declared words decide which way a verdict goes', () => {
+    const lanes = JSON.stringify({ lanes: [
+      { id: 'review', agentic: true, context: 'fresh', verdicts: { accept: ['accept'], send_back: ['send-back'] } },
+      { id: 'signoff', agentic: false, context: '', human_exit: true },
+    ] })
+    const light = (verdict: string, gaps = 'none') => {
+      const list = JSON.stringify({ tickets: [{ handle: 'MG677R', title: 't', status: 'signoff', dod_complete: true, review: { verdict, gaps } }] })
+      const w = snapshotOf(lanes, list, [], []).waiting[0]!
+      return first(w, { state: 'ok', at: 'abc1234' })
+    }
+    // A send-back with nothing in its gaps is still a send-back.
+    expect(light('send-back: DoD 2 unmet')).toEqual(['red', 'refused'])
+    expect(light('Send back, DoD 1')).toEqual(['red', 'refused'])
+    expect(light('accept')).toEqual(['green', '-'])
+    expect(light('Accept.')).toEqual(['green', '-'])
+    // Free text on a board with words: neither way, so a look — never red for a word like 'not'.
+    expect(light('Not a single defect found; accept.')).toEqual(['yellow', 'freeVerdict'])
+    expect(light('send-backs')).toEqual(['yellow', 'freeVerdict'])
+    // Without declared words (an older jaira) the wording is all there is.
+    const old = JSON.stringify({ lanes: [{ id: 'signoff', agentic: false, context: '', human_exit: true }] })
+    const list = JSON.stringify({ tickets: [{ handle: 'MG677R', title: 't', status: 'signoff', dod_complete: true, review: { verdict: 'request changes', gaps: 'none' } }] })
+    expect(first(snapshotOf(old, list, [], []).waiting[0]!, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'refused'])
   })
 })
