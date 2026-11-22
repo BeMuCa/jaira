@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T22:55:10Z
+updated-at: 2026-11-22T22:55:12Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -56,7 +56,7 @@ claimed-at: 2026-11-22T22:43:54Z
 - [x] overview-pane.tsx: fourth tab Milestones; selector [ < ] name [ > ] as buttons (click, or arrows to focus + Enter), wraps around; 'x of n done' line; rows ID | lane | title in three groups; none/unread states
 - [x] types/index.d.ts and texts.ts: new state keys and words
 - [x] tests/board.test.ts: fix the tab-label test, add milestone tests (grouping, logbook count, paging wrap, remembered after reopen, ls failure)
-- [ ] release note core/release/notes/1J8XZ7.md
+- [x] release note core/release/notes/1J8XZ7.md
 - [ ] gates: tsc/validate of the mod if cheap, claude plugin test once; gofmt/vet/build untouched (no Go change)
 
 ## Progress
