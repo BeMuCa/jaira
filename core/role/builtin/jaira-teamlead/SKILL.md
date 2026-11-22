@@ -401,9 +401,9 @@ checksum list that nearly every pull request conflicts on), commits that as one
 `jaira roles pr-gate --merge`. Where `.jaira/land` on the base says `agent` and
 every ticket on the branch is in done, it merges and runs `reap.sh`; anywhere
 else it prints the merge line — exit 3 — and you hand that line to the
-maintainer. A conflict outside the generated files, a failed generator or red
-CI stops it (exit 1) with nothing pushed or nothing merged; that is a worker's
-job, not yours. Several pull requests: land them one after another, never in
+maintainer. A conflict outside the generated files or a failed generator stops
+it (exit 1) before anything is pushed; red CI stops it (exit 1) after the merge
+commit is pushed, with nothing merged. Either is a worker's job, not yours. Several pull requests: land them one after another, never in
 parallel — each merge moves the base the next one has to take in. Before it,
 delete untracked `.jaira/milestones/*.md` copies that equal the base's: git
 refuses to merge over them.
