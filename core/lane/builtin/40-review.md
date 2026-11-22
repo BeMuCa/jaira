@@ -74,8 +74,9 @@ Write four things, in this order:
    `note:` for everything else, including anything that would need a new
    rule, a new flag or a design choice. A fix-now note is not sent to the
    person: the work goes back once to close it (see the end of this prompt).
-   Only a full review marks fix-now; a delta review (below) writes plain
-   notes, so the round for fix-now happens at most once.
+   A review marks fix-now only when the ticket's notes carry no earlier
+   `review: fix-now:` line; after one, every review — delta or full — writes
+   plain notes, so the round for fix-now happens at most once.
 
    If you found nothing, write `none` explicitly — an empty field means nobody
    looked, and "none" is you saying you looked and found nothing.
