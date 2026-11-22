@@ -51,8 +51,16 @@ func TestShareKeepsMilestoneFilesOutOfGit(t *testing.T) {
 	if out := gitOut(t, dir, "status", "--porcelain", "--untracked-files=all", "--", ".jaira/milestones"); out != "" {
 		t.Fatalf("git sees the milestone file:\n%s", out)
 	}
-	if out, err := runCLI(t, dir, "share", "--undo"); err != nil {
+	out, err := runCLI(t, dir, "share", "--undo", "--json")
+	if err != nil {
 		t.Fatalf("share --undo: %v\n%s", err, out)
+	}
+	var undo map[string]any
+	if err := json.Unmarshal([]byte(out), &undo); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if undo["milestones_ignore_removed"] != true {
+		t.Errorf("share --undo --json does not report the removed milestones line: %s", out)
 	}
 	if strings.Contains(readIgnore(t, dir), board.MilestonesIgnoreLine) {
 		t.Fatalf("share --undo left the milestones line behind:\n%s", readIgnore(t, dir))
@@ -199,5 +207,52 @@ func TestLogbookFailsWhenTheMarkCannotBeQueued(t *testing.T) {
 	got, err := milestone.Load(ada, ms.ID)
 	if err != nil || got.Filed() {
 		t.Fatalf("after the failed logbook the milestone should be on the board unmarked: %v, filed %v", err, got != nil && got.Filed())
+	}
+}
+
+// A restore whose unmarked file cannot be queued for the ref puts the file
+// back into the logbook, marked, as logbook takes its mark back off: the
+// milestone is never on no board and in no logbook.
+func TestRestoreGoesBackToTheLogbookWhenTheRefCannotBeQueued(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root writes into a read-only directory")
+	}
+	ada, _ := twoBoards(t)
+	if out, err := runAndSend(t, ada, "milestone", "create", "q4"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, err := milestone.Load(ada, "q4")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runAndSend(t, ada, "logbook", "q4"); err != nil {
+		t.Fatalf("logbook: %v\n%s", err, out)
+	}
+	logged, _ := filepath.Glob(filepath.Join(ada, ".jaira", "logbook", "*", "milestones", ms.FileName()))
+	if len(logged) != 1 {
+		t.Fatalf("logbook copy: %v", logged)
+	}
+	ids := filepath.Join(stateDirOf(t, ada), "outbox", "milestone-ids")
+	if err := os.MkdirAll(ids, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(ids, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(ids, 0o755) })
+
+	out, err := runAndSend(t, ada, "restore", ms.FileName())
+	if code := exitCode(err); code != ExitError {
+		t.Fatalf("restore with an outbox it cannot write: exit %d, want %d\n%s", code, ExitError, out)
+	}
+	b, err := os.ReadFile(logged[0])
+	if err != nil {
+		t.Fatalf("the file did not go back to the logbook: %v", err)
+	}
+	if !milestone.FromBytes(ms.FileName(), b).Filed() {
+		t.Fatalf("the file back in the logbook lost its filed mark:\n%s", b)
+	}
+	if _, err := os.Stat(ms.Path(ada)); !os.IsNotExist(err) {
+		t.Fatalf("a copy is still on the board: %v", err)
 	}
 }

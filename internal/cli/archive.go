@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -135,11 +136,11 @@ restore fails with it rather than reporting a milestone nobody can see.`,
 			}
 			defer unlock()
 
-			dst, err := s.Restore(args[0])
+			src, dst, err := s.RestoreFrom(args[0])
 			if err != nil {
 				return &codedError{code: ExitNotFound, reason: "not_archived", message: err.Error()}
 			}
-			restored, err := unfileMilestone(s, dst)
+			restored, err := unfileMilestone(s, src, dst)
 			if err != nil {
 				return err
 			}
@@ -168,7 +169,7 @@ restore fails with it rather than reporting a milestone nobody can see.`,
 // The caller holds milestoneLockName. It is not taken here because the move
 // that puts the file in place happens before this runs and belongs under the
 // same lock.
-func unfileMilestone(s *ticket.Store, dst string) (string, error) {
+func unfileMilestone(s *ticket.Store, src, dst string) (string, error) {
 	if filepath.Base(filepath.Dir(dst)) != ticket.MilestonesSubdir {
 		return "", nil
 	}
@@ -190,9 +191,22 @@ func unfileMilestone(s *ticket.Store, dst string) (string, error) {
 				filepath.Base(dst), milestone.Dir(s.Root), milestone.StatusFiled, err)
 		}
 	}
+	// Without the unmarked file on its ref every other clone still hides the
+	// milestone, and the next write here would take the ref's filed state
+	// for the newer one and mark the file again — on no board and in no
+	// logbook. So it goes back where it came from, marked, as logbook takes
+	// its mark back off when it cannot queue it.
 	if err := recordMilestone(ms); err != nil {
-		return name, fmt.Errorf("%s was moved back to %s but its ref could not be queued, so it is still filed for every other clone and the next milestone write here files it again: %w",
-			filepath.Base(dst), milestone.Dir(s.Root), err)
+		ms.SetStatus(milestone.StatusFiled)
+		back := ms.Save(s.Root)
+		if back == nil {
+			back = os.Rename(ms.Path(s.Root), src)
+		}
+		if back != nil {
+			err = errors.Join(err, back)
+		}
+		return name, fail(ExitError, "record_failed", "milestone %q was not restored: its ref could not be queued for the remote, so it stays in %s: %v",
+			name, filepath.Dir(src), err)
 	}
 	return name, nil
 }

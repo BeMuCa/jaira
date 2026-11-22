@@ -68,11 +68,12 @@ You still have to commit. jaira does not commit on your behalf.`,
 				if err != nil {
 					return err
 				}
-				if _, err := board.RemoveMilestonesIgnore(s.Root); err != nil {
+				milestonesRemoved, err := board.RemoveMilestonesIgnore(s.Root)
+				if err != nil {
 					return err
 				}
 				if g.jsonOut {
-					return emit(w, map[string]any{"shared": false, "changed": changed, "lanes_ignore_removed": lanesRemoved})
+					return emit(w, map[string]any{"shared": false, "changed": changed, "lanes_ignore_removed": lanesRemoved, "milestones_ignore_removed": milestonesRemoved})
 				}
 				fmt.Fprintf(w, "The board is private again.\n")
 				if changed {

@@ -298,3 +298,91 @@ func TestACatchUpAfterARenameInCaseOnlyKeepsTheMilestone(t *testing.T) {
 		t.Fatalf("the milestone on disk misses %s: %v", tkA, got.Members())
 	}
 }
+
+// fetchAt runs a whole fetch on s the way 'jaira fetch' does: refs, then
+// milestone files.
+func fetchAt(t *testing.T, s side) {
+	t.Helper()
+	if !s.syncer.FetchRefs() {
+		t.Fatal("the fetch did not reach the remote")
+	}
+	if _, err := s.syncer.FetchMilestones(s.store); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A hand edit survives a fetch that did not move its ref: nothing newer
+// arrived, and the edit is this side's next write. A fetch that does move the
+// ref still wins over the file.
+func TestAFetchKeepsAHandEditWhileItsRefStandsStill(t *testing.T) {
+	ada, grace, _ := twoSides(t)
+	ms, err := milestone.Create(ada.store.Root, ada.store, ada.syncer, func([]*milestone.Milestone) (*milestone.Milestone, error) {
+		return milestone.New("q4", 45, time.Now()), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+	fetchAt(t, grace)
+	path := filepath.Join(milestone.Dir(grace.store.Root), ms.FileName())
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("grace has no file after the fetch: %v", err)
+	}
+	edited := string(b) + "- " + tkA + "\n"
+	if err := os.WriteFile(path, []byte(edited), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	fetchAt(t, grace)
+	if got, _ := os.ReadFile(path); string(got) != edited {
+		t.Fatalf("a fetch that moved nothing threw the hand edit away:\n%s", got)
+	}
+
+	addTo(t, ada, "q4", tkB)
+	fetchAt(t, grace)
+	got, err := milestone.Load(grace.store.Root, ms.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{tkB}; !slices.Equal(got.Members(), want) {
+		t.Fatalf("after ada's write the file holds %v, want the ref's %v", got.Members(), want)
+	}
+}
+
+// A rename in case only keeps the milestone on disk on both sides — where the
+// file system ignores case the old and the new name are one file, and neither
+// the rename nor the teammate's fetch may remove it as the old one. Run with
+// TMPDIR on such a file system (/mnt/c under WSL) to see the case it guards.
+func TestARenameInCaseOnlyKeepsTheFileOnBothSides(t *testing.T) {
+	ada, grace, _ := twoSides(t)
+	ms, err := milestone.Create(ada.store.Root, ada.store, ada.syncer, func([]*milestone.Milestone) (*milestone.Milestone, error) {
+		return milestone.New("q4", 45, time.Now()), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+	fetchAt(t, grace)
+	if _, err := milestone.Rename(ada.store.Root, ada.store, ada.syncer, "q4", "Q4"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := milestone.Load(ada.store.Root, ms.ID); err != nil {
+		t.Fatalf("the rename removed the milestone it renamed: %v (files: %s)", err, diskFiles(t, ada))
+	}
+	fetchAt(t, grace)
+	got, err := milestone.Load(grace.store.Root, ms.ID)
+	if err != nil {
+		t.Fatalf("grace's fetch of the rename removed the milestone: %v (files: %s)", err, diskFiles(t, grace))
+	}
+	if got.Name != "Q4" {
+		t.Fatalf("grace's milestone is called %q, want Q4", got.Name)
+	}
+}

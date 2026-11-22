@@ -80,6 +80,14 @@ type Syncer struct {
 	// hour ago says nothing about the milestones made since.
 	fetched atomic.Bool
 
+	// msMu guards msBefore: the milestone refs' tips as they stood right
+	// before the last fetch, nil when this process has not fetched. A ref
+	// whose tip is the same after the fetch did not move, so a file that
+	// differs from it holds an edit made here, not an old state (see
+	// IncomingMilestones).
+	msMu     sync.Mutex
+	msBefore map[string]string
+
 	// extraMu guards extraCache: the decoded ticket of each ref-only ticket,
 	// with the commit hash it was decoded from. A hash is a content address, so
 	// an equal hash needs no read and no decode, and no safety net behind it.
@@ -265,10 +273,12 @@ func (y *Syncer) MigrationBase(id string) (milestone.Base, bool) {
 // editor in jaira the way a ticket has a lane: the file IS the interface, and
 // a group somebody planned is of no use as a ref nobody has checked out. The
 // ref is the newer state by construction — it is what the remote accepted —
-// so a local file that differs is overwritten, and the previous content is in
-// git if it was ever committed. The one exception is a milestone with a write
-// still queued in the outbox: that file is newer than the ref and is left
-// alone until the write has been sent or rejected.
+// so a local file that differs is overwritten; the files are never in git, so
+// what it held is gone. Two exceptions. A milestone with a write still queued
+// in the outbox: that file is newer than the ref and is left alone until the
+// write has been sent or rejected. And a file edited by hand — bytes the ref
+// never carried — whose ref this fetch did not move: nothing newer arrived for
+// it, and the next milestone write sends the edit.
 //
 // A milestone's ref is named after its ID and carries the file under its
 // current name, so a rename arrives as the same ref with another file name.
@@ -375,6 +385,11 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 				if other.IDNamed != idNamed {
 					continue
 				}
+				// The ref's file under a name that differs only in case is
+				// that same file where case is ignored: not another one.
+				if milestone.SameFile(filepath.Join(milestone.Dir(root), other.File), path) {
+					continue
+				}
 				if err := os.Remove(filepath.Join(milestone.Dir(root), other.File)); err != nil && !os.IsNotExist(err) {
 					return err
 				}
@@ -401,6 +416,16 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 			return removeOthers(false)
 		}
 		have, haveErr := os.ReadFile(path)
+		// A file that differs from a ref this fetch did not move, in a way
+		// the ref never carried, was edited by hand since: it is this
+		// side's next write, and the ref has nothing newer to give it. A
+		// ref that did move wins, as it always has — the file is now
+		// behind a teammate's write, and keeping it would put it back over
+		// theirs.
+		if haveErr == nil && milestone.IsID(key) && !bytes.Equal(have, content) &&
+			!y.movedByFetch(key, sha) && !y.Repo.MilestoneHad(key, have) {
+			continue
+		}
 		if haveErr == nil && bytes.Equal(have, content) {
 			if err := removeOthers(true); err != nil {
 				return wrote, filed, renamed, conflicts, err
@@ -477,7 +502,7 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 		// A name that differs only in case is the same file where the file
 		// system ignores case (Windows, macOS, /mnt/c under WSL): neither a
 		// twin nor something to remove.
-		renamed := dst != path && !sameFile(dst, path)
+		renamed := dst != path && !milestone.SameFile(dst, path)
 		if renamed {
 			if twin, err := os.ReadFile(dst); err == nil && !bytes.Equal(twin, content) && !y.Repo.MilestoneHad(d.ID, twin) {
 				continue
@@ -496,14 +521,13 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 	return nil
 }
 
-// sameFile reports whether a and b name one file on disk.
-func sameFile(a, b string) bool {
-	ia, err := os.Stat(a)
-	if err != nil {
-		return false
-	}
-	ib, err := os.Stat(b)
-	return err == nil && os.SameFile(ia, ib)
+// movedByFetch reports whether the last fetch moved the milestone ref key to
+// sha. Without a snapshot from a fetch of this syncer it cannot tell, and
+// answers yes: the ref wins, as it did before there was a snapshot.
+func (y *Syncer) movedByFetch(key, sha string) bool {
+	y.msMu.Lock()
+	defer y.msMu.Unlock()
+	return y.msBefore == nil || y.msBefore[key] != sha
 }
 
 // pendingMilestone reports whether a write of this milestone is queued, under
@@ -652,6 +676,13 @@ func (y *Syncer) OldRefHad(name string, content []byte) bool {
 
 // fetch is Repo.Fetch, remembering whether it reached the remote.
 func (y *Syncer) fetch() error {
+	before, herr := y.Repo.MilestoneHashes()
+	if herr != nil {
+		before = nil
+	}
+	y.msMu.Lock()
+	y.msBefore = before
+	y.msMu.Unlock()
 	err := y.Repo.Fetch()
 	y.fetched.Store(err == nil)
 	return err

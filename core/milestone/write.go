@@ -218,10 +218,26 @@ func Rename(root string, lock Locker, rec Recorder, from, to string) (*Milestone
 	if _, recordOnly := err.(*RecordError); err != nil && !recordOnly {
 		return renamed, err
 	}
-	if rmErr := os.Remove(ms.Path(root)); rmErr != nil {
-		return renamed, rmErr
+	// A rename in case only, on a file system that ignores case (Windows,
+	// macOS, /mnt/c under WSL), saved the new name over the old file: the
+	// two names are one file, and removing the old one would remove it.
+	if !SameFile(renamed.Path(root), ms.Path(root)) {
+		if rmErr := os.Remove(ms.Path(root)); rmErr != nil {
+			return renamed, rmErr
+		}
 	}
 	return renamed, err
+}
+
+// SameFile reports whether a and b name one file on disk — two names that
+// differ only in case do where the file system ignores it.
+func SameFile(a, b string) bool {
+	ia, err := os.Stat(a)
+	if err != nil {
+		return false
+	}
+	ib, err := os.Stat(b)
+	return err == nil && os.SameFile(ia, ib)
 }
 
 // CheckFree asks the milestone directory whether a name can be given out: a
