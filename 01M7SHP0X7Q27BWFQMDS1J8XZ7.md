@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T22:57:07Z
+updated-at: 2026-11-22T22:57:18Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -33,6 +33,7 @@ outcome-what: "The cockpit's Overview pane has a fourth tab, Milestones: a selec
 outcome-why: "Seeing how far a milestone is meant leaving the cockpit for the board (M) or typing jaira list --milestone, and that list leaves out tickets already filed into the logbook."
 outcome-resolves: "1J8XZ7: Milestones tab in the cockpit Overview with progress and tickets sorted by stand; tickets jaira list does not return are read with jaira show, so filed ones count as done."
 review-summary: none
+review-gaps: "none - considered: no milestone or logbook reading exists elsewhere in the cockpit hooks (grep milestone/filed_away/rejected in board.ts, register.tsx, sessions.ts, digest.ts); nothing the change added is uncalled (milestonesOf and Stand are exported though only overview.ts uses them, matching how overview.ts exports its other helpers); standOf runs only while the Milestones tab is drawn, its sort over a milestone's handles is small"
 ---
 
 # Das Cockpit zeigt einen Milestone mit Fortschritt und seinen Tickets nach Stand sortiert
