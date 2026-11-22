@@ -17,21 +17,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T18:21:19Z
-updated-at: 2026-11-22T20:06:47Z
+updated-at: 2026-11-22T20:18:10Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3443254
 claimed-at: 2026-11-22T19:28:38Z
 outcome-what: "Every milestone write — create, add, rm, set, rename, and logbook/restore of a milestone — refuses with exit 3 (milestone_twin_files) naming both files when one milestone ID lies in two files"
 outcome-why: "After a rename, a stale old copy beside a hand-edited file under the new name stayed on disk unseen and the next write read whichever file sorted first"
 outcome-resolves: 8TT890
-review-summary: "nothing to change: internal/cli/archive.go checkMilestoneRestore refuses before s.RestoreFrom moves anything, so unfileMilestone needs no rollback; core/ticket/store.go RestoresMilestone reuses logbookFolders rather than a second glob. The ID-on-board refusal reuses RestoreFrom's exit 5/not_archived shape instead of a new reason."
-review-gaps: "none - round 7 deleted the rollback (net shorter unfileMilestone); RestoresMilestone has one caller but sits beside RestoreFrom's own lookup it mirrors"
-test-verdict: "fail: suite green, bughunt change at 6d2e096ec (unreadable board file of the ID)"
-hunt-verdict: "change: internal/cli/archive.go:179 ID-on-board check uses milestone.Load, which skips unreadable files; the post-move CheckTwinFiles sees the pair by name -> file stranded on the board, logbook empty (bughunt at 6d2e096ec)"
-round: 8
+review-summary: "nothing to change: internal/cli/archive.go checkMilestoneRestore finds the ID by file name like milestone.CheckTwinFiles, so an unreadable file counts; refusal before s.RestoreFrom, no rollback."
+review-gaps: "left: the ReadDir+FileIdentity loop in checkMilestoneRestore mirrors CheckTwinFiles' (core/milestone/write.go) - 10 lines; a shared helper would touch core for one caller"
+test-verdict: "fail: suite green, bughunt change at 9f4f514cb (old-format board file of the ID)"
+hunt-verdict: "change: internal/cli/archive.go:189 ID-on-board check skips an old-format board file (q4.md) - Migrate then drops the live file (bughunt at 9f4f514cb)"
+round: 9
 back-from: testing
 back-by: lane
-back-count: 4
+back-count: 5
 review-verdict: "accept: all three DoD items hold - every milestone write path (core Create/Edit/Rename via lockAndMigrate, CLI logbook/restore via migrateHeld) refuses one ID in two files with exit 3 naming both; the normal rename catch-up tests stay green; release note present. go test ./core/milestone ./core/refsync ./internal/cli green. Open findings are narrow edges, not blockers."
 review-round: 2
 review-verdict-gaps: |-
@@ -55,7 +55,7 @@ review-check: "1. go build -o /tmp/j ./cmd/jaira (from the worktree)  2. in a sc
 - [x] Restore einer alten Milestone-Datei ohne ID (q4.md) neben einem Zwilling: die Datei liegt danach wieder im Logbook, filed, nicht auf dem Board (Test)
   proof: internal/cli/archive.go checkMilestoneRestore runs before RestoreFrom; TestRestoreOfAnOldFormatFileBesideATwinGoesBackToTheLogbook, TestRestoreClearsAStaleCopyBesideARenamedMilestone, TestARefusedRestoreKeepsTheLogbookCopyTheCatchUpRemoved
 - [x] Restore prüft Zwillinge (nach Catch-up) bevor die Datei aus dem Logbook bewegt wird; keine Rückroll-Logik in unfileMilestone (Entscheidung 22.11.)
-  proof: internal/cli/archive.go checkMilestoneRestore (catch-up, CheckTwinFiles, ID on the board by file name) before s.RestoreFrom; unfileMilestone has no rollback; core/ticket/store.go RestoresMilestone; TestRestoreRefusesAnIDAlreadyOnTheBoard, TestRestoreRefusesAnUnreadableFileOfItsID, TestLogbookAndRestoreRefuseOneIDInTwoFiles
+  proof: internal/cli/archive.go checkMilestoneRestore (catch-up, CheckTwinFiles, ID on the board by file name, old-format names included) before s.RestoreFrom; no rollback in unfileMilestone; core/ticket/store.go RestoresMilestone; TestRestoreRefusesAnIDAlreadyOnTheBoard, TestRestoreRefusesAnUnreadableFileOfItsID, TestRestoreRefusesBesideAnOldFormatFileOfItsID, TestLogbookAndRestoreRefuseOneIDInTwoFiles
 
 ## Options
 
@@ -103,3 +103,7 @@ angenommen:
 - **2026-11-22 19:58 · Alexander Sacharov** — bughunt: done at 6d2e096ec - 1 finding (1 change, 0 pre-existing) in 3 modules, follow-up hunt since 6f7ad1e1a, core/ticket/store.go read whole as new; concurrency, error paths, input, permissions checked; files: core/milestone/write.go core/milestone/write_test.go core/refsync/catchup_test.go core/refsync/refsync.go core/release/notes/8TT890.md core/ticket/store.go internal/cli/archive.go internal/cli/milestones.go internal/cli/milestones_test.go internal/cli/root.go
 - **2026-11-22 20:02 · Alexander Sacharov** — decision (Alex, 22.11.): send back past the 3-round limit (--force on his word) and fix the ID-on-board check by file names, as CheckTwinFiles does.
 - **2026-11-22 20:06 · Alexander Sacharov** — in-progress round 8 (bughunt 6d2e096ec): ID-on-board check reads file names (FileIdentity over ReadDir) instead of milestone.Load, which skips unreadable files. Test skips on Windows (wintrap gate) and as root.
+- **2026-11-22 20:08 · Alexander Sacharov** — bughunt: change: blocker: internal/cli/archive.go:189 - class: the round-8 ID-on-board loop counts only board files with the ID in their name (idNamed), so a board file in the old format without an ID (<name>.md, ID from LegacyID) no longer refuses the restore, as milestone.Load did at 6d2e096ec; the file then leaves the logbook, Migrate in migrateHeld finds the restored <name>-<ID>.md as the ID file of the board's old file, AdoptOld keeps the restored (filed, older) side on every clash and removes the board's live file - exactly the case the checkMilestoneRestore doc comment names ('Migrate would drop an old-format file as the older side of it'); example: board q4.md (color 3, member AAAAAA), logbook q4-24QJVY.md (24QJVY = LegacyID(q4), filed), jaira restore q4-24QJVY.md -> 'Restored', q4.md gone, board file has color 45 and no members, AAAAAA only in a '<!-- another edit ... not taken -->' comment; on 6d2e096ec the same run exits 5 'already on the board as q4.md' and leaves the board alone; ran: scratch test in internal/cli (removed) at HEAD and in a detached worktree of 6d2e096ec. No test covers an old-format board file in TestRestoreRefusesAnIDAlreadyOnTheBoard
+- **2026-11-22 20:08 · Alexander Sacharov** — bughunt: done at 9f4f514cb - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since 6d2e096ec (diff only: internal/cli/archive.go, internal/cli/milestones_test.go; no new files); concurrency, error paths, input, permissions checked; files: core/milestone/write.go core/milestone/write_test.go core/refsync/catchup_test.go core/refsync/refsync.go core/release/notes/8TT890.md core/ticket/store.go internal/cli/archive.go internal/cli/milestones.go internal/cli/milestones_test.go internal/cli/root.go
+- **2026-11-22 20:16 · Alexander Sacharov** — decision (Alex, 22.11.): send back once more (--force on his word) - count old-format board files too in the ID-on-board check.
+- **2026-11-22 20:18 · Alexander Sacharov** — in-progress round 9 (bughunt 9f4f514cb): ID-on-board check counts old-format board files with the ID FileIdentity gives their name (idNamed condition dropped).

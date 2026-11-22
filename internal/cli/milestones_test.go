@@ -1365,3 +1365,36 @@ func TestRestoreRefusesAnUnreadableFileOfItsID(t *testing.T) {
 		t.Errorf("the logbook copy went: %v", err)
 	}
 }
+
+// An old-format board file (q4.md) is a file of the ID its name gives: a
+// restore of q4-<that ID>.md refuses, and the board file stays.
+func TestRestoreRefusesBesideAnOldFormatFileOfItsID(t *testing.T) {
+	dir := emptyStore(t)
+	_, id, _ := milestone.FileIdentity("q4")
+	board := filepath.Join(milestone.Dir(dir), "q4.md")
+	if err := os.MkdirAll(milestone.Dir(dir), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	live := []byte("---\ncolor: 3\n---\n")
+	if err := os.WriteFile(board, live, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	logDir := filepath.Join(dir, ".jaira", "logbook", "me-2026-01-01", "milestones")
+	if err := os.MkdirAll(logDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	logged := filepath.Join(logDir, "q4-"+id+".md")
+	if err := os.WriteFile(logged, []byte("---\ncolor: 45\nstatus: filed\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err := runCLI(t, dir, "restore", filepath.Base(logged))
+	if code, _ := classify(err); code != ExitNotFound || !strings.Contains(err.Error(), "q4.md") {
+		t.Fatalf("restore beside an old-format file of its ID: exit %d, want %d naming q4.md: %v", code, ExitNotFound, err)
+	}
+	if b, err := os.ReadFile(board); err != nil || string(b) != string(live) {
+		t.Errorf("the board's q4.md changed or went: %v\n%s", err, b)
+	}
+	if _, err := os.Stat(logged); err != nil {
+		t.Errorf("the logbook copy went: %v", err)
+	}
+}

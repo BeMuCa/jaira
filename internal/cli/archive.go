@@ -188,7 +188,9 @@ func checkMilestoneRestore(s *ticket.Store, name string) error {
 		if !ok || e.IsDir() {
 			continue
 		}
-		if _, other, idNamed := milestone.FileIdentity(b); idNamed && other == id {
+		// An old-format file (<name>.md) counts with the ID its name gives:
+		// Migrate would keep the restored copy and drop it.
+		if _, other, _ := milestone.FileIdentity(b); other == id {
 			return &codedError{code: ExitNotFound, reason: "not_archived",
 				message: fmt.Sprintf("%s is already on the board as %s", base, e.Name())}
 		}
