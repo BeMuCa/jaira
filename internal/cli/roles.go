@@ -449,7 +449,11 @@ other: --into already names the directory.
 
 A file you have edited is never replaced. It is left exactly as it is and
 reported, and the command exits 3 so a script can tell "installed" from
-"installed except the ones you changed"; --force replaces it. A file already
+"installed except the ones you changed"; --force replaces it. Left alone also
+means frozen: every later jaira skips it the same way, so no fix or
+improvement to that file reaches you until --force puts the built-in one back.
+Keep your own changes where a role reads them instead — spawn.sh, for one,
+calls the repository's .jaira/worktree-setup rather than being edited. A file already
 identical to the built-in one is not an edit — a second run reports it as
 unchanged and exits 0. Neither is a file identical to a version an earlier
 jaira shipped: it is replaced and reported as updated, without --force.`,
