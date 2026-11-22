@@ -1,0 +1,2 @@
+- Run `jaira update --roles` so a worker started from a Herdr App tab is recognised by jaira-cockpit again: its own subagents' reports (the bug hunt's among them) now reach it whole instead of as a `/cockpit report` link it stopped on.
+- A worker now leaves a `waiting: <what> since <time>` note (and a line to its parent) before it ends a turn to wait, so a hanging worker shows on the ticket.
