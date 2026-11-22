@@ -1,6 +1,8 @@
 package refsync_test
 
 import (
+	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
 	"slices"
@@ -174,8 +176,9 @@ func TestACatchUpKeepsAHandEdit(t *testing.T) {
 
 // A rename on the ref while this disk holds both names — the old copy fallen
 // behind and a file under the new name somebody edited: the catch-up does not
-// write the new name over that file. Which of two files is the milestone is
-// the fetch's call.
+// write the new name over that file, and the write it runs for refuses with
+// both names instead of starting from whichever file sorts first (8TT890).
+// Which of two files is the milestone is a person's call.
 func TestACatchUpLeavesATwinUnderTheNewName(t *testing.T) {
 	ada, _, _ := twoSides(t)
 	ms, err := milestone.Create(ada.store.Root, ada.store, ada.syncer, func([]*milestone.Milestone) (*milestone.Milestone, error) {
@@ -211,6 +214,20 @@ func TestACatchUpLeavesATwinUnderTheNewName(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(twin); string(b) != edited {
 		t.Fatalf("the catch-up wrote over the file under the new name:\n%s", b)
+	}
+	_, err = milestone.Edit(ada.store.Root, ada.store, ada.syncer, ms.ID, func(m *milestone.Milestone) error {
+		m.Add(tkB)
+		return nil
+	})
+	var tw *milestone.TwinFilesError
+	if !errors.As(err, &tw) || !strings.Contains(err.Error(), ms.FileName()) || !strings.Contains(err.Error(), "q5-"+ms.ID+".md") {
+		t.Fatalf("a write beside the twin: %v, want a refusal naming %s and q5-%s.md", err, ms.FileName(), ms.ID)
+	}
+	if b, _ := os.ReadFile(twin); string(b) != edited {
+		t.Errorf("the refused write changed the file under the new name:\n%s", b)
+	}
+	if b, _ := os.ReadFile(ms.Path(ada.store.Root)); !bytes.Equal(b, stale) {
+		t.Errorf("the refused write changed the old copy:\n%s", b)
 	}
 }
 

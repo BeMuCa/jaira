@@ -22,6 +22,7 @@ import (
 	coreidentity "github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/link"
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -126,32 +127,42 @@ func Execute(version string) int {
 	return report(err)
 }
 
+// classify maps an error to its exit code and machine-readable reason.
+func classify(err error) (code int, reason string) {
+	var ce *codedError
+	if errors.As(err, &ce) {
+		return ce.code, ce.reason
+	}
+	var twin *milestone.TwinFilesError
+	switch {
+	case errors.As(err, &twin):
+		// One milestone in two files: a refusal that names both, and the
+		// person picks one.
+		return ExitValidation, "milestone_twin_files"
+	case errors.Is(err, ticket.ErrNotFound), errors.Is(err, ticket.ErrAmbiguous):
+		return ExitNotFound, "not_found"
+	case errors.Is(err, ticket.ErrOnRefOnly):
+		// A refusal, not a failure: the ticket is real and one command
+		// away, so it gets the gate's exit code rather than the
+		// unexpected-error one.
+		return ExitValidation, "on_ref_only"
+	case errors.Is(err, ticket.ErrStale):
+		// The same kind of refusal: nothing is wrong with the ticket, the
+		// copy here is behind, and 'jaira pull' brings it up.
+		return ExitValidation, "stale_file"
+	case errors.Is(err, ticket.ErrNoStore):
+		return ExitError, "no_store"
+	case errors.Is(err, ticket.ErrUnsafeYAML):
+		return ExitValidation, "unsafe_yaml"
+	}
+	return ExitError, "error"
+}
+
 // report renders an error in the requested format and maps it to an exit code.
 func report(err error) int {
 	var ce *codedError
-	code := ExitError
-	reason := "error"
-	if errors.As(err, &ce) {
-		code, reason = ce.code, ce.reason
-	} else {
-		switch {
-		case errors.Is(err, ticket.ErrNotFound), errors.Is(err, ticket.ErrAmbiguous):
-			code, reason = ExitNotFound, "not_found"
-		case errors.Is(err, ticket.ErrOnRefOnly):
-			// A refusal, not a failure: the ticket is real and one command
-			// away, so it gets the gate's exit code rather than the
-			// unexpected-error one.
-			code, reason = ExitValidation, "on_ref_only"
-		case errors.Is(err, ticket.ErrStale):
-			// The same kind of refusal: nothing is wrong with the ticket, the
-			// copy here is behind, and 'jaira pull' brings it up.
-			code, reason = ExitValidation, "stale_file"
-		case errors.Is(err, ticket.ErrNoStore):
-			code, reason = ExitError, "no_store"
-		case errors.Is(err, ticket.ErrUnsafeYAML):
-			code, reason = ExitValidation, "unsafe_yaml"
-		}
-	}
+	errors.As(err, &ce)
+	code, reason := classify(err)
 
 	if g.jsonOut {
 		// Structured errors on stderr so an agent never has to regex a sentence
