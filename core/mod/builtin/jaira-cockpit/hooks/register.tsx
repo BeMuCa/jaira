@@ -1081,9 +1081,8 @@ async function rephrase($: EngineInterface, id: string, texts: readonly string[]
   if (language === undefined) return
   const key = REPHRASED_PREFIX + id
   const kept = (await $.store.get(key)) as { language: string; source: string[]; shown: string[] } | undefined
-  const fits = (k: typeof kept): k is NonNullable<typeof kept> =>
-    k !== undefined && k.language === language && k.source.length === texts.length && k.source.every((x, i) => x === texts[i])
-  let shown = fits(kept) ? kept.shown : undefined
+  const same = kept?.language === language && kept.source.length === texts.length && kept.source.every((x, i) => x === texts[i])
+  let shown = same ? kept.shown : undefined
   if (shown === undefined) {
     // One call at a time per ticket and notes: a second press while the
     // first waits sends nothing more.

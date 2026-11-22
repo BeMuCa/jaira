@@ -148,15 +148,9 @@ func (s *settingsScreen) stepChatModel() string {
 	if s.root == "" {
 		return settingsActionNone
 	}
-	choices := settings.ChatModelChoices
 	// Read again rather than trusting chatBoard, for the same reason editKey
 	// reads settings.json again: the file may have changed since S opened.
-	cur, next := settings.BoardChatModel(s.root), choices[0]
-	for i, c := range choices {
-		if c == cur {
-			next = choices[(i+1)%len(choices)]
-		}
-	}
+	next := stepAfter(settings.ChatModelChoices, settings.BoardChatModel(s.root))
 	if err := settings.SetBoardChatModel(s.root, next); err != nil {
 		s.chatModelErr = err.Error()
 		return settingsActionNone
@@ -167,19 +161,24 @@ func (s *settingsScreen) stepChatModel() string {
 	return settingsActionNone
 }
 
+// stepAfter is the choice after cur, wrapping round; a cur that is none of
+// them steps to the first.
+func stepAfter(choices []string, cur string) string {
+	for i, c := range choices {
+		if c == cur {
+			return choices[(i+1)%len(choices)]
+		}
+	}
+	return choices[0]
+}
+
 // stepLanguage moves the notes language on to the next of its choices and
 // saves at once, reading the file again first for the same reason editKey
 // does. A language written by hand that is none of the choices steps to none,
 // the first, as the chat model does.
 func (s *settingsScreen) stepLanguage() string {
 	cur := settings.Load()
-	choices := settings.LanguageChoices
-	now, next := strings.TrimSpace(cur.Language), choices[0]
-	for i, c := range choices {
-		if c == now {
-			next = choices[(i+1)%len(choices)]
-		}
-	}
+	next := stepAfter(settings.LanguageChoices, strings.TrimSpace(cur.Language))
 	cur.Language = next
 	if err := settings.Save(cur); err != nil {
 		s.languageErr = err.Error()

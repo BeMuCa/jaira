@@ -1,7 +1,7 @@
 ---
 id: 01M81VFQRXRFE870G9010GMYQB
 title: "Das Verdict zeigt jede Notiz mit Ampel-Marker und in der Sprache der Person, verständlich umformuliert"
-status: in-progress
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,10 +24,15 @@ related: []
 follows: 01M81G681S9YWPBZWQ7HAJ41SC
 commits: []
 created-at: 2026-11-22T14:45:11Z
-updated-at: 2026-11-22T14:59:38Z
+updated-at: 2026-11-22T15:01:30Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3863384
 claimed-at: 2026-11-22T14:47:40Z
+outcome-what: "Verdict- und Give-back-Pane zeigen jede Review-Notiz mit 🔴/🟡/⚪/🔵 (Klasse aus gapItems); mit \"language\" in ~/.jaira/settings.json (auch im S-Fenster: Notes language) schreibt haiku die Notizen kurz in diese Sprache um, gecacht pro Ticket+Notizen in $.store; Ticket bleibt im Original."
+outcome-why: "Alex liest langsam und auf Russisch; er musste jede englische Notiz lesen, um zu sehen, ob sie blockiert."
+outcome-resolves: "DoD 1-4, 6-8; DoD 5 (Alex sieht es) offen. Geprüft: Nebenläufigkeit (ein Aufruf pro Ticket+Notizen, Set rephrasing), Fehlerpfade (Modell wirft/antwortet nicht/falsche Form -> Original), ungewöhnliche Eingabe (leere/kaputte settings, falsche Anzahl, leere Strings), Rechte (Sprache nur aus eigener settings.json, Notiztext nur zur Anzeige)."
+review-summary: none
+review-gaps: "folded the two choice-stepping loops (stepChatModel, stepLanguage) into stepAfter in internal/tui/settings.go; replaced the type-guard closure in rephrase with one boolean. Left: rephrase's delete+set+prune mirrors keep() in register.tsx but keys and limits differ, so no shared helper; Explain pane's own [label] marks untouched (not this change)."
 ---
 
 # Das Verdict zeigt jede Notiz mit Ampel-Marker und in der Sprache der Person, verständlich umformuliert
@@ -66,3 +71,4 @@ claimed-at: 2026-11-22T14:47:40Z
 - **2026-11-22 14:47 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/25712.sock
 - **2026-11-22 14:49 · Alexander Sacharov** — decisions (worker, settled from code, no open question left): (1) Klasse pro Notiz kommt aus gapItems (board.ts), wie im Give-back-Fenster - Verdict und Give back zeigen dieselbe Klasse; Marker 🔴 blocker, 🟡 edge, ⚪ limit, 🔵 elsewhere ersetzen die Text-Labels [blocker]/[not this ticket]/[known limit]. (2) Einstellung heisst "language" in ~/.jaira/settings.json, frei als Sprachname (an das Modell gegeben); S-Fenster steppt durch none, Deutsch, English, Русский, andere von Hand. (3) Modell: haiku über $.model.complete wie der Thread-Classifier - billiger als chat-model, eine Übersetzung braucht kein sonnet. (4) Cache in $.store je Ticket (Schlüssel rephrased:<id>), gültig solange Sprache und Notizentexte gleich sind; höchstens 50 Tickets. (5) Geschrieben wird immer der Originaltext (decisionLines), nur die Anzeige wird umformuliert.
 - **2026-11-22 14:59 · Alexander Sacharov** — known limits (in-progress): (a) 40+ lange Notizen können maxTokens 4000 sprengen -> Antwort passt nicht, Originale werden gezeigt; (b) der Notiztext geht ans Modell - eine Notiz, die das Modell anweist, kann nur die Anzeige verfälschen, nie das Ticket (Anzahl wird geprüft); (c) zwei gleichlautende Notizen teilen eine Übersetzung (Map nach Text). Verdict-Pane listet Notizen jetzt nach Klasse sortiert (blocker zuerst), Give back in Reihenfolge der gaps (Index = Toggle).
+- **2026-11-22 15:00 · Alexander Sacharov** — critique (pass 1): none. Left standing: Explain pane keeps its coloured [label] marks - its text comes from the Explain chat, not this ticket's DoD; haiku instead of chat-model per decision note (3); cache keyed by handle only, language and source compared, so a handle collision costs one more call, never a wrong text.
