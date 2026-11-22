@@ -96,6 +96,17 @@ export function questionOf(text: string): string | undefined {
   return q === '' || NO_QUESTION.test(q) ? undefined : clip(q, 100)
 }
 
+// The one line above the status line that says what waits for a person
+// (see the Report section of jaira-worker): "needs you: <what>". It is all a
+// report carries besides the status line, so a digest that dropped it would
+// drop the only thing the teamlead has to act on.
+const NEEDS_YOU = /^\s*needs you:\s*(\S.*?)\s*$/im
+
+export function needsYouOf(text: string): string | undefined {
+  const m = NEEDS_YOU.exec(text)
+  return m ? clip(m[1]!, 140) : undefined
+}
+
 // The status line a worker or dispatcher ends its report with (see the
 // Report section of jaira-worker and jaira-dispatcher):
 //
@@ -176,6 +187,8 @@ export function digest(text: string): { ticket: string; line: string } | undefin
   // and once here: a known limit, chosen over a dedupe that lost questions.
   const question = questionOf(text)
   if (question !== undefined) parts.push(`${words.question}: ${question}`)
+  const needs = needsYouOf(text)
+  if (needs !== undefined) parts.push(`${words.needsYou}: ${needs}`)
   const line = parts.filter(p => p !== undefined).join(' · ')
   return { ticket, line: `${words.marker} ${line} — ${words.fullReport}: /cockpit report ${ticket}` }
 }
