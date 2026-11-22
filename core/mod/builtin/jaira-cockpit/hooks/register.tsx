@@ -3,10 +3,10 @@ import type { ElementTable, EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
   branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
-  explanationNotes, explanationOf, huntOf, isOlder, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
+  explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf,
-  createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, nextChoice, standOf,
-  type Action, type Agent, type GapItem, type Hunt, type NoteClass, type Option, type Waiting,
+  createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, languageOf, nextChoice, NOTE_MARK, rephrasedOf, rephrasePrompt, standOf,
+  type Action, type Agent, type GapItem, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest, reportLine } from './digest.ts'
@@ -55,6 +55,7 @@ const messageAtom = atom({ plugin: 'jaira-cockpit', key: 'message' } as const, n
 const explainedAtom = atom({ plugin: 'jaira-cockpit', key: 'explained' } as const, {})
 const decidedAtom = atom({ plugin: 'jaira-cockpit', key: 'decided' } as const, {})
 const verdictAtom = atom({ plugin: 'jaira-cockpit', key: 'verdictTicket' } as const, null)
+const rephrasedAtom = atom({ plugin: 'jaira-cockpit', key: 'rephrased' } as const, {})
 const huntsAtom = atom({ plugin: 'jaira-cockpit', key: 'hunts' } as const, {})
 const explainingAtom = atom({ plugin: 'jaira-cockpit', key: 'explaining' } as const, null)
 const answeringAtom = atom({ plugin: 'jaira-cockpit', key: 'answering' } as const, null)
@@ -82,6 +83,8 @@ const MESSAGE = 'cockpit-message'
 const GIVE_BACK = 'cockpit-give-back'
 const EXPLANATION = 'cockpit-explanation'
 const VERDICT = 'cockpit-verdict'
+// The Verdict pane's light in the theme's colours.
+const LIGHT_COLOUR = { green: 'success', yellow: 'warning', red: 'error' } as const
 const ANSWER = 'cockpit-answer'
 const OVERVIEW = 'cockpit-overview'
 const UPGRADE = 'cockpit-upgrade'
@@ -380,7 +383,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   const explained: Record<string, { text: string; decided?: string }> = {}
   // The newest bug hunt of each, as jaira works it out against the checkout
   // the ticket's code is in: its own worktree, where there is one.
-  const hunts: Record<string, Hunt> = {}
+  const hunts: Record<string, HuntState> = {}
   const trees = shownIds.length > 0 ? await run($, ['git', 'worktree', 'list', '--porcelain'], board.dir) : undefined
   for (const w of shownIds) {
     const shown = await run($, ['jaira', 'show', w.id, '--json'], board.dir)
@@ -397,7 +400,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
       const held = await run($, ['git', 'merge-base', '--is-ancestor', hunt.at, 'HEAD'], dir)
       if (held?.exitCode !== 0) continue
     }
-    hunts[w.id] = hunt.state
+    hunts[w.id] = hunt
   }
   await update($, explainedAtom, () => explained)
   await update($, huntsAtom, () => hunts)
@@ -581,8 +584,11 @@ function hasVerdict(w: Waiting): boolean {
 async function showVerdict($: EngineInterface, id: string): Promise<void> {
   await update($, verdictAtom, () => id)
   const opened = await $.ui.open({ id: VERDICT, title: t.verdictOf(id), focus: true, closeOnEscape: true })
-  if (opened.isPlaced) return
   const w = (await read($, boardAtom))?.waiting.find(x => x.id === id)
+  if (opened.isPlaced) {
+    if (w !== undefined) await rephrase($, id, gapItems(w.gaps).map(x => x.text))
+    return
+  }
   if (w !== undefined) $.ui.toast(`${t.verdictOf(id)}: ${w.verdict || w.question}`)
 }
 
@@ -1050,7 +1056,62 @@ async function askWhatIsMissing($: EngineInterface, w: Waiting, known?: GapItem[
   const items = known ?? await reviewItems($, w)
   await update($, choosingAtom, () => (items.length === 0 ? null : { id: w.id, items }))
   const opened = await $.ui.open({ id: GIVE_BACK, title: `${t.giveBack} ${w.id}`, focus: true, closeOnEscape: true })
-  if (!opened.isPlaced) await fail($, `${t.giveBack} ${w.id}`, t.noRoom)
+  if (!opened.isPlaced) return fail($, `${t.giveBack} ${w.id}`, t.noRoom)
+  await rephrase($, w.id, items.map(x => x.text))
+}
+
+// ── review notes in the person's language ────────────────────────────────
+
+// The Verdict pane's order: what stops the ticket first.
+const CLASS_ORDER: readonly NoteClass[] = ['blocker', 'edge', 'limit', 'elsewhere']
+const REPHRASED_PREFIX = 'rephrased:'
+const REPHRASED_TICKETS = 50
+// The newest rephrase of each ticket: an older one still waiting for the
+// model shows nothing once it is answered. No call is held back for one
+// that waits - the newest press wins, a double press may ask twice
+// (decision 22.11.2026: a rule that skips calls kept growing edges).
+const newest = new Map<string, number>()
+let rephrases = 0
+
+// The review notes of a ticket in the language the person set in their own
+// settings.json, short and plain, for the Verdict and Give back panes to show
+// instead of the ticket's words. The ticket is never written: what Give back
+// and Accept write onto it stays the original text. One call of the cheap
+// model per ticket and notes: the answer is kept in the store for as long as
+// the language and the notes stay the same. No language set, a failed call
+// or an answer that does not fit: nothing is shown but the original, a
+// rewrite shown before included - the language may have been taken away.
+async function rephrase($: EngineInterface, id: string, texts: readonly string[]): Promise<void> {
+  const mine = ++rephrases
+  newest.set(id, mine)
+  const language = texts.length === 0 ? undefined : languageOf(await settingsJson($))
+  const show = (map?: Record<string, string>) =>
+    newest.get(id) !== mine ? undefined : update($, rephrasedAtom, ({ [id]: _, ...rest }) => (map === undefined ? rest : { ...rest, [id]: map }))
+  if (language === undefined) return show()
+  const shown = await rephrased($, REPHRASED_PREFIX + id, language, texts)
+  await show(shown === undefined ? undefined : Object.fromEntries(texts.map((x, i) => [x, shown[i]!])))
+}
+
+// The notes in that language: kept in the store, or asked of the cheap model
+// and kept; undefined where the call fails or its answer does not fit.
+async function rephrased($: EngineInterface, key: string, language: string, texts: readonly string[]): Promise<string[] | undefined> {
+  const kept = (await $.store.get(key)) as { language: string; source: string[]; shown: string[] } | undefined
+  if (kept?.language === language && kept.source.length === texts.length && kept.source.every((x, i) => x === texts[i])) return kept.shown
+  let shown: string[] | undefined
+  try {
+    const result = await $.model.complete({ model: 'haiku', prompt: rephrasePrompt(language, texts), maxTokens: 4000 })
+    shown = result.isAnswered ? rephrasedOf(result.text, texts.length) : undefined
+  } catch {
+    return undefined
+  }
+  if (shown === undefined) return undefined
+  // Delete first so the key moves to the end of the store's insertion order,
+  // as keep() does; the tickets read longest ago drop out.
+  await $.store.delete(key)
+  await $.store.set(key, { language, source: [...texts], shown })
+  const keys = (await $.store.keys()).filter(k => k.startsWith(REPHRASED_PREFIX))
+  for (const old of keys.slice(0, Math.max(0, keys.length - REPHRASED_TICKETS))) await $.store.delete(old)
+  return shown
 }
 
 // The review's notes, each with what it starts as: its class, or how it was
@@ -1609,7 +1670,7 @@ export const register: Register = (on, options) => {
           <Box key={`row-${w.id}`} flexDirection="column">
             <Box flexDirection="row">
               <Text wrap="truncate-end">
-                <Text bold>{w.id}</Text>{SEP}{w.lane}{SEP}{marks(w, hunts[w.id])}{' '}
+                <Text bold>{w.id}</Text>{SEP}{w.lane}{SEP}{marks(w, hunts[w.id]?.state)}{' '}
               </Text>
               {/* Told apart by colour before they are read: the theme's own, so a
                   light terminal reads them too; the focus inverts them as any.
@@ -1714,8 +1775,7 @@ export const register: Register = (on, options) => {
     const toggle = (n: number) =>
       void update($, choosingAtom, c => (c === null || c.id !== w.id ? c : { ...c, items: c.items.map((x, i) => (i === n ? { ...x, choice: nextChoice(x.choice) } : x)) }))
     const choiceColour = (c: GapItem['choice']) => (c === 'now' ? 'error' : c === 'later' ? 'suggestion' : 'success')
-    const noteMark = (cls: NoteClass) =>
-      cls === 'blocker' ? <Text bold color="error">[blocker] </Text> : cls === 'elsewhere' ? <Text color="suggestion">[not this ticket] </Text> : cls === 'limit' ? <Text dimColor>[known limit] </Text> : null
+    const said = (await read($, rephrasedAtom))[w.id] ?? {}
     // A blocker not marked fix now is accepted only with a reason: the
     // Accept button gives way to a field that will not take an empty one.
     const blockerKept = items.some(x => x.cls === 'blocker' && x.choice !== 'now')
@@ -1733,12 +1793,11 @@ export const register: Register = (on, options) => {
         <Text>{w.id} · {w.lane}{w.verdict !== '' ? ` · ${w.verdict}` : ''}</Text>
         {items.length > 0 ? <Box marginTop={1}><Text bold>{t.gapsHeading}</Text></Box> : null}
         {items.map((x, i) => (
-          <Button key={`gap-${w.id}-${i}`} plain label={`${t.choice[x.choice]} ${x.text}`} {...(i === 0 ? { autoFocus: true as const } : {})} onPress={() => toggle(i)}>
+          <Button key={`gap-${w.id}-${i}`} plain label={`${t.choice[x.choice]} ${NOTE_MARK[x.cls]} ${said[x.text] ?? x.text}`} {...(i === 0 ? { autoFocus: true as const } : {})} onPress={() => toggle(i)}>
             <Text wrap="wrap">
               <Text bold color={choiceColour(x.choice)}>{t.choice[x.choice]}</Text>
-              {' '}
-              {noteMark(x.cls)}
-              {x.text}
+              {` ${NOTE_MARK[x.cls]} `}
+              {said[x.text] ?? x.text}
               {x.earlier !== undefined ? <Text dimColor>{` ${t.decidedBefore}`}</Text> : null}
             </Text>
           </Button>
@@ -1939,16 +1998,26 @@ export const register: Register = (on, options) => {
     const { Box, Button, Text } = $.ui.resolve(e)
     const w = await waitingTicket($, id)
     if (w === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    // The light first: whether to accept, at a glance, and the reason it names.
+    const light = lightOf(w, (await read($, huntsAtom))[w.id])
+    const first = light.reasons[0]
+    // Each note with its class mark, classed as the Give back pane classes
+    // it, in the person's language once the cheap model has answered.
+    const notes = gapItems(w.gaps, (await read($, explainedAtom))[w.id]?.text).sort((a, b) => CLASS_ORDER.indexOf(a.cls) - CLASS_ORDER.indexOf(b.cls))
+    const said = (await read($, rephrasedAtom))[w.id] ?? {}
     return (
       <Box flexDirection="column">
+        <Text key="light" wrap="wrap">
+          <Text bold color={LIGHT_COLOUR[light.color]}>● {t.light[light.color]}</Text>
+          : {first === undefined ? t.lightAccept : t.lightReason(first)}{light.reasons.length > 1 ? t.lightMore(light.reasons.length - 1) : ''}
+        </Text>
         {about(Text, w)}
         <Box marginTop={1}><Text dimColor wrap="wrap">{w.id}{SEP}{w.lane}{w.reviewedIn !== undefined ? `${SEP}${t.reviewedIn(w.reviewedIn)}` : ''}</Text></Box>
         {w.question !== '' ? <Text color="warning" wrap="wrap">? {w.question}</Text> : null}
         <Box marginTop={1}><Text wrap="wrap"><Text bold>{t.verdictHeading}</Text> {w.verdict !== '' ? w.verdict : t.noVerdict}</Text></Box>
         {w.blockers.length + w.notes.length > 0 ? <Box marginTop={1}><Text bold>{t.notesHeading}</Text></Box> : null}
         {!w.findingsKnown ? <Box marginTop={1}><Text dimColor wrap="wrap">{t.notesNotKept}</Text></Box> : null}
-        {w.blockers.map((n, i) => <Text key={`blocker-${i}`} wrap="wrap"><Text bold color="error">[blocker]</Text> {n}</Text>)}
-        {w.notes.map((n, i) => <Text key={`note-${i}`} wrap="wrap">· {n}</Text>)}
+        {notes.map((n, i) => <Text key={`note-${i}`} wrap="wrap">{NOTE_MARK[n.cls]} {said[n.text] ?? n.text}</Text>)}
         <Button key="verdict-close" label={t.close} onPress={() => void $.ui.close({ id: VERDICT })} />
       </Box>
     )
