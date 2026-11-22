@@ -130,8 +130,10 @@ cockpit stops reading.
    passes `--force` for, the decision note naming why. jaira records that
    forced send-back as a decision (`back-by: person`, the count at 1), so
    the loop gets its rounds again. Where the third return already sits in
-   `in-progress`, no move is needed: the in-progress worker reads your
-   decision note, written after the send-back, as the decider's word.
+   `in-progress`, there is no send-back to force: give the loop its rounds
+   back with `jaira set <id> back-count=0` beside the decision note, or the
+   in-progress worker stops again on count 3 and the lane's next send-back
+   is refused once more.
 2. **Take it to the person when it is theirs** — what the product should do,
    which of two designs, whether the ticket is worth doing at all. Move the
    ticket into `human` yourself, `jaira move <id> --to human --question

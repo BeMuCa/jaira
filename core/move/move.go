@@ -204,8 +204,8 @@ func recordBack(t *ticket.Ticket, lanes *lane.Set, from string, byPerson bool) e
 // overridesMaxRounds reports a send-back forced past a loop lane's
 // max-rounds. Passing --force there is the decision the refusal asks for —
 // the teamlead's or a person's — so it is recorded as one, like a person's
-// send-back: the loop gets its rounds again instead of being refused, and
-// the next worker reading back-by: lane, count 4 stopping once more.
+// send-back: the loop gets its rounds again, instead of the next worker
+// reading back-by: lane, count 4 and stopping once more.
 func overridesMaxRounds(req Request, vs []gate.Violation) bool {
 	if !req.Force {
 		return false

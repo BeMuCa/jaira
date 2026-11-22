@@ -166,7 +166,7 @@ func TestInProgressPromptHandsTheThirdReturnToTheTeamleadFirst(t *testing.T) {
 		"leave\n  the ticket in this lane, set the question",
 		`jaira set <id> question="testing sent this back three times`,
 		"No parent session, or it cannot be reached",
-		"A `decision (teamlead <date>):` note written after the newest send-back is",
+		"sets `back-count` back to 0",
 		`jaira move <id> --to human --question "testing sent this back three times`,
 	} {
 		if !strings.Contains(prompt, want) {
