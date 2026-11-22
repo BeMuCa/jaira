@@ -502,7 +502,25 @@ export function mainRepoOf(gitCommonDir: string, fallback: string): string {
 // detached tree — the ticket's own in the middle of a rebase — ranks after
 // <prefix>/<id> and before any branch nested deeper than that.
 export function worktreeFor(porcelain: string, id: string, fallback: string): string {
-  return ticketsTree(worktreesOf(porcelain), id)?.path ?? fallback
+  return ownTreeFor(porcelain, id) ?? fallback
+}
+
+// The ticket's own worktree, undefined where it has none: a copy pulled into
+// any other tree is there only for the press, a copy here belongs on the branch.
+export function ownTreeFor(porcelain: string, id: string): string | undefined {
+  return ticketsTree(worktreesOf(porcelain), id)?.path
+}
+
+// What the disk a press writes from holds of the ticket, off `jaira show
+// --json` there: no file (on its ref alone), a file older than the ref, or a
+// file a write can go to. Either of the first two refuses every write — "on
+// its ref and not on your disk", a stale file — until `jaira pull` brings it.
+// path is the file, once there is one. Unreadable output is taken as current:
+// the write itself then says what is wrong.
+export function diskOf(showJson: string): { state: 'ref-only' | 'behind' | 'current'; path: string } {
+  const t = parse<{ 'on-ref-only'?: boolean; 'behind-ref'?: boolean; path?: string }>(withoutWarnings(showJson))
+  const state = t?.['on-ref-only'] ? 'ref-only' : t?.['behind-ref'] ? 'behind' : 'current'
+  return { state, path: t?.path ?? '' }
 }
 
 function ticketsTree(trees: Worktree[], id: string): Worktree | undefined {
@@ -894,4 +912,47 @@ export function huntOf(briefJson: string): HuntState | undefined {
   if (brief.bughunt === null) return { state: 'fail', at: '' }
   const state = brief.bughunt?.state ?? ''
   return HUNTS.has(state) ? { state: state as Hunt, at: brief.bughunt?.at ?? '' } : undefined
+}
+
+// ── review notes as a person reads them ─────────────────────────────────
+
+// The mark each note opens with, the one the teamlead's signoff reports use:
+// a blocker red, a small edge yellow, a known limit white, one that belongs
+// to another ticket blue. It says the class before a word is read.
+export const NOTE_MARK: Record<NoteClass, string> = { blocker: '🔴', edge: '🟡', limit: '⚪', elsewhere: '🔵' }
+
+// The language the person reads the notes in, from their own settings.json
+// ("language"); undefined where it names none, or the file does not parse:
+// then the notes stay as the ticket has them and nothing is sent anywhere.
+export function languageOf(settingsJson: string | undefined): string | undefined {
+  const s = parse<{ language?: unknown }>(settingsJson ?? '')
+  const lang = typeof s?.language === 'string' ? oneLine(s.language) : ''
+  return lang === '' ? undefined : lang
+}
+
+// The cheap model's prompt: every note, numbered, back as a JSON array of as
+// many strings in the same order. The class prefix goes - the mark says it.
+export function rephrasePrompt(language: string, notes: readonly string[]): string {
+  return [
+    `Rewrite each review note below in ${language}, for a person who reads slowly and was not there.`,
+    'Each note: one or two short, plain sentences saying what is wrong or missing and what it means.',
+    'Drop a leading "blocker:", "note:" or "pre-existing:" - a mark in front of the note already says it.',
+    'Keep code identifiers, file paths, commands and ticket handles exactly as written. Add nothing the note does not say.',
+    `Answer with a JSON array of exactly ${notes.length} strings, in the same order, and nothing else.`,
+    '',
+    JSON.stringify(notes),
+  ].join('\n')
+}
+
+// The model's answer as one shown text per note, or undefined when it is no
+// array of exactly that many non-empty strings: a note shown wrong, or two
+// notes swapped, is worse than the original text.
+export function rephrasedOf(answer: string, n: number): string[] | undefined {
+  const start = answer.indexOf('[')
+  const end = answer.lastIndexOf(']')
+  if (start < 0 || end <= start) return undefined
+  const out = parse<unknown>(answer.slice(start, end + 1))
+  if (!Array.isArray(out) || out.length !== n) return undefined
+  if (!out.every(x => typeof x === 'string' && oneLine(x) !== '')) return undefined
+  return out.map(x => oneLine(x as string))
 }
