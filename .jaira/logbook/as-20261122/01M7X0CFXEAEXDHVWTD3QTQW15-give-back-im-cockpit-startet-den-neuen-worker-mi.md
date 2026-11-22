@@ -1,7 +1,7 @@
 ---
 id: 01M7X0CFXEAEXDHVWTD3QTQW15
 title: "Give back im Cockpit startet den neuen Worker mit Teamlead, im Worktree mit dem Code und nie doppelt"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,41 +22,48 @@ related:
   - 01M7WX00JXRK922S029Q76ERHH
   - 01M6M878R42NEHQ7HDP0R80Z4G
   - 01M5MNWDKYJGC78B3EKMX2TGXG
-commits: []
+commits:
+  - 05a8d99fc397376a94cb8c2a7672e5f2b2675817
+  - e10ab3abb5ba59155331dc395c800ff6eb2b6bbc
+  - 423737a1bb3f0d4fdfa9ad4460f1ae3000ec086d
+  - 4bf0f1d289b6fad8d2332982d65c7056589330f8
+  - ce1cf0daf2efbb9f3b3113dbb4de128655d38da5
+  - fc7a4d489d9061d79da66e295d29d483af7f20c2
+  - ee89033dafe21527e1a8a06dda202a34d8ae3f18
+  - 721621959c4dde94828eecda0e83efd48f1566e4
+  - 0c6e069ab77196b7f00854c072f868b7890e7d23
+  - 34237f1c997da2013a8b417072629f148bd80a93
+  - f79b4908761266fd1b01cee329a865f20788ead4
+  - 58a9c4390a01e5c2a43fcce8b20b832052af64d8
+  - 153475281c47fc45c95f0eb5e4eea9cb4b434dde
 created-at: 2026-11-20T17:34:35Z
-updated-at: 2026-11-22T21:12:39Z
+updated-at: 2026-11-22T21:54:28Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-2387063
-claimed-at: 2026-11-22T20:23:39Z
+claimed-by: DESKTOP-RFTCH11-3483626
+claimed-at: 2026-11-22T21:16:24Z
 outcome-what: "Give back im Cockpit: neuer Worker berichtet an die parent session des Tickets (sonst an die Cockpit-Session, sonst eigener Tab), startet auf dem Branch mit dem neuesten Commit der ID (vorhandener Worktree oder spawn.sh --branch), ein arbeitender Worker bekommt die Entscheidung statt ersetzt zu werden; Accept/Give back/Decide schicken '<ID>: ... (Person, Cockpit)' in die Session, Accept auch als Note. spawn.sh: --branch, vorhandener <prefix>/<slug> wird wieder ausgecheckt, Setup-Fehler loescht nur selbst angelegte Branches, Prompt mit parent nennt SendMessage statt AskUserQuestion."
 outcome-why: "Ein Teamlead eines anderen Projekts sah am 20.11. Worker, die per AskUserQuestion fragten, in leeren feat/<id>-Worktrees starteten und dreifach liefen."
 outcome-resolves: QTQW15 DoD 1-6
-review-summary: "Give back im Cockpit startet einen neuen Worker jetzt am richtigen Ort und mit Teamlead: ticketBranch/carrierFor (board.ts, register.tsx) nimmt den eigenen Worktree des Tickets, sonst genau einen <prefix>/<slug>-Branch, sonst genau einen Branch mit dem neuesten eigenen Commit fix(<ID>); bei zwei Kandidaten startet nichts und das Band nennt sie. spawn.sh bekommt --branch, nimmt einen verwaisten <prefix>/<slug> wieder auf, loescht bei Setup-Fehler keinen fremden Branch und sperrt per flock je Ticket+Lane einen zweiten parallelen Lauf. Der neue Worker bekommt --parent aus der neuesten 'parent session:'-Note (sonst die Cockpit-Session, sonst keinen) und im Prompt das Verbot von AskUserQuestion. Ein arbeitender Worker wird nie ersetzt, sondern bekommt die Entscheidung. Accept/Give back/Decide schicken der eigenen Session eine Zeile '<ID>: ... (Person, Cockpit)', Accept schreibt sie zusaetzlich als Note."
+review-summary: "Give back im Cockpit sucht jetzt den Branch des Tickets in fester Reihenfolge (carrierFor in board.ts): eigener Worktree, sonst genau ein <prefix>/<slug>-Branch, sonst genau ein Branch, der den neuesten eigenen Commit hält - eigener Commit heisst jetzt nur noch Scope exakt (<ID>). Bei mehreren Kandidaten startet weder Give back einen Worker noch Accept einen PR; das Band nennt die Branches. Der neue Worker startet im Worktree dieses Branches (spawn.sh --no-worktree bzw. neu --branch <b>), mit der parent session aus der neuesten 'parent session:'-Note als --parent, sonst dieser Session, sonst --no-parent; der Start-Prompt verbietet AskUserQuestion. Ein Worker, dessen Tab 'working' meldet, wird nie ersetzt, er bekommt die Entscheidung eingetippt. spawn.sh hält pro Ticket+Lane einen flock (fd 8), so dass ein zweiter paralleler Spawn vor dem Tab abbricht; ein vorhandener Branch wird wieder ausgecheckt statt abgelehnt und bei Setup-Fehler nicht mehr gelöscht. Accept/Give back/Decide schicken eine Zeile '<ID>: ... (Person, Cockpit)' in die eigene Session, Accept schreibt zusätzlich eine Note."
 round: 12
 back-from: signoff
 back-by: person
 back-count: 1
 review-gaps: |-
-  note: Accept nimmt bei mehreren Holdern weiter ambiguous[0] (git-Reihenfolge, alphabetisch) - bei einem darauf gestapelten Folge-Branch nennt Accept dessen Branch fuer den PR; bewusst "as before" (register.tsx:752), Give back verweigert korrekt
-  note: workPlace (register.tsx:1420) leitet den nie-Traeger-Branch aus base per replace(/^[^/]+\//) ab - ohne origin-Remote und mit Hauptcheckout auf z.B. feat/x wird daraus "x", der Hauptcheckout-Branch zaehlt dann als Holder; Fix: Prefix nur bei originDefault abschneiden
-  note: commitNaming (board.ts:654) erkennt nur Typen [a-z]+ - Fix(<ID>) oder feat2(<ID>) zaehlt nicht als eigener Commit; reicht fuer die Konvention dieses Repos
-  note: holdersOf (board.ts:51) streicht jeden Branch, der auf /<anderer gelisteter Branch> endet - ein lokaler Branch namens wie der Slug selbst wuerde feat/<slug> verdecken; sehr selten
-test-verdict: "pass: round 9b delta - one text in texts.ts and its three test lines; mod 393/393"
-hunt-verdict: "pass: bughunt done at 58a9c4390 - 0 change, 0 pre-existing"
-review-verdict: "accept: alle 9 DoD-Punkte sind im Diff belegt (carrierFor ohne Raten, spawn.sh-Claim, parent-Kette, Zeilen an die Session); go test ./core/role 24s ok, claude plugin test 393/393; nur Notes, kein Blocker"
-review-round: 11
+  note: pre-existing: spawn.sh prüft --parent uds:<pfad> nur mit [ -e ] (spawn.sh:151) - eine liegengebliebene Socket-Datei einer toten Session gilt als lebendig, der Worker meldet sich ins Leere; Fix: Socket per Verbindungsversuch prüfen
+  note: commitNaming (board.ts:652) erkennt nur Typen aus Kleinbuchstaben ([a-z]+) - Fix(<ID>): oder ein Typ mit Bindestrich zählt nicht als eigener Commit; [A-Za-z-]+ wäre robuster
+  note: workPlace (register.tsx:275) leitet den lokalen Default-Branch durch Abschneiden des ersten Pfadsegments ab - ohne origin und mit dem Hauptcheckout auf z.B. feat/x wird daraus "x"; nur origin-Default sollte geschnitten werden
+  note: Known limit laut DoD 6: die Teamlead-Zeile erreicht nur die Session des Cockpits; ein Teamlead in einer anderen Session sieht nur die Note
+test-verdict: "pass: round 10 delta - mod 394/394, go test core/role green; DoD 10 by 'several branches hold its own commit: no pull request, the press names them'"
+hunt-verdict: "pass: bughunt done at 153475281 - 0 change, 0 pre-existing"
+review-verdict: "accept: alle 10 DoD-Punkte durch Code und Tests belegt (claude plugin test: 394 pass; go test ./core/role ok); keine Blocker, vier Notes"
+review-round: 12
 review-verdict-gaps: |-
-  note: Accept nimmt bei mehreren Holdern weiter ambiguous[0] (git-Reihenfolge, alphabetisch) - bei einem darauf gestapelten Folge-Branch nennt Accept dessen Branch fuer den PR; bewusst "as before" (register.tsx:752), Give back verweigert korrekt
-  note: workPlace (register.tsx:1420) leitet den nie-Traeger-Branch aus base per replace(/^[^/]+\//) ab - ohne origin-Remote und mit Hauptcheckout auf z.B. feat/x wird daraus "x", der Hauptcheckout-Branch zaehlt dann als Holder; Fix: Prefix nur bei originDefault abschneiden
-  note: commitNaming (board.ts:654) erkennt nur Typen [a-z]+ - Fix(<ID>) oder feat2(<ID>) zaehlt nicht als eigener Commit; reicht fuer die Konvention dieses Repos
-  note: holdersOf (board.ts:51) streicht jeden Branch, der auf /<anderer gelisteter Branch> endet - ein lokaler Branch namens wie der Slug selbst wuerde feat/<slug> verdecken; sehr selten
-review-check: |-
-  1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> 393 pass, 0 fail
-  2. go test ./core/role -run 'TestSpawnTakesUpTheBranchTheWorkRidesOn|TestSpawnTypesTheRoleForItsLaneName'  -> ok
-  3. Live: ein Ticket in signoff/human mit Worktree, dessen Tab geschlossen ist; im Cockpit Give back druecken -> ein neuer Tab <ID>/worker oeffnet im Worktree des Tickets (nicht in einem neuen feat/<id>), und in dieser Session erscheint die Zeile 'jaira-cockpit: <ID> given back: ..., worker new ... (Person, Cockpit; ...)'
-  4. Im neuen Tab steht die Startzeile '/jaira-worker <ID> --parent ... - every question goes to ... by SendMessage, never by AskUserQuestion'
-  5. Give back sofort ein zweites Mal -> kein zweiter Tab; jaira show <ID> zeigt nur eine Note 'cockpit: given back to a new worker'
-  6. Accept auf einem Ticket -> Zeile 'jaira-cockpit: <ID>: accepted, ... (Person, Cockpit)' und auf dem Ticket die Note 'cockpit: accepted by the person, ...'
+  note: pre-existing: spawn.sh prüft --parent uds:<pfad> nur mit [ -e ] (spawn.sh:151) - eine liegengebliebene Socket-Datei einer toten Session gilt als lebendig, der Worker meldet sich ins Leere; Fix: Socket per Verbindungsversuch prüfen
+  note: commitNaming (board.ts:652) erkennt nur Typen aus Kleinbuchstaben ([a-z]+) - Fix(<ID>): oder ein Typ mit Bindestrich zählt nicht als eigener Commit; [A-Za-z-]+ wäre robuster
+  note: workPlace (register.tsx:275) leitet den lokalen Default-Branch durch Abschneiden des ersten Pfadsegments ab - ohne origin und mit dem Hauptcheckout auf z.B. feat/x wird daraus "x"; nur origin-Default sollte geschnitten werden
+  note: Known limit laut DoD 6: die Teamlead-Zeile erreicht nur die Session des Cockpits; ein Teamlead in einer anderen Session sieht nur die Note
+review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> '394 pass, 0 fail'  2. go test ./core/role/ -run 'TestSpawnTakesUpTheBranchTheWorkRidesOn|TestSpawnTypesTheRoleForItsLaneName' -v  -> PASS, inkl. 'two_at_once' und 'second_while_the_first_still_runs'  3. Im Cockpit ein Ticket in signoff mit eigenem Worktree per Give back zurückgeben  -> neuer Tab <ID>/worker startet im Worktree des Tickets (nicht feat/<id> neu), sein Prompt endet mit '--parent ... never by AskUserQuestion'  4. Sofort ein zweites Mal Give back drücken  -> kein zweiter Tab; in dieser Session steht eine Zeile '<ID> given back: ..., worker ... (Person, Cockpit; ...)'  5. Ein Ticket in signoff Accept drücken  -> Zeile '<ID>: accepted, ... (Person, Cockpit)' in der Session und Note 'cockpit: accepted by the person' auf dem Ticket"
 question: ""
 ---
 
@@ -163,3 +170,5 @@ question: ""
 - **2026-11-22 20:49 · Alexander Sacharov** — bughunt: done at 58a9c4390 - 0 findings, follow-up hunt since f79b49087 (diff only, no new files: branchAmbiguous wording now covers two <prefix>/<slug> branches - checked against carrierFor, ambiguous only when no own worktree branch; test expectations; shipped hash = current texts.ts); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/sessions.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/QTQW15.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256
 - **2026-11-22 21:08 · Alexander Sacharov** — given back by Alex (22.11.), gelbe Notiz: Accept bei mehreren Holdern nimmt nicht mehr ambiguous[0], sondern verhält sich wie Give back - kein Raten, Band nennt die Branches (Test). Weisse Notizen bleiben.
 - **2026-11-22 21:12 · Alexander Sacharov** — in-progress (Runde 10, gelbe Note nach Alex): Accept raet nicht mehr - ambiguous -> kein PR, die Zeile 'accepted; <branches> could each be <ID>'s branch...' im Band und in der Session; Test. Der Accept-Test 'Ticket auf fremdem Branch' prueft jetzt den Fall mit genau einem Holder. Weisse Notes bleiben Notes. 394/394.
+- **2026-11-22 21:12 · Alexander Sacharov** — critique (Runde 10): nur decideStep gelesen - eine Zeile, derselbe Text wie Give back. Nichts Neues.
+- **2026-11-22 21:15 · Alexander Sacharov** — bughunt: done at 153475281 - 0 findings, follow-up hunt since 58a9c4390 (diff only, no new files: decideStep now returns step none with branchAmbiguous before any branch is used - checked afterAccept shows the hint via acceptedNoPr, landing path refuses the same way, test expectations, release note line, shipped hash = current register.tsx; ran: claude plugin test . 394 pass 0 fail); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/sessions.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/QTQW15.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256
