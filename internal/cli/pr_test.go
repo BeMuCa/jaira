@@ -150,7 +150,7 @@ func TestPRWatchReportsEachChangeOnceAndEnds(t *testing.T) {
 		t.Fatalf("%v\n%s", err, out)
 	}
 	want := []string{
-		"watching #7 (" + h + ") https://x/7: threads: 0 waiting, 0 answered, 0 resolved · comments from others: 1 · CI: pending · settled",
+		"watching #7 (" + h + ") https://x/7: threads: 0 waiting, 0 answered, 0 resolved · comments from others: 1 · CI: pending · not settled",
 		"#7 (" + h + "): read failed, trying again in 1m0s: gh: HTTP 502: Bad Gateway",
 		"#7 (" + h + "): read again",
 		"#7 (" + h + "): new comment by bob",

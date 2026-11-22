@@ -5,9 +5,10 @@
 //
 // It is what 'jaira pr' prints and what the cockpit polls to tell a teamlead
 // session that a pull request needs its next round. 'settled' is the same
-// question jaira-role-pr's 'pr-round.sh settled' answers: no thread
+// question jaira-role-pr's 'pr-round.sh settled' answers — no thread
 // unresolved, no review still requested, no reviewer's latest verdict asking
-// for changes.
+// for changes — and one more: CI is not red and not running. A pull request
+// without checks counts as green.
 package pr
 
 import (
@@ -238,7 +239,7 @@ func seen(last **Activity, a Activity) {
 }
 
 // settle fills Settled and Unsettled from the counts, in the words
-// pr-round.sh settled uses.
+// pr-round.sh settled uses, and from CI: red or running is not settled.
 func settle(p *PR) {
 	p.Unsettled = []string{}
 	switch open := p.Threads.Waiting + p.Threads.Answered; open {
@@ -253,6 +254,12 @@ func settle(p *PR) {
 	}
 	for _, r := range p.ChangesRequested {
 		p.Unsettled = append(p.Unsettled, "changes requested: "+r)
+	}
+	switch p.CI {
+	case "failure":
+		p.Unsettled = append(p.Unsettled, "CI red")
+	case "pending":
+		p.Unsettled = append(p.Unsettled, "CI running")
 	}
 	p.Unsettled = append(p.Unsettled, p.partial...)
 	p.Settled = len(p.Unsettled) == 0

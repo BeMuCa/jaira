@@ -71,7 +71,7 @@ func Changes(before, after PR) []string {
 		}
 	}
 	if after.Settled && !before.Settled {
-		out = append(out, label+": settled — no thread open, no review pending")
+		out = append(out, label+": settled — no thread open, no review pending, CI not red or running")
 	}
 	if after.State != before.State && after.State != "open" {
 		out = append(out, fmt.Sprintf("%s: %s", label, after.State))

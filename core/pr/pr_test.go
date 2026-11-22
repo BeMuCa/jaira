@@ -150,7 +150,7 @@ func TestReadInputClasses(t *testing.T) {
 				if !reflect.DeepEqual(p.ReviewRequested, []string{"copilot", "core"}) || !reflect.DeepEqual(p.ChangesRequested, []string{"bob"}) || !reflect.DeepEqual(p.Approved, []string{"dan"}) {
 					t.Errorf("reviews: requested %v changes %v approved %v", p.ReviewRequested, p.ChangesRequested, p.Approved)
 				}
-				if p.Settled || len(p.Unsettled) != 4 {
+				if p.Settled || len(p.Unsettled) != 5 || p.Unsettled[4] != "CI red" {
 					t.Errorf("settled %v, unsettled %v", p.Settled, p.Unsettled)
 				}
 				q := st.PRs[1]
@@ -321,7 +321,7 @@ func TestChanges(t *testing.T) {
 		}), []string{"#7 (A3K9QP): review by dan: changes requested"}},
 		{"CI red", with(func(p *PR) { p.CI = "failure" }), []string{"#7 (A3K9QP): CI red"}},
 		{"CI green from pending says nothing", with(func(p *PR) { p.CI = "success" }), nil},
-		{"settled and merged", with(func(p *PR) { p.Settled = true; p.State = "merged" }), []string{"#7 (A3K9QP): settled — no thread open, no review pending", "#7 (A3K9QP): merged"}},
+		{"settled and merged", with(func(p *PR) { p.Settled = true; p.State = "merged" }), []string{"#7 (A3K9QP): settled — no thread open, no review pending, CI not red or running", "#7 (A3K9QP): merged"}},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -509,6 +509,23 @@ func TestTicketsOf(t *testing.T) {
 	for _, c := range cases {
 		if got := ticketsOf(c.subjects, c.branch); !reflect.DeepEqual(got, c.want) {
 			t.Errorf("ticketsOf(%q, %q) = %q, want %q", c.subjects, c.branch, got, c.want)
+		}
+	}
+}
+
+// Settled waits for CI: red or running holds the round open, a pull request
+// without checks counts as green.
+func TestSettleWaitsForCI(t *testing.T) {
+	for ci, want := range map[string][]string{
+		"failure": {"CI red"},
+		"pending": {"CI running"},
+		"success": {},
+		"none":    {},
+	} {
+		p := PR{CI: ci}
+		settle(&p)
+		if !reflect.DeepEqual(p.Unsettled, want) || p.Settled != (len(want) == 0) {
+			t.Errorf("CI %s: settled %v, unsettled %q", ci, p.Settled, p.Unsettled)
 		}
 	}
 }

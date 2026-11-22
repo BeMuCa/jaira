@@ -44,7 +44,8 @@ answered but not resolved, and resolved; how many comments others wrote; the
 CI state of its head commit; reviews still requested, changes requested and
 approvals; the tickets its commits name; and whether its review round is
 settled (no thread open, no review pending, no changes requested — what
-jaira-role-pr's 'pr-round.sh settled' asks). --all shows every open pull
+jaira-role-pr's 'pr-round.sh settled' asks — and CI neither red nor
+running; a pull request without checks counts as green). --all shows every open pull
 request of the repository, --number one pull request in any state. Every
 pull request and every review thread is read, page after page; comments
 from others are counted over the newest 50 on the conversation and the
