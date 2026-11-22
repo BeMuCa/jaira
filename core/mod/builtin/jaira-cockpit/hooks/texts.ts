@@ -182,7 +182,8 @@ export const t = {
     `When I have decided: write the decision in one sentence onto the ticket with jaira -C '${dir}' note ${id} "decision: <decision>" and clear the question with jaira -C '${dir}' set ${id} question=. If the decision means the work goes on, move the ticket back yourself, exactly so: jaira -C '${dir}' move ${id} --to in-progress (without --what/--why/--resolves: the ticket has its outcome already, and the decision is in the note). ` +
     `Accept it into the next lane only when I say yes to that explicitly. Change no code. Answer in the language I speak with you.` +
     removeCopy(copy),
-  copyLeft: (id: string, path: string) => `${id}: the chat ended and left the copy pulled for it in the main checkout, which hides its ref; remove it: git clean -fqx -- ${shellQuoted(path)}`,
+  copyLeft: (id: string, path: string) => `${id}: the copy pulled into the main checkout for a chat is still there and hides its ref; once no chat on ${id} runs any more, remove it: git clean -fqx -- ${shellQuoted(path)}`,
+  chatHoldsCopy: (id: string, kind: string) => `The ${kind} chat on ${id} is still open and removes the copy of the ticket pulled for it when it ends. Finish that chat first.`,
   opened: (id: string) => `${id}: opened in a Herdr tab of its own`,
   context: (k: number) => `context ${k}k`,
   cacheLeft: (min: number) => `cache ${min} min left`,

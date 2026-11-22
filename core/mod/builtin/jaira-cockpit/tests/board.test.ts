@@ -4339,7 +4339,7 @@ describe('Explain and Discuss on a ticket not on the disk the chat writes from',
     w.bodies[id] = `## Progress\n\n- **1970-01-01 00:16 · Alex** — ${kind === 'explain' ? 'explain' : 'decision'}: done\n`
     w.tabs = [{ tab_id: 'w1:t4', label: `${id}/${kind}`, agent_status: 'idle' }]
   }
-  const copyLine = (w: World, id: string) => w.toasts.filter(x => x.startsWith(`${id}: the chat ended and left the copy`))
+  const copyLine = (w: World, id: string) => w.toasts.filter(x => x.startsWith(`${id}: the copy pulled into the main checkout for a chat`))
 
   for (const { kind, id } of KINDS) {
     test(`${kind}, no worktree, file ref-only: pulled before the chat opens, which is handed the copy to remove itself`, async ($, on) => {
@@ -4389,7 +4389,7 @@ describe('Explain and Discuss on a ticket not on the disk the chat writes from',
       expect(copyLine(w, id)).toEqual([])
       await w.clock.advance(60_000)
       await w.clock.advance(60_000)
-      expect(copyLine(w, id)).toEqual([`${id}: the chat ended and left the copy pulled for it in the main checkout, which hides its ref; remove it: git clean -fqx -- '${PATH(id)}'`])
+      expect(copyLine(w, id)).toEqual([`${id}: the copy pulled into the main checkout for a chat is still there and hides its ref; once no chat on ${id} runs any more, remove it: git clean -fqx -- '${PATH(id)}'`])
       expect(ran(w, 'git', 'clean')).toEqual([])
     })
 
@@ -4444,16 +4444,62 @@ describe('Explain and Discuss on a ticket not on the disk the chat writes from',
     expect(ran(w, 'git', 'clean')).toEqual([['git', 'clean', '-fqx', '--', PATH('MG677R'), MAIN]])
   })
 
-  test('a failed spawn.sh leaves the copy to a chat that may have started, and names it a minute on', async ($, on) => {
+  test('a spawn.sh that failed before its tab came up takes the pulled copy away at once', async ($, on) => {
     const w = world(on, { herdr: true })
     setUp(w, 'MG677R', 'ref-only')
-    w.spawnFails = 'timed out waiting for claude'
+    w.spawnFails = 'unknown flag: --copy'
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
+    expect(w.opened.at(-1)?.title).toBe('Explain MG677R failed')
+    expect(ran(w, 'git', 'clean')).toEqual([['git', 'clean', '-fqx', '--', PATH('MG677R'), MAIN]])
+  })
+
+  test('a spawn.sh that failed after its tab came up leaves the copy to that chat', async ($, on) => {
+    const w = world(on, { herdr: true })
+    setUp(w, 'MG677R', 'ref-only')
+    w.spawnFails = 'claude did not come up in p1: none'
+    w.tabs = [{ tab_id: 'w1:t4', label: 'MG677R/explain', agent_status: 'working' }]
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
     expect(w.opened.at(-1)?.title).toBe('Explain MG677R failed')
     expect(ran(w, 'git', 'clean')).toEqual([])
+    // Still running: nothing is named under it.
+    for (let i = 0; i < 3; i++) await w.clock.advance(60_000)
+    expect(copyLine(w, 'MG677R')).toEqual([])
+  })
+
+  test('a Herdr chat whose tab went without a note: the copy it left is named a minute on', async ($, on) => {
+    const w = world(on, { herdr: true })
+    setUp(w, 'MG677R', 'ref-only')
+    w.tabs = [{ tab_id: 'w1:t4', label: 'MG677R/explain', agent_status: 'working' }]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
+    await w.clock.advance(60_000)
+    w.tabs = []
+    await w.clock.advance(60_000)
+    expect(copyLine(w, 'MG677R')).toEqual([])
     await w.clock.advance(60_000)
     await w.clock.advance(60_000)
     expect(copyLine(w, 'MG677R')).toHaveLength(1)
   })
+
+  for (const second of ['explain', 'discuss'] as const) {
+    test(`a second chat (${second}) on a ticket whose copy an Explain chat holds is refused until that copy was looked at`, async ($, on) => {
+      const w = world(on, { herdr: true })
+      setUp(w, 'MG677R', 'ref-only')
+      // MG677R with an open question too, so it offers Discuss beside Explain.
+      w.tickets = [{ ...SIGNOFF, question: 'Branch in den Schluessel?' }, HUMAN, WORKING]
+      w.tabs = [{ tab_id: 'w1:t4', label: 'MG677R/explain', agent_status: 'working' }]
+      await startSession($)
+      await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
+      expect(ran(w, 'bash', SPAWN)).toHaveLength(1)
+      const before = w.ran.length
+      await (await $.ui.mount(BAND)).press({ key: `${second}-MG677R` })
+      expect(ran(w, 'bash', SPAWN)).toHaveLength(1)
+      expect(w.ran.slice(before).filter(r => r[1] === 'pull')).toEqual([])
+      expect(w.opened.at(-1)?.title).toBe(`${second === 'explain' ? 'Explain' : 'Discuss'} MG677R failed`)
+      const pane = await $.ui.mount(MESSAGE(`${second === 'explain' ? 'Explain' : 'Discuss'} MG677R failed`))
+      expect(await pane.find({ type: 'Text', text: /The Explain chat on MG677R is still open/ })).toBeDefined()
+    })
+  }
 })

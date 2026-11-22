@@ -328,14 +328,14 @@ async function findBoard($: EngineInterface): Promise<{ dir: string; repo: strin
 
 // Workers and reviews are the agents that run: Herdr tabs (none where there
 // is no Herdr or its list failed), and this session's own subagents.
-async function agentsOf($: EngineInterface, dir: string): Promise<{ bin: string | undefined; tabs: Tab[]; agents: Agent[] }> {
+async function agentsOf($: EngineInterface, dir: string): Promise<{ bin: string | undefined; tabs: Tab[]; listed: boolean; agents: Agent[] }> {
   const bin = await herdr($)
   const listed = bin === undefined ? undefined : await run($, [bin, 'tab', 'list'], dir)
   let agents: Agent[] = []
   try {
     agents = await $.agent.list()
   } catch {}
-  return { bin, tabs: listed?.exitCode === 0 ? tabsOf(listed.stdout) : [], agents }
+  return { bin, tabs: listed?.exitCode === 0 ? tabsOf(listed.stdout) : [], listed: listed?.exitCode === 0, agents }
 }
 
 async function refreshBoard($: EngineInterface): Promise<void> {
@@ -355,7 +355,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     run($, ['jaira', 'boards', '--json'], board.dir),
   ])
   if (lanes?.exitCode !== 0 || list?.exitCode !== 0) return
-  const { bin, tabs, agents } = await agentsOf($, board.dir)
+  const { bin, tabs, listed, agents } = await agentsOf($, board.dir)
   if (!meAsked) {
     meAsked = true
     const who = await run($, ['jaira', 'whoami', '--json'], board.dir)
@@ -425,6 +425,12 @@ async function refreshBoard($: EngineInterface): Promise<void> {
       continue
     }
     const tab = open.find(x => x.label === label)
+    // A Herdr chat holding a copy whose tab is gone ended without its note
+    // (closed, crashed): looked at a minute on like a chat that is done.
+    if (copy !== undefined && listed && tab === undefined) {
+      chats.set(label, { since, copy, doneAt: now })
+      continue
+    }
     if (tab?.agent_status === 'working') continue
     const from = since - (since % 60_000)
     const note = await noteOn($, board.dir, id, kind === 'explain' ? 'explain' : 'decision')
@@ -943,6 +949,11 @@ async function herdr($: EngineInterface): Promise<string | undefined> {
 async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discuss'): Promise<void | 'hold'> {
   const what = `${kind === 'explain' ? t.explain : t.discuss} ${id}`
   if (!board) return fail($, what, t.noBoard)
+  // One chat at a time on a ticket a chat holds a copy for: that chat removes
+  // the copy when it ends, from under any other chat still writing there —
+  // held until the copy was looked at, a minute after the chat was done.
+  const holder = [...chats].find(([l, c]) => l.startsWith(`${id}/`) && c.copy !== undefined)
+  if (holder !== undefined) return fail($, what, t.chatHoldsCopy(id, holder[0].split('/')[1] === 'explain' ? t.explain : t.discuss))
   // The chat writes its note onto the ticket, which a file on the ref alone
   // or older than the ref refuses: pulled first, as for Accept (76ERHH). A
   // refused pull stops the press; it never steals.
@@ -952,10 +963,9 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
   const label = `${id}/${kind}`
   // A copy pulled into the main checkout is the chat's to remove, as its last
   // step: only the chat knows when it wrote its last line. A press that opens
-  // no chat removes it at once. A second press on a chat still open finds
-  // the ticket pulled already: the first press's copy is the one to check.
+  // no chat removes it at once.
   const { copy } = here
-  const opened = async () => chats.set(label, { since: await $.clock.now(), copy: chats.get(label)?.copy ?? copy })
+  const opened = async () => chats.set(label, { since: await $.clock.now(), copy })
   if ((await herdr($)) === undefined) {
     await opened()
     await say($, kind === 'explain' ? t.explainAsked(id) : t.discussHere(id))
@@ -974,10 +984,12 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
   const removes = copy === undefined ? [] : ['--copy', copy]
   const r = await run($, [...script, '--no-worktree', ...parent, ...removes, id.toLowerCase(), id, kind, dir], dir, 120_000)
   if (r?.exitCode !== 0) {
-    // spawn.sh may have failed after its tab came up (a timeout): the chat
-    // may run and remove the copy itself, so it is not taken from under it;
-    // a minute on, the band names it if it is still there.
-    if (copy !== undefined && !chats.has(label)) chats.set(label, { since: await $.clock.now(), copy, doneAt: await $.clock.now() })
+    // spawn.sh may have failed after its tab came up (claude slow to start):
+    // that chat runs and removes the copy itself, so it is not taken from
+    // under it. No such tab: no chat started, and the copy goes at once.
+    const tabs = await agentsOf($, dir)
+    if (copy !== undefined && tabs.listed && tabs.tabs.some(x => x.label === label)) await opened()
+    else await here.leave()
     return fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
   }
   await opened()
