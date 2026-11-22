@@ -187,15 +187,8 @@ func TestBriefCarriesTheHunt(t *testing.T) {
 	edit("a")
 	git("add", "a.go")
 	git("commit", "-q", "-m", "a")
-	// No commit of the ticket changed code: nothing to hunt, which is not a
-	// missing hunt.
-	if got, _ := hunt().(map[string]any); got["state"] != "none" || got["at"] != "" {
-		t.Errorf("a ticket that changed no code reports %v, want state none", got)
-	}
-	edit("a1")
-	git("commit", "-q", "-am", "feat("+h+"): a1")
 	if got := hunt(); got != nil {
-		t.Errorf("a ticket that changed code without a hunt reports %v, want null", got)
+		t.Errorf("a ticket without a hunt reports %v, want null", got)
 	}
 	at := git("rev-parse", "--short", "HEAD")
 	if out, err := runCLI(t, dir, "note", h, "bughunt: done at "+at+" - 0 findings; files: a.go"); err != nil {

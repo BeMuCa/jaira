@@ -885,7 +885,7 @@ describe('waiting for you', () => {
     // the hunt's note has scrolled out of the four newest notes by then: the brief says whether it covers the code
     expect(asked).toContain("bughunt on HEAD ends in the brief's bughunt.state word as it stands")
     // the format line and the status sentence name all four words, so unknown is never written as fail
-    expect(asked).toContain('bughunt on HEAD ok|fail|unknown|skipped|none')
+    expect(asked).toContain('bughunt on HEAD ok|fail|unknown|skipped')
     expect(asked).not.toContain('each check ends in ok or fail')
     for (const cls of ['[blocker]', '[small edge]', '[known limit]', '[not this ticket]']) expect(asked).toContain(cls)
     expect(asked).toContain('[give back]')
@@ -3811,37 +3811,39 @@ describe('the verdict light', () => {
   }
 
   test('green: an accepting review, a hunt on HEAD, the definition of done ticked, nothing open', () => {
-    expect(first(ready, 'ok')).toEqual(['green', '-'])
+    expect(first(ready, { state: 'ok', at: 'abc1234' })).toEqual(['green', '-'])
     // A ticket that runs no hunt after a fix, by choice, is no reason to look.
-    expect(first(ready, 'skipped')).toEqual(['green', '-'])
-    expect(first({ ...ready, verdict: 'approve, no changes needed' }, 'ok')).toEqual(['green', '-'])
+    expect(first(ready, { state: 'skipped', at: 'abc1234' })).toEqual(['green', '-'])
+    expect(first({ ...ready, verdict: 'approve, no changes needed' }, { state: 'ok', at: 'abc1234' })).toEqual(['green', '-'])
   })
 
   test('yellow: accepted, but something wants a look first', () => {
-    expect(first({ ...ready, dodComplete: false, dodOpen: { person: 1, other: 0 } }, 'ok')).toEqual(['yellow', 'byAPerson'])
-    expect(first({ ...ready, notes: ['note: a test is missing'] }, 'ok')).toEqual(['yellow', 'notes'])
-    expect(first({ ...ready, verdict: 'approve, but the docs are thin' }, 'ok')).toEqual(['yellow', 'reservation'])
-    expect(first({ ...ready, question: 'keep the old key?' }, 'ok')).toEqual(['yellow', 'question'])
-    expect(first({ ...ready, reviewedIn: 2 }, 'ok')).toEqual(['yellow', 'oldReview'])
-    expect(first({ ...ready, verdict: '' }, 'ok')).toEqual(['yellow', 'notReviewed'])
+    expect(first({ ...ready, dodComplete: false, dodOpen: { person: 1, other: 0 } }, { state: 'ok', at: 'abc1234' })).toEqual(['yellow', 'byAPerson'])
+    expect(first({ ...ready, notes: ['note: a test is missing'] }, { state: 'ok', at: 'abc1234' })).toEqual(['yellow', 'notes'])
+    expect(first({ ...ready, verdict: 'approve, but the docs are thin' }, { state: 'ok', at: 'abc1234' })).toEqual(['yellow', 'reservation'])
+    expect(first({ ...ready, question: 'keep the old key?' }, { state: 'ok', at: 'abc1234' })).toEqual(['yellow', 'question'])
+    expect(first({ ...ready, reviewedIn: 2 }, { state: 'ok', at: 'abc1234' })).toEqual(['yellow', 'oldReview'])
+    expect(first({ ...ready, verdict: '' }, { state: 'ok', at: 'abc1234' })).toEqual(['yellow', 'notReviewed'])
     // Nobody can tell: a hunted file changed and not committed, or a jaira that does not say.
-    expect(first(ready, 'unknown')).toEqual(['yellow', 'huntUnknown'])
+    expect(first(ready, { state: 'unknown', at: 'abc1234' })).toEqual(['yellow', 'huntUnknown'])
     expect(first(ready, undefined)).toEqual(['yellow', 'huntUnknown'])
   })
 
-  test('red: the review gives it back, a blocker, no hunt on HEAD, or a gate that refuses', () => {
-    expect(first({ ...ready, verdict: 'request changes: the key ignores the branch' }, 'ok')).toEqual(['red', 'refused'])
-    expect(first({ ...ready, blockers: ['blocker: the key ignores the branch'] }, 'ok')).toEqual(['red', 'blockers'])
-    expect(first(ready, 'fail')).toEqual(['red', 'noHunt'])
+  test('red: the review gives it back, a blocker, a hunt not on HEAD, or a gate that refuses', () => {
+    expect(first({ ...ready, verdict: 'request changes: the key ignores the branch' }, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'refused'])
+    expect(first({ ...ready, blockers: ['blocker: the key ignores the branch'] }, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'blockers'])
+    expect(first(ready, { state: 'fail', at: 'abc1234' })).toEqual(['red', 'staleHunt'])
     // An open item other than a person's own: the terminal lane's gate refuses it.
-    expect(first({ ...ready, dodComplete: false, dodOpen: { person: 1, other: 1 } }, 'ok')).toEqual(['red', 'dodOpen'])
+    expect(first({ ...ready, dodComplete: false, dodOpen: { person: 1, other: 1 } }, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'dodOpen'])
     // Every red reason counts before any yellow one.
-    expect(lightOf({ ...ready, question: 'why?', notes: ['note: x'] }, 'fail').reasons.map(r => r.kind)).toEqual(['noHunt', 'notes', 'question'])
+    expect(lightOf({ ...ready, question: 'why?', notes: ['note: x'] }, { state: 'fail', at: 'abc1234' }).reasons.map(r => r.kind)).toEqual(['staleHunt', 'notes', 'question'])
   })
 
-  // A ticket whose commits changed no code has nothing to hunt: no reason to look.
-  test('a ticket with nothing to hunt is not held up by its hunt', () => {
-    expect(first(ready, 'none')).toEqual(['green', '-'])
+  // No hunt finished (jaira's null) is a look, never red: a ticket that
+  // changed no code has none, and the brief cannot tell it from one owed.
+  test('no hunt at all is yellow; a hunt that no longer covers HEAD is red', () => {
+    expect(first(ready, { state: 'fail', at: '' })).toEqual(['yellow', 'noHunt'])
+    expect(first(ready, { state: 'fail', at: 'abc1234' })).toEqual(['red', 'staleHunt'])
   })
 
   // Which way a verdict goes is read off the words the review lane declares,
@@ -3854,7 +3856,7 @@ describe('the verdict light', () => {
     const light = (verdict: string, gaps = 'none') => {
       const list = JSON.stringify({ tickets: [{ handle: 'MG677R', title: 't', status: 'signoff', dod_complete: true, review: { verdict, gaps } }] })
       const w = snapshotOf(lanes, list, [], []).waiting[0]!
-      return first(w, 'ok')
+      return first(w, { state: 'ok', at: 'abc1234' })
     }
     // A send-back with nothing in its gaps is still a send-back.
     expect(light('send-back: DoD 2 unmet')).toEqual(['red', 'refused'])
@@ -3867,6 +3869,6 @@ describe('the verdict light', () => {
     // Without declared words (an older jaira) the wording is all there is.
     const old = JSON.stringify({ lanes: [{ id: 'signoff', agentic: false, context: '', human_exit: true }] })
     const list = JSON.stringify({ tickets: [{ handle: 'MG677R', title: 't', status: 'signoff', dod_complete: true, review: { verdict: 'request changes', gaps: 'none' } }] })
-    expect(first(snapshotOf(old, list, [], []).waiting[0]!, 'ok')).toEqual(['red', 'refused'])
+    expect(first(snapshotOf(old, list, [], []).waiting[0]!, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'refused'])
   })
 })

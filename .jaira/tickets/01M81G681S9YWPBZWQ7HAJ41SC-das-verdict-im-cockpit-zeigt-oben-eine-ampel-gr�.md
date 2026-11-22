@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T11:27:46Z
-updated-at: 2026-11-22T11:46:04Z
+updated-at: 2026-11-22T11:51:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1232016
 claimed-at: 2026-11-22T11:29:15Z
@@ -23,13 +23,13 @@ outcome-what: "Verdict-Pane des Cockpits zeigt als erste Zeile eine Ampel (grün
 outcome-why: "Alex soll ohne Urteil, Gaps und Notizen zu lesen sehen, ob er annehmen kann"
 outcome-resolves: "AJ41SC: fehlende Ampel im Verdict"
 review-summary: none
-round: 3
+round: 4
 back-from: testing
 back-by: lane
-back-count: 1
-review-gaps: "texts.ts lightReason: 'not reviewed yet' und 'review of round N, changed since' nutzen jetzt t.noVerdict und t.reviewedIn statt Kopien; overview.ts: doppelte Leerzeile nach dem Verschieben von openOf entfernt. Gelassen: lightOf liest dieselben Felder wie explainable/marks, aber entscheidet etwas anderes (Farbe), keine zweite Implementierung. Keine toten Pfade, kein Kostenproblem (eine Berechnung pro Pane-Render)."
-test-verdict: "fail: suite green, but the hunt's two change blockers make the light give wrong results (see bughunt notes)"
-hunt-verdict: "fail: 2 change blockers - refusal read by own word list instead of the review lane's send_back/accept words; a ticket without code change shows red 'no bughunt on HEAD'"
+back-count: 2
+review-gaps: "round 2: nichts entfernt. Geprueft: wayOf vs core/lane/verdict.go (TS kann Go nicht rufen, bewusst portiert); BriefHunt vs HuntCheck (wiederverwendet, keine Kopie); freeVerdict-Text neu, kein vorhandener Text passt. Kein toter Code."
+test-verdict: "fail: suite green; the hunt's blocker gives a wrong (green) light"
+hunt-verdict: "fail: 1 change blocker - BriefHunt says none whenever the ticket's commits are not visible from the checkout (master, uncommitted work): a ticket with code and no hunt lights green"
 ---
 
 # Das Verdict im Cockpit zeigt oben eine Ampel: grün annehmen, gelb ansehen, rot zurückgeben
@@ -39,9 +39,9 @@ hunt-verdict: "fail: 2 change blockers - refusal read by own word list instead o
 - [x] Das Verdict zeigt als erste Zeile eine Ampel (grün/gelb/rot) mit einem kurzen Grund
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1945; test 'a ticket in the band is one row' expects '● red: 1 blocker in the review (+4 more)' as first pane line
 - [x] Die Farbe wird aus vorhandenen Ticketdaten berechnet (review-verdict, Bughunt auf HEAD, Gates, Notizen, seen by a person:), Regeln mit Test pro Farbe
-  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:260 lightOf; core/mod/builtin/jaira-cockpit/tests/board.test.ts 'the verdict light' (green/yellow/red, declared verdict words, hunt none); verdicts from jaira lanes --json (internal/cli/context_test.go), bughunt none (TestBriefCarriesTheHunt)
+  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:260 lightOf; core/mod/builtin/jaira-cockpit/tests/board.test.ts 'the verdict light' (green/yellow/red, declared verdict words, no hunt vs stale hunt); verdicts from jaira lanes --json (internal/cli/context_test.go)
 - [x] Release-Note core/release/notes/<ID>.md, shipped.sha256
-  proof: core/release/notes/AJ41SC.md (3 lines); core/shipped/shipped.sha256 via scripts/shipped-history.sh --write; go test ./... RC=0
+  proof: core/release/notes/AJ41SC.md (2 lines); core/shipped/shipped.sha256 via scripts/shipped-history.sh --write; go test ./... RC=0
 - [ ] seen by a person: Alex sieht die Ampel im laufenden Cockpit an einem Ticket in signoff
 
 ## Options
@@ -63,3 +63,7 @@ hunt-verdict: "fail: 2 change blockers - refusal read by own word list instead o
 - **2026-11-22 11:40 · Alexander Sacharov** — bughunt: done at c2eab0fab - 2 findings (2 change, 0 pre-existing) in 5 modules, first hunt; concurrency, error paths, input, permissions checked; files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/optimize.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/AJ41SC.md core/shipped/shipped.sha256
 - **2026-11-22 11:42 · Alexander Sacharov** — decision (round 2, nach bughunt): (1) jaira lanes --json gibt 'verdicts' {accept, send_back} einer Lane aus, die sie deklariert (wie der --for-lane-Payload); das Cockpit liest den Verdict damit wie lane.SendsBackBy: send-back -> rot, accept -> kein Grund, anderes Freitext auf einem Board mit Woertern -> gelb 'verdict outside the lane's words'; nur ohne deklarierte Woerter (alte jaira) bleibt die REFUSAL-Heuristik. (2) show --brief: bughunt-State 'none', wenn kein Hunt fertig ist und HuntCheck sagt, die Commits aenderten keinen Code; das Cockpit zaehlt 'none' wie skipped (neutral, Strich im Band). Kleinere Variante als Wortlisten im Cockpit zu pflegen (memory: edges grow -> reuse jaira code).
 - **2026-11-22 11:46 · Alexander Sacharov** — round 2 fix: beide bughunt-Blocker ueber jaira selbst geloest (lanes --json verdicts, brief bughunt none via HuntCheck). Band zeigt none wie skipped als '–'. Explain-Prompt kennt none.
+- **2026-11-22 11:46 · Alexander Sacharov** — critique pass 3 (nur der Fix): wayOf in board.ts portiert lane.SendsBackBy (8 Zeilen) - gelassen, weil das Cockpit nur jaira-JSON liest und ein berechnetes Ticketfeld in list --json mehr Format waere; BriefHunt ruft LastHunt im nil-Fall zweimal (via HuntCheck), nur Notizen-Scan, gelassen.
+- **2026-11-22 11:48 · Alexander Sacharov** — bughunt: change: blocker: core/gitrepo/hunt.go:63-71 (BriefHunt) with core/gitrepo/derive.go:42,66 and core/mod/builtin/jaira-cockpit/hooks/board.ts:268,284 - class: 'no code change visible from this checkout' is reported as 'nothing to hunt' (state none). HuntCheck finds commits with git log on HEAD only and returns CodeChanged=false when it finds none or git fails, so any checkout that does not hold the ticket's code commits yields none: the main checkout on master while the code sits on an unmerged feat branch (the cockpit falls back to board.repo whenever worktreeFor finds no tree for the id, register.tsx:390), and a worktree whose code is still uncommitted (conversational mode). lightOf treats none like skipped: no noHunt (red) and no huntUnknown (yellow), so a ticket with code and no hunt can show a green light and a '–' hunt mark; before f7dfca8a4 the same case was bughunt null -> fail -> red. example: ticket with code committed on feat/<id>, no hunt note, cockpit reading from master -> green. ran: scratch repo, binary built from HEAD: uncommitted code.go -> {"state":"none"}; committed on feat branch -> null; same ticket from master -> {"state":"none"}
+- **2026-11-22 11:48 · Alexander Sacharov** — bughunt: done at f7dfca8a4 - 1 finding (1 change, 0 pre-existing) in 6 modules, follow-up hunt since c2eab0fab (diff for files read before, new files whole); concurrency, error paths, input, permissions checked; files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/optimize.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/gitrepo/hunt.go core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/AJ41SC.md core/shipped/shipped.sha256 internal/cli/context_test.go internal/cli/loopbrake_test.go internal/cli/tickets.go
+- **2026-11-22 11:49 · Alexander Sacharov** — decision (round 3, nach bughunt 2): 'none' im Brief wieder raus - HuntCheck sieht Commits nur von HEAD aus, also rät es auf master/uncommitted falsch. Kleinere Form: Cockpit unterscheidet 'kein Hunt fertig' (brief null) von 'Hunt nicht auf HEAD' (fail mit at). Null -> gelb 'no bughunt yet' (ein Ticket ohne Code hat keinen, eines mit Code kommt ohne Hunt nur per --force in signoff); fail mit at -> rot. Weicht von 'rot: Bughunt fehlt' im Kontext ab; Alex kann widersprechen.

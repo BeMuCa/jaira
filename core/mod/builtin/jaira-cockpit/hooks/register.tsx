@@ -6,7 +6,7 @@ import {
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf,
   createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, nextChoice, standOf,
-  type Action, type Agent, type GapItem, type Hunt, type NoteClass, type Option, type Waiting,
+  type Action, type Agent, type GapItem, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest, reportLine } from './digest.ts'
@@ -382,7 +382,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   const explained: Record<string, { text: string; decided?: string }> = {}
   // The newest bug hunt of each, as jaira works it out against the checkout
   // the ticket's code is in: its own worktree, where there is one.
-  const hunts: Record<string, Hunt> = {}
+  const hunts: Record<string, HuntState> = {}
   const trees = shownIds.length > 0 ? await run($, ['git', 'worktree', 'list', '--porcelain'], board.dir) : undefined
   for (const w of shownIds) {
     const shown = await run($, ['jaira', 'show', w.id, '--json'], board.dir)
@@ -399,7 +399,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
       const held = await run($, ['git', 'merge-base', '--is-ancestor', hunt.at, 'HEAD'], dir)
       if (held?.exitCode !== 0) continue
     }
-    hunts[w.id] = hunt.state
+    hunts[w.id] = hunt
   }
   await update($, explainedAtom, () => explained)
   await update($, huntsAtom, () => hunts)
@@ -1572,7 +1572,7 @@ export const register: Register = (on, options) => {
       ok === undefined ? <Text key={key} dimColor>?</Text> : <Text key={key} color={ok ? 'success' : 'error'}>{ok ? '✓' : '✗'}</Text>
     const marks = (w: Waiting, hunt: Hunt | undefined) => [
       `${t.markDod} `, tick('dod', w.dodComplete),
-      `${SEP}${t.markHunt} `, hunt === 'skipped' || hunt === 'none' ? <Text key="hunt" dimColor>–</Text> : tick('hunt', hunt === 'ok' ? true : hunt === 'fail' ? false : undefined),
+      `${SEP}${t.markHunt} `, hunt === 'skipped' ? <Text key="hunt" dimColor>–</Text> : tick('hunt', hunt === 'ok' ? true : hunt === 'fail' ? false : undefined),
       ...(w.verdict !== ''
         ? [
           SEP, <Text key="blockers" {...(w.blockers.length > 0 ? { color: 'error' as const, bold: true } : { dimColor: true })}>{w.findingsKnown ? t.markBlockers(w.blockers.length) : t.markBlockersUnknown}</Text>,
@@ -1611,7 +1611,7 @@ export const register: Register = (on, options) => {
           <Box key={`row-${w.id}`} flexDirection="column">
             <Box flexDirection="row">
               <Text wrap="truncate-end">
-                <Text bold>{w.id}</Text>{SEP}{w.lane}{SEP}{marks(w, hunts[w.id])}{' '}
+                <Text bold>{w.id}</Text>{SEP}{w.lane}{SEP}{marks(w, hunts[w.id]?.state)}{' '}
               </Text>
               {/* Told apart by colour before they are read: the theme's own, so a
                   light terminal reads them too; the focus inverts them as any.

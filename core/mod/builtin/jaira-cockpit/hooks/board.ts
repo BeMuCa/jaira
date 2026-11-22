@@ -252,12 +252,12 @@ function dodOpenOf(items: readonly Item[]): { person: number; other: number } {
 // never from a field of its own. The reasons in the order they count, every
 // red one before any yellow one; the first is the one the light names.
 export type LightReason =
-  | { kind: 'refused' } | { kind: 'blockers'; n: number } | { kind: 'noHunt' } | { kind: 'dodOpen'; n: number }
+  | { kind: 'refused' } | { kind: 'blockers'; n: number } | { kind: 'staleHunt' } | { kind: 'noHunt' } | { kind: 'dodOpen'; n: number }
   | { kind: 'notReviewed' } | { kind: 'freeVerdict' } | { kind: 'reservation' } | { kind: 'oldReview'; round: number } | { kind: 'notesUnknown' }
   | { kind: 'notes'; n: number } | { kind: 'byAPerson'; n: number } | { kind: 'dodIncomplete' } | { kind: 'question' } | { kind: 'huntUnknown' }
 export type Light = { color: 'green' | 'yellow' | 'red'; reasons: LightReason[] }
 
-export function lightOf(w: Waiting, hunt: Hunt | undefined): Light {
+export function lightOf(w: Waiting, hunt: HuntState | undefined): Light {
   const red: LightReason[] = []
   const yellow: LightReason[] = []
   // The lane's own words where it declares them; a jaira that does not say
@@ -265,7 +265,10 @@ export function lightOf(w: Waiting, hunt: Hunt | undefined): Light {
   const refused = w.verdictWay !== undefined ? w.verdictWay === 'sendBack' : w.verdict !== '' && REFUSAL.test(w.verdict)
   if (refused) red.push({ kind: 'refused' })
   if (w.blockers.length > 0) red.push({ kind: 'blockers', n: w.blockers.length })
-  if (hunt === 'fail') red.push({ kind: 'noHunt' })
+  // A hunt that ran and no longer covers HEAD is red; none finished at all
+  // (at '') is a look: a ticket that changed no code has none, and one that
+  // did reaches a person's lane without one only past the gate, by --force.
+  if (hunt?.state === 'fail' && hunt.at !== '') red.push({ kind: 'staleHunt' })
   // The terminal lane's gate reads the definition of done: an open item other
   // than a person's own refuses the move. A jaira that listed no items says
   // only whether all are ticked, and then an open one may be the person's.
@@ -279,9 +282,10 @@ export function lightOf(w: Waiting, hunt: Hunt | undefined): Light {
   if (w.dodOpen !== undefined && w.dodOpen.person > 0) yellow.push({ kind: 'byAPerson', n: w.dodOpen.person })
   if (w.dodOpen === undefined && w.dodComplete === false) yellow.push({ kind: 'dodIncomplete' })
   if (w.question !== '') yellow.push({ kind: 'question' })
+  if (hunt?.state === 'fail' && hunt.at === '') yellow.push({ kind: 'noHunt' })
   // unknown: a hunted file is changed and not committed; undefined: a jaira
   // that does not say, or a fail in a checkout without the hunt's commit.
-  if (hunt === 'unknown' || hunt === undefined) yellow.push({ kind: 'huntUnknown' })
+  if (hunt === undefined || hunt.state === 'unknown') yellow.push({ kind: 'huntUnknown' })
   const color = red.length > 0 ? 'red' : yellow.length > 0 ? 'yellow' : 'green'
   return { color, reasons: [...red, ...yellow] }
 }
@@ -868,17 +872,16 @@ export function followTitle(text: string): string {
 }
 
 // The newest bug hunt's state, read off `jaira show <id> --brief --json`:
-// ok, fail, unknown, skipped or none as jaira worked it out against the checkout
+// ok, fail, unknown or skipped as jaira worked it out against the checkout
 // it ran in; fail where no hunt finished (bughunt null); undefined where the
 // brief has no bughunt key — a jaira older than the hunt state — or did not
 // parse, so the band says it does not know rather than guess. `at` is the
 // commit the hunt ran at, '' where none finished: jaira also answers fail
 // for a checkout that does not hold that commit, which the caller checks.
-// none: no hunt finished and the ticket's commits changed no code, so there
-// is nothing to hunt.
-export type Hunt = 'ok' | 'fail' | 'unknown' | 'skipped' | 'none'
-const HUNTS = new Set<string>(['ok', 'fail', 'unknown', 'skipped', 'none'])
-export function huntOf(briefJson: string): { state: Hunt; at: string } | undefined {
+export type Hunt = 'ok' | 'fail' | 'unknown' | 'skipped'
+export type HuntState = { state: Hunt; at: string }
+const HUNTS = new Set<string>(['ok', 'fail', 'unknown', 'skipped'])
+export function huntOf(briefJson: string): HuntState | undefined {
   const brief = parse<{ bughunt?: { state?: string; at?: string } | null }>(withoutWarnings(briefJson))
   if (brief === undefined || !('bughunt' in brief)) return undefined
   if (brief.bughunt === null) return { state: 'fail', at: '' }

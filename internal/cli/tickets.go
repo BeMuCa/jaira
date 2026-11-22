@@ -827,7 +827,7 @@ there are as notes_total.`,
 				return showForLane(cmd, s, env, t, forLane)
 			}
 			if brief {
-				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body, (&gitrepo.Repo{Dir: s.Root}).BriefHunt(t)))
+				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body, (&gitrepo.Repo{Dir: s.Root}).LastHunt(t)))
 				if err != nil {
 					return err
 				}
