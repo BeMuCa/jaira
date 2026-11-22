@@ -87,7 +87,7 @@ export function verdictOf(text: string): string | undefined {
 // A question ends at a quote, the line's end, or a "·" — the separator of a
 // status line, whose next field is not part of the question.
 const QUESTION = /(?:--question\s+["“]|\b(?:open question|offene frage|question|frage)\s*[:=]\s*["“]?)([^"\n”·]+)/i
-const NO_QUESTION = /^(?:none|nothing|no|keine|nein|nichts|-|—)\b/i
+const NO_QUESTION = /^(?:none|no|keine|nein|nichts|-|—)\b/i
 
 export function questionOf(text: string): string | undefined {
   const m = QUESTION.exec(text)
@@ -130,8 +130,9 @@ const FRAME_CLOSE = /(?:<\/[a-z][a-z-]*>\s*)+$/i
 // report carries besides the status line, so a digest that dropped it would
 // drop the only thing the teamlead has to act on. Read like the status line:
 // the last such line, frame tags around it stripped — in a two-line report
-// it is the first line, the one the engine's frame opens on. An empty value
-// or "none" is no ask, as for a question.
+// it is the first line, the one the engine's frame opens on. Only an empty
+// value is no ask: the worker writes no line when nothing waits, and a word
+// list would also drop a real ask that starts "no answer from CI…".
 const NEEDS_YOU = /^[ \t]*needs you:[ \t]*(.*?)[ \t]*$/i
 
 export function needsYouOf(text: string): string | undefined {
@@ -139,8 +140,7 @@ export function needsYouOf(text: string): string | undefined {
   for (let i = lines.length - 1; i >= 0; i--) {
     const m = NEEDS_YOU.exec(lines[i]!.replace(FRAME_OPEN, '').replace(FRAME_CLOSE, ''))
     if (!m) continue
-    const v = m[1]!
-    return v === '' || NO_QUESTION.test(v) ? undefined : clip(v, 140)
+    return m[1] === '' ? undefined : clip(m[1]!, 140)
   }
   return undefined
 }

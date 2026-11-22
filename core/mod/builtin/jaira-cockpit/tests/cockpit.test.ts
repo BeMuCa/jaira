@@ -114,9 +114,9 @@ describe('session.receive', () => {
       want: SHORT('55CS2M · testing → human · sent back · notes 2 · needs you: accept at https://claude.ai/artifact/x1'),
     },
     {
-      name: 'an empty or "none" needs-you line is no ask, and never takes the next line',
-      text: `needs you: none\nneeds you: nothing\n${LINE}`,
-      want: SHORT('55CS2M · in-progress → signoff · approve with reservations · feat/55cs2m · commits a1b2c3d..e4f5a6b (3) · gates ok · notes 1'),
+      name: 'an ask that starts with "no" or "nothing" is still an ask',
+      text: `needs you: nothing to decide, accept at https://claude.ai/artifact/x1\n${LINE}`,
+      want: SHORT('55CS2M · in-progress → signoff · approve with reservations · feat/55cs2m · commits a1b2c3d..e4f5a6b (3) · gates ok · notes 1 · needs you: nothing to decide, accept at https://claude.ai/artifact/x1'),
     },
     {
       name: 'an empty needs-you line does not swallow the status line below it',

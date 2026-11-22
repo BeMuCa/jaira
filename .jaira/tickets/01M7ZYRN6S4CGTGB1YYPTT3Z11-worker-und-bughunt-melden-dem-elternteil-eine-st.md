@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T21:04:00Z
-updated-at: 2026-11-22T11:50:55Z
+updated-at: 2026-11-22T11:53:50Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1588595
 claimed-at: 2026-11-22T11:38:15Z
@@ -27,13 +27,13 @@ outcome-what: "Worker, dispatcher and bug hunt hand their parent only the status
 outcome-why: "Reports of 1-3k tokens each filled the teamlead's session although everything was already on the ticket."
 outcome-resolves: "Teamlead context grows by one line per report, not a page."
 review-summary: none
-review-gaps: "rewrapped three over-long lines the change left in jaira-dispatcher, jaira-worker and jaira-teamlead SKILL.md (one 'them' → 'it'); replaced the intermediate shipped.sha256 hashes instead of adding a second set. Considered and left: needsYouOf beside questionOf in digest.ts — same shape, different key and no-value rule (questionOf drops 'none'/'-'); merging them would need a parameter for one caller each. No dead code, no cost on a hot path."
-test-verdict: "fail: suite green (go test ./... RC=0, cockpit 303 pass); DoD 1-3 verified in the tree; but the hunt found two change defects in digest.ts needsYouOf (framed line dropped; empty value crosses a newline) — back to in-progress"
-hunt-verdict: "fail: 2 change findings in hooks/digest.ts:103 (framed needs-you line dropped; value not validated)"
-round: 2
+review-gaps: "round 2: none — the fix adds one function body and three test cases, nothing orphaned. Round 1: rewrapped three over-long SKILL.md lines; left needsYouOf beside questionOf (different key and rule)."
+test-verdict: "fail: suite green (RC=0); hunt round 2: NO_QUESTION prefix test drops real asks starting with none/nothing/no"
+hunt-verdict: "fail: 1 change finding, digest.ts:142 prefix filter"
+round: 3
 back-from: testing
 back-by: lane
-back-count: 1
+back-count: 2
 ---
 
 # Worker und Bughunt melden dem Elternteil eine Statuszeile; der volle Bericht steht nur auf dem Ticket
@@ -68,3 +68,8 @@ back-count: 1
 - **2026-11-22 11:46 · Alexander Sacharov** — hunt report: 2 findings, both change (1 blocker: digest drops a framed needs-you line), notes on TT3Z11 | read whole: hooks/digest.ts, the TT3Z11 diff of texts.ts, cockpit.test.ts, role_test.go, four role SKILL.md files, release note, shipped.sha256 (hashes match); frame.ts/register.tsx/gitrepo/hunt.go read as callers; uncommitted .jaira/lanes/*, AGENTS.md, CLAUDE.md are board-regeneration prose | not run: the cockpit test suite (needs the claude-code test engine); go test ./core/role ./core/shipped pass
 - **2026-11-22 11:46 · Alexander Sacharov** — bughunt: done at eb5df991f - 2 findings (2 change, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/optimize.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/mod/builtin/jaira-cockpit/hooks/digest.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/release/notes/TT3Z11.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-bughunt/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/role_test.go core/shipped/shipped.sha256
 - **2026-11-22 11:50 · Alexander Sacharov** — fix round 2: needsYouOf now reads line by line like statusLineOf (frame tags stripped, last line wins), [ \t]* instead of \s* so an empty value never takes the next line, and NO_QUESTION filters empty/none — NO_QUESTION gained 'nothing', which also makes 'question: nothing' no question. Tests: cockpit.test.ts 3 new cases (framed, none/nothing, empty above status line).
+- **2026-11-22 11:51 · Alexander Sacharov** — critique pass 2 (fix only): both hunt findings answered in f7242cbf0; the line loop in needsYouOf mirrors statusLineOf on purpose (same frame rule) — let stand. optimize round 2: nothing to remove.
+- **2026-11-22 11:51 · Alexander Sacharov** — waiting: bug hunt round 2 (background subagent) since 12:51
+- **2026-11-22 11:52 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/digest.ts:142 (needsYouOf) - class: NO_QUESTION (digest.ts:90) is a prefix test, not a whole-value test, so any real ask whose first word is none/nothing/no/keine/nein/nichts is dropped as 'no ask' and the cockpit digest loses the only line the teamlead acts on, link included; same prefix test sits in questionOf (digest.ts:96, older than the ticket) for questions; example: 'needs you: nothing to decide, accept at https://claude.ai/artifact/x1', 'needs you: no answer from CI on #149, rerun it', 'needs you: keine Antwort vom CI, bitte neu starten' all return undefined; ran: npx tsx scratch script calling needsYouOf (all three -> undefined); fix direction: treat as no ask only when the whole value is one of those words, optionally with trailing punctuation
+- **2026-11-22 11:52 · Alexander Sacharov** — bughunt: done at f7242cbf0 - 1 finding (1 change, 0 pre-existing) in 6 modules, follow-up hunt since eb5df991f (diff only, no new files); concurrency, error paths, input, permissions checked; shipped.sha256 swap checked (removed hash 658716 is branch-only, in no tag; new hash matches digest.ts); files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/optimize.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/mod/builtin/jaira-cockpit/hooks/digest.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/release/notes/TT3Z11.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-bughunt/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-22 11:53 · Alexander Sacharov** — fix round 3: smaller design instead of a better word list — needsYouOf filters only an empty value (the worker writes no needs-you line when nothing waits); the 'nothing' added to NO_QUESTION in round 2 is reverted, so questionOf is as on master. Its pre-existing prefix test (question: no answer from CI… dropped) is left as it was — not this ticket.
