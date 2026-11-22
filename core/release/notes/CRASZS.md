@@ -1,0 +1,2 @@
+- Run `jaira pr` to see where the checked-out branch's pull request stands — threads waiting, answered and resolved, comments from others, CI, reviews pending and whether the round is settled; `--all` lists every open one, `--json` gives the same as data.
+- Run `jaira pr --watch` under a Monitor to follow a pull request: one line per new comment or review, CI turning red or green again, settled, and it ends by itself once the pull request is merged or closed.
