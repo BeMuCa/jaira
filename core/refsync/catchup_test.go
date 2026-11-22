@@ -171,3 +171,45 @@ func TestACatchUpKeepsAHandEdit(t *testing.T) {
 		t.Fatalf("ref holds %v, want %v: the hand edit was thrown away", got, want)
 	}
 }
+
+// A rename on the ref while this disk holds both names — the old copy fallen
+// behind and a file under the new name somebody edited: the catch-up does not
+// write the new name over that file. Which of two files is the milestone is
+// the fetch's call.
+func TestACatchUpLeavesATwinUnderTheNewName(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	ms, err := milestone.Create(ada.store.Root, ada.store, ada.syncer, func([]*milestone.Milestone) (*milestone.Milestone, error) {
+		return milestone.New("q4", 45, time.Now()), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+	stale, err := os.ReadFile(ms.Path(ada.store.Root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := milestone.Rename(ada.store.Root, ada.store, ada.syncer, "q4", "q5"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+	dir := milestone.Dir(ada.store.Root)
+	twin := filepath.Join(dir, "q5-"+ms.ID+".md")
+	edited := "---\ncolor: 45\n---\n\n# q5\n\n- " + tkA + "\n"
+	if err := os.WriteFile(twin, []byte(edited), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(ms.Path(ada.store.Root), stale, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := ada.syncer.CatchUpMilestones(ada.store.Root); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(twin); string(b) != edited {
+		t.Fatalf("the catch-up wrote over the file under the new name:\n%s", b)
+	}
+}

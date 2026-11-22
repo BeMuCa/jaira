@@ -460,8 +460,8 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 			continue
 		}
 		file, content, _, err := y.Repo.ReadMilestone(d.ID)
-		if err != nil {
-			continue // no ref for it yet
+		if err != nil || milestone.FromBytes(file, content).ID != d.ID {
+			continue // no ref for it yet, or one that is not this milestone's
 		}
 		path := filepath.Join(milestone.Dir(root), d.File)
 		have, err := os.ReadFile(path)
@@ -469,6 +469,14 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 			continue
 		}
 		dst := filepath.Join(milestone.Dir(root), file)
+		// Renamed on the ref, and a file under the new name lies here already
+		// — a twin git merged in, or one somebody edited: the fetch decides
+		// between them, not a write.
+		if dst != path {
+			if _, err := os.Lstat(dst); err == nil {
+				continue
+			}
+		}
 		if err := ticket.WriteAtomic(dst, content); err != nil {
 			return err
 		}

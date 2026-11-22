@@ -628,10 +628,8 @@ func refuseIfFiled(s *ticket.Store, name, inLogbook string) error {
 // milestone themselves (logbook, restore, fetch); create, add and rm go through
 // milestone.Create and milestone.Edit, which record it. Best effort, see
 // warnIfRecordOnly.
-func recordMilestone(ms *milestone.Milestone) {
-	if err := refs.RecordMilestone(ms.ID, ms.FileName(), ms.Bytes()); err != nil {
-		warnIfRecordOnly(&milestone.RecordError{Name: ms.Name, Err: err})
-	}
+func recordMilestone(ms *milestone.Milestone) error {
+	return refs.RecordMilestone(ms.ID, ms.FileName(), ms.Bytes())
 }
 
 // migrateHeld moves milestone files written before IDs existed to their ID
@@ -639,6 +637,11 @@ func recordMilestone(ms *milestone.Milestone) {
 // milestone outside milestone.Edit and milestone.Create (logbook, restore; a
 // fetch moves them in refs.FetchMilestones). It returns what moved.
 func migrateHeld(s *ticket.Store) ([]string, error) {
+	// First the files that fell behind their refs, as milestone.Edit does:
+	// logbook's gate and restore's write read the file next.
+	if err := refs.CatchUpMilestones(s.Root); err != nil {
+		return nil, err
+	}
 	res, err := milestone.Migrate(s.Root, refs)
 	err = warnIfRecordOnly(err)
 	reportConflicts(res.Conflicts)

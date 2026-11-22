@@ -188,3 +188,21 @@ func TestMigrationIsItsOwnCommitAndIsFoundFromAnotherClone(t *testing.T) {
 		t.Errorf("a milestone created with its ID has no migration commit: %v", err)
 	}
 }
+
+// A file named by hand may carry a space or a letter outside ASCII, which git
+// quotes in ls-tree unless it is asked for -z: the ref is still read.
+func TestAMilestoneRefWithAQuotedNameIsRead(t *testing.T) {
+	ada, _ := twoClones(t)
+	for key, name := range map[string]string{"ABC123": "q4 plan-ABC123.md", "DEF456": "größe-DEF456.md"} {
+		if _, err := ada.WriteMilestone(key, name, []byte(milestoneFile), ""); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+		file, got, _, err := ada.ReadMilestone(key)
+		if err != nil || file != name || string(got) != milestoneFile {
+			t.Errorf("read %s = %q, %q, %v", key, file, got, err)
+		}
+		if file, _, err := ada.ReadMilestoneFileAt(ada.Rev(gitref.MilestoneRefName(key))); err != nil || file != name {
+			t.Errorf("read at commit %s = %q, %v", key, file, err)
+		}
+	}
+}

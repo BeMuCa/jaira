@@ -1,12 +1,15 @@
 package cli
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/BeMuCa/jaira/core/board"
+	"github.com/BeMuCa/jaira/core/gitref"
+	"github.com/BeMuCa/jaira/core/milestone"
 )
 
 // Milestone files travel on their refs and never in a commit: a shared board
@@ -117,5 +120,84 @@ func TestCommittedMilestoneFilesAreWarnedAbout(t *testing.T) {
 	gitRun(t, clone, "rm", "-r", "--quiet", "--cached", ".jaira/milestones")
 	if out, _ := runCLI(t, clone, "validate"); strings.Contains(out, "git rm -r --cached") {
 		t.Errorf("validate still warns once the files are out of git:\n%s", out)
+	}
+}
+
+// KWQCYZ through the two milestone writes that take the lock themselves:
+// logbook reads its gate off the file, so a copy older than the ref used to
+// file a milestone whose newer ticket was still open, and write that old list
+// over the ref.
+func TestLogbookReadsAStaleFileOnlyAfterItCaughtUp(t *testing.T) {
+	ada, _ := twoBoards(t)
+	if out, err := runAndSend(t, ada, "milestone", "create", "q4"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, err := milestone.Load(ada, "q4")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stale, err := os.ReadFile(ms.Path(ada))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := runCLI(t, ada, "create", "open work", "--goal", "g", "--context", "c", "--dod", "d", "--json")
+	if err != nil {
+		t.Fatalf("create ticket: %v\n%s", err, out)
+	}
+	var tk struct{ ID string }
+	if err := json.Unmarshal([]byte(out), &tk); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, ada, "milestone", "add", "q4", tk.ID); err != nil {
+		t.Fatalf("add: %v\n%s", err, out)
+	}
+	if err := os.WriteFile(ms.Path(ada), stale, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err = runAndSend(t, ada, "logbook", "q4")
+	if err == nil || !strings.Contains(out+err.Error(), "still holds work") {
+		t.Fatalf("logbook filed a milestone whose ref holds an open ticket: err %v\n%s", err, out)
+	}
+	file, content, _, err := (&gitref.Repo{Dir: ada, Remote: "origin"}).ReadMilestone(ms.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := milestone.FromBytes(file, content); got.Filed() || !got.Has(tk.ID) {
+		t.Fatalf("the ref after the refused logbook: filed %v, members %v", got.Filed(), got.Members())
+	}
+}
+
+// A filing whose mark cannot be queued for the ref is no filing: every other
+// clone would keep the milestone and a fetch here would write it back. It
+// fails, and the milestone stays on the board unmarked.
+func TestLogbookFailsWhenTheMarkCannotBeQueued(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root writes into a read-only directory")
+	}
+	ada, _ := twoBoards(t)
+	if out, err := runAndSend(t, ada, "milestone", "create", "q4"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, err := milestone.Load(ada, "q4")
+	if err != nil {
+		t.Fatal(err)
+	}
+	box := filepath.Join(stateDirOf(t, ada), "outbox")
+	if err := os.MkdirAll(filepath.Join(box, "milestone-ids"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(filepath.Join(box, "milestone-ids"), 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(filepath.Join(box, "milestone-ids"), 0o755) })
+
+	out, err := runAndSend(t, ada, "logbook", "q4")
+	if code := exitCode(err); code != ExitError {
+		t.Fatalf("logbook with an outbox it cannot write: exit %d, want %d\n%s", code, ExitError, out)
+	}
+	got, err := milestone.Load(ada, ms.ID)
+	if err != nil || got.Filed() {
+		t.Fatalf("after the failed logbook the milestone should be on the board unmarked: %v, filed %v", err, got != nil && got.Filed())
 	}
 }

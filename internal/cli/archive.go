@@ -190,7 +190,10 @@ func unfileMilestone(s *ticket.Store, dst string) (string, error) {
 				filepath.Base(dst), milestone.Dir(s.Root), milestone.StatusFiled, err)
 		}
 	}
-	recordMilestone(ms)
+	if err := recordMilestone(ms); err != nil {
+		return name, fmt.Errorf("%s was moved back to %s but its ref could not be queued, so it is still filed for every other clone and the next milestone write here files it again: %w",
+			filepath.Base(dst), milestone.Dir(s.Root), err)
+	}
 	return name, nil
 }
 
