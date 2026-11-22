@@ -15,6 +15,17 @@ function inLine(text: string, max: number): string {
   return chars.length <= max ? chars.join('') : `${chars.slice(0, max - 1).join('').trimEnd()}…`
 }
 
+// A path in single quotes for a shell line a person or a chat pastes.
+function shellQuoted(path: string): string {
+  return `'${path.replaceAll("'", `'\\''`)}'`
+}
+
+// The last step of a chat the cockpit pulled the ticket for (DF46B9): only the
+// chat knows when it wrote its last line, so it removes the copy itself.
+function removeCopy(copy: string | undefined): string {
+  return copy === undefined ? '' : ` As the very last step, once you write nothing more onto the ticket, decided or not: git clean -fqx -- ${shellQuoted(copy)} - the copy of the ticket the cockpit pulled for this chat; left there, it hides the ticket's ref.`
+}
+
 export const t = {
   waiting: 'Waiting for you',
   accept: 'Accept',
@@ -56,6 +67,18 @@ export const t = {
   failed: (what: string) => `${what} failed`,
   afterAccept: (id: string) => `Next step after ${id}`,
   staysDone: (id: string) => `${id} stays in done; start the next step by hand.`,
+  // A pull request handed to the teamlead to follow (CRASZS): once each.
+  followPr: (n: number, tickets: string[]) =>
+    `jaira-cockpit: pull request #${n} for ${tickets.join(', ')} is open - follow it: run 'jaira pr --watch --number ${n}' under a Monitor (one line per change, it ends when the pull request is merged or closed)`,
+  // .jaira/pr-when says signoff: Accept opens the pull request first, and
+  // done waits for its review round.
+  prOpensInSignoff: (id: string, branch: string) => `${id} stays in signoff: opening the pull request for ${branch} in a Herdr tab; press Accept again once its review round is settled`,
+  toSessionPrInSignoff: (id: string, branch: string) =>
+    `jaira-cockpit: the person pressed Accept on ${id}; this board opens the pull request in signoff, so the pr lane is opening it for ${branch} and ${id} stays in signoff until the review round is settled`,
+  prElsewhere: (branch: string) => `the forge lists a pull request for ${branch}, but none is open from this repository's origin - merged, closed, or another fork's branch of the same name; check it and move the ticket by hand`,
+  prWaitsSignoff: (branch: string, pending: string[]) => `the pull request for ${branch} waits: ${pending.join(', ')} not in signoff yet`,
+  notSettled: (branch: string, unsettled: string[]) => `the review round of ${branch} is not settled:\n${unsettled.map(u => `- ${u}`).join('\n')}`,
+  staysInLane: (id: string, lane: string) => `${id} stays in ${lane}; nothing was moved.`,
   prStarted: (id: string, branch: string) => `${id}: opening the pull request for ${branch} in a Herdr tab`,
   acceptedNoPr: (id: string, hint: string) => `${id} accepted; ${hint}`,
   prWaits: (branch: string, pending: string[]) => `no pull request for ${branch} yet: ${pending.join(', ')} not in done`,
@@ -69,7 +92,7 @@ export const t = {
   landNeedsHerdr: (branch: string) => `${branch} lands on the default branch from a Herdr tab of its own (HERDR_ENV=1 or Herdr App, and spawn.sh from jaira roles install).`,
   prNeedsHerdr: (branch: string) => `${branch} needs a pull request, which opens in a Herdr tab of its own (HERDR_ENV=1 or Herdr App, and spawn.sh from jaira roles install).`,
   noteOn: (id: string) => `Note on ${id}`,
-  copyNotRemoved: (id: string, path: string, why: string) => `${id}: the copy pulled into the main checkout is still there and hides its ref (${oneLine(why)}); remove it: git clean -fqx -- '${path.replaceAll("'", `'\\''`)}'`,
+  copyNotRemoved: (id: string, path: string, why: string) => `${id}: the copy pulled into the main checkout is still there and hides its ref (${oneLine(why)}); remove it: git clean -fqx -- ${shellQuoted(path)}`,
   noteLost: (id: string, why: string, note: string) => `${id} went back to in-progress, but the note with your reason was not written: ${why}\nAdd it by hand: jaira note ${id} '${note.replaceAll("'", `'\\''`)}'`,
   tooOld: (installed: string, needed: string) => `jaira ${installed} is too old for this cockpit: it needs ${needed} or later. Give back will be refused until you update jaira.`,
   released: (latest: string, installed: string) => `jaira ${latest} is released (this is ${installed})`,
@@ -157,18 +180,22 @@ export const t = {
   // types into a tab of its own (lane explain and discuss there) — a change to
   // one belongs in the other. jaira runs with -C: a ticket in a worktree is
   // "on its ref and not on your disk" anywhere else.
-  explainBySubagent: (id: string, dir: string) =>
+  explainBySubagent: (id: string, dir: string, copy?: string) =>
     `The cockpit's Explain on ${id}, without Herdr: start one subagent (Agent tool) with exactly the prompt below and do nothing on ${id} yourself. When it is done, tell me in one line that the explanation of ${id} is on the ticket, under Read explanation in the cockpit.\n\n` +
     `Read ticket ${id} with jaira -C '${dir}' show ${id} --brief (title, goal, question, review, the newest bug hunt and the latest notes). Explain the review on ${id} in plain words: where it stands, what each note in review-gaps means in one everyday sentence, which options there are and which you recommend. Where review.verdict_gaps is not empty and differs from review.gaps, the verdict is from an earlier round and a later lane rewrote review-gaps: the review's notes are those in review.verdict_gaps - read them wherever this says review-gaps, and say that the ticket changed since. ` +
     `Then write the same explanation onto the ticket as one note with exactly these lines: jaira -C '${dir}' note ${id} "explain: Status: DoD <done>/<all> ok|fail | tests ok|fail | blockers ok|fail | bughunt on HEAD ok|fail|unknown|skipped\n[<class>] <one note, one everyday sentence>\n1) <option, one line> [accept]\n2) <option, one line> [give back]\nRecommendation: <number> - <why, one sentence, naming the note it is about>" - with real line breaks in the text. ` +
     `The status line: DoD, tests and blockers each end in ok or fail, bughunt on HEAD in one of ok, fail, unknown or skipped; blockers is ok when review-gaps has no blocker: line; bughunt on HEAD ends in the brief's bughunt.state word as it stands - ok, fail, unknown (a hunted file is changed and not committed, so nobody can tell; never write fail for it) or skipped (the ticket runs no hunt after a fix, by choice) - and in fail when bughunt is null (no hunt finished); only a brief without a bughunt key, from an older jaira, falls back to: ok when the newest 'bughunt: done at <commit>' note names the commit git -C '${dir}' rev-parse --short HEAD prints. ` +
     `One [<class>] line per note in review-gaps, the class exactly one of: [blocker] - a wrong result, data loss, a crash, a security hole; [small edge] - formally fine, one round of about ten minutes closes it; [known limit] - cannot be solved here and is documented; [not this ticket] - belongs elsewhere, say where. Classify first; nothing else per note, no line on why it matters. ` +
     `Two to four options with 1) 2) 3) 4) at the start of the line - the numbers the person picks by in the cockpit - in the order you recommend them, no fixed order. Each option ends in [give back] when it means giving the work back to change something, [accept] when it means accepting the ticket as it is, and no mark when it is neither. When no note is a blocker, the recommendation says plainly that the ticket can be accepted as it is. ` +
-    `Change nothing else, commit nothing, do not move the ticket. Answer in the language the person speaks with this session; keep the words Status:, Recommendation:, ok, fail and the class marks in English, the cockpit reads them.`,
-  discussInThisChat: (id: string, dir: string) =>
+    `Change nothing else, commit nothing, do not move the ticket. Answer in the language the person speaks with this session; keep the words Status:, Recommendation:, ok, fail and the class marks in English, the cockpit reads them.` +
+    removeCopy(copy),
+  discussInThisChat: (id: string, dir: string, copy?: string) =>
     `The cockpit's Discuss on ${id}, without Herdr: ticket ${id} waits for a decision of mine. Read it with jaira -C '${dir}' show ${id} --brief (the question field and the latest notes), explain the question and the options to me in plain words and ask me. ` +
     `When I have decided: write the decision in one sentence onto the ticket with jaira -C '${dir}' note ${id} "decision: <decision>" and clear the question with jaira -C '${dir}' set ${id} question=. If the decision means the work goes on, move the ticket back yourself, exactly so: jaira -C '${dir}' move ${id} --to in-progress (without --what/--why/--resolves: the ticket has its outcome already, and the decision is in the note). ` +
-    `Accept it into the next lane only when I say yes to that explicitly. Change no code. Answer in the language I speak with you.`,
+    `Accept it into the next lane only when I say yes to that explicitly. Change no code. Answer in the language I speak with you.` +
+    removeCopy(copy),
+  copyLeft: (id: string, path: string) => `${id}: the copy pulled into the main checkout for a chat is still there and hides its ref; once no chat on ${id} runs any more, remove it: git clean -fqx -- ${shellQuoted(path)}`,
+  chatHoldsCopy: (id: string, kind: string) => `The ${kind} chat on ${id} is still open and removes the copy of the ticket pulled for it when it ends. Finish that chat first.`,
   opened: (id: string) => `${id}: opened in a Herdr tab of its own`,
   context: (k: number) => `context ${k}k`,
   cacheLeft: (min: number) => `cache ${min} min left`,

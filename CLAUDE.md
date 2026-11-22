@@ -192,7 +192,7 @@ Loop: testing sends work back to in-progress, and that repeats until testing has
   Removes what the change does not need — code that already exists elsewhere, code nobody calls, and code that carries its weight in nothing.
 - `testing` — yours to work; tier cheap; must produce test-verdict, hunt-verdict
   Runs the change and checks it against the ticket - does the demanded thing exist, and does it work - while a fresh agent hunts the touched modules for defects.
-- `human` — **a person's, not yours** — you may move work in, never out; only with an open question (`--question`); without one, work passes it by
+- `human` — **a person answers here** — you may move work in, and move it on once the question is answered; only with an open question (`--question`); without one, work passes it by
   Human in the loop.
 - `review` — **fresh context** — an agent's, but not the one that carried the ticket here: hand it to a new agent; tier strong; must produce review-summary, review-gaps, review-verdict, review-check
   A second model has judged the diff.

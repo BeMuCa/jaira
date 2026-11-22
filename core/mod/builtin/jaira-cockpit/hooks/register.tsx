@@ -4,7 +4,7 @@ import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
   branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
-  offeredRelease, upgradeCheckOf,
+  offeredRelease, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
   createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, languageOf, nextChoice, NOTE_MARK, rephrasedOf, rephrasePrompt, standOf,
   type Action, type Agent, type GapItem, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
 } from './board.ts'
@@ -17,7 +17,7 @@ import {
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
 import { COLORS, HATS, overviewOf, pickOf, stoneOf, workerKey, workersOf } from './overview.ts'
-import { drawOverview, type OverviewTab } from './overview-pane.tsx'
+import { drawOverview, headRow, type OverviewTab } from './overview-pane.tsx'
 import {
   backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
   workerLines, type Role, type SessionRecord, type Tab,
@@ -102,13 +102,18 @@ const BUSY_MS = 20_000
 // a reopening.
 const FRAME_MS = 250
 const READ_FRAMES = 20
-// The Overview pane's own rows, beside the Workers tab's picture: its tab
-// row, three high since the framed Close stands in it.
-const OVERVIEW_ROWS = 3
+// The Overview pane's own rows, beside the Workers tab's picture: its head,
+// the tabs and Close on one line.
+const OVERVIEW_ROWS = 1
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
 // A filter's choice with one item pressed: out if it was in, in if it was not.
 const toggled = (chosen: string[], x: string) => (chosen.includes(x) ? chosen.filter(y => y !== x) : [...chosen, x])
+// A pane left with nothing to show (its ticket gone from the board, its state
+// cleared) keeps its head: [ Close ] closes it as in every other state.
+const nothingPane = ({ Box, Button, Text }: Pick<ElementTable, 'Box' | 'Button' | 'Text'>, head: string, close: { key: string; onPress: () => void }) => (
+  <Box flexDirection="column">{headRow({ Box, Button }, head, { ...close, label: t.close })}<Text dimColor>{t.paneNothing}</Text></Box>
+)
 
 // ── what this module keeps between events (a reload starts it over) ──────
 
@@ -133,7 +138,11 @@ let personSaid: string | undefined
 let threads: Thread[] = []
 // The Explain and Discuss chats this session opened, by their tab's label
 // (`<id>/explain`), with when: the tab goes once the chat has done its part.
-const chats = new Map<string, number>()
+// copy is the ticket file pulled into the main checkout for the chat
+// (ticketHere), which the chat removes itself as its last step; a minute
+// after the chat is done (doneAt) the band names it if it is still there.
+const chats = new Map<string, { since: number; copy?: string; doneAt?: number }>()
+const COPY_CHECK_MS = 60_000
 // The Workers tab's frames, running while it is open and shown, and the
 // board the Overview was opened on.
 let frames: { cancel: () => void } | undefined
@@ -248,6 +257,8 @@ async function shorten($: EngineInterface, text: string, origin: string, agent?:
     session: await sessionId($),
     text: report,
   })
+  const named = pullRequestsIn(report)
+  if (named.length > 0) $.clock.after(0, () => void followNamed($, named, short.ticket))
   return text.replace(report, () => short.line)
 }
 
@@ -324,14 +335,14 @@ async function findBoard($: EngineInterface): Promise<{ dir: string; repo: strin
 
 // Workers and reviews are the agents that run: Herdr tabs (none where there
 // is no Herdr or its list failed), and this session's own subagents.
-async function agentsOf($: EngineInterface, dir: string): Promise<{ bin: string | undefined; tabs: Tab[]; agents: Agent[] }> {
+async function agentsOf($: EngineInterface, dir: string): Promise<{ bin: string | undefined; tabs: Tab[]; listed: boolean; agents: Agent[] }> {
   const bin = await herdr($)
   const listed = bin === undefined ? undefined : await run($, [bin, 'tab', 'list'], dir)
   let agents: Agent[] = []
   try {
     agents = await $.agent.list()
   } catch {}
-  return { bin, tabs: listed?.exitCode === 0 ? tabsOf(listed.stdout) : [], agents }
+  return { bin, tabs: listed?.exitCode === 0 ? tabsOf(listed.stdout) : [], listed: listed?.exitCode === 0, agents }
 }
 
 async function refreshBoard($: EngineInterface): Promise<void> {
@@ -411,8 +422,15 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   // only once its agent stopped working: a Discuss chat notes the decision
   // first and then still moves the ticket and tells this session.
   const open = tabs
-  for (const [label, since] of chats) {
+  const now = await $.clock.now()
+  for (const [label, { since, copy, doneAt }] of chats) {
     const [id = '', kind] = label.split('/')
+    if (doneAt !== undefined) {
+      if (now - doneAt < COPY_CHECK_MS) continue
+      chats.delete(label)
+      if (copy !== undefined && await $.fs.exists(copy).catch(() => false)) await say($, t.copyLeft(id, copy))
+      continue
+    }
     const tab = open.find(x => x.label === label)
     if (tab?.agent_status === 'working') continue
     const from = since - (since % 60_000)
@@ -422,7 +440,10 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     const w = [...view.waiting, ...view.theirs].find(x => x.id === id)
     const done = fresh !== undefined || (kind === 'discuss' && (w === undefined || w.question === ''))
     if (!done) continue
-    chats.delete(label)
+    // The chat removes its copy itself; whether it did is looked at a
+    // minute later, when even a chat without a tab has written its last line.
+    if (copy === undefined) chats.delete(label)
+    else chats.set(label, { since, copy, doneAt: now })
     if (kind === 'discuss' && fresh !== undefined) await update($, decidedAtom, d => ({ ...d, [id]: fresh.text }))
     if (tab !== undefined) await run($, [bin!, 'tab', 'close', tab.tab_id], board.dir)
   }
@@ -544,7 +565,8 @@ async function ownTree($: EngineInterface, b: { dir: string; repo: string }, id:
 // the ticket in a lane it left long ago. Every write already sits on the ref,
 // or whole in the outbox, so nothing goes with it. A refused pull (somebody
 // else holds the ticket, no remote) stops the press: it never steals.
-type Here = { ok: true; dir: string; leave: () => Promise<void> } | { ok: false; why: string }
+// copy names the file pulled into the main checkout, the one leave() removes.
+type Here = { ok: true; dir: string; copy?: string; leave: () => Promise<void> } | { ok: false; why: string }
 
 async function ticketHere($: EngineInterface, b: { dir: string; repo: string }, id: string): Promise<Here> {
   const own = await ownTree($, b, id)
@@ -564,6 +586,7 @@ async function ticketHere($: EngineInterface, b: { dir: string; repo: string }, 
   return {
     ok: true,
     dir,
+    copy: path,
     leave: async () => {
       const r = await run($, ['git', 'clean', '-fqx', '--', path], dir)
       // A line beside the band, never the message pane: that already holds
@@ -660,6 +683,9 @@ async function accepting($: EngineInterface, w: Waiting, to: string, dir: string
   const dry = await run($, ['jaira', 'move', w.id, '--to', to, '--dry-run', '--json'], dir, 30_000)
   const refused = dry === undefined ? 'jaira did not run' : dry.exitCode === 0 ? undefined : otherRefusal(dry.stderr || dry.stdout)
   if (refused !== undefined) return fail($, `${t.accept} ${w.id}`, refused)
+  // After the gates, never before: a ticket an open definition-of-done item
+  // still refuses opens no pull request either.
+  if (await heldInSignoff($, w)) return
   const done = await jaira($, dir, ['move', w.id, '--to', to, '--force'])
   if (movedBefore(done, w.id, to)) return movedFirst($, t.accept, w.id, to)
   if (done.ok) {
@@ -675,6 +701,67 @@ async function accepting($: EngineInterface, w: Waiting, to: string, dir: string
     void $.prompt.submit({ text: t.toSessionAccepted(w.id, w.lane, to, next) })
   } else await fail($, `${t.accept} ${w.id}`, done.why)
   await refreshBoard($)
+}
+
+// On a board whose .jaira/pr-when says signoff (JG3REW) the pull request
+// opens while the ticket is in signoff, and done waits until its review round
+// is settled. So Accept there does one of three things before any move: no
+// pull request yet — it starts the pr lane and the ticket stays in signoff;
+// one open and not settled — it says what is in the way and moves nothing;
+// settled — it accepts as everywhere else. Another ticket on the branch not
+// in signoff yet, or a forge that cannot be asked, holds it too: done would
+// otherwise pass a review nobody could see. Known limit: a pull request
+// merged or closed while its branch is still ahead of the base (a squash
+// merge, an origin not fetched) is held as well — the forge still lists it,
+// jaira pr shows none open, and which it is a person tells: they move the
+// ticket by hand. Answers whether it held the ticket. A board saying done, a
+// .jaira/pr saying none, a board without a signoff lane before done, and a
+// board whose pr-when cannot be read are not touched.
+async function heldInSignoff($: EngineInterface, w: Waiting): Promise<boolean> {
+  if (!board || w.acceptTo === null) return false
+  const b = board
+  const hold = async (why: string) => {
+    await fail($, `${t.accept} ${w.id}`, `${why}\n${t.staysInLane(w.id, w.lane)}`)
+    return true
+  }
+  // A pr-when that cannot be read counts as done (decided 22.11.): Accept
+  // runs on every board, and a broken roles read must not stop every Accept
+  // everywhere for the few boards that say signoff.
+  const roles = await run($, ['jaira', 'roles', 'list', '--json'], b.dir, 30_000)
+  if (roles?.exitCode !== 0 || prWhenOf(roles.stdout) !== 'signoff') return false
+  const lanes = await run($, ['jaira', 'lanes', '--json'], b.dir)
+  if (lanes?.exitCode !== 0) return hold(`jaira lanes: ${output(lanes)}`)
+  const arrived = lanesBetween(lanes.stdout, 'signoff', w.acceptTo)
+  if (arrived.length === 0) return false
+  const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
+  const porcelain = trees?.exitCode === 0 ? trees.stdout : ''
+  const decided = await decideStep($, b, w.id, arrived, porcelain)
+  if (typeof decided === 'string') return hold(decided)
+  const { step, branch, hint, land, pending, has } = decided
+  if (land) return false
+  if (branch !== undefined && pending !== undefined && pending.length > 0) return hold(t.prWaitsSignoff(branch, pending))
+  if (step === 'pr' && branch !== undefined) {
+    // No lock against a second press while the lane still runs (CRASZS,
+    // decided 22.11.): gh and glab refuse a second pull request for one
+    // branch, so a double press costs a second agent's tokens at most.
+    const failed = await startPrLane($, b, w.id, branch, false, porcelain)
+    if (failed !== undefined) return hold(failed)
+    await say($, t.prOpensInSignoff(w.id, branch))
+    void $.prompt.submit({ text: t.toSessionPrInSignoff(w.id, branch) })
+    return true
+  }
+  if (has === true && branch !== undefined) {
+    const r = await run($, ['jaira', 'pr', branch, '--json'], b.repo, 60_000)
+    const open = r?.exitCode === 0 ? pullRequestsOf(r.stdout) : undefined
+    if (open === undefined) return hold(t.prUnchecked(`jaira pr: ${output(r)}`))
+    // The forge lists a pull request of this branch in some state or from
+    // some fork, and none is open from origin: merged, closed, or somebody
+    // else's of the same name. Whose round that is, a person tells.
+    if (open.length === 0) return hold(t.prElsewhere(branch))
+    const unsettled = open.flatMap(p => (p.settled ? [] : p.unsettled.map(u => `#${p.number}: ${u}`)))
+    return unsettled.length > 0 ? hold(t.notSettled(branch, unsettled)) : false
+  }
+  return hint ? hold(hint) : false
 }
 
 // What a command said when it failed, for the message pane: its error, else
@@ -726,9 +813,9 @@ async function pullTarget($: EngineInterface, repoDir: string): Promise<Target |
 // with its reason — no origin at all, a forge that does not answer (whether
 // origin is a fork cannot be told), a fork whose parent no remote points at.
 // The step is the same 'pr' and `land` says which of the two it is.
-type Decided = { step: StepAfterAccept; branch?: string; hint: string; land?: boolean }
+type Decided = { step: StepAfterAccept; branch?: string; hint: string; land?: boolean; pending?: string[]; has?: boolean }
 
-async function decideStep($: EngineInterface, b: { dir: string; repo: string }, id: string, terminal: string, porcelain: string): Promise<Decided | string> {
+async function decideStep($: EngineInterface, b: { dir: string; repo: string }, id: string, arrived: string | readonly string[], porcelain: string): Promise<Decided | string> {
   const found = branchesFor(porcelain, id)
   const asked = await pullTarget($, b.repo)
   // Under none a reason is held until there is something to land: a branch
@@ -764,8 +851,8 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   if (ahead === 0) return { step: 'none', branch, hint: '' }
   const list = await run($, ['jaira', 'list', '--json'], b.dir, 30_000)
   if (list?.exitCode !== 0) return `jaira list: ${withoutWarnings(list?.stderr ?? '') || 'did not run'}`
-  const pending = pendingOf(list.stdout, ticketsNamed(subjects.stdout), terminal)
-  if (pending.length > 0) return { step: stepAfterAccept(ahead, pending, false), branch, hint: land ? t.landWaits(branch, pending) : t.prWaits(branch, pending), land }
+  const pending = pendingOf(list.stdout, ticketsNamed(subjects.stdout), arrived)
+  if (pending.length > 0) return { step: stepAfterAccept(ahead, pending, false), branch, hint: land ? t.landWaits(branch, pending) : t.prWaits(branch, pending), land, pending }
   if (land && typeof asked === 'string') return t.cannotLand(asked)
   if (land && target === undefined) {
     const origin = await run($, ['git', 'remote', 'get-url', 'origin'], b.repo)
@@ -776,7 +863,7 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   const cmd = pullRequestsCommand(target.on, target.repo, branch)
   const listed = await run($, cmd, b.repo, 30_000)
   const has = listed?.exitCode === 0 ? hasPullRequest(listed.stdout) : undefined
-  return { step: stepAfterAccept(ahead, pending, has), branch, hint: has === undefined ? t.prUnchecked(`${cmd[0]}: ${output(listed)}`) : '' }
+  return { step: stepAfterAccept(ahead, pending, has), branch, hint: has === undefined ? t.prUnchecked(`${cmd[0]}: ${output(listed)}`) : '', has }
 }
 
 // What the press starts once the ticket is in done, without a further word
@@ -807,20 +894,87 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
   const { step, branch, hint, land } = decided
   // No pull request to open: only why not, where there is a reason.
   if (step !== 'pr' || branch === undefined) return hint ? said(t.acceptedNoPr(id, hint)) : ''
+  const failed = await startPrLane($, b, id, branch, land === true, trees?.exitCode === 0 ? trees.stdout : '')
+  if (failed !== undefined) return stuck(failed)
+  return said(land ? t.landStarted(id, branch) : t.prStarted(id, branch))
+}
+
+// The pr lane of spawn.sh on the ticket's branch, in the worktree that
+// carries it — the role pushes from there — checked out again beside the
+// repository where it went after done. A pull request it opens is looked for
+// afterwards (followPullRequest), so the teamlead hears of it once. Answers
+// why it could not start, or undefined.
+async function startPrLane($: EngineInterface, b: { dir: string; repo: string }, id: string, branch: string, land: boolean, porcelain: string): Promise<string | undefined> {
   const bin = await herdr($)
   const script = await spawnScript($)
-  if (bin === undefined || script === undefined) return stuck(land ? t.landNeedsHerdr(branch) : t.prNeedsHerdr(branch))
-  // In the worktree that carries the branch — the role pushes from there —
-  // checked out again beside the repository where it went after done.
-  let wt = trees?.exitCode === 0 ? worktreeOfBranch(trees.stdout, branch) : undefined
+  if (bin === undefined || script === undefined) return land ? t.landNeedsHerdr(branch) : t.prNeedsHerdr(branch)
+  let wt = porcelain ? worktreeOfBranch(porcelain, branch) : undefined
   if (wt === undefined) {
     wt = newWorktreeFor(b.repo, branch)
     const added = await run($, ['git', 'worktree', 'add', wt, branch], b.repo, 60_000)
-    if (added?.exitCode !== 0) return stuck(`git worktree add ${wt} ${branch}: ${output(added)}`)
+    if (added?.exitCode !== 0) return `git worktree add ${wt} ${branch}: ${output(added)}`
   }
   const r = await run($, [...script, '--no-worktree', ...await parentArgs($), id.toLowerCase(), id, 'pr', wt], wt, 120_000)
-  if (r?.exitCode !== 0) return stuck(`spawn.sh: ${output(r).slice(-160)}`)
-  return said(land ? t.landStarted(id, branch) : t.prStarted(id, branch))
+  if (r?.exitCode !== 0) return `spawn.sh: ${output(r).slice(-160)}`
+  if (!land) followPullRequest($, id, branch, b.repo, PR_LOOKS)
+  return undefined
+}
+
+// ── following a pull request (CRASZS) ────────────────────────────────────
+//
+// The cockpit polls no pull request: the teamlead follows one itself with
+// 'jaira pr --watch' under a Monitor. What the cockpit adds is the one line
+// that says a pull request is there to follow — once per pull request, kept
+// in the store so a restarted session does not say it again. It comes from
+// two places: a pull request the pr lane opens after Accept, looked for a
+// bounded number of times (the lane runs in a Herdr tab whose report never
+// reaches this session), and an agent's report that names one.
+const PR_LOOK_EVERY_MS = 60_000
+const PR_LOOKS = 20
+const FOLLOWED_PREFIX = 'pr-followed:'
+
+function followPullRequest($: EngineInterface, id: string, branch: string, repo: string, looks: number): void {
+  if (looks <= 0) return
+  $.clock.after(PR_LOOK_EVERY_MS, () => void lookForPullRequest($, id, branch, repo, looks - 1))
+}
+
+async function lookForPullRequest($: EngineInterface, id: string, branch: string, repo: string, looks: number): Promise<void> {
+  const r = await run($, ['jaira', 'pr', branch, '--json'], repo, 60_000)
+  // No forge, no gh, no sign-in (exit 3), a usage error (2): asking again
+  // changes nothing. A forge that failed (1) or a call that timed out may
+  // answer next minute.
+  if (r !== undefined && r.exitCode !== 0 && r.exitCode !== 1) return
+  const open = r?.exitCode === 0 ? pullRequestsOf(r.stdout)?.[0] : undefined
+  if (open === undefined) return followPullRequest($, id, branch, repo, looks)
+  const line = await followLine($, open.number, open.tickets.length > 0 ? open.tickets : [id])
+  if (line !== undefined) void $.prompt.submit({ text: line })
+}
+
+// The pull requests a report names by address, asked of jaira one by one:
+// the first that is this repository's own (jaira pr reads the forge origin
+// leads to, a fork's parent included), open, and whose address is the one
+// the report wrote is handed over. A report quoting another project's pull
+// request hands nothing over for it. After the report, not inside it: the
+// forge's answer must not hold up the report reaching this session.
+async function followNamed($: EngineInterface, named: { number: number; url: string }[], ticket: string): Promise<void> {
+  const dir = board?.repo ?? (await project($))
+  for (const { number, url } of named) {
+    const r = await run($, ['jaira', 'pr', '--number', String(number), '--json'], dir, 60_000)
+    const pr = r?.exitCode === 0 ? pullRequestsOf(r.stdout)?.[0] : undefined
+    if (pr === undefined || !sameAddress(pr.url, url)) continue
+    const line = await followLine($, number, pr.tickets.length > 0 ? pr.tickets : [ticket])
+    if (line !== undefined) void $.prompt.submit({ text: line })
+    return
+  }
+}
+
+// The line that hands a pull request to the teamlead, or undefined where
+// this project's pull request was handed over before.
+async function followLine($: EngineInterface, n: number, tickets: string[]): Promise<string | undefined> {
+  const key = `${FOLLOWED_PREFIX}${await project($)}:${n}`
+  if ((await $.store.get(key)) !== undefined) return undefined
+  await $.store.set(key, true)
+  return t.followPr(n, tickets)
 }
 
 // origin's default branch as a remote-tracking name: origin/HEAD where it
@@ -940,19 +1094,53 @@ async function parentArgs($: EngineInterface): Promise<string[]> {
 async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discuss'): Promise<void | 'hold'> {
   const what = `${kind === 'explain' ? t.explain : t.discuss} ${id}`
   if (!board) return fail($, what, t.noBoard)
-  const dir = await ticketDir($, board, id)
+  // One chat at a time on a ticket a chat holds a copy for: that chat removes
+  // the copy when it ends, from under any other chat still writing there —
+  // held until the copy was looked at, a minute after the chat was done.
+  const holder = [...chats].find(([l, c]) => l.startsWith(`${id}/`) && c.copy !== undefined)
+  if (holder !== undefined) return fail($, what, t.chatHoldsCopy(id, holder[0].split('/')[1] === 'explain' ? t.explain : t.discuss))
+  // The chat writes its note onto the ticket, which a file on the ref alone
+  // or older than the ref refuses: pulled first, as for Accept (76ERHH). A
+  // refused pull stops the press; it never steals.
+  const here = await ticketHere($, board, id)
+  if (!here.ok) return fail($, what, here.why)
+  const { dir } = here
+  const label = `${id}/${kind}`
+  // A copy pulled into the main checkout is the chat's to remove, as its last
+  // step: only the chat knows when it wrote its last line. A press that opens
+  // no chat removes it at once.
+  const { copy } = here
+  const opened = async () => chats.set(label, { since: await $.clock.now(), copy })
   if ((await herdr($)) === undefined) {
+    await opened()
     await say($, kind === 'explain' ? t.explainAsked(id) : t.discussHere(id))
-    void $.prompt.submit({ text: kind === 'explain' ? t.explainBySubagent(id, dir) : t.discussInThisChat(id, dir) })
+    void $.prompt.submit({ text: kind === 'explain' ? t.explainBySubagent(id, dir, copy) : t.discussInThisChat(id, dir, copy) })
     return 'hold'
   }
   const script = await spawnScript($)
-  if (script === undefined) return fail($, what, t.noSpawn)
+  if (script === undefined) {
+    await here.leave()
+    return fail($, what, t.noSpawn)
+  }
   // A Discuss chat sends its decision to this session.
   const parent = kind === 'discuss' ? await parentArgs($) : []
-  const r = await run($, [...script, '--no-worktree', ...parent, id.toLowerCase(), id, kind, dir], dir, 120_000)
-  if (r?.exitCode !== 0) return fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
-  chats.set(`${id}/${kind}`, await $.clock.now())
+  const removes = copy === undefined ? [] : ['--copy', copy]
+  // Registered before spawn.sh runs, which waits up to two minutes for
+  // claude while the row unlocks after BUSY_MS: a second press in that time
+  // already finds this chat holding the copy.
+  await opened()
+  const r = await run($, [...script, '--no-worktree', ...parent, ...removes, id.toLowerCase(), id, kind, dir], dir, 120_000)
+  if (r?.exitCode !== 0) {
+    // spawn.sh may have failed after its tab came up (claude slow to start):
+    // that chat runs and removes the copy itself, so it is not taken from
+    // under it. No such tab: no chat started, and the copy goes at once.
+    const tabs = await agentsOf($, dir)
+    if (!(copy !== undefined && tabs.listed && tabs.tabs.some(x => x.label === label))) {
+      chats.delete(label)
+      await here.leave()
+    }
+    return fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
+  }
   await say($, t.opened(id))
 }
 
@@ -1847,15 +2035,15 @@ export const register: Register = (on, options) => {
     const table = $.ui.resolve(e)
     const { Box, Button, Text } = table
     const Input = 'Input' in table ? table.Input : undefined
-    if (w === undefined || Input === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
-    // The review's notes, one row each, when it wrote any: a press changes
-    // what happens to it. Without them the pane asks only what is missing.
-    const items = choosing?.id === w.id ? choosing.items : []
     const close = () => {
       void update($, givingAtom, () => null)
       void update($, choosingAtom, () => null)
       void $.ui.close({ id: GIVE_BACK })
     }
+    if (w === undefined || Input === undefined) return nothingPane(table, 'give-back-head', { key: 'give-back-close', onPress: close })
+    // The review's notes, one row each, when it wrote any: a press changes
+    // what happens to it. Without them the pane asks only what is missing.
+    const items = choosing?.id === w.id ? choosing.items : []
     const toggle = (n: number) =>
       void update($, choosingAtom, c => (c === null || c.id !== w.id ? c : { ...c, items: c.items.map((x, i) => (i === n ? { ...x, choice: nextChoice(x.choice) } : x)) }))
     const choiceColour = (c: GapItem['choice']) => (c === 'now' ? 'error' : c === 'later' ? 'suggestion' : 'success')
@@ -1874,6 +2062,7 @@ export const register: Register = (on, options) => {
     }
     return (
       <Box flexDirection="column">
+        {headRow({ Box, Button }, 'give-back-head', { key: 'give-back-close', label: t.close, onPress: close })}
         <Text>{w.id} · {w.lane}{w.verdict !== '' ? ` · ${w.verdict}` : ''}</Text>
         {items.length > 0 ? <Box marginTop={1}><Text bold>{t.gapsHeading}</Text></Box> : null}
         {items.map((x, i) => (
@@ -1930,7 +2119,7 @@ export const register: Register = (on, options) => {
   on('ui.render', { component: 'Pane', requestId: EXPLANATION }, async ($, e) => {
     const explaining = await read($, explainingAtom)
     const { Box, Button, Text } = $.ui.resolve(e)
-    if (explaining === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    if (explaining === null) return nothingPane({ Box, Button, Text }, 'explanation-head', { key: 'explanation-close', onPress: () => void $.ui.close({ id: EXPLANATION }) })
     const { id, decided } = explaining
     const x = explanationOf(explaining.text)
     const ticket = await waitingTicket($, id)
@@ -1968,6 +2157,7 @@ export const register: Register = (on, options) => {
     const ownDigit = String(x.options.length + 1)
     return (
       <Box flexDirection="column">
+        {headRow({ Box, Button }, 'explanation-head', { key: 'explanation-close', label: t.close, onPress: () => void $.ui.close({ id: EXPLANATION }) })}
         {about(Text, ticket)}
         <Box marginTop={ticket !== undefined ? 1 : 0}><Text bold>{t.explanationOf(id)}</Text></Box>
         {x.parts.map((p, i) => p.kind === 'option'
@@ -1998,7 +2188,6 @@ export const register: Register = (on, options) => {
         {open
           ? <Box marginTop={1}><Button key={`pick-${id}-own`} plain hotkey={ownDigit} {...(x.options.length === 0 ? { autoFocus: true as const } : {})} label={t.ownAnswer} onPress={() => void askOwnAnswer($, id)} /></Box>
           : <Box marginTop={1}><Text wrap="wrap"><Text bold>{t.decidedAs}</Text> {decided}</Text></Box>}
-        <Button key="explanation-close" label={t.close} onPress={() => void $.ui.close({ id: EXPLANATION })} />
       </Box>
     )
   })
@@ -2081,7 +2270,7 @@ export const register: Register = (on, options) => {
     const id = await read($, verdictAtom)
     const { Box, Button, Text } = $.ui.resolve(e)
     const w = await waitingTicket($, id)
-    if (w === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    if (w === undefined) return nothingPane({ Box, Button, Text }, 'verdict-head', { key: 'verdict-close', onPress: () => void $.ui.close({ id: VERDICT }) })
     // The light first: whether to accept, at a glance, and the reason it names.
     const light = lightOf(w, (await read($, huntsAtom))[w.id])
     const first = light.reasons[0]
@@ -2091,6 +2280,7 @@ export const register: Register = (on, options) => {
     const said = (await read($, rephrasedAtom))[w.id] ?? {}
     return (
       <Box flexDirection="column">
+        {headRow({ Box, Button }, 'verdict-head', { key: 'verdict-close', label: t.close, onPress: () => void $.ui.close({ id: VERDICT }) })}
         <Text key="light" wrap="wrap">
           <Text bold color={LIGHT_COLOUR[light.color]}>● {t.light[light.color]}</Text>
           : {first === undefined ? t.lightAccept : t.lightReason(first)}{light.reasons.length > 1 ? t.lightMore(light.reasons.length - 1) : ''}
@@ -2102,7 +2292,6 @@ export const register: Register = (on, options) => {
         {w.blockers.length + w.notes.length > 0 ? <Box marginTop={1}><Text bold>{t.notesHeading}</Text></Box> : null}
         {!w.findingsKnown ? <Box marginTop={1}><Text dimColor wrap="wrap">{t.notesNotKept}</Text></Box> : null}
         {notes.map((n, i) => <Text key={`note-${i}`} wrap="wrap">{NOTE_MARK[n.cls]} {said[n.text] ?? n.text}</Text>)}
-        <Button key="verdict-close" label={t.close} onPress={() => void $.ui.close({ id: VERDICT })} />
       </Box>
     )
   })
@@ -2112,9 +2301,9 @@ export const register: Register = (on, options) => {
     const { Box, Button, Text } = $.ui.resolve(e)
     return (
       <Box flexDirection="column">
+        {headRow({ Box, Button }, 'message-head', { key: 'message-close', label: t.close, onPress: () => void $.ui.close({ id: MESSAGE }) })}
         <Text bold>{message?.title ?? ''}</Text>
         <Text wrap="wrap">{message?.text ?? ''}</Text>
-        <Button key="message-close" label={t.close} onPress={() => void $.ui.close({ id: MESSAGE })} />
       </Box>
     )
   })
@@ -2140,8 +2329,8 @@ export const register: Register = (on, options) => {
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const id = await read($, paneAtom)
-    const { Box, Text } = $.ui.resolve(e)
-    if (id === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    const { Box, Button, Text } = $.ui.resolve(e)
+    if (id === null) return nothingPane({ Box, Button, Text }, 'ticket-head', { key: 'ticket-close', onPress: () => void $.ui.close({ id: PANE }) })
     // Opening a ticket reads its reports: they count as read, as after report.
     const kept = await locked(async () => readReports($, keyOf(await project($), id)))
     let csv = ''
@@ -2152,6 +2341,7 @@ export const register: Register = (on, options) => {
     const waiting = (await read($, boardAtom))?.waiting.find(w => w.id === id)
     return (
       <Box flexDirection="column">
+        {headRow({ Box, Button }, 'ticket-head', { key: 'ticket-close', label: t.close, onPress: () => void $.ui.close({ id: PANE }) })}
         {waiting !== undefined ? <Text bold>{waiting.lane}{waiting.verdict !== '' ? ` · ${waiting.verdict}` : ''}</Text> : null}
         <Text bold>{t.paneReports}</Text>
         {kept.length === 0 ? <Text dimColor>{t.paneNothing}</Text> : null}
