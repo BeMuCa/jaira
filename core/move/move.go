@@ -10,6 +10,7 @@ package move
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/lane"
@@ -39,6 +40,10 @@ type Request struct {
 	// or a parking lane is judged on what the move brings along.
 	Question string
 	Reason   string
+	// Note is appended to the ticket's progress notes in the same write as
+	// the move, so a person's send-back and the reason for it land together
+	// or not at all. Empty writes none.
+	Note string
 	// Stage is applied and PERSISTED before the gate runs — the CLI stages
 	// outcome, question and commits this way, and a refused move keeps them:
 	// requiring two commands to satisfy one move would be a poor contract for
@@ -145,6 +150,11 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 		}
 		if err := t.Doc().SetScalar(ticket.FieldStatus, req.To); err != nil {
 			return err
+		}
+		if note := strings.TrimSpace(req.Note); note != "" {
+			if err := ticket.AppendNote(t.Doc(), note, time.Now(), req.Actor); err != nil {
+				return err
+			}
 		}
 		return ticket.SetReady(t.Doc(), gate.Ready(t))
 	})
