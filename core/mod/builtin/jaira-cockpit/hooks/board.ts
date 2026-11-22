@@ -13,10 +13,18 @@ export type Waiting = {
   goal: string
   lane: string
   verdict: string
+  // Which way the verdict goes by the words the board's review lane declares
+  // (`verdicts` in lanes --json): accept, sendBack, or other for free text.
+  // undefined where no lane declares words — a jaira before that key.
+  verdictWay?: VerdictWay
   question: string
   // Whether every definition-of-done item is ticked; undefined where jaira
   // did not say (a build before dod_complete).
   dodComplete?: boolean
+  // The definition-of-done items still open, apart: those only a person can
+  // tick ('seen by a person: ...') and every other one; undefined where jaira
+  // listed no items.
+  dodOpen?: { person: number; other: number }
   // Where Accept moves it: the ticket's next lane, when that lane is the
   // board's terminal one (signoff -> done); null where the next lane is
   // still work to do (human -> review), so a press never skips a review.
@@ -43,13 +51,18 @@ export type Waiting = {
 
 export type Counts = { worker: number; review: number; person: number }
 
-export type Lane = { id: string; agentic: boolean; terminal?: boolean; context: string; human_exit?: boolean; requires_question?: boolean }
+export type Lane = {
+  id: string; agentic: boolean; terminal?: boolean; context: string; human_exit?: boolean; requires_question?: boolean
+  verdicts?: { accept?: string[]; send_back?: string[] }
+}
+export type VerdictWay = 'accept' | 'sendBack' | 'other'
 type Ticket = {
   handle: string
   title: string
   goal?: string
   status: string
   dod_complete?: boolean
+  dod_items?: Item[]
   next_lane?: string
   question?: string
   assignee?: string
@@ -119,6 +132,7 @@ export function snapshotOf(
   const lanes = parse<{ lanes: Lane[] }>(lanesJson)?.lanes ?? []
   const tickets = parse<{ tickets: Ticket[] }>(listJson)?.tickets ?? []
   const byId = new Map(lanes.map(l => [l.id, l]))
+  const words = lanes.flatMap(l => (l.verdicts === undefined ? [] : [l.verdicts]))
   const waiting: Waiting[] = []
   const theirs: Waiting[] = []
   const counts: Counts = { worker: 0, review: 0, person: 0 }
@@ -137,8 +151,10 @@ export function snapshotOf(
       goal: (t.goal ?? '').trim(),
       lane: t.status,
       verdict,
+      ...(words.length > 0 && verdict !== '' ? { verdictWay: wayOf(t.review?.verdict ?? '', words) } : {}),
       question: oneLine(t.question),
       ...(typeof t.dod_complete === 'boolean' ? { dodComplete: t.dod_complete } : {}),
+      ...(t.dod_items !== undefined && t.dod_items.length > 0 ? { dodOpen: dodOpenOf(t.dod_items) } : {}),
       acceptTo: next?.terminal === true ? next.id : null,
       assignee,
       explainable: explainable(verdict, reviewGaps(t)),
@@ -199,6 +215,85 @@ const NEGATED = new RegExp(`\\b(no|without|kein(e|en|er)?|ohne)\\s+([^\\s,;:.]+\
 function hasReservation(verdict: string): boolean {
   const unnegated = verdict.replace(NEGATED, m => (CONNECTIVE.test(m) ? m : ''))
   return RESERVATION.test(unnegated) || REFUSAL.test(verdict)
+}
+
+// Which way a review-verdict goes, read as jaira reads it (core/lane
+// verdict.go SendsBackBy): its first line before the first ':', folded —
+// case, a space like a dash, a closing full stop — must begin with a declared
+// word, followed by its end or by anything that is not a letter.
+const fold = (s: string) => s.trim().replace(/[.!;,]+$/, '').toLowerCase().replace(/-/g, ' ').split(/\s+/).filter(Boolean).join('-')
+function wayOf(verdict: string, words: NonNullable<Lane['verdicts']>[]): VerdictWay {
+  const head = fold((verdict.trim().split('\n')[0] ?? '').split(':')[0] ?? '')
+  const begins = (w: string) => head.startsWith(w) && !/^\p{L}/u.test(head.slice(w.length))
+  if (words.some(v => (v.send_back ?? []).some(begins))) return 'sendBack'
+  if (words.some(v => (v.accept ?? []).some(begins))) return 'accept'
+  return 'other'
+}
+
+export type Item = { done?: boolean; state?: string; text?: string }
+
+// The items still open: neither done nor superseded.
+export function openOf(items: readonly Item[] | undefined): number {
+  return (items ?? []).filter(i => i.state !== 'superseded' && i.done !== true).length
+}
+
+// The open definition-of-done items: those a person ticks at acceptance
+// ('seen by a person: ...') and the rest.
+const BY_A_PERSON = /^\s*seen by a person\s*:/i
+function dodOpenOf(items: readonly Item[]): { person: number; other: number } {
+  const person = openOf(items.filter(i => BY_A_PERSON.test(i.text ?? '')))
+  return { person, other: openOf(items) - person }
+}
+
+// The light on top of the Verdict pane: green where the person can accept,
+// yellow where something wants a look first, red where the ticket should go
+// back. Worked out from what the ticket already says — the review's verdict
+// and findings, the newest bug hunt, the definition of done, the question —
+// never from a field of its own. The reasons in the order they count, every
+// red one before any yellow one; the first is the one the light names.
+export type LightReason =
+  | { kind: 'refused' } | { kind: 'blockers'; n: number } | { kind: 'staleHunt' } | { kind: 'noHunt' } | { kind: 'dodOpen'; n: number }
+  | { kind: 'notReviewed' } | { kind: 'freeVerdict' } | { kind: 'reservation' } | { kind: 'oldReview'; round: number } | { kind: 'notesUnknown' }
+  | { kind: 'notes'; n: number } | { kind: 'byAPerson'; n: number } | { kind: 'dodIncomplete' } | { kind: 'question' } | { kind: 'huntUnknown' }
+export type Light = { color: 'green' | 'yellow' | 'red'; reasons: LightReason[] }
+
+export function lightOf(w: Waiting, hunt: HuntState | undefined): Light {
+  const red: LightReason[] = []
+  const yellow: LightReason[] = []
+  // The lane's own words where it declares them; a jaira that does not say
+  // them leaves only the verdict's wording to go by.
+  const refused = w.verdictWay !== undefined ? w.verdictWay === 'sendBack' : w.verdict !== '' && REFUSAL.test(w.verdict)
+  if (refused) red.push({ kind: 'refused' })
+  if (w.blockers.length > 0) red.push({ kind: 'blockers', n: w.blockers.length })
+  // A hunt that ran and no longer covers HEAD is red; none finished at all
+  // (at '') is a look: a ticket that changed no code has none, and one that
+  // did reaches a person's lane without one only past the gate, by --force.
+  if (hunt?.state === 'fail' && hunt.at !== '') red.push({ kind: 'staleHunt' })
+  // The terminal lane's gate reads the definition of done: an open item other
+  // than a person's own refuses the move. A jaira that listed no items says
+  // only whether all are ticked, and then an open one may be the person's.
+  if (w.dodOpen !== undefined && w.dodOpen.other > 0) red.push({ kind: 'dodOpen', n: w.dodOpen.other })
+  if (w.verdict === '') yellow.push({ kind: 'notReviewed' })
+  else if (w.verdictWay === 'other') yellow.push({ kind: 'freeVerdict' })
+  else if (!refused && hasReservation(w.verdict)) yellow.push({ kind: 'reservation' })
+  if (w.reviewedIn !== undefined) yellow.push({ kind: 'oldReview', round: w.reviewedIn })
+  if (!w.findingsKnown) yellow.push({ kind: 'notesUnknown' })
+  if (w.notes.length > 0) yellow.push({ kind: 'notes', n: w.notes.length })
+  if (w.dodOpen !== undefined && w.dodOpen.person > 0) yellow.push({ kind: 'byAPerson', n: w.dodOpen.person })
+  if (w.dodOpen === undefined && w.dodComplete === false) yellow.push({ kind: 'dodIncomplete' })
+  if (w.question !== '') yellow.push({ kind: 'question' })
+  if (hunt?.state === 'fail' && hunt.at === '') yellow.push({ kind: 'noHunt' })
+  // unknown: a hunted file is changed and not committed; undefined: a jaira
+  // that does not say, or a fail in a checkout without the hunt's commit.
+  if (hunt === undefined || hunt.state === 'unknown') yellow.push({ kind: 'huntUnknown' })
+  // A ticket waiting on a question in a lane that does not end the work
+  // (human: Accept would not move it to done) is there for the answer, not
+  // for acceptance: the question decides, yellow, whatever else is open.
+  if (w.question !== '' && w.acceptTo === null) {
+    return { color: 'yellow', reasons: [{ kind: 'question' }, ...red, ...yellow.filter(r => r.kind !== 'question')] }
+  }
+  const color = red.length > 0 ? 'red' : yellow.length > 0 ? 'yellow' : 'green'
+  return { color, reasons: [...red, ...yellow] }
 }
 
 // The lines of a review's gaps, each on its own, the leading list marker
@@ -791,8 +886,9 @@ export function followTitle(text: string): string {
 // commit the hunt ran at, '' where none finished: jaira also answers fail
 // for a checkout that does not hold that commit, which the caller checks.
 export type Hunt = 'ok' | 'fail' | 'unknown' | 'skipped'
+export type HuntState = { state: Hunt; at: string }
 const HUNTS = new Set<string>(['ok', 'fail', 'unknown', 'skipped'])
-export function huntOf(briefJson: string): { state: Hunt; at: string } | undefined {
+export function huntOf(briefJson: string): HuntState | undefined {
   const brief = parse<{ bughunt?: { state?: string; at?: string } | null }>(withoutWarnings(briefJson))
   if (brief === undefined || !('bughunt' in brief)) return undefined
   if (brief.bughunt === null) return { state: 'fail', at: '' }
