@@ -1,7 +1,7 @@
 ---
 id: 01M296F96M4NTASNXVXFCQ1DCC
 title: "CI runs the whole matrix twice per PR, and again for ticket-only commits"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,27 +20,42 @@ definition-of-done: "A merged PR does not re-run the matrix that already passed 
 tags:
   - release
 blocked-by: []
-commits: []
+commits:
+  - 1ea6d1ee1371e070bc7d9bcd3a6fff7a5c38809e
+  - d41394ac684e8b074cb0cdf765e17a8516ed0d6b
+  - ecb88f76f438633cad1927c1587400f71bfcd2cf
+  - 5306282770f8a01b0250c099348a1d8a1d330156
 created-at: 2026-09-11T21:37:41Z
-updated-at: 2026-11-22T19:51:37Z
+updated-at: 2026-11-22T19:59:57Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-827260
 claimed-at: 2026-11-22T19:50:27Z
 outcome-what: "ci.yaml: pull_request runs the full set on 3 platforms; push to master is back, but runs only job 'master' (ubuntu, go test ./... -race via test-shard.sh 0 1); a changes job (scripts/ci-code-changed.sh, base/head from the PR or from event.before...sha) skips every test job when only tickets/prose changed; ticket-commits runs on every PR"
 outcome-why: "every merged PR ran the 3-platform matrix a second time on master, and ticket-only PRs ran it at all; a Linux run on master stays because two PRs green against the same master can merge into an untested combination (Alex 22.11.)"
 outcome-resolves: "DoD 1: merged PR does not re-run the matrix (push runs one Linux job); ticket-only skips tests in PR and push; skipped jobs complete; mixed ticket+code runs everything. DoD 2: push to master = exactly one Linux -race job, none for a ticket-only commit"
-review-summary: "DoD 1 holds: ci.yaml runs on pull_request only (no second matrix on the merge commit); a 'changes' job runs scripts/ci-code-changed.sh over base...head (merge base, -z, --no-renames) and shipped-manifest, web-dist, cockpit and the test matrix are gated on code=='true' via needs/if, so a ticket-only PR skips them (skipped = complete) while ticket-commits still runs; mixed ticket+code returns code=true. The skip list (.jaira/, .planning/, docs/ minus COMMANDS.md, AGENTS.md, CLAUDE.md, lanes/README.md) matches what tests read: grep finds only decode_once_test reading ../../.jaira (documented), wintrap scans .go only, the AGENTS/CLAUDE hits in core/board are temp roots. Script fails closed: set -e+pipefail stop on an unknown base before any verdict; empty diff = false. TestCICodeChanged passes locally (go test ./scripts/)."
+review-summary: "ci.yaml: the matrix (ubuntu -race, macOS, Windows x3) plus shipped-manifest, web-dist and cockpit now run only on pull_request; a push to master runs a single new job 'master' (ubuntu, scripts/test-shard.sh 0 1 -race) to catch two PRs green apart but not together. A new 'changes' job runs scripts/ci-code-changed.sh over the PR range (base...head) or the push range (before...sha); when every changed file is .jaira/**, .planning/**, docs/** (except docs/COMMANDS.md), AGENTS.md, CLAUDE.md or lanes/README.md, all test jobs are skipped. ticket-commits still runs on every PR. The script uses the merge base, NUL-separated names (umlaut logbook files), and fails instead of printing a verdict when git fails; TestCICodeChanged covers 15 file sets over PR and post-merge ranges."
 round: 3
 back-from: done
 back-by: person
 back-count: 1
-review-gaps: "1) ci.yaml:10-12 says the PR run 'has already tested that pull request merged into master' - true only for master as of that run; master requires no up-to-date branch, so two PRs green against the same master can merge into an untested combination (bughunt finding). Trade-off DoD 1 asks for; the person decides: accept, or turn on 'require branches to be up to date' (repo setting, no code). The comment could say 'master as of that run'. 2) A non-.md file under docs/ or .planning/ (e.g. a .go file) would be skipped although go build ./... compiles it; none exists today (git ls-files), theoretical. 3) Header lines 3-6 still speak of the release PR's merge into master running no CI because of paths-ignore - now true for every merge; harmless. 4) Workflow itself unverified on GitHub (no actionlint); the first PR run is the proof."
-test-verdict: "pass: go build+vet ./... and go test -race -count=1 ./... green (RC=0, 35 pkgs); DoD 1 verified in the tree (ci.yaml: pull_request only, changes job gates 4 jobs; TestCICodeChanged 15 classes x 2 bases); script exercised on real commits b0c1d6359 (logbook-only) code=false, 55e681912 code=true; unknown base rc=128 with no verdict; parallel GITHUB_OUTPUT appends both land. Workflow on GitHub itself only provable by the first PR run"
-hunt-verdict: "pass: bughunt done at d41394ac6, 1 change (not a blocker: sequential merges A+B untested together without the push run - the trade-off DoD 1 asks for; note for the person), 0 pre-existing"
-review-verdict: accept
-review-round: 2
-review-check: "read both commits whole (ci.yaml, scripts/ci-code-changed.sh, scripts/ci_code_changed_test.go); git log upstream/master..HEAD = 2 commits = payload commits; grep of *_test.go and go:embed for reads of skipped paths; go test ./scripts/ -run CICodeChanged -count=1 ok"
-review-verdict-gaps: "1) ci.yaml:10-12 says the PR run 'has already tested that pull request merged into master' - true only for master as of that run; master requires no up-to-date branch, so two PRs green against the same master can merge into an untested combination (bughunt finding). Trade-off DoD 1 asks for; the person decides: accept, or turn on 'require branches to be up to date' (repo setting, no code). The comment could say 'master as of that run'. 2) A non-.md file under docs/ or .planning/ (e.g. a .go file) would be skipped although go build ./... compiles it; none exists today (git ls-files), theoretical. 3) Header lines 3-6 still speak of the release PR's merge into master running no CI because of paths-ignore - now true for every merge; harmless. 4) Workflow itself unverified on GitHub (no actionlint); the first PR run is the proof."
+review-gaps: |-
+  note: a force-push to master leaves github.event.before outside the checkout: changes fails red and master is skipped (loud, not silent) - fall back to HEAD~1 when git cat-file -e "$before" fails
+  note: the master job runs go test only, not the go vet ./... and go build ./cmd/jaira the matrix runs - add both steps if a vet-only break on master matters
+  note: actionlint was not run on ci.yaml (not installed here); the first PR run on GitHub is the real proof that needs/if resolve as intended
+test-verdict: "pass: round 3 over ecb88f76f only - go test -race ./scripts/ RC=0 (TestCICodeChanged incl. push form old-master...merge); DoD 2 read in ci.yaml: push:[master], only job 'master' (ubuntu, test-shard.sh 0 1 -race) has event push, matrix/web-dist/cockpit/shipped-manifest/ticket-commits gated to pull_request; YAML parses (pyyaml). Function on real history as push ranges: 7085dc47f^1..7085dc47f code=true, logbook-only b0c1d6359 code=false; before=000..0 exits 128 with no verdict (job red, not skipped). Writes only GITHUB_OUTPUT (parallel appends checked round 2). Not exercisable locally: the push run on GitHub itself"
+hunt-verdict: "pass: bughunt done at ecb88f76f, 1 change not a blocker (force-push on master leaves before unreachable: changes red, master job skipped - loud, not silent; note for the person), 0 pre-existing"
+review-verdict: "accept: both DoD items are met by ci.yaml and ci-code-changed.sh, TestCICodeChanged passes locally (go test ./scripts), no defect found beyond the loud force-push edge"
+review-round: 3
+review-check: |-
+  1. go test ./scripts -run TestCICodeChanged -count=1 -v  -> every subtest PASS, incl. 'a logbook file with an umlaut' (code=false) and 'a ticket with its code' (code=true)
+  2. bash scripts/ci-code-changed.sh b0c1d6359~1 b0c1d6359  -> prints code=false (logbook-only commit)
+  3. bash scripts/ci-code-changed.sh master~5 master  -> prints code=true and a 'needs tests: <file>' line on stderr
+  4. After the PR is opened on GitHub: the Checks tab lists changes, ticket-commits, shipped-manifest, web-dist, cockpit and 5 test jobs; 'master' shows as skipped
+  5. After the merge: the Actions run for the push to master shows only 'changes' and 'master' (ubuntu) running - no macOS or Windows job
+review-verdict-gaps: |-
+  note: a force-push to master leaves github.event.before outside the checkout: changes fails red and master is skipped (loud, not silent) - fall back to HEAD~1 when git cat-file -e "$before" fails
+  note: the master job runs go test only, not the go vet ./... and go build ./cmd/jaira the matrix runs - add both steps if a vet-only break on master matters
+  note: actionlint was not run on ci.yaml (not installed here); the first PR run on GitHub is the real proof that needs/if resolve as intended
 ---
 
 # CI runs the whole matrix twice per PR, and again for ticket-only commits
@@ -74,3 +89,6 @@ review-verdict-gaps: "1) ci.yaml:10-12 says the PR run 'has already tested that 
 - ci.yaml:10-12 says the PR run 'has already tested that pull request merged into master' - true only for master as of that run; master requires no up-to-date branch, so two PRs green against the same master can merge into an untested combination (bughunt finding). Trade-off DoD 1 asks for; the person decides: accept, or turn on 'require branches to be up to date' (repo setting, no code). The comment could say 'master as of that run'. 2) A non-.md file under docs/ or .planning/ (e.g. a .go file) would be skipped although go build ./... compiles it; none exists today (git ls-files), theoretical. 3) Header lines 3-6 still speak of the release PR's merge into master running no CI because of paths-ignore - now true for every merge; harmless. 4) Workflow itself unverified on GitHub (no actionlint); the first PR run is the proof.
 - **2026-11-22 19:49 · Alexander Sacharov** — decision (Alex 22.11., give back): nach dem Merge auf master läuft weiter ein kurzer Lauf nur auf ubuntu-latest (go test ./... mit -race, ~2 min) als Absicherung gegen ungetestete Kombinationen zweier grüner PRs; macOS/Windows nur im PR. ci.yaml-Kommentar 10-12 entsprechend korrigieren.
 - **2026-11-22 19:50 · Alexander Sacharov** — round 3 plan (DoD 2): push trigger on master back, paths-ignore notes; changes job reads base/head from pull_request or from push (event.before...sha); new job 'master' runs only on push: ubuntu, scripts/test-shard.sh 0 1 -race; ticket-commits, shipped-manifest, web-dist, cockpit, test matrix gated to pull_request. Separate job rather than a dynamic matrix: a fromJSON matrix switch is harder to read than ~15 duplicated setup lines. Test: TestCICodeChanged also checks the push form (old master...merge commit).
+- **2026-11-22 19:51 · Alexander Sacharov** — critique round 3: read only ecb88f76f (the give-back). Separate 'master' job kept over reusing the matrix: a job-level if cannot see matrix.os, so the only way to keep macOS/Windows off a push is a fromJSON matrix switch or a second job; step-level ifs would still start those runners. Earlier critique note (ci-done dropped) stands.
+- **2026-11-22 19:53 · Alexander Sacharov** — bughunt: change: .github/workflows/ci.yaml:55 (changes job, push range github.event.before...github.sha via scripts/ci-code-changed.sh:37) - class: a push to master whose 'before' commit is not in the checkout (a force-push that rewrote master; 'before' is then unreachable and fetch-depth: 0 does not bring it); example: git diff 'X...HEAD' with X absent fails with 'Invalid symmetric difference expression', the changes job exits 128 and the 'master' race job is skipped through needs - the rewritten master gets no test run, only a red changes job. Loud, not silent; not a blocker. ran: GITHUB_OUTPUT= bash scripts/ci-code-changed.sh 1111111111111111111111111111111111111111 HEAD (exit 128); blame: ecb88f76f (CQ1DCC)
+- **2026-11-22 19:53 · Alexander Sacharov** — bughunt: done at ecb88f76f - 1 finding (1 change, 0 pre-existing) in 3 modules, follow-up hunt since d41394ac6 (diff of ci.yaml and ci_code_changed_test.go; ci-code-changed.sh unchanged); concurrency, error paths, input, permissions checked; files: .github/workflows/ci.yaml scripts/ci-code-changed.sh scripts/ci_code_changed_test.go
