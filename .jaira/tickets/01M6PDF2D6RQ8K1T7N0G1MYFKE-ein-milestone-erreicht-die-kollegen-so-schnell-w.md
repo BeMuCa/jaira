@@ -1,7 +1,7 @@
 ---
 id: 01M6PDF2D6RQ8K1T7N0G1MYFKE
 title: "Ein Milestone erreicht die Kollegen so schnell wie ein Ticket, ueber einen Ref"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Ein angelegter oder geaenderter Milestone liegt auf einem Ref wie Tickets und Epics und erscheint bei Kollegen mit dem naechsten Fetch, ohne Commit und Merge."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:49Z
-updated-at: 2026-11-22T11:44:36Z
+updated-at: 2026-11-22T11:49:18Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-36703"
@@ -28,13 +28,13 @@ outcome-what: "Milestones bleiben Dateien unter .jaira/milestones/, aber nie in 
 outcome-why: "Alex' Entscheidung 21.11. 22:05: Milestone-Dateien sollen nie wieder hin und her committet werden, und eine veraltete Datei darf den Ref nie überschreiben (KWQCYZ)."
 outcome-resolves: "Milestone-Dateien in Commits und Konflikte; KWQCYZ (veraltete Kopie in einem Worktree löscht still Tickets aus dem Milestone)"
 review-summary: "none"
-review-gaps: "Runde 4: soleMarkdown fasst die zwei gleichen ls-tree-Auswertungen zusammen (vorher zweimal strings.Fields); sonst nichts zu entfernen"
+review-gaps: "Runde 5: nichts zu entfernen"
 test-verdict: "pass at 671bc3d4f: go test ./... grün, -race über board/milestone/refsync/cli/tui grün (RC=0), vet+shipped ok; DoD 1-4,6,8-10 im Baum geprüft; E2E mit gebautem Binary: share-Zeile, KWQCYZ live, update ohne Schreibrecht exit 1 ohne Teilzustand, zwei parallele Schreiber alle angekommen"
-hunt-verdict: "fail: bughunt bei 917829dfd - 1 change-Blocker: Zwillingsschutz in CatchUpMilestones liess die alte Kopie neben der umbenannten Datei liegen"
-round: 11
+hunt-verdict: "fail: bughunt bei 78ae0a08c - 1 change-Blocker: Umbenennung nur in Gross/Kleinschreibung löscht auf case-insensitivem Dateisystem die Datei"
+round: 12
 back-from: testing
 back-by: lane
-back-count: 2
+back-count: 3
 review-verdict: "DoD 1-4 met: the gap DoD 3 still had (ID-named file without ref) is closed and tested in core/refsync/publish_test.go, including the offline case the first bughunt found. No blocker; four notes, all small. go test -race ./core/refsync ./internal/cli ./internal/tui passes."
 review-round: 3
 review-verdict-gaps: |-
@@ -150,3 +150,7 @@ mode: ""
 - **2026-11-22 11:42 · Alexander Sacharov** — bughunt: change: blocker: core/refsync/refsync.go:475 - class: the new rename guard in CatchUpMilestones skips a behind file whenever any file under the ref's new name exists (even one byte-equal to the ref), so two files with one ID stay on disk; milestone.scan (core/milestone/milestone.go:333) then keeps the one whose filename sorts first, and when that is the behind old name every write (milestone add/rm/rename via milestone.Edit, and logbook/restore via migrateHeld) starts from the stale file, saves it under the old name and records it: the rename on the ref is reverted and every ticket added since is dropped - the exact loss KWQCYZ's catch-up exists to prevent. example: create a1, add tkA, rename a1->z9, add tkB, put the old a1-<ID>.md back beside z9-<ID>.md (checkout/merge of a still-tracked copy, or a copy by hand), add tkC by ID -> ref becomes a1-<ID>.md with [tkA tkC]; tkB gone, name back to a1. TestACatchUpLeavesATwinUnderTheNewName (q4->q5, old name sorts first) has this layout but only asserts the catch-up, never the next write. blame: 917829dfd (names 1MYFKE); ran: scratch go test in core/refsync reproducing the steps above (ref file=a1-E2MVRT.md members=[A C]), scratch removed
 - **2026-11-22 11:42 · Alexander Sacharov** — bughunt: done at 917829dfd - 1 finding (1 change, 1 of them a blocker; 0 pre-existing), follow-up hunt since 671bc3d4f: diff read in core/gitref/gitref.go core/refsync/refsync.go internal/cli/archive.go internal/cli/logbook.go internal/cli/milestones.go; core/milestone/import.go is deleted; new-to-list files are docs, lane prompts, skills, shipped.sha256 and tests, read only where they touch the diff (catchup_test.go); concurrency, error paths, input, permissions checked; go test ./core/gitref ./core/refsync ./core/milestone ./internal/cli pass; files: core/milestone/milestone.go core/milestone/write.go core/milestone/adopt.go core/milestone/migrate.go core/gitref/gitref.go core/refsync/refsync.go core/refsync/epic.go core/board/gitignore.go core/board/announce.go core/ticket/store.go internal/cli/archive.go internal/cli/logbook.go internal/cli/fetch.go internal/cli/share.go internal/cli/update.go internal/cli/validate.go internal/cli/milestones.go internal/cli/tickets.go internal/tui/layer.go internal/tui/refs.go internal/tui/model.go core/refsync/catchup_test.go
 - **2026-11-22 11:44 · Alexander Sacharov** — Runde 5: CatchUpMilestones überspringt nur noch einen Zwilling unter dem neuen Namen, der eine Handbearbeitung ist; ist er der Ref oder ein früherer Stand, wird er nachgezogen und die alte Kopie entfernt. Test TestACatchUpRemovesAnOldCopyBesideTheRenamedFile (Repro des Hunters, mit dem alten Schutz rot).
+- **2026-11-22 11:44 · Alexander Sacharov** — critique Runde 5: nur 78ae0a08c gelesen - die Bedingung nutzt dieselbe MilestoneHad-Prüfung wie die alte Datei; nichts weiter.
+- **2026-11-22 11:47 · Alexander Sacharov** — bughunt: change: blocker: core/refsync/refsync.go:478 (with the os.Remove(path) a few lines below) - class: dst and path are two spellings of one file, so the catch-up writes the ref into it and then deletes it; this happens on a case-insensitive filesystem (Windows NTFS, default macOS APFS, WSL /mnt/c) when the ref was renamed to a name that differs only in letter case, which CheckFree allows because it compares names exactly (macOS Unicode-normalisation spellings probably behave the same way, not tried); before 78ae0a08c the os.Lstat(dst) check found the file and skipped it; example: worktree A renames q4 to Q4, worktree B still has q4-<ID>.md one state behind, B's next milestone write runs CatchUpMilestones: ReadFile(Q4-<ID>.md) returns the old q4 bytes, MilestoneHad is true, WriteAtomic writes it, os.Remove(q4-<ID>.md) deletes it, the call returns nil, and the milestone is gone from disk until a fetch writes it again, so the write that started the catch-up runs on a missing milestone; fix direction: treat dst as path when os.SameFile(stat(dst), stat(path)), or skip the remove then; ran: a scratch test in core/refsync (create q4, rename to Q4, put the stale q4 file back, call CatchUpMilestones) with TMPDIR on /mnt/c: catchup err=nil, files after=[] (FAIL); same test on ext4 passes; with the line put back to os.Lstat it passes on /mnt/c too (files after=[q4-<ID>.md]); scratch test removed
+- **2026-11-22 11:47 · Alexander Sacharov** — bughunt: done at 78ae0a08c - 1 finding (1 change, a blocker; 0 pre-existing), follow-up hunt since 917829dfd: diff read in core/refsync/refsync.go (CatchUpMilestones read whole) and core/refsync/catchup_test.go; no other source file changed since; uncommitted changes are only lane prompts, AGENTS.md and CLAUDE.md; concurrency, error paths, input, permissions checked; files: core/milestone/milestone.go core/milestone/write.go core/milestone/adopt.go core/milestone/migrate.go core/gitref/gitref.go core/refsync/refsync.go core/refsync/epic.go core/board/gitignore.go core/board/announce.go core/ticket/store.go internal/cli/archive.go internal/cli/logbook.go internal/cli/fetch.go internal/cli/share.go internal/cli/update.go internal/cli/validate.go internal/cli/milestones.go internal/cli/tickets.go internal/tui/layer.go internal/tui/refs.go internal/tui/model.go core/refsync/catchup_test.go
+- **2026-11-22 11:49 · Alexander Sacharov** — Runde 6: CatchUpMilestones nimmt einen Namen, der auf dem Dateisystem dieselbe Datei ist (os.SameFile), weder als Zwilling noch als zu löschende alte Kopie. Test TestACatchUpAfterARenameInCaseOnlyKeepsTheMilestone, mit TMPDIR auf /mnt/c ohne Fix rot, mit Fix grün. Vorbestehend, für die Person: milestone.Rename (core/milestone/write.go, so auf upstream/master) löscht bei einer reinen Gross/Kleinumbenennung auf solchem Dateisystem die gerade geschriebene Datei.

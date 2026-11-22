@@ -256,3 +256,45 @@ func TestACatchUpRemovesAnOldCopyBesideTheRenamedFile(t *testing.T) {
 		t.Fatalf("the old copy %s is still on disk", ms.FileName())
 	}
 }
+
+// A rename that changes only the case of the name: where the file system
+// ignores case the old and the new name are one file, which the catch-up
+// must neither take for a twin nor remove. On a file system that keeps case
+// the old copy goes as in any rename; either way the milestone is still here.
+func TestACatchUpAfterARenameInCaseOnlyKeepsTheMilestone(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	ms, err := milestone.Create(ada.store.Root, ada.store, ada.syncer, func([]*milestone.Milestone) (*milestone.Milestone, error) {
+		return milestone.New("q4", 45, time.Now()), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+	stale, err := os.ReadFile(ms.Path(ada.store.Root))
+	if err != nil {
+		t.Fatal(err)
+	}
+	addTo(t, ada, "q4", tkA)
+	if _, err := milestone.Rename(ada.store.Root, ada.store, ada.syncer, "q4", "Q4"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+	// The old name again, holding the state before tkA.
+	if err := os.WriteFile(ms.Path(ada.store.Root), stale, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := ada.syncer.CatchUpMilestones(ada.store.Root); err != nil {
+		t.Fatal(err)
+	}
+	got, err := milestone.Load(ada.store.Root, ms.ID)
+	if err != nil {
+		t.Fatalf("the milestone is gone from disk after the catch-up: %v (files: %s)", err, diskFiles(t, ada))
+	}
+	if !got.Has(tkA) {
+		t.Fatalf("the milestone on disk misses %s: %v", tkA, got.Members())
+	}
+}

@@ -474,7 +474,11 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 		// is brought up like the old one, which then goes; one edited by hand
 		// is a twin, and which of the two is the milestone is the fetch's
 		// call, not a write's.
-		if dst != path {
+		// A name that differs only in case is the same file where the file
+		// system ignores case (Windows, macOS, /mnt/c under WSL): neither a
+		// twin nor something to remove.
+		renamed := dst != path && !sameFile(dst, path)
+		if renamed {
 			if twin, err := os.ReadFile(dst); err == nil && !bytes.Equal(twin, content) && !y.Repo.MilestoneHad(d.ID, twin) {
 				continue
 			}
@@ -483,13 +487,23 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 			return err
 		}
 		// Renamed on the ref since: the old name is the same milestone.
-		if dst != path {
+		if renamed {
 			if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 				return err
 			}
 		}
 	}
 	return nil
+}
+
+// sameFile reports whether a and b name one file on disk.
+func sameFile(a, b string) bool {
+	ia, err := os.Stat(a)
+	if err != nil {
+		return false
+	}
+	ib, err := os.Stat(b)
+	return err == nil && os.SameFile(ia, ib)
 }
 
 // pendingMilestone reports whether a write of this milestone is queued, under
