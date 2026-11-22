@@ -2,7 +2,11 @@ package cli
 
 import (
 	"fmt"
+	"io/fs"
+	"path/filepath"
+	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/lane"
@@ -22,7 +26,9 @@ func newValidateCmd() *cobra.Command {
 The lane gates fire when a ticket moves. This checks the board at rest, which is
 where damage from a hand edit, a bad merge, or an agent writing something
 unexpected actually shows up — a ticket with an unparseable id, a lane that is
-not installed, a dependency on something that is not there.
+not installed, a dependency on something that is not there, a file under
+.jaira/ whose name is not valid UTF-8 (macOS cannot check it out; the line
+quotes its exact name for a shell).
 
 Errors exit 3. Warnings — a backlog ticket that is not specified yet — exit 0,
 because capture is meant to be cheap. Use --strict to fail on those too.`,
@@ -76,6 +82,8 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 					Path: milestonesPath, Message: trackedMilestonesMessage,
 				})
 			}
+
+			problems = append(problems, invalidNames(s.Root)...)
 
 			// The board at rest includes what it tells its agents. A lane file
 			// edited by hand changes the pipeline without going through any
@@ -149,4 +157,38 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 	}
 	cmd.Flags().BoolVar(&strict, "strict", false, "fail on warnings as well as errors")
 	return cmd
+}
+
+// invalidNames reports every file and directory under .jaira/ whose name is
+// not valid UTF-8. An older jaira cut ticket slugs at byte 48 even inside a
+// letter (BWT53T); git on Linux and Windows takes such a name, macOS refuses
+// to check it out. It names them and renames nothing: a rename here would
+// collide with every branch that touches the same file, and the slug is a
+// hint nobody reads the title from.
+func invalidNames(root string) []validate.Problem {
+	var out []validate.Problem
+	_ = filepath.WalkDir(filepath.Join(root, ticket.DirName), func(p string, d fs.DirEntry, err error) error {
+		if err != nil || utf8.ValidString(d.Name()) {
+			return nil // an unreadable corner is not this check's business
+		}
+		out = append(out, validate.Problem{
+			Code: "invalid_name", Severity: validate.SeverityError,
+			Path: strings.ToValidUTF8(p, "\uFFFD"),
+			// The exact name, not a rename command: every target jaira could
+			// propose may already exist (two broken names cleaning up to one,
+			// or the file the fixed slug writes), and mv would overwrite it.
+			Message: fmt.Sprintf("name is not valid UTF-8, macOS cannot check it out — give %s a valid name", shellQuote(p)),
+		})
+		return nil
+	})
+	return out
+}
+
+// shellQuote writes s as bash's $'...', which reads back the \xNN escapes
+// strconv.Quote writes for broken bytes, so the name can be pasted into mv;
+// a plain "..." would pass them on literally.
+func shellQuote(s string) string {
+	q := strconv.Quote(s)
+	q = strings.ReplaceAll(q[1:len(q)-1], `\"`, `"`)
+	return "$'" + strings.ReplaceAll(q, "'", `\'`) + "'"
 }

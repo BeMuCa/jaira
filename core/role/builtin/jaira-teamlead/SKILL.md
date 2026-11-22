@@ -182,9 +182,9 @@ Without Herdr, start it as a subagent instead — "the worker skill" in place of
 ```
 Agent(subagent_type: "claude",
       prompt: "Read the dispatcher skill and drive ticket <id> until it
-               reaches a human lane or blocks. Report in three lines
-               and the status line, plus the numbered options of any question you could not
-               ask.")
+               reaches a human lane or blocks. Report in the status line,
+               a needs-you line above it when something waits for a person,
+               plus the numbered options of any question you could not ask.")
 ```
 
 and say plainly that it dies with your session.
@@ -244,6 +244,24 @@ gh pr list --state open        # or glab mr list: which pull requests are still 
 List only what is still open, and show that list only when it changed since you
 last showed it — not appended to every message.
 
+**What a worker sends you is one line, and the details are on the ticket.** A
+worker, dispatcher or bug hunt hands back its status line (`jaira: <ID> <from>
+-> <to> · …`), with one `needs you: <what>` line above it when something waits
+for a person — nothing more. Its full report is a `report:` note on the ticket
+(`hunt report:` for a bug hunt), beside its per-lane lines and findings. Read
+what you need from there, not from the message:
+
+```bash
+jaira show <id>                          # notes: report:, lane lines, findings
+jaira show <id> --json | jaira json get review.gaps
+```
+
+Read it when you need it — to answer the human, to decide a give-back — and
+only the part you need: the reason the report shrank to a line is that your
+session holds a dozen of them. A worker's context and cache are in its
+`report:` note and, for every worker at once, in the jaira-cockpit's `workers`
+tool.
+
 Per ticket in flight, three lines and no more:
 
 - what changed
@@ -298,6 +316,10 @@ board.
   Where `pr` says `none` the project takes no pull requests: once every ticket
   on the branch is in done, start `/jaira-role-pr <id>` and it lands the branch
   on the default branch through `jaira roles pr-gate` and a fast-forward push.
+  Merging a pull request is the board's to allow as well, in its own file:
+  where `.jaira/land` on the default branch says `agent`, `land.sh` below
+  merges it once every ticket on the branch is in done and CI is green.
+  Anywhere else it hands you the merge line for the maintainer.
 - A permission your session was refused is not something to route around by
   starting a worker. Take it back to the human.
 
@@ -305,11 +327,12 @@ board.
 
 A worker or dispatcher you put in a tab cannot close that tab — you created it,
 so it is yours. But you never stop or close it while it works, and never while
-its ticket waits for a person in a human lane or signoff: read its three lines,
-tell the human, and leave the tab. Its second line says how full its context
-is and how long its prompt cache stays warm; the jaira-cockpit's `workers`
-tool (`mcp__jaira-cockpit__workers`, `/cockpit workers` for the person) says
-the same for every worker of the board at any time.
+its ticket waits for a person in a human lane or signoff: read its status line
+and its `report:` note, tell the human, and leave the tab. The note says how
+full its context is and how long its prompt cache stays warm; the
+jaira-cockpit's `workers` tool (`mcp__jaira-cockpit__workers`, `/cockpit
+workers` for the person) says the same for every worker of the board at any
+time.
 
 The tab is decided about once, when the ticket comes back into a new round —
 given back from signoff or a human lane, a review comment, a failing CI run.
@@ -324,11 +347,15 @@ The cockpit's Give back button decides by itself. When you send it back:
    `jaira show <id> --json` before anything else: other sessions wrote to the
    board while it waited, and its context does not know. `jaira note` on the
    ticket whom you sent it to and why.
-3. **New worker:** close the old tab first — its `tab_id` from
-   `$HERDR_BIN_PATH tab list`, the tab spawn.sh labelled with the ticket id
-   and the role, then `$HERDR_BIN_PATH tab close <tab_id>` — and start a new
-   one with `spawn.sh` as above, so a ticket never has two worker tabs. Note
-   why on the ticket.
+3. **New worker:** in this order — write the reason on the ticket
+   (`jaira note <id> "Given back from signoff: ..."`), move it
+   (`jaira move <id> --to in-progress`), close the old tab (its `tab_id`
+   from `$HERDR_BIN_PATH tab list`, the tab spawn.sh labelled with the ticket
+   id and the role, then `$HERDR_BIN_PATH tab close <tab_id>`), and only then
+   start the new one with `spawn.sh <slug> <id> worker`, so a ticket never
+   has two worker tabs. The worker reads its brief off the ticket, so a
+   reason that is only in your message to it is a reason the next one never
+   sees.
 4. **No `workers` tool** — the cockpit is not installed: a new worker.
 
 The limit is a share of the model's context window, the cockpit's setting
@@ -360,3 +387,67 @@ And what comes back is usually not a dispatcher at all. A failed CI run is one
 worker's job — `/jaira-role-tester <id>` to read the log and separate an inherited
 failure from a new one, `/jaira-role-lane <id> in-progress` to fix it. Start a
 dispatcher again only when there are several lanes ahead.
+
+## A person's answer goes into the definition of done
+
+When the person decides something on a ticket — which of two shapes, what an
+edge should do, what stays out — write it as a criterion, not only as a note:
+`jaira dod <id> --add "<the decision, as something checkable> (decision
+<person> <date>)"`, and a `jaira note` with the reason beside it. Review and
+testing check the definition of done item by item; a note is read only by
+whoever happens to read it. On 2026-11-21 a ticket reached signoff without a
+decision the person had given, because it stood in a note and nowhere a gate
+looks.
+
+## Landing, stacking and filing away
+
+Three routines every teamlead needs once work is accepted. Use them instead of
+building them again.
+
+**Landing an accepted pull request.** `land.sh` beside this file
+(`.claude/skills/jaira-teamlead/scripts/land.sh`, or under `~/.claude/skills/`
+where the roles were installed globally), run in the ticket's worktree with the
+pull request's number:
+
+```bash
+cd <the ticket's worktree> && <skills>/jaira-teamlead/scripts/land.sh <pr>
+```
+
+It merges the base into the branch, regenerates the files
+`.jaira/land-regenerate` names (`<path>: <command>` per line — a manifest or
+checksum list that nearly every pull request conflicts on), commits that as one
+`chore(<ID>): merge ...` commit, pushes, waits for CI, and then asks
+`jaira roles pr-gate --merge`. Where `.jaira/land` on the base says `agent` and
+every ticket on the branch is in done, it merges and runs `reap.sh`; anywhere
+else it prints the merge line — exit 3 — and you hand that line to the
+maintainer. A conflict outside the generated files or a failed generator stops
+it (exit 1) before anything is pushed; red CI stops it (exit 1) after the merge
+commit is pushed, with nothing merged. Either is a worker's job, not yours. Several pull requests: land them one after another, never in
+parallel — each merge moves the base the next one has to take in. Before it,
+delete untracked `.jaira/milestones/*.md` copies that equal the base's: git
+refuses to merge over them.
+
+**Stacking follow-up work on an accepted branch.** A ticket that builds on one
+already accepted but not yet merged does not wait for its CI and its merge.
+Branch it from the parent's branch, then start its worker there:
+
+```bash
+git worktree add ../.worktrees/<repo>-<id> -b feat/<id> feat/<parent-id>
+```
+
+Its pull request then shows the parent's commits too until the parent merges;
+land the parent first, and the child's diff shrinks to its own.
+
+**Filing away: stage the ticket's own files, nothing else.** The commit after
+`jaira logbook <id>` carries the ticket file it removed from `.jaira/tickets/`
+and the file it wrote under `.jaira/logbook/` — the two paths it prints — and
+only those:
+
+```bash
+git add -A -- .jaira/tickets/<ticket file> .jaira/logbook/<the file it wrote>
+git commit -m "chore(<ID>): file away"
+```
+
+Never `git add -A .jaira`: it sweeps untracked milestone files, lanes and tags
+of other sessions into the commit — on 2026-11-21 that brought milestones into
+master through a pull request nobody meant to carry them.

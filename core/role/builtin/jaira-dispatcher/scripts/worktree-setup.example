@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# An example .jaira/worktree-setup: what spawn.sh itself wrote into every new
+# worktree up to jaira 0.6.1. Copy it into your repository and adapt it:
+#
+#   install -m 755 <skills>/jaira-dispatcher/scripts/worktree-setup.example .jaira/worktree-setup
+#
+# spawn.sh calls it once, right after it made a worker's worktree, as
+#
+#   .jaira/worktree-setup <worktree> <slug> <port-offset 1-40> <repo-root>
+#
+# The offset is the one no other worktree of the repository holds; spread it
+# over whatever ports your project knows. Output goes to the spawn's stderr. A
+# non-zero exit stops the spawn: no tab opens, and the worktree and its branch
+# are removed again. .jaira/worktree-teardown gets the same four arguments
+# from reap.sh before the worktree is removed.
+set -euo pipefail
+wt="$1" slug="$2" off="$3" root="$4"
+
+# A repository without a .env has no stack to give its own ports.
+[ -f "$root/.env" ] || exit 0
+
+cp "$root/.env" "$wt/.env"
+{
+  echo
+  # spawn.sh reads this line back from worktrees made before it wrote their
+  # offset down itself; keep it if you keep the .env.
+  echo "# worker stack: slug=$slug offset=$off"
+  # Docker takes lower case only, and refuses the whole stack over a capital.
+  echo "COMPOSE_PROJECT_NAME=$(printf '%s_%s' "$(basename "$root")" "$slug" \
+    | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '_')"
+  # The names and bases below are one project's: rename them to yours.
+  echo "HTTP_PORT=$((8080 + off))"
+  echo "DB_PORT_HOST=$((5500 + off * 2))"
+  echo "DB_PORT_TEST_HOST=$((5501 + off * 2))"
+} >> "$wt/.env"

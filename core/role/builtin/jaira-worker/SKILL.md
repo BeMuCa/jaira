@@ -1,6 +1,6 @@
 ---
 name: jaira-worker
-description: "Carry one ticket through every agentic lane yourself, hand only a lane marked fresh context to a new agent, then report back in three lines and a status line. Invoked as /jaira-worker <ticket-id> [--parent <session>], normally by a teamlead session. Use when handed a whole ticket to carry to a human lane."
+description: "Carry one ticket through every agentic lane yourself, hand only a lane marked fresh context to a new agent, then report back in a status line. Invoked as /jaira-worker <ticket-id> [--parent <session>], normally by a teamlead session. Use when handed a whole ticket to carry to a human lane."
 ---
 
 # Worker
@@ -42,6 +42,23 @@ your head that the board does not know:
   what you had to find out. Not what the checklist and git already say. A
   killed session never gets a turn to write anything down.
 - `jaira dod <id> <n> --doing|--done` as you go, never all at the end.
+
+## When you wait
+
+A worker that ends its turn to wait — for the bug hunter, a fresh-lane agent,
+the parent's answer — looks from outside exactly like one that hangs. So
+before you end a turn to wait, say on what:
+
+- `jaira note <id> "waiting: <what> (<agent or session>) since <HH:MM>"`
+- started with `--parent`, send the same line to the parent with `SendMessage`
+
+What comes back is the hand-back, whatever shape it arrives in: a
+task-notification, an agent's message, or one line that only says
+`[shortened by jaira-cockpit] <ID> — full report: /cockpit report <ID>`. That
+line is not noise and not a link for the person — it is your agent's report.
+Read the result off the board (`jaira show <id> --json`, the agent's note) and
+carry on in the same turn. Never end a turn on a hand-back without either the
+next step done or a new `waiting:` note.
 
 ## Before the plan: count what is still open
 
@@ -262,6 +279,19 @@ guarantee is gone and nobody can see that it is.
    the fresh lane gets a **new** agent next time, never the one from before.
    A `note:` line in its `review-gaps` is not work for you: it stays a line,
    and no ticket is created from it — the person decides that at acceptance.
+5. It sent the work back with `note: fix-now:` lines and no blocker: close
+   exactly those, before the ticket ever reaches signoff, and no other note.
+   Each closes in a few lines; one that would need a new rule, flag or
+   branch is not fix-now — leave it, and say so in a note, rather than grow
+   the change (edges that keep growing ask for a smaller design, not a
+   bigger fix). When the whole fix stays under 50 changed lines and touches
+   no lock and no parser, run the round lean: `jaira set <id>
+   stop-after-fix=true` and note that you set it; critique and optimize then
+   go in one pass, testing runs only what changed, and the new review agent
+   reads only the delta since `review: done at <commit>` — all three lanes'
+   prompts say how. Should that review send the work back with a blocker,
+   clear the flag again (`jaira set <id> stop-after-fix=`) if you set it:
+   the next round is no longer small.
 
 It runs in your directory, not a worktree of its own: what it judges includes
 your uncommitted work, and while it runs you write nothing.
@@ -330,7 +360,7 @@ yes-or-no is a choice too.
   you directly. Ask with it.
 - **No `AskUserQuestion` at all** — started as a subagent or headless. The
   options go into your report as a numbered list, recommendation first, on top
-  of the three report lines, and you stop.
+  of the status line, and you stop.
 
 You never pick an option because nobody answered. An agent you started never
 asks the person either: it writes its question onto the ticket (a note with
@@ -380,7 +410,9 @@ Stop and report the moment any of these is true:
 Report per lane, not only at the end: one line upward when a lane finishes —
 the lane, and the single thing a person would want to know from it. A decision
 taken, a surprise found, a number measured. A lane that produced nothing worth
-saying gets "done" and nothing else.
+saying gets "done" and nothing else. One line, never a paragraph: every line
+you send the parent stays in the teamlead's context for the rest of its
+session.
 
 ## Handing it on for acceptance
 
@@ -388,11 +420,18 @@ When the ticket reaches a human lane and its `review-check` asks a person to
 try something in the app, hand it on before you stop:
 `/jaira-role-acceptance <id> [<id>...]`, with every ticket of the same change
 already waiting in a human lane, and the language the person was spoken to in.
-Its link goes into your third report line.
+Its link goes into your `needs you:` line.
 
 ## Report
 
-Three lines at the end, on top of the per-lane lines:
+The report has two parts, and only the short one leaves your tab.
+
+**The full report goes onto the ticket**, as one note, before anything is
+sent — three lines, on top of the per-lane notes:
+
+```bash
+jaira note <id> "report: <what changed> | <lane now>, <context and cache> | <what is open>"
+```
 
 - what changed
 - which lane the ticket sits in now, and your own context and prompt cache —
@@ -402,8 +441,22 @@ Three lines at the end, on top of the per-lane lines:
   this line to know what sending the next round back to you would cost
 - what is open, and whether it needs a person
 
-Then one line more, always the last line of the report, in a fixed format the
-teamlead and the jaira-cockpit read without opening the ticket:
+**The report you hand back is the status line**, and above it at most one
+line more, only when something waits for a person:
+
+```
+needs you: <what, in one line — the decision, the question, the acceptance link>
+jaira: <ID> <from> -> <to> · branch: <branch> · commits: <first>..<last> (<n>) · gates: ok|red|none · notes: <n> · verdict: <text>
+```
+
+Nothing else — no lane list, no diff summary, no repetition of the note. A
+teamlead holds a dozen of these reports in one session; a page each was what
+filled it. Whoever wants more reads `jaira show <id>`. Nothing open: no
+`needs you:` line at all, not one saying "nothing". A question with numbered
+options (see "How you ask") is not a report and keeps its options.
+
+The status line is always the last line, in a fixed format the teamlead and
+the jaira-cockpit read without opening the ticket:
 
 ```
 jaira: <ID> <from> -> <to> · branch: <branch> · commits: <first>..<last> (<n>) · gates: ok|red|none · notes: <n> · verdict: <text>
@@ -422,11 +475,13 @@ jaira: <ID> <from> -> <to> · branch: <branch> · commits: <first>..<last> (<n>)
 
 Keys and their order are fixed; an empty value is `-`, never a missing key.
 The cockpit shortens the report to this line and keeps the rest for
-`/cockpit report <ID>`; a report without it is guessed at, field by field.
+`/cockpit report <ID>`; a report without it shows only the ticket id.
 
-Started with `--parent`, the three lines and the status line go to the parent
-with `SendMessage`. Once it has taken them, close your own tab as the very
-last call of your turn:
+Started with `--parent`, the short report — the status line, and the
+`needs you:` line where there is one — goes to the parent with `SendMessage`.
+Started by a person directly in your tab, print the three lines above it too:
+there the reader is the person, not a teamlead's context. Once it has taken
+the report, close your own tab as the very last call of your turn:
 
 ```bash
 jaira-dispatcher/scripts/close-tab.sh --parent <session> <ticket id>

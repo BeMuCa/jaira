@@ -101,6 +101,12 @@ jaira move <id> --to human --question "testing sent this back three times: <find
 A ticket from before jaira recorded this has an empty `from` and `count` 0:
 it counts as no return.
 
+A loop lane that declares `max-rounds` (the shipped critique, optimize and
+testing: 3) does not need you to count: jaira itself refuses its next
+send-back past the limit (`max_rounds`, exit 3) and names the lane a person
+answers in. `rounds_left` in that lane's `--for-lane` payload says how many
+remain.
+
 In conversational mode you hand back commit lines instead of committing, so
 the bug hunt reads your work uncommitted; once that work is committed the
 hunt no longer covers HEAD and `bughunt` in `jaira show <id> --brief` reads
@@ -154,3 +160,18 @@ When you are finished, report:
 Do not claim the definition of done is met unless you can point to the specific
 behaviour that now satisfies it — the `--proof` on each item is where that
 pointer goes.
+
+## Items only a person ticks
+
+A definition-of-done item that starts with `seen by a person:` is never yours
+to tick, however sure you are: a width table, a run on another platform or the
+text of a refusal is a stand-in, not what the person sees. Do the work around
+it — the code, the tests a machine can run — name in your outcome what the
+person should look at, and leave the item open. The person ticks it at
+acceptance.
+
+Where no planning step ran and the change alters what a terminal draws (the
+TUI, colours, widths, glyphs, a plugin's panel), behaves differently by
+operating system, shell or terminal, or needs a person at the keyboard, add
+such an item yourself before you start:
+`jaira dod <id> --add "seen by a person: <what to look at, where>"`.
