@@ -1,7 +1,7 @@
 ---
 id: 01M822MVB17D08MDDTKKBWT53T
 title: Ticket-Dateinamen schneiden Umlaute nicht mehr mitten im Zeichen ab
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -16,23 +16,40 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - d55290e2c4bc9bc126a905fab94737bef652ae06
+  - 9b1a3d4185078ec6057a5ba21aa923a718c94476
+  - 946a02e105b108aa73f17bba08b41ad2d9dea834
+  - 292b5256126ca1050893613fbd6a0ab240444f99
 created-at: 2026-11-22T16:50:19Z
-updated-at: 2026-11-22T17:06:26Z
+updated-at: 2026-11-22T18:20:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1768841
 claimed-at: 2026-11-22T16:50:44Z
 outcome-what: "Slug schneidet an einer Zeichengrenze; jaira validate meldet Dateien unter .jaira/ mit ungültigem UTF-8-Namen mit exaktem, shell-zitiertem Namen (exit 3)"
 outcome-why: "Ein Schnitt mitten in ü/ß/Kyrillisch erzeugte Dateinamen, die macOS nicht auschecken kann (PR #184)"
 outcome-resolves: "Ticket- und Logbook-Dateien sind immer gültiges UTF-8; Altlasten meldet validate, umbenennen tut der Mensch"
-review-summary: "none"
+review-summary: "ticket.Slug kürzt lange Titel jetzt an einer Zeichengrenze (Schnitt rückwärts bis utf8.RuneStart) statt bei Byte 48 mitten in ü/ß/Kyrillisch; Tabellentest an der Grenze plus Sweep über alle Schnittpositionen. Für schon vorhandene kaputte Dateien prüft jaira validate jetzt alles unter .jaira/ auf ungültige UTF-8-Namen: Problem invalid_name, Fehler (exit 3), der exakte Name in bash $'...'-Form zum Einfügen; umbenannt wird nichts, und es wird bewusst kein Zielname vorgeschlagen, weil jedes vorgeschlagene Ziel schon existieren und überschrieben werden könnte. Release-Note mit '- !'-Zeile für den einmaligen validate-Lauf."
 round: 4
 back-from: testing
 back-by: lane
 back-count: 2
-review-gaps: "none: round 2 changed only the message of invalidNames (mv, absolute paths) and dropped the path import; nothing new to fold"
-test-verdict: "fail: bughunt blocker - printed mv can overwrite an existing file (see bughunt note 17:03)"
-hunt-verdict: "change: blocker - printed mv overwrites an existing target silently (two broken names mapping to one clean name, or the already correctly cut file); data loss"
+review-gaps: |-
+  note: Path im JSON ersetzt kaputte Bytes durch U+FFFD, zwei verschiedene kaputte Namen im selben Ordner haben dort denselben Path - nur die Message unterscheidet sie; reicht für Menschen, ein Skript, das nach Path dedupliziert, sieht einen
+  note: invalidNames verschluckt Lesefehler im Walk still (dokumentiert); ein unlesbarer Unterordner unter .jaira/ wird ungeprüft übersprungen
+test-verdict: "pass: round 3 - go test -race -count=1 internal/cli core/ticket RC=0; DoD 1-3 verified in the tree; scratch board: planted \\xc3 name beside the clean one -> validate exit 3, one line with the exact name in $'...', both files untouched; validate writes nothing, no concurrency case"
+hunt-verdict: "pass: round 3 hunt at 292b52561 found nothing"
+review-verdict: "accept: alle drei DoD-Punkte erfüllt (Slug an Rune-Grenze mit Tests, validate meldet ungültige Namen mit Test, Release-Note); go test ./core/ticket ./internal/cli grün, validate auf diesem Repo meldet nichts; keine Defekte entlang Nebenläufigkeit/Fehlerpfad/Eingabe/Rechte, nur zwei kleine Notes"
+review-round: 4
+review-verdict-gaps: |-
+  note: Path im JSON ersetzt kaputte Bytes durch U+FFFD, zwei verschiedene kaputte Namen im selben Ordner haben dort denselben Path - nur die Message unterscheidet sie; reicht für Menschen, ein Skript, das nach Path dedupliziert, sieht einen
+  note: invalidNames verschluckt Lesefehler im Walk still (dokumentiert); ein unlesbarer Unterordner unter .jaira/ wird ungeprüft übersprungen
+review-check: |-
+  1. cd in ein Wegwerf-Repo unter Linux/WSL: mkdir /tmp/bw && cd /tmp/bw && git init -q && jaira init
+  2. mkdir -p .jaira/logbook/x && touch $'.jaira/logbook/x/01ABC-gr\xc3.md'
+  3. jaira validate; echo $? - erwartet: eine Zeile invalid_name mit "give $'.../01ABC-gr\xc3.md' a valid name", exit 3
+  4. Den zitierten Namen kopieren: mv <eingefügt> .jaira/logbook/x/01ABC-gr.md, dann erneut jaira validate - erwartet: keine invalid_name-Zeile mehr
+  5. Slug: jaira create "$(printf 'a%.0s' {1..47})ü Test" --goal x - der Dateiname unter .jaira/tickets endet auf 47 a, ohne halbes Zeichen (ls | iconv -f utf-8 >/dev/null meldet keinen Fehler)
 ---
 
 # Ticket-Dateinamen schneiden Umlaute nicht mehr mitten im Zeichen ab
@@ -68,3 +85,5 @@ hunt-verdict: "change: blocker - printed mv overwrites an existing target silent
 - **2026-11-22 17:03 · Alexander Sacharov** — bughunt: change: blocker: internal/cli/validate.go:165,173 - class: die gedruckte Umbenennung prüft nicht, ob das Ziel schon existiert, und plain mv überschreibt still (git mv lehnte mit 'destination exists' ab); betrifft jedes Ziel, das schon da ist: zwei kaputte Namen, die auf denselben bereinigten Namen fallen (gr\xc3.md und gr\xc3\xc3.md), ein kaputter Name neben der schon korrekt geschnittenen Datei desselben Tickets (ToValidUTF8(name, "") ergibt genau den Slug, den die neue Rune-Grenze schreibt), und ein Verzeichnis als Ziel (mv verschiebt dann hinein statt umzubenennen); example: logbook-Ordner mit gr\xc3.md (OLD), gr\xc3\xc3.md (B) und gr.md (KEEP) - validate druckt zwei mv auf dasselbe Ziel, beide laufen mit exit 0, übrig bleibt eine Datei mit Inhalt B, OLD und KEEP sind verloren; ran: jaira validate in einem Scratch-Board, gedruckte Zeilen mit bash aus / ausgeführt (mvexit=0, ls zeigt nur gr.md, cat = B); blame: 946a02e10 (BWT53T)
 - **2026-11-22 17:04 · Alexander Sacharov** — bughunt: done at 946a02e10 - 1 finding (1 change, 0 pre-existing) in 3 modules, follow-up hunt since 9b1a3d418 (diff only: internal/cli/validate.go, internal/cli/validatenames_test.go, core/release/notes/BWT53T.md; no new files); concurrency, error paths, input, permissions checked; files: core/release/notes/BWT53T.md core/ticket/id.go core/ticket/id_test.go internal/cli/update.go internal/cli/updatenames_test.go internal/cli/validate.go internal/cli/validatenames_test.go
 - **2026-11-22 17:04 · Alexander Sacharov** — Entscheidung nach Blocker: validate druckt keine Umbenennungs-Command mehr, nur den exakten Namen in bash $'...'-Form; das Ziel wählt der Mensch. Grund: jeder vorgeschlagene Zielname hatte eigene Kanten (git mv: ungetrackt/Unterordner; mv: überschreibt Ziel, Ordner als Ziel). Kleinere Form statt weiterer Regeln.
+- **2026-11-22 17:07 · Alexander Sacharov** — bughunt: done at 292b52561 - 0 findings in 3 modules, follow-up hunt since 946a02e10 (diff only: internal/cli/validate.go, internal/cli/validatenames_test.go, core/release/notes/BWT53T.md; no new files); concurrency, error paths, input, permissions checked; ran: go test ./internal/cli -run 'TestValidateNames|TestUpdateNames' (ok); files: core/release/notes/BWT53T.md core/ticket/id.go core/ticket/id_test.go internal/cli/update.go internal/cli/updatenames_test.go internal/cli/validate.go internal/cli/validatenames_test.go
+- **2026-11-22 17:10 · Alexander Sacharov** — report: Slug schneidet an Rune-Grenze; jaira validate meldet ungültige UTF-8-Namen unter .jaira/ (exit 3, exakter Name in $'...', kein Umbenennungsvorschlag nach Blocker 'mv überschreibt'). Branch feat/bwt53t gepusht, 4 Commits, Gates ok. Review accept mit 2 notes (U+FFFD-Path in JSON, unlesbare Unterordner still übersprungen). Wartet in signoff auf Alex; PR nicht geöffnet.
