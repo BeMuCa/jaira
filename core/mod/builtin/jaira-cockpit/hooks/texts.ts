@@ -69,6 +69,7 @@ export const t = {
   landNeedsHerdr: (branch: string) => `${branch} lands on the default branch from a Herdr tab of its own (HERDR_ENV=1 or Herdr App, and spawn.sh from jaira roles install).`,
   prNeedsHerdr: (branch: string) => `${branch} needs a pull request, which opens in a Herdr tab of its own (HERDR_ENV=1 or Herdr App, and spawn.sh from jaira roles install).`,
   noteOn: (id: string) => `Note on ${id}`,
+  copyNotRemoved: (id: string, path: string, why: string) => `${id}: the copy pulled into the main checkout is still there and hides its ref (${oneLine(why)}); remove it: git clean -fqx -- '${path.replaceAll("'", `'\\''`)}'`,
   noteLost: (id: string, why: string, note: string) => `${id} went back to in-progress, but the note with your reason was not written: ${why}\nAdd it by hand: jaira note ${id} '${note.replaceAll("'", `'\\''`)}'`,
   tooOld: (installed: string, needed: string) => `jaira ${installed} is too old for this cockpit: it needs ${needed} or later. Give back will be refused until you update jaira.`,
   released: (latest: string, installed: string) => `jaira ${latest} is released (this is ${installed})`,
