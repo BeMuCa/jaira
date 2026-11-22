@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T23:09:14Z
+updated-at: 2026-11-22T23:09:17Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -45,6 +45,14 @@ round: 2
 back-from: testing
 back-by: lane
 back-count: 1
+review-verdict: "accept: DoD 1-5 met in code and tests (claude plugin test: 404 pass, 0 fail); JSON shapes checked against real jaira 0.6.1 output (milestone ls tickets[].handle, show filed_away/rejected.kind/board, lanes --board default); DoD 6 is the person's and correctly left open; no blocker, five notes"
+review-round: 2
+review-verdict-gaps: |-
+  note: the worktree carries uncommitted AGENTS.md/CLAUDE.md drift (jaira 0.6.1 regenerated the lanes block and reverts the human-lane line) - not in either commit, keep it out of every commit on this branch
+  note: concurrency - showMilestone (register.tsx) merges late jaira show results into overviewFiled without checking that overviewDir/overviewAtom are still the ones it started from, so a press from a previous opening or project can land after openOverview reset the atom; harmless today because results are keyed by handle, fix: drop the merge when overviewDir changed since the start
+  note: showMilestone starts one jaira show per absent handle at once with no cap - a milestone with many logbook tickets (abnahme-2026-11 holds 18) starts that many processes per opening/page; a small concurrency limit would bound it
+  note: a ticket on another board is grouped by its own lanes but ranked by today's lane order, so it always sorts last within its group - acceptable, mention if it reads oddly
+  note: DoD 1 'Pfeiltasten' is met as arrow keys moving the focus ring onto [ < ]/[ > ] plus Enter, not left/right paging directly (the cockpit has no key handler) - the person's item 6 decides whether that is enough
 ---
 
 # Das Cockpit zeigt einen Milestone mit Fortschritt und seinen Tickets nach Stand sortiert
