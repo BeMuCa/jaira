@@ -890,15 +890,15 @@ func TestHerdrHcNamesTheTabAfterItsLabel(t *testing.T) {
 			bin := t.TempDir()
 			calls := filepath.Join(t.TempDir(), "calls")
 			// taken: names a live terminal holds; * every name; ! a refusal
-			// that is not about the name.
+			// that is not about the name. Like hc, refusals go to stderr.
 			hc := `#!/usr/bin/env bash
 taken='` + c.taken + `'
 if [ "$1" = run ]; then
   n=""; while [ $# -gt 0 ]; do [ "$1" = --name ] && n="$2"; shift; done
   printf '%s\n' "$n" >> "` + calls + `"
-  if [ "$taken" = '!' ]; then echo '{"error":{"kind":"bad_cwd"}}'; exit 1; fi
+  if [ "$taken" = '!' ]; then echo '{"error":{"kind":"bad_cwd"}}' >&2; exit 1; fi
   if [ -n "$n" ] && { [ "$taken" = '*' ] || [[ " $taken " == *" $n "* ]]; }; then
-    echo '{"error":{"kind":"name_taken"}}'; exit 1
+    echo '{"error":{"kind":"name_taken"}}' >&2; exit 1
   fi
   echo '{"address":"t9","state":"live"}'
 fi

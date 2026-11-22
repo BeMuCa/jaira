@@ -602,6 +602,7 @@ f2dfc87a90444fdc2567c258a605a8cdd4eabbfcc59ceff3ca9ff7aaf79902c5  core/role/buil
 f772671b5cf587ad3e20a4c491a08067920c589cbae6f107462e7bf9b51af26c  core/role/builtin/jaira-dispatcher/scripts/close-tab.sh
 3597e65b7383591287df3c51bbf2fd77e232ab0f036f0fedc15653e76489f948  core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh
 77cccd9755758e2c9b030827f78102f583e9bf1c1f390998ddf65b25da959f9a  core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh
+9154a8e9c8261cbde48d7feee70b88397ffbed83d73a2d6c7d40ba13e8891809  core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh
 9a77ffd43e45a931b75b4c218a731b16ac5ef63c45c33e9255864755fa91123c  core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh
 031c3e0422fc20d73cd693d7ca3c67af98cc39ec07b5dfd4830d5f0e38e2e2b0  core/role/builtin/jaira-dispatcher/scripts/reap.sh
 0d04ae88e0c78ed20e1dd49cb10ddd4ed2a93448f5c6ca8683b0989ef8484461  core/role/builtin/jaira-dispatcher/scripts/reap.sh
