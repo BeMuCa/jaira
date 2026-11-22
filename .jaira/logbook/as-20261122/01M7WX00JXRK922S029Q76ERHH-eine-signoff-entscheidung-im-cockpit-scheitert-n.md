@@ -1,7 +1,7 @@
 ---
 id: 01M7WX00JXRK922S029Q76ERHH
 title: "Eine Signoff-Entscheidung im Cockpit scheitert nicht, wenn das Ticket nur im Worktree liegt"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,23 +18,38 @@ blocked-by:
 related:
   - 01M5MNWJF240306ZVDA41K3RA8
   - 01M5ZJ57ARFWR06TS7TJFYHJ39
-commits: []
+commits:
+  - f43fc94d2bf93a585ab11b5bbeb7fc0fc1ed7643
+  - 4e0a0a4403df055f1c5f5b35fa83cc3104a59a4d
+  - 91531818157a0e2dafb960cc8c025da605a12380
 created-at: 2026-11-20T16:35:21Z
-updated-at: 2026-11-22T17:20:37Z
+updated-at: 2026-11-22T18:20:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2175608
 claimed-at: 2026-11-22T17:03:48Z
 outcome-what: "Accept, Give back und eine gewaehlte Entscheidung im Cockpit ziehen das Ticket vorher mit jaira pull, wenn es nur auf dem Ref liegt oder die Datei hinter dem Ref ist; ohne eigenen Worktree wird die dafuer in den Haupt-Checkout gezogene Kopie danach mit git clean entfernt, ein gescheitertes Entfernen wird mit Pfad gezeigt."
 outcome-why: "Die Entscheidung lief in einem Verzeichnis, dessen Platte das Ticket nicht oder veraltet trug, und jaira lehnte jede Schreibung mit 'on its ref and not on your disk' bzw. stale_file ab."
 outcome-resolves: "Signoff-Entscheidungen im Cockpit scheitern nicht mehr an einem Ticket, das nur im Worktree/auf dem Ref liegt."
-review-summary: none
-review-gaps: "none - Runde 2: der Fix nutzt output() und show(), nichts Neues zu falten"
-test-verdict: "pass: Runde 2 (Diff seit f43fc94d2: register.tsx leave(), texts.ts, board.test.ts): claude plugin test . 323 pass 0 fail (RC=0); neuer Test 'a copy that cannot be taken away is shown with its path' zeigt Fenster 'Copy of MG677R left behind' mit Fehler und git-clean-Zeile; DoD 1-5 mit aktualisierten Proof-Zeilen geprueft. Runde 1: Live-Lauf mit echtem jaira (pull/move/note/git clean, offline rc=1, fremd rc=3, zwei Schreiber)."
-hunt-verdict: "fail: 1 change (Blocker) - leave() ueberschreibt das Meldungsfenster (Ablehnung, noteLost)"
+review-summary: "Vor jeder schreibenden Entscheidung im Cockpit (decide-Note, Accept inkl. Dry-run, Give back) liest das neue ticketHere() 'jaira show --json' im Ticket-Verzeichnis; liegt das Ticket nur auf dem Ref oder ist die Datei aelter als der Ref, holt es 'jaira pull <id>' zuerst. Im eigenen Worktree bleibt die gezogene Datei (gehoert auf den Branch); ohne Worktree wird im Haupt-Checkout entschieden und die nur dafuer gezogene Kopie im finally per 'git clean -fqx -- <path>' entfernt, auch bei abgelehnter Entscheidung. Ein abgelehnter pull stoppt mit jairas Meldung, ohne --steal. Scheitert das Aufraeumen, sagt eine Zeile neben dem Band den Pfad, ohne das Meldungsfenster der Entscheidung zu ueberschreiben. board.ts bekommt ownTreeFor() und diskOf(); 324 Plugin-Tests gruen."
+review-gaps: |-
+  note: copyNotRemoved (texts.ts:69) ist ~370 Zeichen, der git-clean-Befehl steht hinten und faellt auf der einzeiligen Bandzeile weg; Fix: Befehl nach vorn, Pfad relativ zum Repo. Nur wenn git clean scheitert
+  note: jaira pull setzt bei einem Ticket ohne assignee den Pressenden als assignee (refsync.go:1440ff), leave() gibt den Claim nicht zurueck; known limit, ausserhalb backlog praktisch nie ohne assignee
+  note: ein zweiter Druck auf dieselbe Zeile nach BUSY_MS 20s waehrend eines langsamen Give back (spawn.sh) sieht die Kopie als current, die erste Presse raeumt sie unter ihm weg; known limit
+  note: pre-existing: openChat (register.tsx:924) gibt Explain/Discuss ohne Worktree weiter den Haupt-Checkout, wo die Datei fehlt; eigener Entwurf noetig
+test-verdict: "pass: Runde 3 (Diff seit 4e0a0a440): claude plugin test . 324 pass 0 fail (RC=0); Tests: gescheitertes clean neben abgelehnter Accept laesst 'Accept MG677R failed' als letztes Fenster und sagt die git-clean-Zeile als Toast; verlorene Give-back-Note bleibt im Fenster. DoD 1-5 Proofs auf aktuelle Zeilen gesetzt."
+hunt-verdict: "pass: bughunt done at 915318181, 1 change (kein Blocker: copyNotRemoved-Zeile wird auf der Bandzeile abgeschnitten, Toast 4s - nur wenn git clean scheitert), 0 pre-existing; Note fuer die Person"
 round: 3
 back-from: testing
 back-by: lane
 back-count: 2
+review-verdict: "accept: alle 5 DoD-Punkte sind durch Code und Tabellentests gedeckt (324 Tests gruen); kein Blocker, nur kleine Raender als note"
+review-round: 3
+review-verdict-gaps: |-
+  note: copyNotRemoved (texts.ts:69) ist ~370 Zeichen, der git-clean-Befehl steht hinten und faellt auf der einzeiligen Bandzeile weg; Fix: Befehl nach vorn, Pfad relativ zum Repo. Nur wenn git clean scheitert
+  note: jaira pull setzt bei einem Ticket ohne assignee den Pressenden als assignee (refsync.go:1440ff), leave() gibt den Claim nicht zurueck; known limit, ausserhalb backlog praktisch nie ohne assignee
+  note: ein zweiter Druck auf dieselbe Zeile nach BUSY_MS 20s waehrend eines langsamen Give back (spawn.sh) sieht die Kopie als current, die erste Presse raeumt sie unter ihm weg; known limit
+  note: pre-existing: openChat (register.tsx:924) gibt Explain/Discuss ohne Worktree weiter den Haupt-Checkout, wo die Datei fehlt; eigener Entwurf noetig
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-76erhh/core/mod/builtin/jaira-cockpit && claude plugin test .  -> '0 fail'  2. Live: ein Ticket in signoff ohne eigenen Worktree waehlen, dessen Datei nicht in /home/alex/projects/jaira/.jaira/tickets liegt  3. claude --plugin-dir /home/alex/projects/.worktrees/jaira-76erhh/core/mod/builtin/jaira-cockpit, im Band Accept druecken  4. Erwartet: kein 'on its ref and not on your disk', Ticket wechselt die Lane  5. git -C /home/alex/projects/jaira status --short .jaira/tickets -> keine neue Ticket-Datei uebrig"
 ---
 
 # Eine Signoff-Entscheidung im Cockpit scheitert nicht, wenn das Ticket nur im Worktree liegt
@@ -81,3 +96,7 @@ back-count: 2
 - **2026-11-22 17:18 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/register.tsx:566 - class: leave() runs in finally after the press and calls show(), which replaces the one message pane (messageAtom), so any message the press itself showed is lost whenever git clean fails; places: accept() :1088, giveBack() :1244, decide() :1088-area finally, and the messages they lose: fail() refusals (e.g. 'Accept MG677R failed: definition of done item 2 is open') and noteLost at :1264 and :1187, which holds the only copy of the give-back reason the person typed plus its 'jaira note ... ' paste line (data loss of that text); example: refused Accept + git clean 'Permission denied' -> panes opened: 'Accept MG677R failed' then 'Copy of MG677R left behind', and the mounted Accept pane reads only the copy text; blocker because the reason text is lost, but it needs two failures in one press (a refused write or note, and a refused git clean); ran: scratch copy of the plugin with an added board.test.ts case, claude plugin test . (OPENED shows both panes, the Accept reason missing from the pane)
 - **2026-11-22 17:18 · Alexander Sacharov** — bughunt: done at 4e0a0a440 - 1 finding (1 change, 1 blocker, 0 pre-existing), follow-up hunt since f43fc94d2; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/76ERHH.md
 - **2026-11-22 17:19 · Alexander Sacharov** — bughunt: correction to the change finding above: the finally blocks calling leave() are accept() register.tsx:647, decide() :1088 and giveBack() :1244
+- **2026-11-22 17:20 · Alexander Sacharov** — critique (Runde 3, nur 915318181): nichts - say() ist der bestehende Weg fuer Zeilen neben dem Band; das Meldungsfenster bleibt der Ablehnung bzw. noteLost.
+- **2026-11-22 17:22 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:568 (with texts.ts:69, rendered at register.tsx:1668) - class: text the person must act on routed through say(), whose only lasting form is the band's notice row drawn with wrap="truncate-end" (one terminal row) plus a 4 s toast; example: copyNotRemoved for a ticket in a real checkout is 372 characters and its 'git clean -fqx -- <path>' starts at character 233, so on any terminal narrower than about 240 columns the band never shows the command or the path, and the toast that carries it whole runs out after 4000 ms while the refusal pane just opened has focus; before 915318181 the same text sat in a message pane until closed; not a blocker (the copy is left behind only when git clean fails), but the person is told a copy hides the ref and is never shown, durably, how to remove it; ran: node --experimental-strip-types on t.copyNotRemoved with /home/alex/projects/jaira/.jaira/tickets/01M7WX00JXRK922S029Q76ERHH-...md (length 372, indexOf('git clean') 233); read: register.tsx:597-600, 1668; toast timeout from claude-code.d.ts ToastOptions default 4000
+- **2026-11-22 17:22 · Alexander Sacharov** — bughunt: done at 915318181 - 1 finding (1 change, 0 blocker, 0 pre-existing), follow-up hunt since 4e0a0a440; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/76ERHH.md
+- **2026-11-22 17:23 · Alexander Sacharov** — testing: note: small edge - copyNotRemoved (texts.ts:69) ist ~370 Zeichen, die git-clean-Zeile steht hinten und faellt auf der Bandzeile weg; Fix waere: Befehl nach vorn und Pfad relativ (.jaira/tickets/<datei>). Nur wenn git clean scheitert. Nicht zurueckgeschickt: zweimal in Folge zurueck, Schleifenbremse (Interim-Regel 4).
