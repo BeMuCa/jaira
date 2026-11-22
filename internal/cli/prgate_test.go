@@ -681,6 +681,16 @@ func TestPRGateMergeRefusesWhatItCannotJudge(t *testing.T) {
 		!strings.Contains(err.Error(), "hand the merge line back") {
 		t.Fatalf("no ticket named: exit %d, %v", exitCode(err), err)
 	}
+	// A commit no ticket owns beside an accepted one: nobody reads the pull
+	// request again before an agent merges it (50RA6N, bughunt).
+	dir2, ticketIn2, commit2 := prGateFixture(t)
+	onBase(t, dir2, settings.BoardLandPath(dir2), "agent")
+	commit2("feat(" + ticketIn2("done") + "): accepted")
+	commit2("wip: no ticket here")
+	if _, err := runCLI(t, dir2, "roles", "pr-gate", "--merge", "master"); exitCode(err) != ExitValidation ||
+		!strings.Contains(err.Error(), "wip: no ticket here") {
+		t.Fatalf("unnamed commit: exit %d, %v", exitCode(err), err)
+	}
 	if _, err := runCLI(t, dir, "roles", "pr-gate", "--merge", "--land", "master"); exitCode(err) != ExitUsage {
 		t.Fatalf("--merge with --land: exit %d, %v", exitCode(err), err)
 	}

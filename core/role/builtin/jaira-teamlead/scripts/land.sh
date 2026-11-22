@@ -107,7 +107,10 @@ if ! git merge --no-commit --no-ff -q "$base" >/dev/null 2>&1; then
   git rev-parse -q --verify MERGE_HEAD >/dev/null || die 1 "git merge $base failed before any conflict — run it by hand to see why"
   others=()
   while IFS= read -r f; do
-    if generated "$f"; then git checkout -q --theirs -- "$f"; else others+=("$f"); fi
+    # The base's side, to regenerate over — unless the base deleted or
+    # renamed the file: then there is no side to take, and it is a conflict
+    # like any other.
+    if generated "$f" && git checkout -q --theirs -- "$f" 2>/dev/null; then :; else others+=("$f"); fi
   done < <(git diff --name-only --diff-filter=U)
   if [ "${#others[@]}" -gt 0 ]; then
     git merge --abort
@@ -152,7 +155,9 @@ case "$gate" in
      exit 3 ;;
   *) die 2 "pr-gate --merge did not answer: $why" ;;
 esac
-gh pr merge "$pr" --repo "$repo" --merge >/dev/null
+# Merge exactly the head the gate and CI judged: a push to the branch while
+# this waited makes gh refuse instead of merging commits nobody checked.
+gh pr merge "$pr" --repo "$repo" --merge --match-head-commit "$(git rev-parse HEAD)" >/dev/null
 echo "land: $id #$pr merged into $base"
 main="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
 (cd "$main" && "$here/../../jaira-dispatcher/scripts/reap.sh" "$main" 2>&1 | grep -v '^waiting' || true)

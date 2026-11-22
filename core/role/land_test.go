@@ -27,6 +27,7 @@ func TestLandMergesOnlyWhereTheBoardLetsIt(t *testing.T) {
 		dirty     bool   // a tracked file is changed and not committed
 		noRegen   bool   // the base has no .jaira/land-regenerate
 		upToDate  bool   // master does not move: nothing to merge or push
+		deleteGen bool   // master deletes the generated file the branch changed
 		wantExit  int
 		wantOut   string
 		wantMerge bool
@@ -40,6 +41,7 @@ func TestLandMergesOnlyWhereTheBoardLetsIt(t *testing.T) {
 		{name: "red CI", land: "agent", status: "done", red: true, wantExit: 1, wantOut: "not green", wantPush: true},
 		{name: "no generated files", land: "agent", status: "done", noRegen: true, wantExit: 0, wantOut: "merged", wantMerge: true, wantPush: true},
 		{name: "branch already holds the base", land: "agent", status: "done", upToDate: true, wantExit: 0, wantOut: "merged", wantMerge: true, wantPush: true},
+		{name: "base deleted the generated file", land: "agent", status: "done", deleteGen: true, wantExit: 1, wantOut: "gen.txt"},
 		{name: "uncommitted change", land: "agent", status: "done", dirty: true, wantExit: 2, wantOut: "uncommitted"},
 	}
 	for _, c := range cases {
@@ -53,7 +55,10 @@ func TestLandMergesOnlyWhereTheBoardLetsIt(t *testing.T) {
 			}
 			r.git(t, wt, "commit", "-qam", "feat("+h+"): the work")
 			r.git(t, wt, "push", "-q", "origin", "HEAD")
-			if !c.upToDate {
+			switch {
+			case c.deleteGen:
+				r.deleteOnMaster(t, "gen.txt")
+			case !c.upToDate:
 				r.advanceMaster(t, c.conflict, !c.noRegen)
 			}
 			if c.red {
@@ -93,11 +98,11 @@ func TestLandMergesOnlyWhereTheBoardLetsIt(t *testing.T) {
 				if got := r.git(t, r.origin, "show", branch+":gen.txt"); got != "regenerated" {
 					t.Errorf("gen.txt on the branch = %q, want regenerated", got)
 				}
-				if got := r.git(t, r.origin, "log", "-1", "--format=%s", branch); !strings.HasPrefix(got, "chore("+h+"): merge origin/master, regenerate gen.txt") {
+				if got := r.git(t, r.origin, "log", "-1", "--format=%s", branch); got != "chore("+h+"): merge origin/master, regenerate gen.txt" {
 					t.Errorf("last commit on the branch = %q", got)
 				}
 			}
-			if c.conflict {
+			if c.conflict || c.deleteGen {
 				if st := r.git(t, wt, "status", "--porcelain", "--untracked-files=no"); st != "" {
 					t.Errorf("a stopped merge left the worktree dirty:\n%s", st)
 				}
@@ -140,7 +145,9 @@ case "$*" in
   "pr view 7 --repo o/r --json state,headRefName,baseRefName")
     echo "{\"state\":\"OPEN\",\"headRefName\":\"$(git symbolic-ref --short HEAD)\",\"baseRefName\":\"master\"}" ;;
   "pr checks 7 --repo o/r"*) [ -e "` + r.checksFail + `" ] && { printf 'test\tfail\n'; exit 1; }; printf 'test\tpass\n' ;;
-  "pr merge 7 --repo o/r --merge") echo "$*" >> "` + r.merged + `" ;;
+  "pr merge 7 --repo o/r --merge --match-head-commit "*)
+    [ "${8:-}" = "$(git rev-parse HEAD)" ] || { echo "head moved" >&2; exit 1; }
+    echo "$*" >> "` + r.merged + `" ;;
   *) exit 1 ;;
 esac
 `
@@ -229,6 +236,15 @@ func (r *landRig) advanceMaster(t *testing.T, conflict, gen bool) {
 	r.write(t, filepath.Join(seed, "third.txt"), "new on master\n")
 	r.git(t, seed, "add", "-A")
 	r.git(t, seed, "commit", "-qm", "chore: master moves on")
+	r.git(t, seed, "push", "-q", "origin", "master")
+}
+
+func (r *landRig) deleteOnMaster(t *testing.T, name string) {
+	t.Helper()
+	seed := filepath.Join(r.tmp, "seed")
+	r.git(t, seed, "pull", "-q", "origin", "master")
+	r.git(t, seed, "rm", "-q", name)
+	r.git(t, seed, "commit", "-qm", "chore: "+name+" goes")
 	r.git(t, seed, "push", "-q", "origin", "master")
 }
 

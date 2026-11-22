@@ -181,7 +181,8 @@ rules — reason not_none.
 exit 0 only where <base>'s .jaira/land says agent — one line, committed,
 read as <base> holds it like .jaira/pr — and every ticket named on the
 branch is in its board's terminal lane. .jaira/pr and .jaira/pr-when are not
-read. Anything else exits 3, reason not_agent, no_ticket, unreadable or
+read. Every commit in <base>..HEAD must name a ticket, as under none.
+Anything else exits 3, reason not_agent, no_ticket, unnamed, unreadable or
 pending, and the person merges. --json carries may_merge and tickets.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -264,15 +265,17 @@ pending, and the person merges. --json carries may_merge and tickets.`,
 			// Under none nobody reads the branch after the gate: a pull
 			// request would show a commit that names no ticket to a person
 			// before it merges, a fast-forward push shows it to nobody. So
-			// every commit must belong to a ticket a person accepted.
-			if pr == settings.PRNone {
+			// every commit must belong to a ticket a person accepted. An
+			// agent's merge is the same: nobody reads the pull request again
+			// between the acceptance and the merge.
+			if pr == settings.PRNone || merge {
 				unnamed, err := repo.UnnamedCommits(args[0])
 				if err != nil {
 					return err
 				}
 				if len(unnamed) > 0 {
 					return fail(ExitValidation, "unnamed",
-						"pr-gate: %d commit(s) in %s..HEAD name no ticket, and without a pull request nobody would see them before they land — %s; name a ticket in each, type(<ID>): ... — a revert too, as fix(<ID>): revert <what> (git rebase -i, reword) — or %s",
+						"pr-gate: %d commit(s) in %s..HEAD name no ticket, and nobody would see them before they land — %s; name a ticket in each, type(<ID>): ... — a revert too, as fix(<ID>): revert <what> (git rebase -i, reword) — or %s",
 						len(unnamed), args[0], strings.Join(unnamed, "; "), then)
 				}
 			}
