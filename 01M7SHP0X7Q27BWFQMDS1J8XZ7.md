@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T23:09:17Z
+updated-at: 2026-11-22T23:09:19Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -53,6 +53,16 @@ review-verdict-gaps: |-
   note: showMilestone starts one jaira show per absent handle at once with no cap - a milestone with many logbook tickets (abnahme-2026-11 holds 18) starts that many processes per opening/page; a small concurrency limit would bound it
   note: a ticket on another board is grouped by its own lanes but ranked by today's lane order, so it always sorts last within its group - acceptable, mention if it reads oddly
   note: DoD 1 'Pfeiltasten' is met as arrow keys moving the focus ring onto [ < ]/[ > ] plus Enter, not left/right paging directly (the cockpit has no key handler) - the person's item 6 decides whether that is enough
+review-check: |-
+  1. cd /home/berk/git/.worktrees/jAIra-1j8xz7 and start Claude Code there with this branch's jaira-cockpit mod loaded, in a terminal 80 columns wide
+  2. Click the band's Overview button - the head row shows [ Queue ] [ Log ] [ Workers ] [ Milestones ] and Close on ONE line
+  3. Click [ Milestones ] - you see [ < ] abnahme-2026-11 [ > ] (the first milestone of jaira milestone ls), under it 'x of 18 done'
+  4. Below: groups In work, Not started, Done, each row ID | lane | title; logbook tickets sit under Done with lane 'logbook'
+  5. Compare: jaira milestone ls --json lists the same handles; x equals the tickets in done or logbook
+  6. Click [ > ] several times - the name changes, after the last milestone it wraps to the first; [ < ] goes the other way
+  7. Use the arrow keys to move the focus onto [ > ] and press Enter - it pages the same as a click
+  8. Close the pane, reopen Overview - the Milestones tab still shows the milestone you chose last
+  9. If all of that holds, tick DoD 6 with: jaira dod 1J8XZ7 6 --done --proof "seen by a person"
 ---
 
 # Das Cockpit zeigt einen Milestone mit Fortschritt und seinen Tickets nach Stand sortiert
