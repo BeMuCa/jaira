@@ -67,8 +67,11 @@ Then:
 - **Nothing left to say.** Write `review-summary="none"` explicitly — an empty
   field means nobody looked — and move the ticket on to the next lane.
 
-**A small change is critiqued and optimized in one pass.** When the diff
-changes fewer than 50 lines outside `.jaira/`, read it once with both lists —
+**A small change is critiqued and optimized in one pass.** When what you
+judge changes fewer than 50 lines outside `.jaira/` — the diff on a first
+pass; after a review sent the work back, the fix since the commit in its
+`review: done at <commit>` note (`git diff --shortstat <commit> -- .
+':(exclude).jaira'`) — read it once with both lists —
 the four questions above and the optimize lane's four passes (`jaira show
 <handle> --for-lane optimize --json` hands you its prompt). Findings of your
 own send the ticket back as above, and optimize waits for the next round.

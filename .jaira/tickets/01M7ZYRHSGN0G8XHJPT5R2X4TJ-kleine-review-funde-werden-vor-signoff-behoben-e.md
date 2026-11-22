@@ -22,13 +22,20 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T21:03:57Z
-updated-at: 2026-11-22T14:50:47Z
+updated-at: 2026-11-22T14:51:31Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3877259
 claimed-at: 2026-11-22T14:47:51Z
 outcome-what: "Review marks notes fix-now or note and sends fix-now back once; small fix rounds run lean (stop-after-fix, critique+optimize in one pass, delta review from 'review: done at <commit>'); testing still hunts when a lock or parser changed"
 outcome-why: Small fixable notes reached signoff and each give-back cost a full lane run (9 times on 2026-11-21)
 outcome-resolves: "Tickets arrive at signoff without fixable edges, and a few-line fix no longer costs a full pass"
+review-summary: |-
+  core/lane/builtin/25-critique.md: the one-pass rule measures the payload diff, which on a fix-now round is the whole change, so a 5-line fix on a 300-line ticket never gets the one pass the worker skill promises - measure from review: done at <commit> when the notes carry one
+  core/lane/builtin/40-review.md: delta size via git diff --stat prints per-file bars; --shortstat gives the one line to count
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Kleine Review-Funde werden vor signoff behoben; ein kleiner Fix bekommt nur Delta-Review
@@ -54,3 +61,4 @@ outcome-resolves: "Tickets arrive at signoff without fixable edges, and a few-li
 ## Progress
 - **2026-11-22 14:47 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/25712.sock
 - **2026-11-22 14:49 · Alexander Sacharov** — decisions (settled, none open for the person): 1) fix-now is a sub-mark of note ('note: fix-now: ...') so cockpit/signoff parsers keep working; 2) review with fix-now lines but no blocker moves the ticket back to in-progress itself (verdict stays accept) - works for worker and dispatcher alike and the ticket never touches signoff; 3) only a full review may write fix-now - a delta review writes plain notes, so the fix-now round happens at most once (edges grow -> smaller design); 4) delta base = the review's own closing note 'review: done at <commit>', like bughunt; 5) 'small' = under 50 changed lines outside .jaira/ AND no lock/parser touched; 6) critique+optimize in one pass lives in the critique prompt (the critique agent moves through optimize itself), so it holds for per-lane dispatch too; 7) the worker sets stop-after-fix for a small fix-now round and clears it again if a later round is not small
+- **2026-11-22 14:51 · Alexander Sacharov** — critique: 25-critique.md one-pass rule must measure the fix since 'review: done at <commit>' when there is one, not the whole payload diff; 40-review.md use --shortstat

@@ -131,8 +131,9 @@ Write four things, in this order:
 
 **A delta review, after a small fix round.** When the ticket's notes carry
 an earlier `review: done at <commit>` line, that commit is an ancestor of
-`HEAD` (`git merge-base --is-ancestor <commit> HEAD`), and `git diff --stat
-<commit> -- . ':(exclude).jaira'` changes fewer than 50 lines, read only that
+`HEAD` (`git merge-base --is-ancestor <commit> HEAD`), and `git diff
+--shortstat <commit> -- . ':(exclude).jaira'` counts fewer than 50 changed
+lines, read only that
 diff: check that each finding of the previous review is answered, and look
 along the four lines above at the lines that changed and the functions they
 sit in — not at the rest of the change, which the previous review already
