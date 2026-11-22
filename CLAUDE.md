@@ -26,6 +26,7 @@ The stack decision and its research live in [docs/STACK.md](docs/STACK.md); the 
 
 
 <!-- jaira:start -->
+<!-- jaira:version 0.6.1 -->
 ## Task tracking: jaira
 
 This repository has a jaira board (`.jaira/`). Multi-step work is tracked
@@ -169,9 +170,9 @@ this note from outside the block.
 ## This board's lanes
 
 Order: ideas → backlog → brainstorm → todo → pre-process → in-progress → critique → optimize → testing → human → review → signoff → done → blocked
-Loop: critique sends work back to in-progress, and that repeats until critique has nothing left to say.
-Loop: optimize sends work back to in-progress, and that repeats until optimize has nothing left to say.
-Loop: testing sends work back to in-progress, and that repeats until testing has nothing left to say.
+Loop: critique sends work back to in-progress, and that repeats until critique has nothing left to say. At most 3 times in a row: the next send-back is refused, and a person decides.
+Loop: optimize sends work back to in-progress, and that repeats until optimize has nothing left to say. At most 3 times in a row: the next send-back is refused, and a person decides.
+Loop: testing sends work back to in-progress, and that repeats until testing has nothing left to say. At most 3 times in a row: the next send-back is refused, and a person decides.
 
 - `ideas` — no agent step; move through it
   Ideas that are not ripe for the backlog yet.

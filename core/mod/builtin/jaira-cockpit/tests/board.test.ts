@@ -3021,6 +3021,33 @@ describe('a session that carries a ticket', () => {
     expect((await $.prompt.submit({ text: order, origin: { kind: 'peer' }, wait: false })).text).toBe(order)
   })
 
+  // Every way the start line arrives: typed into the pane, and relayed by
+  // Herdr App from the teamlead's tab inside an <hc> wrapper.
+  const starts = [
+    ['typed', '/jaira-worker MG677R --parent jaira-4c', 'composer'],
+    ['typed with leading space', '  /jaira-worker MG677R', 'composer'],
+    ['relayed by Herdr App', '<hc from="t3">/jaira-worker MG677R --parent uds:/run/user/1000/cc-socks/1.sock</hc>', 'human'],
+    ['relayed with attributes and a newline', '<hc from="t3" via="x">\n/jaira-dispatcher MG677R</hc>', 'human'],
+    ['a lane relayed by Herdr App', '<hc from="t1">/jaira-role-lane MG677R critique</hc>', 'human'],
+  ] as const
+  for (const [name, text, kind] of starts) {
+    test(`recognises its start line ${name}, and a subagent's report reaches it whole`, async ($, on) => {
+      const w = world(on, { herdr: true })
+      await startSession($)
+      await $.prompt.submit({ text, origin: { kind }, wait: false })
+      expect(w.store.get('carrying:abcdef12')).toMatchObject({ ticket: 'MG677R' })
+      const report = '<task-notification>Ticket MG677R: bughunt done at b5ec407 - 0 findings</task-notification>'
+      expect((await $.prompt.submit({ text: report, origin: { kind: 'task-notification' }, wait: false })).text).toBe(report)
+    })
+  }
+
+  test('an <hc> line that starts nothing leaves the session a person\'s', async ($, on) => {
+    const w = world(on, { herdr: true })
+    await startSession($)
+    await $.prompt.submit({ text: '<hc from="t3">how far is /jaira-worker MG677R?</hc>', origin: { kind: 'human' }, wait: false })
+    expect(w.store.has('carrying:abcdef12')).toBe(false)
+  })
+
   test('stays an agent\'s session after the mod is reloaded, though the line that started it never comes again', async ($, on) => {
     // A reload starts the module over: only the store remembers the start line.
     const w = world(on, { herdr: true, store: { 'carrying:abcdef12': { ticket: 'MG677R', role: 'worker', lane: '' } } })
@@ -3399,18 +3426,39 @@ describe('the overview', () => {
     expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBe('primary')
   })
 
-  test('Close stands in the tab row, framed and wider than a tab, on every tab and on an unread board', async ($, on) => {
+  test('the top row is one row of framed buttons alike — the tabs and Close — and the open tab is the one highlighted', async ($, on) => {
     const w = world(on)
     w.tickets = [{ ...WORKING, assignee: 'Alex', updated_at: ago(0.1) }]
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'overview' })
     const pane = await $.ui.mount(OVERVIEW)
+    const KEYS = ['overview-tab-queue', 'overview-tab-log', 'overview-tab-workers', 'overview-close']
     for (const tab of ['queue', 'log', 'workers']) {
       await pane.press({ key: `overview-tab-${tab}` })
-      const frame = await pane.find({ key: 'overview-close-frame' })
-      expect(frame?.props).toMatchObject({ borderStyle: 'round', paddingX: 1 })
+      // One row, in this order, every button in a frame of its own with the
+      // same border and padding: none stands higher or lower than another.
+      const frames = await Promise.all(KEYS.map(k => pane.find({ key: `${k}-frame` })))
+      for (const frame of frames) {
+        expect(frame?.props).toMatchObject({ borderStyle: 'round', paddingX: 1 })
+        expect(frame?.children.length).toBe(1)
+      }
+      const row = await pane.find({ key: 'overview-top-row' })
+      expect(row?.children.map(c => c.props)).toEqual(frames.map(f => f?.props))
+      // It never wraps: the pane budgets it three rows (OVERVIEW_ROWS).
+      expect(row?.props).toMatchObject({ flexDirection: 'row' })
+      expect(row?.props.flexWrap).toBeUndefined()
       const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
       expect(labels.slice(0, 4)).toEqual(['Queue', 'Log', 'Workers', 'Close'])
+      // The open tab, and only it, is highlighted: a coloured frame and the
+      // primary variant; the others are dimmed. Close is never a tab.
+      for (const [i, other] of ['queue', 'log', 'workers'].entries()) {
+        const open = other === tab
+        expect(frames[i]?.props.borderColor).toBe(open ? 'claude' : undefined)
+        expect(frames[i]?.props.borderDimColor).toBe(!open)
+        expect((await pane.find({ key: `overview-tab-${other}` }))?.props.variant).toBe(open ? 'primary' : undefined)
+      }
+      expect(frames[3]?.props.borderColor).toBeUndefined()
+      expect(frames[3]?.props.borderDimColor).toBe(false)
     }
     // What Close draws is longer than the longest tab's label.
     const closeText = (await pane.find({ type: 'Text', text: /^ +Close +$/ }))?.text ?? ''

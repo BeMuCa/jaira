@@ -74,6 +74,39 @@ jaira dod <id> --add "every write tool rejects or strips what the store cannot h
 jaira dod <id> --add "acceptance rule: losing body text is worse than keeping a stray header"
 ```
 
+## What only a person can check
+
+Some results no agent can see: how a terminal draws something, how a real
+operating system behaves, what happens when a person is at the keyboard. An
+agent that cannot see them ticks the item anyway, with a stand-in proof — a
+width table instead of the screen, a green Linux run instead of macOS, a
+refusal text instead of the person's own command. Name them here, as items of
+their own, so they reach the person as open steps instead of as ticked ones.
+
+The change needs such an item when it alters any of these:
+
+- **what a terminal draws** — the TUI, an interactive prompt, colours,
+  character widths, emoji or box glyphs, line wrapping, a panel a plugin or
+  mod draws inside another program
+- **behaviour that differs by platform** — operating system, shell, terminal
+  emulator, file system, a tool that exists on one platform and not on
+  another; a check on one platform says nothing about the others
+- **something only a person can do** — a command a person types that an agent
+  is refused, a click, a dialog, an approval
+
+One item per thing to look at, starting with the fixed words
+`seen by a person:`, then what to look at and where — the terminal, the
+platform, the command:
+
+```bash
+jaira dod <id> --add "seen by a person: the board's emoji column lines up in Windows Terminal"
+jaira dod <id> --add "seen by a person: 'jaira move <id> --to done' typed at a terminal on macOS"
+```
+
+The agent lanes do everything around it — the code, the tests a machine can
+run — and never tick it: a person does, at acceptance, with what they saw as
+the proof.
+
 ## The loop brake
 
 testing, review and the bug hunt send work back for a blocker and for nothing
