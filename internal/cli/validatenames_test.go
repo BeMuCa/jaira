@@ -31,7 +31,7 @@ func TestValidateNamesFilesWithInvalidUTF8(t *testing.T) {
 	if exitCode(err) != ExitValidation {
 		t.Fatalf("validate exit = %d, want %d\n%s", exitCode(err), ExitValidation, out)
 	}
-	const marker = "macOS cannot check it out — rename it: git mv "
+	const marker = "macOS cannot check it out — rename it: mv "
 	i := strings.Index(out, marker)
 	if i < 0 {
 		t.Fatalf("validate did not name the file:\n%s", out)
@@ -40,13 +40,14 @@ func TestValidateNamesFilesWithInvalidUTF8(t *testing.T) {
 		t.Fatalf("validate touched the file: %v", err)
 	}
 
-	// The printed rename, run by bash as printed, must hit the real file.
+	// The printed rename, run by bash as printed from a directory other than
+	// the root, on a file git does not track, must hit the real file.
 	if _, err := exec.LookPath("bash"); err != nil {
 		t.Skip("no bash to run the printed rename")
 	}
 	args, _, _ := strings.Cut(out[i+len(marker):], "\n")
 	sh := exec.Command("bash", "-c", "mv "+args)
-	sh.Dir = dir
+	sh.Dir = logbook
 	if b, err := sh.CombinedOutput(); err != nil {
 		t.Fatalf("the printed rename does not run: %v\n%s\n%s", err, args, b)
 	}

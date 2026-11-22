@@ -1,2 +1,2 @@
 - Long ticket titles with umlauts, ß or Cyrillic no longer produce file names cut inside a letter; such names could not be checked out on macOS.
-- ! Run `jaira validate` once: it now fails (exit 3) on every file under .jaira/ whose name is not valid UTF-8 and prints the `git mv` that renames it; run that line and commit the rename, or macOS teammates cannot clone the repository.
+- ! Run `jaira validate` once: it now fails (exit 3) on every file under .jaira/ whose name is not valid UTF-8 and prints the `mv` that renames it; run that line and commit the rename, or macOS teammates cannot clone the repository.

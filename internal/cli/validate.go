@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 	"io/fs"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -29,7 +28,7 @@ where damage from a hand edit, a bad merge, or an agent writing something
 unexpected actually shows up — a ticket with an unparseable id, a lane that is
 not installed, a dependency on something that is not there, a file under
 .jaira/ whose name is not valid UTF-8 (macOS cannot check it out; the line
-carries the git mv that renames it).
+carries the mv that renames it).
 
 Errors exit 3. Warnings — a backlog ticket that is not specified yet — exit 0,
 because capture is meant to be cheap. Use --strict to fail on those too.`,
@@ -163,14 +162,16 @@ func invalidNames(root string) []validate.Problem {
 		if err != nil || utf8.ValidString(d.Name()) {
 			return nil // an unreadable corner is not this check's business
 		}
-		rel, _ := filepath.Rel(root, p)
-		rel = filepath.ToSlash(rel)
-		fixed := path.Join(path.Dir(rel), strings.ToValidUTF8(d.Name(), ""))
+		fixed := filepath.Join(filepath.Dir(p), strings.ToValidUTF8(d.Name(), ""))
 		out = append(out, validate.Problem{
 			Code: "invalid_name", Severity: validate.SeverityError,
-			Path: strings.ToValidUTF8(rel, "\uFFFD"),
-			Message: fmt.Sprintf("name is not valid UTF-8, macOS cannot check it out — rename it: git mv %s %s",
-				shellQuote(rel), shellQuote(fixed)),
+			Path: strings.ToValidUTF8(p, "\uFFFD"),
+			// mv, not git mv: it works on a board not shared yet and on a
+			// file git does not track, and git still reads a committed one
+			// as renamed. Absolute paths, like every other Problem's, so the
+			// line runs from any directory.
+			Message: fmt.Sprintf("name is not valid UTF-8, macOS cannot check it out — rename it: mv %s %s",
+				shellQuote(p), shellQuote(fixed)),
 		})
 		return nil
 	})
