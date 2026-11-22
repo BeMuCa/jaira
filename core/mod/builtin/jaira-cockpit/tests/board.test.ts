@@ -1731,8 +1731,10 @@ describe('after Accept', () => {
     await press($)
     expect(ran(w, 'git', 'fetch')).toEqual([['git', 'fetch', 'upstream', 'main', '@/repo']])
     const order = w.ran.map(r => r[1] === 'fetch' ? 'fetch' : r[1] === 'log' ? 'log' : '').filter(Boolean)
-    expect(order).toEqual(['fetch', 'log'])
-    expect(ran(w, 'git', 'log')).toEqual([['git', 'log', '--format=%s', 'upstream/main..feat/mg677r', '@/repo']])
+    // Every log after the fetch: the branch search and the count alike.
+    expect(order[0]).toBe('fetch')
+    expect(order.slice(1).every(x => x === 'log')).toBe(true)
+    expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'upstream/main..feat/mg677r', '@/repo']])
   })
 
   test('not a fork: the base is origin\'s own default branch', async ($, on) => {
@@ -2132,6 +2134,8 @@ describe('give back', () => {
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
     expect(spawned(w)).toEqual([])
     expect(lastNote(w)).toContain('tell it in tab MG677R/worker - no second worker started')
+    // The teamlead hears there is one, so it starts none either.
+    expect(w.submitted).toEqual(['jaira-cockpit: MG677R given back: der Branch fehlt im Schluessel, worker MG677R/worker at work, not reached: type the decision into its tab, start no other (Person, Cockpit; signoff -> in-progress)'])
   })
 
   test('Give back twice in a row: one worker, the second press finds the ticket already back', async ($, on) => {

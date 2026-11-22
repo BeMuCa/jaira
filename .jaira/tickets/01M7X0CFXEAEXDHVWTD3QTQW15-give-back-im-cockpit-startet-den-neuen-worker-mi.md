@@ -24,13 +24,20 @@ related:
   - 01M5MNWDKYJGC78B3EKMX2TGXG
 commits: []
 created-at: 2026-11-20T17:34:35Z
-updated-at: 2026-11-22T19:09:25Z
+updated-at: 2026-11-22T19:12:54Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1167205
 claimed-at: 2026-11-22T18:52:27Z
 outcome-what: "Give back im Cockpit: neuer Worker berichtet an die parent session des Tickets (sonst an die Cockpit-Session, sonst eigener Tab), startet auf dem Branch mit dem neuesten Commit der ID (vorhandener Worktree oder spawn.sh --branch), ein arbeitender Worker bekommt die Entscheidung statt ersetzt zu werden; Accept/Give back/Decide schicken '<ID>: ... (Person, Cockpit)' in die Session, Accept auch als Note. spawn.sh: --branch, vorhandener <prefix>/<slug> wird wieder ausgecheckt, Setup-Fehler loescht nur selbst angelegte Branches, Prompt mit parent nennt SendMessage statt AskUserQuestion."
 outcome-why: "Ein Teamlead eines anderen Projekts sah am 20.11. Worker, die per AskUserQuestion fragten, in leeren feat/<id>-Worktrees starteten und dreifach liefen."
 outcome-resolves: QTQW15 DoD 1-6
+review-summary: |-
+  core/mod/builtin/jaira-cockpit/hooks/register.tsx workPlace repeats the branch search decideStep already does inline (worktree branch, */<slug> listing, branch --contains the newest commit naming the id) - move the git queries into one helper both call, with carrierFor deciding
+  core/mod/builtin/jaira-cockpit/hooks/register.tsx givingBack: a worker at work with no record is reported to the teamlead as 'worker none', which invites it to start the very second worker this press refuses to - the line must name the working tab and say the decision is to be typed there
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Give back im Cockpit startet den neuen Worker mit Teamlead, im Worktree mit dem Code und nie doppelt
@@ -38,11 +45,11 @@ outcome-resolves: QTQW15 DoD 1-6
 ## Definition of Done
 
 - [x] Der Start-Prompt eines Give back nennt die parent session des Tickets und verbietet AskUserQuestion; danach geht eine Zeile '<ID> given back: <Entscheidung>, Worker <name>' an den Teamlead (Test im Cockpit)
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1430 + spawn.sh asks=: test 'the new worker reports to the parent session the ticket names, and the teamlead hears who took it'; Go TestSpawnTypesTheRoleForItsLaneName
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1424 + spawn.sh asks=: test 'the new worker reports to the parent session the ticket names, and the teamlead hears who took it'; Go TestSpawnTypesTheRoleForItsLaneName
 - [x] Give back findet den Branch mit den Commits des Tickets (Commits mit der ID, PR-Branch) und dessen Worktree und startet dort; nur ohne solchen Branch entsteht feat/<id> (Test: Branch mit anderem Namen)
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1394, board.ts carrierFor; tests 'the branch the ticket\'s commits ride on wins over an empty feat/<id>...', 'a branch whose worktree was removed is checked out again...'; Go TestSpawnTakesUpTheBranchTheWorkRidesOn
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1385 ticketBranch (shared with Accept's decideStep), workPlace; tests 'the branch the ticket\'s commits ride on wins over an empty feat/<id>...', 'a branch whose worktree was removed is checked out again...'; Go TestSpawnTakesUpTheBranchTheWorkRidesOn
 - [x] Laeuft fuer das Ticket schon ein Worker, startet Give back keinen zweiten, sondern schickt ihm die Entscheidung (Test: zweimal Give back hintereinander = ein Worker)
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1357: tests 'a worker at work gets the decision...', 'Give back twice in a row: one worker...'
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1344: tests 'a worker at work gets the decision...', 'a worker at work with nothing recorded...', 'Give back twice in a row: one worker...'
 - [x] Eingabeklassen: Ticket ohne parent-Note, parent-Session tot, zwei Branches mit Commits der ID, Worktree geloescht aber Branch da, zwei Give back gleichzeitig
   proof: tests in core/mod/builtin/jaira-cockpit/tests/board.test.ts 'give back': no parent note -> 'no parent anywhere...'/'reports to this session (no parent noted)'; parent dead -> 'a parent session that is gone...'; two branches -> 'two branches hold the commit...'; worktree deleted -> 'a branch whose worktree was removed...' + Go TestSpawnTakesUpTheBranchTheWorkRidesOn; two at once -> 'Give back twice in a row' + existing 'a move another session made first'
 - [x] Jede Entscheidung der Person im Cockpit (Accept, Give back, Decide) schickt dem Teamlead des Tickets sofort eine Zeile '<ID>: <Entscheidung> (Person, Cockpit)'; heute erfaehrt der Teamlead davon nichts und listet laengst entschiedene Tickets weiter als offen (Alex 20.11.2026: 'du bekommst die Info nicht schnell und wiederholst dich')
@@ -75,3 +82,5 @@ outcome-resolves: QTQW15 DoD 1-6
 - **2026-11-22 18:56 · Alexander Sacharov** — decision (teamlead 22.11.): F DoD5 = Option 3. Cockpit und Teamlead laufen bei Alex in derselben Session (Cockpit-Meldungen kommen heute schon per prompt.submit beim Teamlead an). prompt.submit in die eigene Session + note auf dem Ticket reicht; ein Teamlead in einer anderen Session ist ausserhalb des Umfangs (bekannte Grenze, als note).
 - **2026-11-22 18:58 · Alexander Sacharov** — plan (worker): 1) spawn.sh: --branch <name> legt den Worktree auf vorhandenem Branch an; ein schon vorhandener <prefix>/<slug> wird wieder aufgenommen statt -b (deckt R80Z4G mit ab); scheitert die Setup, wird der Branch nur geloescht, wenn spawn.sh ihn selbst angelegt hat (sonst Datenverlust); bei worker/dispatch mit parent haengt der Prompt 'Fragen per SendMessage an <parent>, nie AskUserQuestion' an. 2) Cockpit givingBack: Branch = der mit dem neuesten Commit, der die ID nennt (eigener Worktree-Branch bevorzugt, wenn er ihn enthaelt), sonst Worktree-Branch, sonst */<slug>; Worktree da -> --no-worktree dort, sonst --branch. 3) parent = neueste Note 'parent session:', spawn exit 2 -> eigener Socket -> --no-parent. 4) Tab working -> Entscheidung per send-text, nie schliessen. 5) Zeilen an die Session im DoD-Format + Accept-Note. Zwei gleichzeitige Give back: jaira move antwortet dem zweiten 'already in in-progress' (movedBefore) - keine eigene Sperre noetig, nur Test.
 - **2026-11-22 19:07 · Alexander Sacharov** — known limit (worker): Give back sucht Branches nur lokal (git log --branches). Ein PR-Branch, der nur noch auf origin liegt (lokal geloescht), wird nicht gefunden -> neuer feat/<id>. Ein Worktree der Ticket-ID mitten im Rebase (kein Branch) und Commits auf anderem Branch: spawn.sh verweigert mit 'already stands on no branch', die Note sagt es. Ein arbeitender Worker ohne Session-Record: kein Zweiter, die Note nennt seinen Tab - die Entscheidung muss dort eingetippt werden.
+- **2026-11-22 19:09 · Alexander Sacharov** — critique: (1) workPlace und decideStep suchen den Branch des Tickets zweimal mit denselben drei git-Abfragen - ein Helfer fuer beide, carrierFor entscheidet. Folge fuer Accept: ein leerer feat/<id>-Worktree verliert gegen den Branch mit den Commits der ID, auch fuer den PR - gewollt, derselbe Fehler. (2) Arbeitender Worker ohne Record: die Zeile an den Teamlead sagt 'worker none' und laedt zum zweiten Worker ein - sie muss den Tab nennen.
+- **2026-11-22 19:12 · Alexander Sacharov** — in-progress (Runde 2): beide critique-Funde behoben - ticketBranch ist der eine Helfer fuer Accept (decideStep) und Give back (workPlace); Accept waehlt damit auch den Branch mit dem neuesten Commit der ID statt eines leeren feat/<id> (Release-Note-Zeile dazu). Arbeitender Worker ohne Record: Zeile an den Teamlead nennt den Tab und 'start no other'. 370/370 Mod-Tests, go test core/role ok.

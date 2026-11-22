@@ -55,7 +55,7 @@ export const t = {
   acceptedNote: (from: string, to: string) => `accepted by the person, ${from} -> ${to}`,
   acceptNoteLost: (id: string, why: string) => `${id} accepted; the note saying so was not written: ${oneLine(why).slice(0, 120)}`,
   toSessionGivenBack: (id: string, from: string, who: 'old' | 'new' | 'none', reason: string, worker: string) =>
-    `jaira-cockpit: ${id} given back: ${inLine(reason, 120)}, worker ${who === 'none' ? "none (the ticket's note says why)" : `${who === 'old' ? 'that carried it' : 'new'} ${worker}`} (Person, Cockpit; ${from} -> in-progress)`,
+    `jaira-cockpit: ${id} given back: ${inLine(reason, 120)}, worker ${who === 'none' ? worker || "none (the ticket's note says why)" : `${who === 'old' ? 'that carried it' : 'new'} ${worker}`} (Person, Cockpit; ${from} -> in-progress)`,
   afterAcceptFailed: (id: string) => `the next step after ${id} failed, see the cockpit`,
   failed: (what: string) => `${what} failed`,
   afterAccept: (id: string) => `Next step after ${id}`,

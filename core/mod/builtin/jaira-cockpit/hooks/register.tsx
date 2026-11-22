@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { ElementTable, EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
-  branchesFor, carrierBranch, carrierFor, commitNaming, parentOf, slugFor, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
+  branchesFor, carrierFor, commitNaming, parentOf, slugFor, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf,
   createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, languageOf, nextChoice, NOTE_MARK, rephrasedOf, rephrasePrompt, standOf,
@@ -747,20 +747,7 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   // branch's own word for itself.
   const land = base !== undefined && await landsWithoutPullRequest($, b.repo, base)
   if (typeof asked === 'string' && !land) return { step: stepAfterAccept(0, [], undefined), hint: t.prUnchecked(asked) }
-  let branch = found.ticket
-  // No worktree: the branch spawn.sh named <prefix>/<slug>, left behind
-  // when the worktree went; else the branch whose commits name the ticket,
-  // where it was worked on another ticket's branch.
-  if (branch === undefined) {
-    const listed = await run($, ['git', 'branch', '--list', '--format=%(refname:short)', `*/${id.toLowerCase()}`], b.repo)
-    if (listed?.exitCode === 0) branch = carrierBranch(listed.stdout, found.base ?? '')
-  }
-  if (branch === undefined && base !== undefined) {
-    const log = await run($, ['git', 'log', '--branches', '--not', base, '--format=%H %s'], b.repo)
-    const sha = log?.exitCode === 0 ? commitNaming(log.stdout, id) : undefined
-    const holders = sha ? await run($, ['git', 'branch', '--contains', sha, '--format=%(refname:short)'], b.repo) : undefined
-    if (holders?.exitCode === 0) branch = carrierBranch(holders.stdout, found.base ?? base)
-  }
+  const branch = (await ticketBranch($, b, id, porcelain, base))?.branch
   if (branch === undefined || base === undefined || branch === found.base) return { step: 'none', hint: '' }
   // One subject per commit ahead: the count and the tickets in one walk.
   const subjects = await run($, ['git', 'log', '--format=%s', `${base}..${branch}`], b.repo)
@@ -1370,7 +1357,7 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
     }
     why = `${why}, but its pane took no text`
   }
-  if (working) return handedTo('none', `${why}; nothing recorded reaches its pane, tell it in tab ${tab?.label} - no second worker started`)
+  if (working) return handedTo('none', `${why}; nothing recorded reaches its pane, tell it in tab ${tab?.label} - no second worker started`, `${tab?.label} at work, not reached: type the decision into its tab, start no other`)
   const script = await spawnScript($)
   // Nothing to start a new one with: the old tab stays, so the ticket keeps
   // whatever worker it has.
@@ -1391,12 +1378,12 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
 // new <prefix>/<slug> as before. why goes onto the ticket's note.
 type Place = { args: string[]; slug: string; root: string; branch?: string; why: string }
 
-async function workPlace($: EngineInterface, b: { dir: string; repo: string }, id: string): Promise<Place> {
-  const slug = id.toLowerCase()
-  const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
-  const porcelain = trees?.exitCode === 0 ? trees.stdout : ''
+// The branch a ticket's work rides on, for Accept's pull request and Give
+// back's new worker alike, as carrierFor (board.ts) settles it from git:
+// the newest commit naming the ticket that is not in base yet, the ticket's
+// own worktree, a <prefix>/<slug> left without one. undefined: none.
+async function ticketBranch($: EngineInterface, b: { dir: string; repo: string }, id: string, porcelain: string, base: string | undefined): Promise<ReturnType<typeof carrierFor>> {
   const found = branchesFor(porcelain, id)
-  const base = (await originDefault($, b.repo)) ?? found.base
   let holders: string | undefined
   if (base !== undefined) {
     const log = await run($, ['git', 'log', '--branches', '--not', base, '--format=%H %s'], b.repo)
@@ -1406,15 +1393,22 @@ async function workPlace($: EngineInterface, b: { dir: string; repo: string }, i
   }
   let slugBranches: string | undefined
   if (holders === undefined && found.ticket === undefined) {
-    const listed = await run($, ['git', 'branch', '--list', '--format=%(refname:short)', `*/${slug}`], b.repo)
+    const listed = await run($, ['git', 'branch', '--list', '--format=%(refname:short)', `*/${id.toLowerCase()}`], b.repo)
     if (listed?.exitCode === 0) slugBranches = listed.stdout
   }
-  const carrier = carrierFor({
+  return carrierFor({
     ...(found.ticket !== undefined ? { own: found.ticket } : {}),
     base: found.base ?? base ?? '',
     ...(holders !== undefined ? { holders } : {}),
     ...(slugBranches !== undefined ? { slugBranches } : {}),
   })
+}
+
+async function workPlace($: EngineInterface, b: { dir: string; repo: string }, id: string): Promise<Place> {
+  const slug = id.toLowerCase()
+  const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
+  const porcelain = trees?.exitCode === 0 ? trees.stdout : ''
+  const carrier = await ticketBranch($, b, id, porcelain, (await originDefault($, b.repo)) ?? branchesFor(porcelain, id).base)
   if (carrier === undefined) return { args: [], slug, root: b.repo, why: 'no branch carries the ticket yet, a new one is made' }
   const how = carrier.by === 'commit' ? 'holds the newest commit naming the ticket' : carrier.by === 'worktree' ? "is the ticket's worktree's" : 'is named after the ticket'
   const wt = worktreeOfBranch(porcelain, carrier.branch)
