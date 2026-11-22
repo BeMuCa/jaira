@@ -1722,3 +1722,43 @@ func TestReportsToTheParentAreOneLine(t *testing.T) {
 		}
 	}
 }
+
+// Three send-backs from one lane go to the teamlead before a person: the
+// worker, the dispatcher and the lane worker leave the ticket in its lane
+// with the question set and send it up; the teamlead decides and notes it, or
+// moves it to human itself. Without a parent the worker moves it as before.
+func TestThirdSendBackGoesToTheTeamleadFirst(t *testing.T) {
+	for role, want := range map[string][]string{
+		"jaira-worker": {
+			"the teamlead decides first, not the person",
+			"do not move it to `human`",
+			"leaves the move to `human --question` to you, as without a parent",
+		},
+		"jaira-dispatcher": {
+			"which is the teamlead and decides first",
+			"never in `human`",
+		},
+		"jaira-role-lane": {
+			"the dispatcher and the teamlead above it decide",
+		},
+		"jaira-teamlead": {
+			"## Three rounds of one lane: you decide first",
+			"decision (teamlead <YYYY-MM-DD>)",
+			"jaira set <id> question=",
+			"Only this move puts the ticket into a person's lane.",
+			"`jaira set <id> back-count=0` beside the decision note",
+			"`--force` does not reset the count",
+			"started by the person directly — still moves the",
+		},
+	} {
+		b, err := File(role, skillFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, w := range want {
+			if !strings.Contains(string(b), w) {
+				t.Errorf("%s does not say %q", role, w)
+			}
+		}
+	}
+}

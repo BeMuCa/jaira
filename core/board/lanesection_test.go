@@ -190,3 +190,14 @@ func TestLaneSectionMarksAFreshLane(t *testing.T) {
 		t.Errorf("a fresh lane is still offered to the carrying agent:\n%s", got)
 	}
 }
+
+// A lane with max-rounds says who takes the decision once it stops: the
+// teamlead first, a person only when there is none or it cannot decide.
+func TestLaneSectionSaysTheTeamleadDecidesFirst(t *testing.T) {
+	facts := demoFacts()
+	facts[2].MaxRounds = 3
+	got := laneSection(facts)
+	if !strings.Contains(got, "At most 3 times in a row: the next send-back is refused, and the teamlead decides, or a person.") {
+		t.Errorf("the loop line does not name the teamlead before the person:\n%s", got)
+	}
+}

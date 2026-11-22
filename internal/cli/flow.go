@@ -812,7 +812,7 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		fmt.Fprintf(w, "round %d, sent back from %s (%s), %d in a row from that lane\n", ticket.CurrentRound(t), t.BackFrom, t.BackBy, t.BackCount)
 	}
 	if left, limited := l.RoundsLeft(t); limited {
-		fmt.Fprintf(w, "max-rounds %d: %d send-back(s) left from this lane before a person decides\n", l.MaxRounds, left)
+		fmt.Fprintf(w, "max-rounds %d: %d send-back(s) left from this lane before the teamlead decides, or a person\n", l.MaxRounds, left)
 	}
 	fmt.Fprintln(w)
 	if l.Prompt != "" {

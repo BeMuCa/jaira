@@ -1534,7 +1534,7 @@ func newLanesShowCmd() *cobra.Command {
 			// work that is not good enough yet.
 			fmt.Fprintf(w, "Rejects to:  %s\n", dash(board.OrList(l.RejectsTo)))
 			if l.MaxRounds > 0 {
-				fmt.Fprintf(w, "Max rounds:  %d in a row, then a person decides\n", l.MaxRounds)
+				fmt.Fprintf(w, "Max rounds:  %d in a row, then the teamlead decides, or a person\n", l.MaxRounds)
 			}
 			// Labelled as what it is, not as a position: column order follows
 			// Anchor, above, and never this number.

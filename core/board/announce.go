@@ -251,7 +251,7 @@ func laneSection(facts []LaneFact) string {
 			fmt.Fprintf(&b, "Loop: %s sends work back to %s, and that repeats until %s has nothing left to say.",
 				f.ID, OrList(f.RejectsTo), f.ID)
 			if f.MaxRounds > 0 {
-				fmt.Fprintf(&b, " At most %d times in a row: the next send-back is refused, and a person decides.", f.MaxRounds)
+				fmt.Fprintf(&b, " At most %d times in a row: the next send-back is refused, and the teamlead decides, or a person.", f.MaxRounds)
 			}
 			b.WriteString("\n")
 		}
