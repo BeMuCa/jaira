@@ -2088,27 +2088,6 @@ describe('give back', () => {
     expect(lastNote(w)).toContain('branch fix-login holds the newest commit naming the ticket, worktree /.worktrees/repo-fix-login')
   })
 
-  test('a worktree another ticket\'s agent is at work in gets no second agent beside it', async ($, on) => {
-    const w = world(on, { herdr: true, store: { 'session:other': {
-      session: 'other', pane: 'w1:p7', cwd: '/.worktrees/repo-fix-login', repo: '/repo', ticket: 'K7P2QX', role: 'worker', lane: '',
-      lastAnswerAt: 999_000, tokens: 1, ttl: 3_600_000, updatedAt: 999_000,
-    } } })
-    w.worktrees = WORKTREES + '\nworktree /.worktrees/repo-fix-login\nHEAD 3\nbranch refs/heads/fix-login\n'
-    w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }]
-    w.holders = ['fix-login']
-    w.tabs = [{ tab_id: 'w1:t7', label: 'K7P2QX/worker', agent_status: 'working' }]
-    await startSession($)
-    await giveBack($, w)
-    expect(spawned(w)).toEqual([])
-    expect(lastNote(w)).toContain('K7P2QX/worker is at work in that worktree - no worker started beside it')
-    // Idle, the same worktree takes the new worker.
-    w.tabs = [{ tab_id: 'w1:t7', label: 'K7P2QX/worker', agent_status: 'idle' }]
-    w.movedFirst = false
-    await w.clock.advance(60_000)
-    await giveBack($, w)
-    expect(spawned(w).map(a => a.at(-1))).toEqual(['/.worktrees/repo-fix-login'])
-  })
-
   test('a branch whose worktree was removed is checked out again, beside the place an empty feat/<id> holds', async ($, on) => {
     const w = world(on, { herdr: true })
     w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }]

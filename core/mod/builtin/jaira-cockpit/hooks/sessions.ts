@@ -106,19 +106,6 @@ export function carrierTab(tabs: readonly Tab[], ticket: string): Tab | undefine
   return tabs.find(t => t.label === `${ticket}/worker` || t.label === `${ticket}/dispatch`)
 }
 
-// An agent of another ticket at work in `dir`, by its tab's label: a worktree
-// two tickets share — one branch carrying both — takes no second agent while
-// one writes there, or each would overwrite the other's uncommitted work.
-// Records say where a session works, Herdr whether it works right now.
-export function busyIn(records: readonly SessionRecord[], tabs: readonly Tab[], dir: string, ticket: string): string | undefined {
-  for (const r of records) {
-    if (r.cwd !== dir || r.ticket === ticket) continue
-    const tab = tabs.find(t => t.label.startsWith(`${r.ticket}/`) && t.agent_status === 'working')
-    if (tab !== undefined) return tab.label
-  }
-  return undefined
-}
-
 const size = (tokens: number, window: number | undefined) =>
   `context ${Math.round(tokens / 1000)}k${window ? ` of ${Math.round(window / 1000)}k` : ''}`
 
