@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -828,7 +827,7 @@ there are as notes_total.`,
 				return showForLane(cmd, s, env, t, forLane)
 			}
 			if brief {
-				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body, lastHunt(&gitrepo.Repo{Dir: s.Root}, t)))
+				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body, (&gitrepo.Repo{Dir: s.Root}).LastHunt(t)))
 				if err != nil {
 					return err
 				}
@@ -869,92 +868,22 @@ const briefNotes = 4
 // proof is most of a chat's context for nothing. spawn.sh used to build it with
 // python3, which a Windows machine may not have (issue #79); notes split where
 // ticket.Notes splits them, at a dated heading, and the fields keep its order.
-func ticketBrief(j map[string]any, body string, hunt *huntState) any {
+func ticketBrief(j map[string]any, body string, hunt *gitrepo.Hunt) any {
 	notes := []string{}
 	for _, n := range ticket.Notes(body) {
 		notes = append(notes, n.Raw)
 	}
 	last := notes[max(0, len(notes)-briefNotes):]
 	return struct {
-		ID         any        `json:"id"`
-		Title      any        `json:"title"`
-		Goal       any        `json:"goal"`
-		Question   any        `json:"question"`
-		Review     any        `json:"review"`
-		Bughunt    *huntState `json:"bughunt"`
-		NotesLast  []string   `json:"notes_last"`
-		NotesTotal int        `json:"notes_total"`
+		ID         any           `json:"id"`
+		Title      any           `json:"title"`
+		Goal       any           `json:"goal"`
+		Question   any           `json:"question"`
+		Review     any           `json:"review"`
+		Bughunt    *gitrepo.Hunt `json:"bughunt"`
+		NotesLast  []string      `json:"notes_last"`
+		NotesTotal int           `json:"notes_total"`
 	}{j["handle"], j["title"], j["goal"], j["question"], j["review"], hunt, last, len(notes)}
-}
-
-// huntState is the newest finished bug hunt: the commit it ran at, and what
-// it says about the code now. A chat handed four notes cannot work that out:
-// the hunt's note has scrolled out of them by the time a ticket waits for a
-// person, and a merge from master moves HEAD past the hunt's commit without
-// changing anything it read. State is one of:
-//
-//   - ok: nothing the ticket committed since touched the files it read
-//   - fail: a commit of the ticket since then did, or this checkout does not
-//     contain the hunt's commit
-//   - unknown: no such commit, but a file it read is changed and not
-//     committed — git cannot tell whether the hunt saw that change; also
-//     when git cannot answer at all. Never drawn red: no clock is read
-//   - skipped: the ticket sets stop-after-fix, so a fix round runs its tests
-//     and no hunt — a hunt that no longer covers the code, or none at all,
-//     is the choice the ticket made, not a fault
-type huntState struct {
-	At    string `json:"at"`
-	State string `json:"state"`
-}
-
-// huntDone is the closing line a bug hunt writes: "bughunt: done at <commit>
-// ...; files: <path> <path>". The file list is the hunt's own account of what
-// it read; without one the hunt is taken to have read all code.
-var huntDone = regexp.MustCompile(`^bughunt: done at ([0-9a-f]{7,40})\b`)
-
-// lastHunt reads the newest hunt off the notes, nil when none finished and
-// the ticket does not set stop-after-fix.
-func lastHunt(repo *gitrepo.Repo, t *ticket.Ticket) *huntState {
-	h := newestHunt(repo, t)
-	if t.StopAfterFix && (h == nil || h.State == huntFail) {
-		if h == nil {
-			h = &huntState{}
-		}
-		h.State = huntSkipped
-	}
-	return h
-}
-
-const (
-	huntOK      = "ok"
-	huntFail    = "fail"
-	huntUnknown = "unknown"
-	huntSkipped = "skipped"
-)
-
-func newestHunt(repo *gitrepo.Repo, t *ticket.Ticket) *huntState {
-	notes := ticket.Notes(t.Body)
-	for i := len(notes) - 1; i >= 0; i-- {
-		text := strings.TrimSpace(notes[i].Text)
-		m := huntDone.FindStringSubmatch(text)
-		if m == nil {
-			continue
-		}
-		var files []string
-		if at := strings.LastIndex(text, "files: "); at >= 0 {
-			files = strings.Fields(text[at+len("files: "):])
-		}
-		state, err := repo.HuntCoverage(m[1], t.ID, files)
-		switch {
-		case err != nil || state == gitrepo.HuntUnknown:
-			return &huntState{At: m[1], State: huntUnknown}
-		case state == gitrepo.HuntStale:
-			return &huntState{At: m[1], State: huntFail}
-		default:
-			return &huntState{At: m[1], State: huntOK}
-		}
-	}
-	return nil
 }
 
 // printDetail renders one ticket for a person. notesLast caps how many Progress
@@ -1571,7 +1500,7 @@ func newLanesShowCmd() *cobra.Command {
 					"input_requires": l.InputRequires, "output_produces": l.OutputProduces,
 					"source": src, "prompt": l.Prompt, "creator": l.Creator,
 					"after": l.After, "description": l.Description, "overrides": l.Overrides,
-					"rejects_to": l.RejectsTo, "holds": l.Holds,
+					"rejects_to": l.RejectsTo, "max_rounds": l.MaxRounds, "holds": l.Holds,
 					"context": l.Context, "context_implied": l.ContextImplied, "context_invalid": l.ContextInvalid,
 					"human_exit": l.RequiresHumanExit,
 				})
@@ -1584,6 +1513,9 @@ func newLanesShowCmd() *cobra.Command {
 			// are the lane's place in the flow: where it sits, and where it sends
 			// work that is not good enough yet.
 			fmt.Fprintf(w, "Rejects to:  %s\n", dash(board.OrList(l.RejectsTo)))
+			if l.MaxRounds > 0 {
+				fmt.Fprintf(w, "Max rounds:  %d in a row, then a person decides\n", l.MaxRounds)
+			}
 			// Labelled as what it is, not as a position: column order follows
 			// Anchor, above, and never this number.
 			fmt.Fprintf(w, "Merge rank:  %d\n", l.Precedence)

@@ -1,6 +1,17 @@
 // Every text the cockpit shows a person, in English whatever language the
 // person speaks with Claude: one set of words, the same on every machine.
 
+import { oneLine } from './board.ts'
+
+// A text a person typed, as part of one line: whitespace collapsed (board.ts
+// oneLine), cut at max characters with an ellipsis. Counted in code points:
+// a cut by UTF-16 index splits an emoji and leaves a lone surrogate in the
+// prompt this session is handed.
+function inLine(text: string, max: number): string {
+  const chars = Array.from(oneLine(text))
+  return chars.length <= max ? chars.join('') : `${chars.slice(0, max - 1).join('').trimEnd()}…`
+}
+
 export const t = {
   waiting: 'Waiting for you',
   accept: 'Accept',
@@ -12,9 +23,33 @@ export const t = {
   theirs: (n: number, names: string[]) => `${n} waiting for ${names.join(', ')}`,
   reasonLabel: 'What is missing?',
   reasonPlaceholder: 'goes onto the ticket as a note',
+  // The Give back pane with the review's notes, one row each.
+  gapsHeading: 'Review notes - press a row to change what happens to it:',
+  choice: { now: '[fix now]', later: '[follow-up]', accept: '[accept]' } as Record<string, string>,
+  decidedBefore: '(decided before)',
+  moreLabel: 'Anything else?',
+  morePlaceholder: 'optional, goes onto the ticket with the notes',
+  acceptWithNow: (id: string, n: number) => `${id}: ${n} note${n === 1 ? ' is' : 's are'} marked fix now - press Give back, or mark ${n === 1 ? 'it' : 'them'} follow-up or accept`,
+  blockerNeedsWhy: (id: string) => `${id}: a blocker is not marked fix now - type why it is accepted anyway, or mark it fix now and press Give back`,
+  blockerNeedsTyping: (id: string) => `${id}: the review names a blocker - accepting it needs a reason typed in a terminal or on the desktop; nothing was accepted`,
+  whyLabel: 'Why accept it with the blocker?',
+  whyPlaceholder: 'required - goes onto the ticket as a decision',
+  acceptedDespite: 'accepted with a blocker not fixed',
+  alreadyIn: (id: string, lane: string) => `${id} is already in ${lane}: someone else decided it meanwhile. Nothing was written.`,
+  nothingToFix: (id: string) => `${id}: no note is marked fix now and nothing is typed - mark one, type what is missing, or press Accept`,
+  followUpsOf: (id: string) => `Follow-up tickets of ${id}`,
+  followUpsLost: (id: string, texts: string[]) => `These notes of ${id} were marked follow-up, but jaira created no ticket for them; the note on ${id} names each as not created:\n${texts.map(x => `- ${x}`).join('\n')}`,
+  movedMeanwhile: (id: string, lane: string, now: string) => `${id} is no longer in ${lane} but in ${now}: someone else decided it meanwhile. Nothing was written.`,
   accepted: (id: string, lane: string) => `${id} accepted: ${lane}`,
   returnedTo: (id: string, who: 'old' | 'new' | 'none') =>
     who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
+  // The one line Accept and Give back hand this session, the teamlead's,
+  // after a move that went through: what happened, and what already runs.
+  toSessionAccepted: (id: string, from: string, to: string, next: string) =>
+    `jaira-cockpit: the person accepted ${id} in the cockpit (${from} -> ${to})${next ? `; ${inLine(next, 200)}` : ''}`,
+  toSessionGivenBack: (id: string, from: string, who: 'old' | 'new' | 'none', reason: string) =>
+    `jaira-cockpit: the person gave ${id} back in the cockpit (${from} -> in-progress), ${who === 'old' ? 'handed to the worker that carried it' : who === 'new' ? 'a new worker started' : "no worker started (the ticket's note says why)"}: ${inLine(reason, 120)}`,
+  afterAcceptFailed: (id: string) => `the next step after ${id} failed, see the cockpit`,
   failed: (what: string) => `${what} failed`,
   afterAccept: (id: string) => `Next step after ${id}`,
   staysDone: (id: string) => `${id} stays in done; start the next step by hand.`,
@@ -53,6 +88,20 @@ export const t = {
   noRoom: 'No room for a pane here: widen the terminal and press Give back again.',
   readExplanation: 'Read explanation',
   reviewedIn: (round: number) => `review of round ${round}, changed since`,
+  // The band's row: one mark per check, counts for the review's findings.
+  markDod: 'DoD',
+  markHunt: 'bughunt',
+  markBlockers: (n: number) => `${n} blocker${n === 1 ? '' : 's'}`,
+  markNotes: (n: number) => `${n} note${n === 1 ? '' : 's'}`,
+  markOldReview: (round: number) => `review of round ${round}`,
+  markBlockersUnknown: '? blockers',
+  markNotesUnknown: '? notes',
+  // The Verdict pane: what the ticket is for, then the review whole.
+  goal: 'Goal:',
+  verdictHeading: 'Verdict:',
+  notesHeading: 'Review notes:',
+  noVerdict: 'not reviewed yet',
+  notesNotKept: 'The notes of that review were not kept: a later lane rewrote them.',
   explanationOf: (id: string) => `Explanation of ${id}`,
   decided: 'decided',
   decidedAs: 'Decided:',
@@ -128,6 +177,10 @@ export const filterWords = {
   marker: '[shortened by jaira-cockpit]',
   question: 'question',
   fullReport: 'full report',
+  // The fields of a worker's status line, as the digest names them.
+  commits: 'commits',
+  gates: 'gates',
+  notes: 'notes',
   none: 'No agent reports kept for this project yet.',
   noneFor: (id: string) => `No reports kept for ${id} in this project.`,
   nothingNew: (id: string, older: number) =>
@@ -150,9 +203,14 @@ export const overviewWords = {
   tabQueue: 'Queue',
   tabLog: 'Log',
   tabWorkers: 'Workers',
-  // What a figure on the Workers tab is doing, beneath it in so many words.
+  // What an agent on the Workers tab is doing, on its line in so many words.
   states: { working: 'working', idle: 'resting', question: 'waits for an answer' },
   noWorkers: 'No agent on the board right now.',
+  // Above the stone: the definition-of-done items still open on the tickets
+  // with an agent at them.
+  stoneOpen: (n: number) => `${n} open`,
+  // Agents the picture has no room for; their lines are beneath it all the same.
+  moreWorkers: (n: number) => `+${n} more`,
   everybody: 'All',
   none: 'none',
   history: (days: number) => `Created and put back, last ${days} days`,

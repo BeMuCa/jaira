@@ -1,6 +1,6 @@
 ---
 name: jaira-worker
-description: "Carry one ticket through every agentic lane yourself, hand only a lane marked fresh context to a new agent, then report back in three lines. Invoked as /jaira-worker <ticket-id> [--parent <session>], normally by a teamlead session. Use when handed a whole ticket to carry to a human lane."
+description: "Carry one ticket through every agentic lane yourself, hand only a lane marked fresh context to a new agent, then report back in three lines and a status line. Invoked as /jaira-worker <ticket-id> [--parent <session>], normally by a teamlead session. Use when handed a whole ticket to carry to a human lane."
 ---
 
 # Worker
@@ -402,16 +402,43 @@ Three lines at the end, on top of the per-lane lines:
   this line to know what sending the next round back to you would cost
 - what is open, and whether it needs a person
 
-Started with `--parent`, the three lines go to the parent with `SendMessage`.
-Once it has taken them, close your own tab as the very last call of your turn:
+Then one line more, always the last line of the report, in a fixed format the
+teamlead and the jaira-cockpit read without opening the ticket:
+
+```
+jaira: <ID> <from> -> <to> · branch: <branch> · commits: <first>..<last> (<n>) · gates: ok|red|none · notes: <n> · verdict: <text>
+```
+
+- `<ID>` the six-character handle; `<from> -> <to>` the lane the ticket was in
+  when you took it and the lane it sits in now
+- `branch` the ticket's branch; `commits` the short hashes of its first and
+  last commit on that branch and how many there are
+- `gates` the project's local gates before the push (see "Before you push"):
+  `ok`, `red`, or `none` where nothing was run because no code changed
+- `notes` how many `note:` lines the review's `review-gaps` carries — what a
+  person still has to weigh at acceptance
+- `verdict` the `review-verdict`, or the lane's outcome where no review ran;
+  it comes last and may hold any text
+
+Keys and their order are fixed; an empty value is `-`, never a missing key.
+The cockpit shortens the report to this line and keeps the rest for
+`/cockpit report <ID>`; a report without it is guessed at, field by field.
+
+Started with `--parent`, the three lines and the status line go to the parent
+with `SendMessage`. Once it has taken them, close your own tab as the very
+last call of your turn:
 
 ```bash
 jaira-dispatcher/scripts/close-tab.sh --parent <session> <ticket id>
 ```
 
 (`../jaira-dispatcher/scripts/` from this file, as in "Starting another
-agent".) Nobody needs your context any more: a ticket given back gets a new
-worker, and what you knew is on the ticket. The script decides, not you — it
+agent".) In done nobody needs your context any more, and the tab closes. In
+signoff or another person's lane it stays while your prompt cache is warm —
+`kept <ticket>: cache warm until HH:MM` — so a give-back in that hour comes
+back to you instead of a new worker reading everything again; `reap.sh`
+closes it once the window is over or the ticket is done. What you knew is on
+the ticket either way. The script decides, not you — it
 closes only when the ticket sits in a person's lane or in done, has no open
 question and your worktree holds nothing `uncommitted.sh` counts — it lets
 through only new or changed ticket and milestone files under `.jaira/`, so a

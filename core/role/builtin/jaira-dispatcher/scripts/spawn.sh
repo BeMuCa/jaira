@@ -47,9 +47,17 @@ Every other lane name starts /jaira-role-lane <ticket-id> <lane>.
 A new worktree is set up by the repository's own .jaira/worktree-setup when it
 is there and executable, called as
   .jaira/worktree-setup <worktree> <slug> <port-offset 1-40> <repo-root>
-and spawn.sh then writes nothing into the worktree itself. Without it, a .env in
+and spawn.sh then writes nothing into the worktree itself. The port offset is
+one no other worktree of the repository holds (0 is the main directory's); a
+worktree keeps it as long as it stands, and with all 40 taken the spawn stops
+before anything is made. Without a setup, a .env in
 the repository is copied and four port lines are appended. A setup that fails,
 or is there but not executable, stops the spawn before a tab opens.
+Its counterpart is .jaira/worktree-teardown, which reap.sh calls with the same
+four arguments — spawn.sh writes them down in the worktree's git directory,
+as jaira-setup — before it removes the worktree, once the ticket's pull request
+is merged — whatever the setup started (a container stack, its ports and
+volumes) is taken down there. See reap.sh --help.
 
 Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE, HC_TERMINAL_ID and
 HC_BIN (Herdr App, through herdr-hc.sh),
@@ -181,13 +189,88 @@ if [ ! -d "$wt" ]; then
   # feat/, the prefix this board's own branches use. A repository that names
   # them differently sets JAIRA_BRANCH_PREFIX rather than editing this script.
   branch="${JAIRA_BRANCH_PREFIX:-feat}/$slug"
-  git -C "$root" worktree add "$wt" -b "$branch" >&2
 
-  # Deterministic per-slug port offset, so two workers never share a stack.
-  # 0 stays free: it belongs to the main directory's own stack. It stays here
-  # even when the repository sets up its own worktree: that two workers never
-  # share a stack is the one thing a single repository's script cannot promise.
-  off=$(( ( $(printf '%s' "$slug" | cksum | cut -d' ' -f1) % 40 ) + 1 ))
+  # The port offset, 1-40, so two workers never share a stack. 0 stays free:
+  # it belongs to the main directory's own stack. Handed out once, here, when
+  # the worktree is made: a worktree that stands keeps the one it got. The
+  # slug's hash only says where to start looking — on its own it gives 8r8vts,
+  # 32ttss and twb0r6 all the same one — and an offset another worktree of this
+  # repository holds is skipped. It stays here even when the repository sets
+  # up its own worktree: that two workers never share a stack is the one thing
+  # a single repository's script cannot promise. A repository with neither a
+  # setup nor a .env has no ports, and gets none.
+  off=""
+  if [ -x "$setup" ] || [ -f "$root/.env" ]; then
+    common="$(cd "$root" && cd "$(git rev-parse --git-common-dir)" && pwd)"
+    # Looking, making the worktree and writing its offset down are one step,
+    # or two spawns at once both take the same free offset. It is flock on jaira-offset.lock, held through fd 9 as reap.sh holds its
+    # reap.lock: the kernel lets go of it when this shell dies, so a killed
+    # spawn.sh leaves nothing behind for the next one to take over. A second
+    # spawn waits for the first, up to 600 seconds, which covers a checkout
+    # with slow hooks. flock(1) where there is one, perl's flock on macOS;
+    # with neither it runs unlocked, and says so.
+    lock="$common/jaira-offset.lock"
+    if ! { exec 9>>"$lock"; } 2>/dev/null; then
+      echo "cannot open the lock $lock: is $common writable, and is" \
+           "nothing but a file in that place?" >&2
+      exit 1
+    fi
+    rc=0
+    if command -v flock >/dev/null 2>&1; then
+      flock -w 600 9 || rc=$?
+    elif command -v perl >/dev/null 2>&1; then
+      perl -MFcntl=:flock -e 'alarm 600; open(my $f, ">>&=", 9) or exit 2; flock($f, LOCK_EX) or exit 1' || rc=$?
+    else
+      echo "neither flock nor perl here: $wt gets its offset unlocked," \
+           "and a spawn.sh started at the same moment may get the same one" >&2
+    fi
+    if [ "$rc" != 0 ]; then
+      echo "could not take $lock in 600 seconds: a spawn.sh for $root" \
+           "still makes its worktree, or hangs" >&2
+      exit 1
+    fi
+
+    # What every other worktree holds: its jaira-offset, else the offset its
+    # jaira-setup or .env names — a worktree made before offsets were written
+    # down has only those. One whose directory is gone (deleted by hand, not
+    # yet pruned) runs no stack and holds nothing.
+    taken=" "
+    for gd in "$common"/worktrees/*/; do
+      [ -f "$gd/gitdir" ] || continue
+      w="$(dirname "$(cat "$gd/gitdir")")"
+      # worktree.useRelativePaths (git 2.48+) writes it relative to $gd.
+      case "$w" in /*|[A-Za-z]:*) ;; *) w="$gd$w" ;; esac
+      [ -d "$w" ] || continue
+      o=""
+      if [ -f "$gd/jaira-offset" ]; then
+        o="$(cat "$gd/jaira-offset")"
+      elif [ -f "$gd/jaira-setup" ]; then
+        o="$(sed -n 's/^offset=//p' "$gd/jaira-setup")"
+      elif [ -f "$w/.env" ]; then
+        o="$(sed -n 's/^# worker stack: .* offset=\([0-9][0-9]*\)$/\1/p' "$w/.env" | tail -n 1)"
+      fi
+      taken="$taken$o "
+    done
+    start=$(( $(printf '%s' "$slug" | cksum | cut -d' ' -f1) % 40 ))
+    for (( i = 0; i < 40; i++ )); do
+      o=$(( (start + i) % 40 + 1 ))
+      case "$taken" in *" $o "*) ;; *) off=$o; break ;; esac
+    done
+    if [ -z "$off" ]; then
+      echo "every port offset 1-40 is held by a worktree of $root:" \
+           "remove a finished one (reap.sh) before starting another" >&2
+      exit 1
+    fi
+  fi
+
+  # 9>&-: a checkout hook that leaves something running must not keep the
+  # offset lock held through an inherited fd 9.
+  git -C "$root" worktree add "$wt" -b "$branch" >&2 9>&-
+  if [ -n "$off" ]; then
+    printf '%s\n' "$off" > "$(git -C "$wt" rev-parse --absolute-git-dir)/jaira-offset" \
+      || echo "could not write the offset $off down for $wt: the next worktree may get it too" >&2
+    exec 9>&-
+  fi
 
   if [ -x "$setup" ]; then
     # Its output goes to stderr: stdout carries the pane id and nothing else.
@@ -203,6 +286,15 @@ if [ ! -d "$wt" ]; then
            "no worker started, worktree and branch $branch removed again" >&2
       exit 1
     fi
+    # What the setup was given, for reap.sh to hand .jaira/worktree-teardown
+    # once the ticket is merged. Written down, never worked out again later:
+    # from a name or a path the slug cannot be told for a worktree made from
+    # another worktree, and a wrong slug tears down another ticket's stack.
+    # In the worktree's own git directory, which 'git worktree remove' takes
+    # away with it.
+    rec="$(git -C "$wt" rev-parse --absolute-git-dir)/jaira-setup"
+    printf 'worktree=%s\nslug=%s\noffset=%s\nroot=%s\n' "$wt" "$slug" "$off" "$root" > "$rec" \
+      || echo "could not write $rec: reap.sh will not call .jaira/worktree-teardown for $wt" >&2
   # Only a repo that carries a container stack needs its own ports. A repo
   # without a .env has nothing to offset, and must not fail here.
   elif [ -f "$root/.env" ]; then

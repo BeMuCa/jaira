@@ -21,7 +21,9 @@ export type Row = {
 export type Event = Row & { kind: 'created' | 'parked'; at: string }
 export type Day = { day: string; events: Event[] }
 
-export type Overview = { working: Row[]; queue: Row[]; parked: Row[]; history: Day[] }
+// `lanes`: the board's lanes in its own order, so the Log's lane filter
+// reads as the board does.
+export type Overview = { working: Row[]; queue: Row[]; parked: Row[]; history: Day[]; lanes: string[] }
 
 // How far back the history reaches: a weekend and a day off on top of the
 // night a person slept through.
@@ -41,8 +43,6 @@ type Ticket = {
   updated_by?: string
   blocked_reason?: string
   question?: string
-  next_lane?: string
-  plan_items?: Item[]
   dod_items?: Item[]
 }
 
@@ -111,69 +111,99 @@ export function overviewOf(lanesJson: string, listJson: string, nextJson: string
     if (history.at(-1)?.day !== day) history.push({ day, events: [] })
     history.at(-1)!.events.push(e)
   }
-  return { working, queue, parked, history }
+  return { working, queue, parked, history, lanes: [...lanes.keys()] }
 }
 
-// ── the Workers tab: every agent on the board on a track of its own ──────
+// ── the Workers tab: every agent on the board at one stone ───────────────
 
-// How an agent reads: at work, resting with its tab open, or standing with
-// a question its ticket carries for a person.
+// How an agent reads: at work, resting with its tab open, or resting while
+// its ticket carries a question for a person.
 export type WorkerState = 'working' | 'idle' | 'question'
-// One figure: an agent, or a ticket waiting on a person's answer with no
-// agent on it, with what its track shows — the lane the ticket is in, the
-// lane it goes to next, its title, and how far it has come in its lane.
-export type Walker = { id: string; state: WorkerState; lane: string; next: string; title: string; progress: number }
+// One agent: the ticket it carries, what kind of agent it is (the part of
+// its Herdr tab's label after the slash, or `subagent`), the lane its ticket
+// is in, its title, and how many definition-of-done items that ticket still
+// has open — what it adds to the stone.
+export type Worker = { id: string; role: string; state: WorkerState; lane: string; title: string; open: number }
 
 type Item = { done?: boolean; state?: string }
 
-// How far a ticket has come in its lane, 0 to 1: its plan ticked off, or
-// where it has no plan its definition of done; nothing to count, none. An
-// item superseded counts neither way.
-export function progressOf(plan: readonly Item[] | undefined, dod: readonly Item[] | undefined): number {
-  for (const items of [plan, dod]) {
-    const live = (items ?? []).filter(i => i.state !== 'superseded')
-    if (live.length > 0) return live.filter(i => i.done === true).length / live.length
-  }
-  return 0
+// The items still open: neither done nor superseded.
+export function openOf(items: readonly Item[] | undefined): number {
+  return (items ?? []).filter(i => i.state !== 'superseded' && i.done !== true).length
 }
 
-// Every figure, in board order of its ticket's lane, then by handle. The
-// lanes a figure stands in are the ones something happens in: every agent's
-// lane and every person's; backlog, todo, blocked and done are not.
-// A Herdr tab spawn.sh labelled `<id>/<kind>` is an agent, at work while
-// Herdr says so and resting otherwise; a subagent of this session whose
-// description or name carries the id is one too, resting between turns and
-// gone once it ended. A Discuss or Explain tab is the person's own chat, not
-// an agent. A ticket whose question is open stands with it, agent or not.
-export function workersOf(lanesJson: string, listJson: string, tabs: readonly Tab[], agents: readonly Agent[]): Walker[] {
+// What a subagent is called on the Workers tab, having no tab label.
+export const SUBAGENT = 'subagent'
+
+// Every agent on the board, in board order of its ticket's lane, then by
+// handle and kind. The lanes an agent is counted in are the ones something
+// happens in: every agent's lane and every person's; backlog, todo, blocked
+// and done are not. A Herdr tab spawn.sh labelled `<id>/<kind>` is an agent,
+// at work while Herdr says so and resting otherwise; a subagent of this
+// session whose description or name carries the id is one too, resting
+// between turns and gone once it ended. A Discuss or Explain tab is the
+// person's own chat, not an agent. A ticket with an open question and no
+// agent is nobody at work: the band already lists it as waiting.
+export function workersOf(lanesJson: string, listJson: string, tabs: readonly Tab[], agents: readonly Agent[]): Worker[] {
   const order = (parse<{ lanes: Lane[] }>(lanesJson)?.lanes ?? [])
     .filter(l => l.terminal !== true && (l.agentic || isPersons(l)))
     .map(l => l.id)
   const tickets = (parse<{ tickets: Ticket[] }>(listJson)?.tickets ?? [])
     .filter(t => order.includes(t.status))
     .sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status) || a.handle.localeCompare(b.handle))
-  const walkers: Walker[] = []
+  const workers: Worker[] = []
   for (const t of tickets) {
     const asks = oneLine(t.question) !== ''
-    const figure = (working: boolean): Walker => ({
+    const worker = (role: string, working: boolean): Worker => ({
       id: t.handle,
-      state: asks ? 'question' : working ? 'working' : 'idle',
+      role,
+      state: working ? 'working' : asks ? 'question' : 'idle',
       lane: t.status,
-      next: t.next_lane ?? '',
       title: oneLine(t.title),
-      progress: progressOf(t.plan_items, t.dod_items),
+      open: openOf(t.dod_items),
     })
-    const before = walkers.length
+    const mine: Worker[] = []
     for (const tab of tabs) {
       const [id = '', kind = ''] = tab.label.split('/')
-      if (id === t.handle && kind !== '' && !PERSONS_TABS.has(kind)) walkers.push(figure(tab.agent_status === 'working'))
+      if (id === t.handle && kind !== '' && !PERSONS_TABS.has(kind)) mine.push(worker(kind, tab.agent_status === 'working'))
     }
     for (const a of agents) {
-      if (`${a.description} ${a.name ?? ''}`.includes(t.handle) && (WORKING.has(a.status) || a.status === 'idle')) walkers.push(figure(WORKING.has(a.status)))
+      if (`${a.description} ${a.name ?? ''}`.includes(t.handle) && (WORKING.has(a.status) || a.status === 'idle')) mine.push(worker(SUBAGENT, WORKING.has(a.status)))
     }
-    if (walkers.length === before && asks) walkers.push(figure(false))
+    workers.push(...mine.sort((a, b) => a.role.localeCompare(b.role)))
   }
-  return walkers
+  return workers
+}
+
+// One agent's key: its ticket and its kind. Two agents of one kind on one
+// ticket share it, and with it the time they were first seen.
+export const workerKey = (w: Pick<Worker, 'id' | 'role'>) => `${w.id}/${w.role}`
+
+// The stone's open work: every ticket with an agent at it counted once,
+// however many agents stand at it.
+export function stoneOf(workers: readonly Worker[]): number {
+  const open = new Map(workers.map(w => [w.id, w.open]))
+  return [...open.values()].reduce((a, b) => a + b, 0)
+}
+
+// How big the stone is drawn for `open` items, in cells, within a box of
+// `maxW` × `maxH`: nothing open leaves a pebble; then it grows with the
+// square root of what is open — twice the work reads larger, not twice as
+// wide — and never past the box. Never smaller for more open work.
+export function stoneSize(open: number, maxW: number, maxH: number): { w: number; h: number } {
+  const fit = (w: number, h: number) => ({ w: Math.max(1, Math.min(w, maxW)), h: Math.max(1, Math.min(h, maxH)) })
+  if (open <= 0) return fit(3, 1)
+  const s = Math.sqrt(open)
+  return fit(4 + Math.round(4 * s), 1 + Math.round(s))
+}
+
+// How long an agent has been seen, in plain units: under a minute, minutes,
+// then hours and minutes.
+export function durationOf(ms: number): string {
+  const min = Math.floor(Math.max(0, ms) / 60_000)
+  if (min < 1) return '<1m'
+  if (min < 60) return `${min}m`
+  return `${Math.floor(min / 60)}h${two(min % 60)}`
 }
 
 // The colours a person's name in the Log and a ticket's figures wear. ANSI
@@ -224,29 +254,5 @@ export function pickOf(ids: readonly string[], kept: Readonly<Record<string, str
   return picks
 }
 
-// Where a ticket's figures stand on their track: the lane whose wall is on
-// the left, and how far towards the right wall, 0 to 1.
-export type Spot = { lane: string; x: number }
-
-// How far a figure walks in one frame, as a share of its track.
-const WALK_STEP = 1 / 40
-
-// One frame on from `where`. A ticket not seen before stands where its
-// progress puts it. One whose progress moved walks towards it. One whose
-// ticket changed lanes walks on to the right wall first; there the walls
-// move along — the old right one is now the left — and it starts again at
-// the left. A ticket with no figure any more drops out.
-export function stepOf(where: Readonly<Record<string, Spot>>, walkers: readonly Walker[]): Record<string, Spot> {
-  const next: Record<string, Spot> = {}
-  for (const w of walkers) {
-    if (next[w.id] !== undefined) continue
-    const at = where[w.id]
-    if (at === undefined) next[w.id] = { lane: w.lane, x: w.progress }
-    else if (at.lane !== w.lane) next[w.id] = at.x >= 1 ? { lane: w.lane, x: 0 } : { lane: at.lane, x: at.x + WALK_STEP > 1 - WALK_STEP / 2 ? 1 : at.x + WALK_STEP }
-    else next[w.id] = { lane: w.lane, x: Math.abs(w.progress - at.x) <= WALK_STEP ? w.progress : at.x + Math.sign(w.progress - at.x) * WALK_STEP }
-  }
-  return next
-}
-
-// A working figure's spark turns through these, one each frame.
+// A working agent's spark turns through these, one each frame.
 export const SPINNER = ['✻', '✳', '✶', '✢']

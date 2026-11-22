@@ -1,0 +1,1 @@
+- ! On a board whose testing lane owes hunt-verdict, a move into signoff of a ticket that changed code outside .jaira/ is refused (exit 3) unless its newest bug hunt covers HEAD: run /jaira-role-bughunt <id> when the refusal names a stale or missing hunt, commit first when it names uncommitted changes, or pass --force as the person deciding.

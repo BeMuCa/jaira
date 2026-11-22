@@ -193,6 +193,7 @@ one the real move would have returned.`,
 				req := gate.Request{
 					To: to, Question: question, Reason: reason,
 					Actor: identity(), ActorAliases: identityAliases(),
+					ByPerson: atATerminal(),
 				}
 				return reportDryRun(cmd, env, t, to, gate.CheckAdvance(env, t, req), force)
 			}
@@ -738,6 +739,22 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			"missing":        missing,
 			"complete":       len(missing) == 0,
 		}
+		// Only for a lane that declares max-rounds: a "rounds_left" beside a
+		// lane with no limit would read as a limit of zero.
+		if left, limited := l.RoundsLeft(t); limited {
+			payload["max_rounds"] = l.MaxRounds
+			payload["rounds_left"] = left
+		}
+		// Only for a lane that declares its verdict words: the words
+		// review-verdict must start with, and which way each sends the
+		// ticket. The move reads the same lists, so what the lane is told
+		// here is what it is held to.
+		if l.DeclaresVerdicts() {
+			payload["verdicts"] = map[string][]string{
+				"accept":    l.VerdictAccept,
+				"send_back": l.VerdictSendBack,
+			}
+		}
 		// The uncommitted half rides in a key of its own, and only when there
 		// is one: a key that is always there is read as a field, and an empty
 		// one beside every payload trains the reader to skip it.
@@ -785,6 +802,9 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	}
 	if t.BackFrom != "" {
 		fmt.Fprintf(w, "round %d, sent back from %s (%s), %d in a row from that lane\n", ticket.CurrentRound(t), t.BackFrom, t.BackBy, t.BackCount)
+	}
+	if left, limited := l.RoundsLeft(t); limited {
+		fmt.Fprintf(w, "max-rounds %d: %d send-back(s) left from this lane before a person decides\n", l.MaxRounds, left)
 	}
 	fmt.Fprintln(w)
 	if l.Prompt != "" {
@@ -922,8 +942,9 @@ func trimmedJSON(ts []ticket.Trimmed) []map[string]any {
 // send-back from a loop lane is recorded as theirs. The rule errs only one
 // way that matters: a person's move without a terminal — `! jaira move` in a
 // Claude session, a script — is still recorded as the lane's, as before.
-// ByPerson opens no gate, so an agent that fakes a terminal resets nothing
-// but its own loop count. A variable so tests can stand in for a terminal.
+// ByPerson opens no gate a person's hand is needed for, so an agent that
+// fakes a terminal escapes only its own loop count and a lane's max-rounds —
+// no more than --force already lets it. A variable so tests can stand in for a terminal.
 var atATerminal = func() bool {
 	return term.IsTerminal(os.Stdin.Fd()) && term.IsTerminal(os.Stdout.Fd())
 }

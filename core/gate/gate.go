@@ -36,6 +36,10 @@ const (
 	CodeNeedsHuman      = "needs_human"
 	CodeStepNotChosen   = "step_not_chosen"
 	CodeNotOwner        = "not_owner"
+	CodeMaxRounds       = "max_rounds"
+	CodeVerdictSendBack = "verdict_sends_back"
+	CodeNeedsBughunt    = "needs_bughunt"
+	CodeHuntUncommitted = "hunt_uncommitted"
 )
 
 // Violation is one reason a move was refused. Field is set when the fix is to
@@ -116,6 +120,13 @@ type Request struct {
 	// require a human to release a ticket rely on it.
 	Interactive bool
 
+	// ByPerson marks a move a person made — in the board, or typed at a
+	// terminal. It opens no gate a person's hand is needed for (Interactive
+	// does that); it only exempts the move from a loop lane's max-rounds,
+	// because that limit exists to hand the decision to a person, and this
+	// move is that person deciding.
+	ByPerson bool
+
 	// NewAssignee accompanies a move that also hands the ticket to someone
 	// else. A hand-over is always allowed, regardless of who currently owns
 	// the ticket — otherwise an absent owner could freeze it forever.
@@ -166,6 +177,23 @@ type Env struct {
 	// finishing the blocker was the thing that broke the board. nil keeps the
 	// old behaviour, which is right for a caller that has no store.
 	Satisfied func(id string) bool
+
+	// Hunt reports whether a ticket changed code and what its newest bug
+	// hunt says about HEAD. Injected for the same reason DeriveCommits is:
+	// answering it means asking git. It is called only for a move into a
+	// lane a person releases, on a board that runs hunts; nil means no
+	// check, which is right for a caller without a repository.
+	Hunt func(t *ticket.Ticket) HuntReport
+}
+
+// HuntReport is what Env.Hunt answers. State is the newest finished hunt's
+// state as 'jaira show --brief' reports it (ok, fail, unknown, skipped), and
+// empty when no hunt finished.
+type HuntReport struct {
+	CodeChanged bool
+	State       string
+	At          string
+	Head        string
 }
 
 // CheckAdvance decides whether t may move to req.To.
@@ -401,6 +429,28 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 		})
 	}
 
+	// A loop lane that keeps finding more stops after max-rounds send-backs in
+	// a row and hands the next decision to a person. Only a lane's own
+	// send-back is counted and refused: a person sending work back is the
+	// decision this limit exists to bring about, and so is the hand-off into
+	// a lane a person answers in — the very move the refusal prescribes,
+	// which on a board drawing that lane earlier is itself a send-back.
+	if cur, ok := env.Lanes.Get(t.Status); ok && !req.Interactive && !req.ByPerson &&
+		!target.AsksPerson() && env.Lanes.SendsBack(t.Status, req.To) {
+		if left, limited := cur.RoundsLeft(t); limited && left == 0 {
+			where := "the lane a person answers in"
+			if p := env.Lanes.PersonLane(cur); p != "" {
+				where = fmt.Sprintf("%q", p)
+			}
+			vs = append(vs, Violation{
+				Code: CodeMaxRounds,
+				Message: fmt.Sprintf(
+					"lane %q has sent %s back %d times in a row, its max-rounds: a person decides now. Move it to %s with --question \"<this round's findings; is the definition of done wrong, or does the loop never end?>\" — or, as the person deciding, send it back anyway with --force",
+					cur.ID, ticket.Handle(t.ID), t.BackCount, where),
+			})
+		}
+	}
+
 	// The plan and the definition of done are not independent. The plan is the
 	// method — write the spec, design it, implement it — and the criteria cannot
 	// have been met while the work that meets them is still under way. A ticket
@@ -445,7 +495,121 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 		}
 	}
 
+	// A ticket that changed code reaches the lane a person releases only
+	// with a bug hunt that covers HEAD. Before this the gate never read the
+	// hunt: a commit after the last hunt changed the hunted files and the
+	// ticket still landed in sign-off, its hunt reading fail. The human lane
+	// is not guarded — it takes questions, testing's max-rounds escape among
+	// them — and neither is a board without a lane that owes hunt-verdict:
+	// it never runs hunts, and demanding one there would refuse every move.
+	if target.RequiresHumanExit && t.Status != target.ID && !req.Interactive &&
+		env.Hunt != nil && runsHunts(env.Lanes) {
+		vs = append(vs, huntAgainstMove(env.Hunt(t), t, target)...)
+	}
+
+	// A verdict says which way the ticket goes, and the move must go that way.
+	// Nothing else read the field before: a review that wrote "send back"
+	// still saw its ticket land in sign-off, in front of a person, unapproved.
+	// Only a lane that declares its words is read, and only its send-back
+	// word refuses. A move made in the board is a person deciding.
+	if !req.Interactive && !target.RequiresBlockedReason {
+		vs = append(vs, verdictAgainstMove(env.Lanes, t, target)...)
+	}
+
 	return vs
+}
+
+// runsHunts reports a board with a lane that owes hunt-verdict.
+func runsHunts(set *lane.Set) bool {
+	for _, l := range set.Lanes {
+		if slices.Contains(l.OutputProduces, "hunt-verdict") {
+			return true
+		}
+	}
+	return false
+}
+
+// huntAgainstMove refuses a ticket that changed code and whose newest hunt
+// does not cover HEAD: none finished, a commit since touched what it read,
+// or a file it read is changed and not committed. ok passes, and so does
+// skipped — stop-after-fix is the ticket's own choice to run no more hunts.
+func huntAgainstMove(r HuntReport, t *ticket.Ticket, target *lane.Lane) Violations {
+	if !r.CodeChanged {
+		return nil
+	}
+	h := ticket.Handle(t.ID)
+	head := r.Head
+	if head == "" {
+		head = "unknown"
+	}
+	var msg string
+	switch r.State {
+	case "ok", "skipped":
+		return nil
+	case "unknown":
+		return Violations{{
+			Code: CodeHuntUncommitted,
+			Message: fmt.Sprintf(
+				"lane %q needs a bug hunt that covers HEAD, and %s has uncommitted changes in files its last hunt at %s read (HEAD %s), or git could not answer: commit them first, then run /jaira-role-bughunt %s if they changed code — or, as the person deciding, pass --force",
+				target.ID, h, r.At, head, h),
+		}}
+	case "":
+		msg = fmt.Sprintf("lane %q needs a bug hunt that covers HEAD, and %s changed code but no bug hunt finished on it (HEAD %s)", target.ID, h, head)
+	default:
+		msg = fmt.Sprintf("lane %q needs a bug hunt that covers HEAD, and %s committed changes to hunted files after its last hunt at %s (HEAD %s)", target.ID, h, r.At, head)
+	}
+	return Violations{{
+		Code:    CodeNeedsBughunt,
+		Message: msg + fmt.Sprintf(": run /jaira-role-bughunt %s, then try this move again — or, as the person deciding, pass --force", h),
+	}}
+}
+
+// verdictAgainstMove refuses a move that lands past a lane whose verdict sent
+// the work back — from that lane, or around it: blocked is drawn last, so
+// blocked → signoff is not even a forward move, and a ticket parked from
+// review would otherwise walk into sign-off past its own send-back. Any other
+// verdict passes, free text included: only the send-back word is a rail.
+func verdictAgainstMove(set *lane.Set, t *ticket.Ticket, target *lane.Lane) Violations {
+	to := set.Index(target.ID)
+	for i, cur := range set.Lanes {
+		if !cur.DeclaresVerdicts() || to <= i {
+			continue
+		}
+		if word, back := cur.SendsBackBy(t.ReviewVerdict); back {
+			return Violations{{
+				Code:  CodeVerdictSendBack,
+				Field: ticket.FieldReviewVerdict,
+				Message: fmt.Sprintf(
+					"%s says %q: lane %q sent %s back, so it may not go on to %q. Move it back to %s — or, as the person deciding, pass --force",
+					ticket.FieldReviewVerdict, word, cur.ID, ticket.Handle(t.ID), target.ID, sendBackTo(set, cur)),
+			}}
+		}
+	}
+	return nil
+}
+
+// sendBackTo names where a sent-back ticket goes from cur: its declared back
+// edges, else the last earlier lane that produces the outcome — the lane the
+// work was done in, in-progress on the default board — else "an earlier lane".
+func sendBackTo(set *lane.Set, cur *lane.Lane) string {
+	if len(cur.RejectsTo) > 0 {
+		return quoteAll(cur.RejectsTo)
+	}
+	at := set.Index(cur.ID)
+	for i := at - 1; i >= 0; i-- {
+		if slices.Contains(set.Lanes[i].OutputProduces, ticket.FieldOutcomeWhat) {
+			return fmt.Sprintf("%q", set.Lanes[i].ID)
+		}
+	}
+	return "an earlier lane"
+}
+
+func quoteAll(ws []string) string {
+	q := make([]string, len(ws))
+	for i, w := range ws {
+		q[i] = fmt.Sprintf("%q", w)
+	}
+	return strings.Join(q, " or ")
 }
 
 // OutputOwed lists the fields lane l declares it produces that ticket t has not

@@ -2006,6 +2006,10 @@ func (m *Model) gateEnv() gate.Env {
 			}
 			return shas
 		},
+		// Asks git only for a move into a lane a person releases.
+		Hunt: func(t *ticket.Ticket) gate.HuntReport {
+			return gate.HuntReport(repo.HuntCheck(t))
+		},
 	}
 }
 
@@ -2033,7 +2037,7 @@ func (m *Model) applyMove() {
 		full.Assignee = me
 	}
 	vs := gate.CheckAdvance(env, full, gate.Request{
-		To: target.ID, Actor: me, ActorAliases: identity.Aliases(m.store.Root),
+		To: target.ID, Actor: me, ActorAliases: identity.Aliases(m.store.Root), ByPerson: true,
 	})
 	if len(vs) > 0 {
 		m.pending = &pendingMove{

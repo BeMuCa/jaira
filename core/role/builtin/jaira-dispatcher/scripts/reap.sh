@@ -36,14 +36,46 @@ One run at a time per repository: a second one while the first still runs
 prints 'skipped: reap.sh runs already' and exits 0. The lock is flock on
 reap.lock beside jaira/panes/; a run that dies lets go of it.
 
-Output: one line per thing done — 'closed <ticket>/<lane> <pane>', 'removed
-<worktree>', 'deleted branch <branch>' — or 'waiting <ticket>: <reason>' and
-'kept <ticket>: <reason>'; with
---dry-run the first three start with 'would'. Exit 0 also when something was
+A repository whose .jaira/worktree-setup builds something for a worktree — a
+container stack, ports, volumes — takes it down in an executable
+.jaira/worktree-teardown beside it. reap.sh calls it after the ticket's tabs
+are closed and before the worktree is removed, with the setup's arguments:
+  .jaira/worktree-teardown <worktree> <slug> <port-offset 1-40> <repo-root>
+exactly as spawn.sh gave them to the setup and wrote them down in the
+worktree's git directory (jaira-setup). A worktree without that record — no
+setup ran, or spawn.sh predates it — gets no teardown call. Its output
+goes to stderr. A teardown that
+fails keeps the worktree, the branch and the records ('kept <ticket>:
+teardown failed: ...'), and the next round calls it again, so it must bear
+being called twice. One that runs longer than JAIRA_TEARDOWN_TIMEOUT
+seconds (default 300) is stopped with its child processes and counts as
+failed ('... (timed out after 300s)'): the cockpit calls reap.sh every ten
+minutes, and a hung teardown would otherwise hold reap.lock for good. Where a
+teardown is due, one that is there but not executable keeps the ticket before
+any tab closes, and so does a machine without a timeout(1) or gtimeout that
+takes -k (coreutils; Windows' own timeout.exe does not).
+
+The teardown is always the main checkout's, also for a worktree spawned from
+another one. $1 and $4 are paths as they were when the setup ran and may be
+gone by now: $4 is another ticket's worktree where spawn.sh ran in one, and $1
+moved after a 'git worktree move'. Use absolute paths inside the teardown, or
+cd into $1 where it is there; never rely on $4.
+
+A worker's tab that close-tab.sh parked in a person's lane — its record says
+parked= — is handed back to close-tab.sh --reap first, whatever the forge
+says: it closes once the ticket is done or filed away, or the park is older
+than JAIRA_CACHE_WINDOW seconds (default 3600), and its lines
+('closing <ticket> <tab>', 'kept <ticket>: ...') are printed as they come.
+
+Output: one line per thing done — 'closed <ticket>/<lane> <pane>', 'tore down
+<worktree>', 'removed <worktree>', 'deleted branch <branch>' — or 'waiting
+<ticket>: <reason>' and 'kept <ticket>: <reason>'; with --dry-run the first
+four start with 'would' ('would tear down <worktree>'). Exit 0 also when something was
 kept: keeping is the answer, not a failure.
 
 Environment: HERDR_BIN_PATH, HERDR_PANE_ID (this pane is never closed),
-JAIRA_BRANCH_PREFIX (default feat).
+JAIRA_BRANCH_PREFIX (default feat), JAIRA_TEARDOWN_TIMEOUT (seconds, default
+300), JAIRA_CACHE_WINDOW (seconds a parked tab stays, default 3600).
 USAGE
 }
 
@@ -99,8 +131,29 @@ fi
 # A herdr that does not answer cannot tell a closed tab from an open one; read
 # as closed, it would cost the worktree and the record of a tab still open.
 herdr_up=""; "$herdr" tab list >/dev/null 2>&1 && herdr_up=1
+
+field() { sed -n "s/^$1=//p" "$2" | head -1; }
+
+# A worker's tab parked in a person's lane (close-tab.sh wrote parked= into
+# its record) stays while its prompt cache is warm, so a give-back reaches it.
+# close-tab.sh --reap holds the rule when it closes: once the ticket is done or
+# filed away, or the park is older than the cache window. Asked before any
+# forge: a parked tab is closed whether or not a pull request exists.
+if [ -n "$herdr_up" ]; then
+  for f in "$panes"/*; do
+    [ -f "$f" ] && grep -q '^parked=' "$f" || continue
+    pane="$(field pane "$f")"
+    [ "$pane" != "${HERDR_PANE_ID:-${HC_TERMINAL_ID:-}}" ] || continue
+    w="$(field worktree "$f")"
+    [ -d "$w" ] || w="$root"
+    "$here/close-tab.sh" ${dry:+--dry-run} --reap --pane "$pane" "$(field ticket "$f")" "$w" || true
+  done
+fi
 # Physical paths throughout: on macOS the temp directory is a symlink, and git
 # reports the resolved path where cd keeps the one it was given.
+# Seconds a .jaira/worktree-teardown may run before it counts as failed.
+tsecs="${JAIRA_TEARDOWN_TIMEOUT:-300}"
+case "$tsecs" in ''|*[!0-9]*|0) echo "JAIRA_TEARDOWN_TIMEOUT must be seconds above 0, not '$tsecs'" >&2; exit 2 ;; esac
 main="$(cd "$(git -C "$root" worktree list --porcelain | sed -n '1s/^worktree //p')" && pwd -P)"
 
 # The forge decides which tool asks about the pull request — the same ladder
@@ -232,7 +285,6 @@ else
 fi
 rm -f "$prerr"
 
-field() { sed -n "s/^$1=//p" "$2" | head -1; }
 
 # A worker passes its slug, in lower case, where a teamlead passes the handle:
 # both name the same ticket. No associative array: macOS still ships bash 3.2.
@@ -315,6 +367,43 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
   if [ -n "$dirty" ]; then echo "kept $t: ${dirty% }"; continue; fi
   if [ -z "$herdr_up" ]; then echo "kept $t: herdr not reachable ($herdr)"; continue; fi
 
+  # What .jaira/worktree-setup built for a worktree — a container stack, its
+  # ports and volumes — .jaira/worktree-teardown takes down again, called with
+  # the arguments spawn.sh gave the setup and wrote down in the worktree's
+  # git directory (jaira-setup). Never worked out from the worktree's name: a
+  # worktree made from another one is named after both, and a wrong slug tears
+  # down another ticket's stack. A worktree with no record had no setup run by
+  # spawn.sh, and its teardown is not called. Checked before a tab closes.
+  teardown="$main/.jaira/worktree-teardown"; targs=()
+  if [ -e "$teardown" ]; then
+    for w in "${wts[@]+"${wts[@]}"}"; do
+      rec="$(git -C "$w" rev-parse --absolute-git-dir 2>/dev/null)/jaira-setup"
+      [ -f "$rec" ] || continue
+      targs+=("$(field worktree "$rec")" "$(field slug "$rec")" "$(field offset "$rec")" "$(field root "$rec")")
+    done
+  fi
+  # What follows is asked only where a teardown is due: a worktree without a
+  # record needs no teardown, and nothing about it keeps the ticket.
+  # Bounded: the cockpit runs this every ten minutes under reap.lock, and a
+  # teardown that hangs would hold the lock and stop every later round.
+  # timeout(1) is coreutils; macOS ships it as gtimeout, if at all, and Git
+  # Bash may find Windows' own timeout.exe first, which takes no -k: a
+  # candidate is used only once it ran a bounded 'true'.
+  if [ "${#targs[@]}" -gt 0 ]; then
+    if [ ! -x "$teardown" ]; then
+      echo "kept $t: $teardown is not executable: chmod +x it, or remove it"; continue
+    fi
+    # Every one on PATH, not the first: timeout.exe may stand before
+    # coreutils' own.
+    tbin=""
+    while IFS= read -r c; do
+      if "$c" -k 1 1 true </dev/null >/dev/null 2>&1; then tbin="$c"; break; fi
+    done < <(type -ap timeout gtimeout)
+    if [ -z "$tbin" ]; then
+      echo "kept $t: no timeout(1) that takes -k to bound $teardown: install coreutils"; continue
+    fi
+  fi
+
   failed=""; gone=()
   for f in "${recs[@]}"; do
     pane="$(field pane "$f")"; lane="$(field lane "$f")"
@@ -335,6 +424,25 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     fi
   done
   # A tab still open has claude sitting in the worktree: leave it standing.
+  [ -z "$failed" ] || continue
+
+  # Torn down once no tab has claude in the worktree any more, and before git
+  # takes the worktree away: a teardown may need what is in it (a compose
+  # file, its .env). Its output goes to stderr — stdout is the line protocol
+  # above. One that fails keeps the worktree, the branch and the records, so
+  # the next round calls it again: a teardown has to bear being called twice.
+  i=0
+  while [ "$i" -lt "${#targs[@]}" ]; do
+    w="${targs[$i]}"; s="${targs[$((i + 1))]}"; o="${targs[$((i + 2))]}"; r="${targs[$((i + 3))]}"; i=$((i + 4))
+    if [ -n "$dry" ]; then echo "would tear down $w"; continue; fi
+    # timeout signals the teardown's whole process group, so what it started
+    # (docker compose) goes with it; -k kills what ignores the TERM.
+    rc=0; "$tbin" -k 10 "$tsecs" "$teardown" "$w" "$s" "$o" "$r" </dev/null >&2 || rc=$?
+    if [ "$rc" = 0 ]; then echo "tore down $w"
+    elif [ "$rc" = 124 ] || [ "$rc" = 137 ]; then
+      echo "kept $t: teardown failed: $teardown $w $s $o $r (timed out after ${tsecs}s)"; failed=1; break
+    else echo "kept $t: teardown failed: $teardown $w $s $o $r (exit $rc)"; failed=1; break; fi
+  done
   [ -z "$failed" ] || continue
 
   for w in "${wts[@]+"${wts[@]}"}"; do

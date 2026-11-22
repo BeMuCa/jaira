@@ -171,7 +171,7 @@ j move "$sign" --to review \
 	--resolves "bursts above 100/min now get 429 with Retry-After, verified by TestBurstIsCapped"
 j set "$sign" review-summary="a token-bucket limiter per client IP, returning 429 with Retry-After above 100/min" \
 	review-gaps="none" \
-	review-verdict="the diff matches the criteria; no defects found" \
+	review-verdict="accept: the diff matches the criteria; no defects found" \
 	review-check="go test ./... passes"
 j move "$sign" --to signoff
 
@@ -205,7 +205,7 @@ finish() {
 	git -C "$co" -c commit.gpgsign=false commit -q --allow-empty -m "fix($1): $3"
 	j move "$1" --to review --what "$3" --why "$4" --resolves "$5"
 	j set "$1" review-summary="$3" review-gaps="none" \
-		review-verdict="the diff matches the criteria" review-check="go test ./... passes"
+		review-verdict="accept: the diff matches the criteria" review-check="go test ./... passes"
 	j move "$1" --to done
 }
 

@@ -9,7 +9,11 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
+	"time"
+
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // The roles this binary ships. Named rather than counted, because the
@@ -70,8 +74,9 @@ var roleFiles = map[string][]string{
 	// a lane.
 	"jaira-dispatcher": {"scripts/spawn.sh", "scripts/run-lane.sh"},
 	// pr-round.sh answers one round of review comments when the board lets an
-	// agent open the pull request (JG3REW).
-	"jaira-role-pr": {"scripts/pr-round.sh"},
+	// agent open the pull request (JG3REW); pre-push-scan.sh looks for what
+	// must not leave the machine before every push (AX8K02).
+	"jaira-role-pr": {"scripts/pr-round.sh", "scripts/pre-push-scan.sh"},
 	// build.py writes the page from template.html and the record from
 	// report.html.
 	"jaira-role-acceptance": {"build.py", "template.html", "report.html"},
@@ -999,6 +1004,15 @@ esac
 		if want := strings.Join([]string{shellDir(t, bash, wt), "ab12cd", off, shellDir(t, bash, root)}, "\n") + "\n"; string(got) != want {
 			t.Errorf("the setup got\n%s\nwant worktree, slug, offset %s and root:\n%s", got, off, want)
 		}
+		// The same four, written down for reap.sh to hand the teardown.
+		gd, gerr := exec.Command("git", "-C", wt, "rev-parse", "--absolute-git-dir").Output()
+		if gerr != nil {
+			t.Fatal(gerr)
+		}
+		rec, _ := os.ReadFile(filepath.Join(strings.TrimSpace(string(gd)), "jaira-setup"))
+		if want := "worktree=" + shellDir(t, bash, wt) + "\nslug=ab12cd\noffset=" + off + "\nroot=" + shellDir(t, bash, root) + "\n"; string(rec) != want {
+			t.Errorf("spawn.sh recorded\n%s\nwant\n%s", rec, want)
+		}
 		if env, _ := os.ReadFile(filepath.Join(wt, ".env")); string(env) != "FROM_SETUP=1\n" {
 			t.Errorf("spawn.sh wrote into the .env the setup made:\n%s", env)
 		}
@@ -1043,6 +1057,240 @@ esac
 			}
 			branchGone(t, root)
 		})
+	}
+}
+
+// Two worktrees of one repository never get the same port offset. 8r8vts and
+// 32ttss hash to the same one (cksum % 40 + 1 = 5); the second takes the next
+// free one instead. A worktree made before offsets were written down still
+// holds the one its .env names, and a worktree that stands keeps its offset
+// when spawn.sh is run for it again.
+// offsetRepo is a repository with a .env, so spawn.sh hands its worktrees a
+// port offset, and a herdr stub that opens tabs. spawnCmd runs spawn.sh for
+// a slug; offset reads the offset that slug's worktree got.
+type offsetRepo struct {
+	base, root string
+	git        func(args ...string)
+	spawnCmd   func(slug string) *exec.Cmd
+	offset     func(slug string) string
+}
+
+func newOffsetRepo(t *testing.T) offsetRepo {
+	t.Helper()
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	path := jairaPath(t)
+	dir := t.TempDir()
+	if _, err := install(dir, false, true, false); err != nil {
+		t.Fatal(err)
+	}
+	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+
+	base := t.TempDir()
+	root := filepath.Join(base, "repo")
+	bin := t.TempDir()
+	herdr := `#!/usr/bin/env bash
+case "$1 $2" in
+  "tab create") echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
+esac
+`
+	if err := os.WriteFile(filepath.Join(bin, "herdr"), []byte(herdr), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".env"), []byte("APP=1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git := func(args ...string) {
+		t.Helper()
+		if b, err := exec.Command("git", append([]string{"-C", root}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, b)
+		}
+	}
+	git("init", "-q")
+	git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "x")
+
+	return offsetRepo{
+		base: base,
+		root: root,
+		git:  git,
+		spawnCmd: func(slug string) *exec.Cmd {
+			cmd := exec.Command(bash, spawn, slug, strings.ToUpper(slug), "review", root)
+			cmd.Dir = root
+			cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr"),
+				"HERDR_WORKSPACE_ID=", "JAIRA_NO_WORKTREE=", "JAIRA_SPAWN_PAUSE=0",
+				"PATH="+bin+string(os.PathListSeparator)+path)
+			return cmd
+		},
+		offset: func(slug string) string {
+			t.Helper()
+			env, err := os.ReadFile(filepath.Join(base, ".worktrees", "repo-"+slug, ".env"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, off, ok := strings.Cut(string(env), "# worker stack: slug="+slug+" offset=")
+			if !ok {
+				t.Fatalf("the .env of %s names no offset:\n%s", slug, env)
+			}
+			off, _, _ = strings.Cut(off, "\n")
+			return off
+		},
+	}
+}
+
+func TestSpawnGivesEveryWorktreeItsOwnOffset(t *testing.T) {
+	r := newOffsetRepo(t)
+	base, root, git, offset := r.base, r.root, r.git, r.offset
+	spawnSlug := func(slug string) {
+		t.Helper()
+		if out, err := r.spawnCmd(slug).CombinedOutput(); err != nil {
+			t.Fatalf("spawn.sh %s: %v\n%s", slug, err, out)
+		}
+	}
+
+	// A worktree from before: made by hand, its offset only in its .env.
+	legacy := filepath.Join(base, ".worktrees", "repo-twb0r6")
+	git("worktree", "add", "-q", legacy, "-b", "feat/twb0r6")
+	if err := os.WriteFile(filepath.Join(legacy, ".env"), []byte("APP=1\n\n# worker stack: slug=twb0r6 offset=5\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	spawnSlug("8r8vts")
+	spawnSlug("32ttss")
+	if a, b := offset("8r8vts"), offset("32ttss"); a != "6" || b != "7" {
+		t.Errorf("8r8vts and 32ttss got offsets %s and %s, want 6 and 7: 5 is held by twb0r6, then each the next free one", a, b)
+	}
+
+	spawnSlug("8r8vts")
+	if a := offset("8r8vts"); a != "6" {
+		t.Errorf("8r8vts spawned again got offset %s, want the 6 its worktree already has", a)
+	}
+
+	// Gone, its offset is free again.
+	git("worktree", "remove", "--force", legacy)
+	git("branch", "-D", "feat/twb0r6")
+	spawnSlug("twb0r6")
+	if c := offset("twb0r6"); c != "5" {
+		t.Errorf("twb0r6 made again got offset %s, want the free 5", c)
+	}
+
+	// Deleted by hand and not pruned, a worktree runs no stack: its 6 is free.
+	// e8x8ye hashes to 5 too, which twb0r6 holds.
+	if err := os.RemoveAll(filepath.Join(base, ".worktrees", "repo-8r8vts")); err != nil {
+		t.Fatal(err)
+	}
+	spawnSlug("e8x8ye")
+	if e := offset("e8x8ye"); e != "6" {
+		t.Errorf("e8x8ye got offset %s, want the 6 a deleted worktree no longer holds", e)
+	}
+
+	// git 2.48+ with worktree.useRelativePaths writes the worktree's path
+	// relative to its own git directory: twb0r6 still holds 5, k2x2yk (hash 5)
+	// goes past it and past 6 and 7.
+	gd := filepath.Join(root, ".git", "worktrees", "repo-twb0r6")
+	if err := os.WriteFile(filepath.Join(gd, "gitdir"), []byte("../../../../.worktrees/repo-twb0r6/.git\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	spawnSlug("k2x2yk")
+	if k := offset("k2x2yk"); k != "8" {
+		t.Errorf("k2x2yk got offset %s, want 8: a relative gitdir must not hide twb0r6's 5", k)
+	}
+}
+
+// The offset lock: two spawns at once, a spawn.sh killed while it holds it,
+// and a lock that cannot be opened at all.
+func TestSpawnOffsetLock(t *testing.T) {
+	r := newOffsetRepo(t)
+	lock := filepath.Join(r.root, ".git", "jaira-offset.lock")
+
+	// A checkout that takes a second keeps the first spawn inside the lock
+	// while the second arrives. 8r8vts and 32ttss hash to the same 5.
+	hook := filepath.Join(r.root, ".git", "hooks", "post-checkout")
+	if err := os.WriteFile(hook, []byte("#!/bin/sh\nsleep 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	outs := make([][]byte, 2)
+	errs := make([]error, 2)
+	for i, slug := range []string{"8r8vts", "32ttss"} {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			outs[i], errs[i] = r.spawnCmd(slug).CombinedOutput()
+		}()
+	}
+	wg.Wait()
+	for i := range errs {
+		if errs[i] != nil {
+			t.Fatalf("parallel spawn.sh %d: %v\n%s", i, errs[i], outs[i])
+		}
+	}
+	if a, b := r.offset("8r8vts"), r.offset("32ttss"); a == b {
+		t.Errorf("two spawns at once both got offset %s", a)
+	}
+	if err := os.Remove(hook); err != nil {
+		t.Fatal(err)
+	}
+
+	// A spawn.sh killed inside the lock leaves nothing held: its checkout
+	// hook still runs for 5 seconds, yet the next spawn does not wait for it.
+	if err := os.WriteFile(hook, []byte("#!/bin/sh\nsleep 5\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	killed := r.spawnCmd("twb0r6")
+	if err := killed.Start(); err != nil {
+		t.Fatal(err)
+	}
+	for deadline := time.Now().Add(10 * time.Second); ; {
+		if _, err := os.Stat(filepath.Join(r.base, ".worktrees", "repo-twb0r6")); err == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("spawn.sh twb0r6 never got as far as making its worktree")
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if err := killed.Process.Kill(); err != nil {
+		t.Fatal(err)
+	}
+	_ = killed.Wait()
+	if err := os.Remove(hook); err != nil {
+		t.Fatal(err)
+	}
+	start := time.Now()
+	if out, err := r.spawnCmd("e8x8ye").CombinedOutput(); err != nil {
+		t.Fatalf("spawn.sh after a killed one: %v\n%s", err, out)
+	}
+	if d := time.Since(start); d > 3*time.Second {
+		t.Errorf("spawn.sh waited %v after a killed spawn.sh: the lock outlived it", d)
+	}
+
+	// A directory sits where the lock file goes: it can never be opened, so
+	// spawn.sh stops at once instead of waiting.
+	if err := os.Remove(lock); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(lock, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	start = time.Now()
+	out, err := r.spawnCmd("k2x2yk").CombinedOutput()
+	if err == nil {
+		t.Fatalf("spawn.sh ran although its lock cannot be made:\n%s", out)
+	}
+	if !strings.Contains(string(out), "cannot open the lock") {
+		t.Errorf("spawn.sh does not say the lock cannot be opened:\n%s", out)
+	}
+	if d := time.Since(start); d > 5*time.Second {
+		t.Errorf("spawn.sh took %v to give up on a lock it cannot open", d)
+	}
+	if _, err := os.Stat(filepath.Join(r.base, ".worktrees", "repo-k2x2yk")); !os.IsNotExist(err) {
+		t.Errorf("spawn.sh made the worktree although it got no lock: %v", err)
 	}
 }
 
@@ -1193,6 +1441,42 @@ func TestCodeChangingRolesLeaveTheReleaseAndFormatOnlyTheirFiles(t *testing.T) {
 			if !strings.Contains(text, want) {
 				t.Errorf("%s does not say %q", id, want)
 			}
+		}
+	}
+}
+
+// Roles that neither change code nor judge it run on haiku; the ones that
+// judge — critique and review through jaira-role-lane, the bug hunt — and the
+// ones that write code stay on the model they were started on (Y2CD9X).
+// jaira-role-pr stays off the list: its code-fix agent inherits the role's
+// model, and a model: haiku there would hand every review fix to haiku.
+// Claude Code reads model: out of the SKILL.md header for the turn the skill
+// runs, so the header is the whole mechanism.
+func TestRoleModels(t *testing.T) {
+	haiku := map[string]bool{
+		"jaira-role-tester":          true,
+		"jaira-role-logbook-summary": true,
+	}
+	roles, err := Builtins()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range roles {
+		b, err := File(r.ID, skillFile)
+		if err != nil {
+			t.Fatalf("%s: %v", r.ID, err)
+		}
+		d, err := ticket.ParseDoc(b)
+		if err != nil {
+			t.Fatalf("%s: %v", r.ID, err)
+		}
+		got, _, _ := d.Scalar("model")
+		want := ""
+		if haiku[r.ID] {
+			want = "haiku"
+		}
+		if got != want {
+			t.Errorf("%s: model %q, want %q", r.ID, got, want)
 		}
 	}
 }
