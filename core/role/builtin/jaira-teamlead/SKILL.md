@@ -328,15 +328,15 @@ The cockpit's Give back button decides by itself. When you send it back:
    `jaira show <id> --json` before anything else: other sessions wrote to the
    board while it waited, and its context does not know. `jaira note` on the
    ticket whom you sent it to and why.
-3. **New worker:** write the reason on the ticket first, then move it, then
-   start the worker — `jaira note <id> "Given back from signoff: ..."`,
-   `jaira move <id> --to in-progress`, `spawn.sh <slug> <id> worker`. The
-   worker reads its brief off the ticket, so a reason that is only in your
-   message to it is a reason the next one never sees. Close the old tab first — its `tab_id` from
-   `$HERDR_BIN_PATH tab list`, the tab spawn.sh labelled with the ticket id
-   and the role, then `$HERDR_BIN_PATH tab close <tab_id>` — and start a new
-   one with `spawn.sh` as above, so a ticket never has two worker tabs. Note
-   why on the ticket.
+3. **New worker:** in this order — write the reason on the ticket
+   (`jaira note <id> "Given back from signoff: ..."`), move it
+   (`jaira move <id> --to in-progress`), close the old tab (its `tab_id`
+   from `$HERDR_BIN_PATH tab list`, the tab spawn.sh labelled with the ticket
+   id and the role, then `$HERDR_BIN_PATH tab close <tab_id>`), and only then
+   start the new one with `spawn.sh <slug> <id> worker`, so a ticket never
+   has two worker tabs. The worker reads its brief off the ticket, so a
+   reason that is only in your message to it is a reason the next one never
+   sees.
 4. **No `workers` tool** — the cockpit is not installed: a new worker.
 
 The limit is a share of the model's context window, the cockpit's setting

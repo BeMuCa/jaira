@@ -22,36 +22,39 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T22:08:26Z
-updated-at: 2026-11-22T11:35:15Z
+updated-at: 2026-11-22T11:40:44Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-31706
 claimed-at: 2026-11-22T11:08:04Z
 outcome-what: "New core/role/builtin/jaira-teamlead/scripts/land.sh <pr>: merges the PR's base into the ticket branch, takes conflicts in files .jaira/land-regenerate names from the base and regenerates them, commits merge+regeneration as one chore(<ID>) commit, pushes, waits for gh pr checks, then merges via gh only where 'jaira roles pr-gate --merge' says yes, else prints the merge line (exit 3). New pr-gate --merge reads .jaira/land off the base (agent only) and reuses the existing every-ticket-in-done check. Teamlead SKILL.md: give back as note+move+spawn, decisions as dod --add, landing/stacking/filing-away section."
 outcome-why: "The 2026-11-21 teamlead built these routines by hand (~/.claude/scripts/jaira-land.sh, 20+ PRs landed); a new teamlead would rebuild them, and merging must stay behind a board permission (Alex chose .jaira/land = agent)."
 outcome-resolves: "DoD 1-4: land.sh + TestLandMergesOnlyWhereTheBoardLetsIt (9 cases), pr-gate --merge + two prgate tests, SKILL text, release note + manifest. Four categories checked: concurrency — two land.sh on one worktree not guarded (teamlead lands one after another, written in SKILL); error paths — conflict outside generated files aborts the merge, failed generator resets to the start, red CI stops before the gate, each tested where cheap; unusual input — no regenerate file, comment/blank lines, branch already holding the base tested; permissions — regenerate commands and .jaira/land come from the base, never the PR branch."
-review-summary: "pr-gate gets --merge: exit 0 only where .jaira/land on the base says agent, every commit in base..HEAD names a ticket (plain merges of the base pass) and every ticket on the branch is in done; a .jaira/land saying agent only on disk is named as not yet committed. New teamlead script land.sh <pr>: resolves the PR's repo (fork parent), merges the PR base into the ticket branch, takes conflicts in files listed in the base's .jaira/land-regenerate from the base and reruns their commands (any other conflict, or a base that deleted a generated file, aborts the merge, exit 1, nothing pushed), commits merge+regeneration as one chore(<ID>) commit, pushes, watches gh pr checks, asks pr-gate --merge and then merges with --match-head-commit and runs reap.sh, or prints the gh pr merge line (exit 3). SKILL.md gains landing, stacking, path-only logbook staging, give-back as note+move+spawn and decisions as dod --add; release note and shipped manifest updated."
-round: 4
-back-from: review
-back-by: lane
+review-summary: "New core/role/builtin/jaira-teamlead/scripts/land.sh <pr> (installed with the roles): in the ticket worktree it merges the PR's base into the branch; conflicts in files that .jaira/land-regenerate (read off the base) names are taken from the base and rebuilt by their command, any other conflict or a failing generator aborts and resets with nothing pushed; merge + regeneration become one chore(<ID>) commit, pushed, then gh pr checks --watch. Only then it asks the new 'jaira roles pr-gate --merge <base>': yes only when .jaira/land on the base says exactly 'agent', every commit names a ticket and every ticket on the branch is in done; then gh pr merge --match-head-commit <judged HEAD> and reap.sh, else it prints the merge line for the person (exit 3). pr-gate --merge reuses the existing ticket/unnamed-commit checks and names a .jaira/land that is only on disk. Teamlead SKILL.md gains: give back = note+move+spawn, decisions as dod --add, landing/stacking/filing-away by path. Release note core/release/notes/50RA6N.md and shipped.sha256 updated."
+round: 5
+back-from: signoff
+back-by: person
 back-count: 1
 review-gaps: |-
-  note: land.sh regeneration-failure path (merge --abort + reset --hard to the pre-merge HEAD, land.sh:122-125) has no test case in TestLandMergesOnlyWhereTheBoardLetsIt - add a case with a generator that exits 1 and assert exit 1, nothing pushed, clean worktree
-  note: known limit, documented in notes: a repo with no CI checks reads as not green (gh pr checks exits 1), so land.sh never merges there and the person does
-  note: not this ticket: the worktree holds uncommitted board-update text in .jaira/lanes/*.md, AGENTS.md, CLAUDE.md - commit it under its own ticket or drop it before landing; land.sh itself refuses a dirty tree
-test-verdict: "pass: go vet (linux+windows) and go test ./... green RC=0 on acd6d7c18's tree, wintrap included; DoD 1-4 verified in the tree (land.sh, SKILL.md:331/372/383, release note, manifest --check); round-1 findings each tested: unnamed commit refused under --merge, gh merge carries --match-head-commit of the judged head (stub refuses another), base-deleted generated file aborts with exit 1 and a clean tree. Failure paths: bad arg exit 2, dirty tree exit 2, red CI exit 1, gate no exit 3. Writes only git state; two land.sh on one worktree meet git's index.lock."
-hunt-verdict: "pass: bughunt done at acd6d7c18, 0 change, 0 pre-existing"
-review-verdict: "accept: all four DoD items met (land.sh, SKILL.md sections, release note + manifest, merge only behind .jaira/land=agent read off the base with tickets in done and CI green); testing round-1 findings fixed in acd6d7c18; go test ./core/... ./internal/... green; no blocker found"
-review-round: 3
+  note: land.sh:139 compares HEAD with the local refs/remotes/origin/<branch> without fetching it - when someone else pushed to the branch, git push fails non-fast-forward under set -e with git's raw error and a local merge commit stays (exit 1, nothing merged); fix: fetch origin <branch> before the merge and die 1 with a land: message when origin is ahead
+  note: land.sh:160 a failing gh pr merge (head moved, repo disallows merge commits) exits through set -e with gh's own error and no land: line or merge line; fix: on failure die 1 and print $mergeline
+  note: SKILL.md give-back step 3 now says note, move, spawn and then "Close the old tab first" in the same item - the order reads contradictory; put the close-tab sentence before the spawn
+  note: known limit, in notes: a repo with no CI checks reads as not green (gh pr checks exits 1), so land.sh never merges there and the person does
+test-verdict: "pass: round 3 (only a test added since acd6d7c18, whose full suite was green): go test ./core/role ./core/shipped ./internal/wintrap RC=0, shipped --check ok; DoD 5 verified: generator_fails subtest exits 1, origin branch without master, clean worktree. Board-update files dropped per teamlead (go to master via GPSAR2); git status shows only the ticket file."
+hunt-verdict: "pass: bughunt done at 453ea7000, 0 change, 0 pre-existing"
+review-verdict: "accept: all five DoD items met and tested (11 land.sh cases incl. generator failure, two pr-gate --merge tests); go test ./core/role ./internal/cli ./core/shipped green at 453ea7000; merge stays behind .jaira/land=agent read off the base, tickets in done, named commits, green CI and the judged head; only small error-message edges left as notes"
+review-round: 4
 review-verdict-gaps: |-
-  note: land.sh regeneration-failure path (merge --abort + reset --hard to the pre-merge HEAD, land.sh:122-125) has no test case in TestLandMergesOnlyWhereTheBoardLetsIt - add a case with a generator that exits 1 and assert exit 1, nothing pushed, clean worktree
-  note: known limit, documented in notes: a repo with no CI checks reads as not green (gh pr checks exits 1), so land.sh never merges there and the person does
-  note: not this ticket: the worktree holds uncommitted board-update text in .jaira/lanes/*.md, AGENTS.md, CLAUDE.md - commit it under its own ticket or drop it before landing; land.sh itself refuses a dirty tree
+  note: land.sh:139 compares HEAD with the local refs/remotes/origin/<branch> without fetching it - when someone else pushed to the branch, git push fails non-fast-forward under set -e with git's raw error and a local merge commit stays (exit 1, nothing merged); fix: fetch origin <branch> before the merge and die 1 with a land: message when origin is ahead
+  note: land.sh:160 a failing gh pr merge (head moved, repo disallows merge commits) exits through set -e with gh's own error and no land: line or merge line; fix: on failure die 1 and print $mergeline
+  note: SKILL.md give-back step 3 now says note, move, spawn and then "Close the old tab first" in the same item - the order reads contradictory; put the close-tab sentence before the spawn
+  note: known limit, in notes: a repo with no CI checks reads as not green (gh pr checks exits 1), so land.sh never merges there and the person does
 review-check: |-
   1. cd /home/alex/projects/.worktrees/jaira-50ra6n
-  2. go test ./core/role -run TestLand -v 2>&1 | grep -E "^(---|ok)" - see 10 subtests PASS (no land file -> exit 3 with merge line, agent+done -> merged, red CI / foreign conflict / deleted generated file -> exit 1)
-  3. go test ./internal/cli -run PRGateMerge -v 2>&1 | grep -E "^(---|ok)" - see both --merge tests PASS
-  4. go run ./cmd/jaira roles pr-gate --merge upstream/master - see ".jaira/land in upstream/master does not say agent" and "exit status 3", since master has no .jaira/land
-  5. bash core/role/builtin/jaira-teamlead/scripts/land.sh --help - read steps 1-4 and the exit codes 0/1/2/3
+  2. go test ./core/role -run TestLand -v 2>&1 | grep -E "^ *---" - see 11 subtests PASS (no land file / land person / ticket in signoff -> merge line exit 3; agent+done -> merged; foreign conflict, red CI, deleted generated file, failing generator -> exit 1)
+  3. go test ./internal/cli -run PRGate - see ok
+  4. go run ./cmd/jaira roles pr-gate --merge upstream/master; echo $? - see ".jaira/land in upstream/master does not say agent" and 3
+  5. bash core/role/builtin/jaira-teamlead/scripts/land.sh --help - read steps 1-4 and exit codes 0/1/2/3
+  6. read core/role/builtin/jaira-teamlead/SKILL.md section "Landing, stacking and filing away"
 question: ""
 ---
 
@@ -97,3 +100,7 @@ question: ""
 - **2026-11-22 11:33 · Alexander Sacharov** — review: accept, no blocker. Move to signoff refused: the bughunt gate sees uncommitted changes in .jaira/lanes/{critique,in-progress,optimize,pre-process,review,testing}.md, AGENTS.md, CLAUDE.md - board-update text, not this ticket's code, and review commits nothing. Question: what happens to them? 1) (Recommended) commit them on this branch as chore(50RA6N): board update text, then /jaira-role-bughunt 50RA6N, then move to signoff - smallest step, but the PR carries unrelated text. 2) drop them (git checkout -- those 8 files) and move - clean PR, the update is redone later by jaira update. 3) person passes jaira move 50RA6N --to signoff --force - nothing changes, the files stay dirty and land.sh refuses this tree later.
 - **2026-11-22 11:34 · Alexander Sacharov** — worker: review accepted; signoff move blocked by 8 uncommitted files from 'jaira update' to 0.6.1 (.jaira/lanes/*.md, AGENTS.md, CLAUDE.md) - present before this worker started, not on upstream/master. Asked parent: 1) commit as chore(50RA6N): board update to 0.6.1, re-hunt, signoff (Recommended) 2) drop them 3) person forces the move.
 - **2026-11-22 11:34 · Alexander Sacharov** — decision (teamlead 22.11.): board-update files go to master via GPSAR2 -> git checkout -- here; close the review gap now: test land.sh regeneration failure (generator exits 1 -> exit 1, nothing pushed, clean worktree).
+- **2026-11-22 11:35 · Alexander Sacharov** — critique pass 3: reads only 453ea7000 (one test case + regenerate helper, mirrors deleteOnMaster); nothing to say.
+- **2026-11-22 11:36 · Alexander Sacharov** — bughunt: done at 453ea7000 - 0 findings in 1 module, follow-up hunt since acd6d7c18 (diff only: core/role/land_test.go, new generator-fails case checked against land.sh land-regenerate parsing and its die-1 path); concurrency, error paths, input, permissions checked; ran: go test ./core/role -run TestLand -count=3 (ok); files: core/release/notes/50RA6N.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-teamlead/scripts/land.sh core/role/land_test.go core/settings/settings.go core/shipped/shipped.sha256 internal/cli/prgate_test.go internal/cli/roles.go
+- **2026-11-22 11:39 · Alexander Sacharov** — give-back (Teamlead 22.11.): drei kleine Ränder aus review-gaps vor signoff schließen: (1) push abgelehnt, weil origin weiter ist → klare Meldung statt rohem git-Fehler; (2) gh pr merge schlägt fehl → Merge-Zeile trotzdem drucken; (3) SKILL give-back Schritt 3: Reihenfolge Tab schließen vs spawn korrigieren. Bekannte Grenze (Repo ohne CI merged nie per Agent) bleibt.
+- **2026-11-22 11:40 · Alexander Sacharov** — give-back done: origin ahead -> checked before the merge (fetch origin <branch>, exit 2 'git pull origin'); a push refused anyway (race after the check) resets to the pre-merge HEAD and exits 1 — that race path has no test (needs a push between fetch and push); gh pr merge failing prints the merge line, exit 1; SKILL give-back step 3 is one ordered sentence: note, move, close tab, spawn.

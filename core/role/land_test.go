@@ -29,6 +29,8 @@ func TestLandMergesOnlyWhereTheBoardLetsIt(t *testing.T) {
 		upToDate  bool   // master does not move: nothing to merge or push
 		deleteGen bool   // master deletes the generated file the branch changed
 		genFails  bool   // the generator exits 1
+		ahead     bool   // somebody else pushed to origin's branch
+		ghRefuses bool   // gh pr merge fails
 		wantExit  int
 		wantOut   string
 		wantMerge bool
@@ -44,6 +46,8 @@ func TestLandMergesOnlyWhereTheBoardLetsIt(t *testing.T) {
 		{name: "branch already holds the base", land: "agent", status: "done", upToDate: true, wantExit: 0, wantOut: "merged", wantMerge: true, wantPush: true},
 		{name: "base deleted the generated file", land: "agent", status: "done", deleteGen: true, wantExit: 1, wantOut: "gen.txt"},
 		{name: "generator fails", land: "agent", status: "done", genFails: true, wantExit: 1, wantOut: "regenerating gen.txt failed"},
+		{name: "origin's branch is ahead", land: "agent", status: "done", ahead: true, wantExit: 2, wantOut: "git pull origin"},
+		{name: "gh refuses the merge", land: "agent", status: "done", ghRefuses: true, wantExit: 1, wantOut: "gh pr merge 7 --repo o/r --merge", wantPush: true},
 		{name: "uncommitted change", land: "agent", status: "done", dirty: true, wantExit: 2, wantOut: "uncommitted"},
 	}
 	for _, c := range cases {
@@ -68,6 +72,12 @@ func TestLandMergesOnlyWhereTheBoardLetsIt(t *testing.T) {
 			}
 			if c.red {
 				r.write(t, r.checksFail, "")
+			}
+			if c.ghRefuses {
+				r.write(t, r.checksFail+".merge", "")
+			}
+			if c.ahead {
+				r.pushToBranch(t, "feat/"+strings.ToLower(h))
 			}
 			if c.dirty {
 				r.write(t, filepath.Join(wt, "other.txt"), "dirty\n")
@@ -107,7 +117,7 @@ func TestLandMergesOnlyWhereTheBoardLetsIt(t *testing.T) {
 					t.Errorf("last commit on the branch = %q", got)
 				}
 			}
-			if c.conflict || c.deleteGen || c.genFails {
+			if c.conflict || c.deleteGen || c.genFails || c.ahead {
 				if st := r.git(t, wt, "status", "--porcelain", "--untracked-files=no"); st != "" {
 					t.Errorf("a stopped merge left the worktree dirty:\n%s", st)
 				}
@@ -151,6 +161,7 @@ case "$*" in
     echo "{\"state\":\"OPEN\",\"headRefName\":\"$(git symbolic-ref --short HEAD)\",\"baseRefName\":\"master\"}" ;;
   "pr checks 7 --repo o/r"*) [ -e "` + r.checksFail + `" ] && { printf 'test\tfail\n'; exit 1; }; printf 'test\tpass\n' ;;
   "pr merge 7 --repo o/r --merge --match-head-commit "*)
+    [ -e "` + r.checksFail + `.merge" ] && { echo "Pull request is not mergeable" >&2; exit 1; }
     [ "${8:-}" = "$(git rev-parse HEAD)" ] || { echo "head moved" >&2; exit 1; }
     echo "$*" >> "` + r.merged + `" ;;
   *) exit 1 ;;
@@ -242,6 +253,17 @@ func (r *landRig) advanceMaster(t *testing.T, conflict, gen bool) {
 	r.git(t, seed, "add", "-A")
 	r.git(t, seed, "commit", "-qm", "chore: master moves on")
 	r.git(t, seed, "push", "-q", "origin", "master")
+}
+
+// pushToBranch lands a commit on origin's copy of branch from another clone.
+func (r *landRig) pushToBranch(t *testing.T, branch string) {
+	t.Helper()
+	other := filepath.Join(r.tmp, "other")
+	r.git(t, r.tmp, "clone", "-q", "-b", branch, r.origin, other)
+	r.write(t, filepath.Join(other, "elsewhere.txt"), "pushed by somebody else\n")
+	r.git(t, other, "add", "elsewhere.txt")
+	r.git(t, other, "commit", "-qm", "feat: somebody else")
+	r.git(t, other, "push", "-q", "origin", branch)
 }
 
 // regenerate replaces .jaira/land-regenerate on master.

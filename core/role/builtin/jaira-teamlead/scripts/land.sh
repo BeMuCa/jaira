@@ -12,6 +12,8 @@ land.sh <pr-number>
 Run in the ticket's worktree, on the branch the pull request comes from.
 GitHub only: gh does the asking, the waiting and the merging.
 
+  0. Stops (exit 2) when origin's copy of the branch has commits this
+     worktree lacks: pull them first.
   1. Merges the pull request's base into the branch. A conflict in a file
      .jaira/land-regenerate names is taken from the base and regenerated; any
      other conflict aborts the merge and stops (exit 1), nothing pushed.
@@ -25,6 +27,7 @@ GitHub only: gh does the asking, the waiting and the merging.
      agent and every ticket on the branch is in done. Yes: gh pr merge
      --merge, then reap.sh closes the ticket's tabs and worktree. No: prints
      the reason and the merge line for a person, merges nothing (exit 3).
+     gh refusing the merge prints the merge line too (exit 1).
 
 .jaira/land-regenerate — read as the base holds it, like .jaira/land — has
 one generated file per line, '<path>: <command>'; the command runs from the
@@ -83,6 +86,12 @@ for r in $(git remote); do
   if grep -qiE "$pat" <<<"$(git remote get-url "$r" 2>/dev/null || true)"; then remote="$r"; break; fi
 done
 [ -n "$remote" ] || die 2 "no remote here points at $repo — git remote add upstream <its url>"
+# origin's copy of the branch first: a push somebody made there would make
+# ours fail non-fast-forward after the merge, with nothing said about why.
+if git fetch -q origin "$branch" 2>/dev/null &&
+  ! git merge-base --is-ancestor "refs/remotes/origin/$branch" HEAD; then
+  die 2 "origin's $branch has commits this worktree lacks — git pull origin $branch, then run again; nothing merged or pushed"
+fi
 git fetch -q "$remote" "$basebranch"
 base="$remote/$basebranch"
 git rev-parse -q --verify "refs/remotes/$base" >/dev/null || die 2 "$base was not fetched"
@@ -137,7 +146,10 @@ elif ! git diff --cached --quiet; then
 fi
 
 if [ "$(git rev-parse HEAD)" != "$(git rev-parse -q --verify "refs/remotes/origin/$branch" || true)" ]; then
-  git push -q origin "HEAD:$branch"
+  if ! git push -q origin "HEAD:$branch"; then
+    git reset -q --hard "$before"
+    die 1 "push to origin's $branch refused — somebody pushed in between; git pull origin $branch, then run again; the local merge is undone"
+  fi
   sleep "${JAIRA_LAND_SETTLE:-30}"
 fi
 if ! gh pr checks "$pr" --repo "$repo" --watch --interval 30 >/dev/null; then
@@ -157,7 +169,11 @@ case "$gate" in
 esac
 # Merge exactly the head the gate and CI judged: a push to the branch while
 # this waited makes gh refuse instead of merging commits nobody checked.
-gh pr merge "$pr" --repo "$repo" --merge --match-head-commit "$(git rev-parse HEAD)" >/dev/null
+if ! gh pr merge "$pr" --repo "$repo" --merge --match-head-commit "$(git rev-parse HEAD)" >/dev/null; then
+  echo "land: gh refused to merge #$pr (gh's reason above: the head moved, or the repository takes no merge commits) — a person merges it"
+  echo "$mergeline"
+  exit 1
+fi
 echo "land: $id #$pr merged into $base"
 main="$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"
 (cd "$main" && "$here/../../jaira-dispatcher/scripts/reap.sh" "$main" 2>&1 | grep -v '^waiting' || true)
