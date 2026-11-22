@@ -189,25 +189,31 @@ type OverviewActions = {
   allLanes: () => void
 }
 
+// The head of a pane: one row of buttons as the terminal draws every Button,
+// `[ label ]`, the tabs (if any) on the left and Close at the right edge, so
+// each is one line high and hit anywhere on its brackets. The host's own ×
+// stays beside it; a mod cannot size it, so Close is the one to aim at. The
+// row never wraps: the Overview budgets it one row (OVERVIEW_ROWS), and its
+// widest head, the three tabs and Close, fits an 80-column terminal.
+export function headRow({ Box, Button }: Pick<ElementTable, 'Box' | 'Button'>, key: string, close: { key: string; label: string; onPress: () => void }, left: unknown[] = []) {
+  return (
+    <Box key={key} flexDirection="row" flexWrap="nowrap" justifyContent="space-between">
+      <Box key={`${key}-tabs`} flexDirection="row" flexWrap="nowrap" columnGap={1} flexShrink={0}>{left}</Box>
+      <Box key={`${key}-close`} flexShrink={0}><Button key={close.key} role="dismiss" label={close.label} onPress={close.onPress} /></Box>
+    </Box>
+  )
+}
+
 // `view` null: the board could not be read.
 export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview | null, state: OverviewState, act: OverviewActions, scene: WorkersScene) {
   const person = (who: string) => <Text key="who" color={personColor(who)}>{who}</Text>
-  // The top row: the tabs and Close as one row of the same button — framed,
-  // padded, three rows high — so none stands higher or lower than another and
-  // each is easy to hit. A Button takes no size, so the frame is a Box's. The
-  // open tab is the one with a frame and bold text in the theme's accent (a
-  // theme key, as GROUP); the others are dimmed. Close stays beside the
-  // host's own ×, which is small and absent on a phone.
-  const framed = (key: string, label: string, onPress: () => void, active: boolean | null) => (
-    <Box key={`${key}-frame`} borderStyle="round" paddingX={1} borderColor={active ? 'claude' : undefined} borderDimColor={active === false}>
-      <Button key={key} label={label} variant={active ? 'primary' : undefined} onPress={onPress}>
-        <Text bold={active !== false} color={active ? 'claude' : undefined} dimColor={active === false}>{`  ${label}  `}</Text>
-      </Button>
-    </Box>
+  const close = { key: 'overview-close', label: w.close, onPress: act.close }
+  if (view === null) return <Box flexDirection="column">{headRow({ Box, Button }, 'overview-top-row', close)}<Text dimColor>{w.unread}</Text></Box>
+  // The open tab is drawn as the primary button, in the theme's accent; the
+  // others are dimmed.
+  const tabButton = (tab: OverviewTab, label: string) => (
+    <Button key={`overview-tab-${tab}`} label={label} variant={state.tab === tab ? 'primary' : undefined} dimColor={state.tab !== tab} onPress={() => act.tab(tab)} />
   )
-  const closeButton = framed('overview-close', w.close, act.close, null)
-  if (view === null) return <Box flexDirection="column">{closeButton}<Text dimColor>{w.unread}</Text></Box>
-  const tabButton = (tab: OverviewTab, label: string) => framed(`overview-tab-${tab}`, label, () => act.tab(tab), state.tab === tab)
   // A section folds at its heading; open until the person folds it.
   const section = (key: keyof typeof GROUP, heading: string, rows: Row[]) => {
     const open = state.folded[key] !== true
@@ -306,12 +312,7 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
   }
   return (
     <Box flexDirection="column">
-      <Box key="overview-top-row" flexDirection="row" columnGap={1}>
-        {tabButton('queue', w.tabQueue)}
-        {tabButton('log', w.tabLog)}
-        {tabButton('workers', w.tabWorkers)}
-        {closeButton}
-      </Box>
+      {headRow({ Box, Button }, 'overview-top-row', close, [tabButton('queue', w.tabQueue), tabButton('log', w.tabLog), tabButton('workers', w.tabWorkers)])}
       {state.tab === 'queue' ? queue : state.tab === 'log' ? log : workers()}
     </Box>
   )

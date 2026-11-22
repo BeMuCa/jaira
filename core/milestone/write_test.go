@@ -327,3 +327,31 @@ func TestResolveRefs(t *testing.T) {
 		t.Errorf("empty: %#v, %v", got, err)
 	}
 }
+
+// MatchCase is what puts a rename in case only on disk where the file system
+// ignores case: the file ends up spelled the new way. Skipped where case
+// counts, since there the two names are two files.
+func TestMatchCaseRespellsTheFile(t *testing.T) {
+	dir := t.TempDir()
+	have, want := filepath.Join(dir, "q4-ABC123.md"), filepath.Join(dir, "Q4-ABC123.md")
+	if err := os.WriteFile(have, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if !SameFile(have, want) {
+		t.Skip("this file system keeps case apart")
+	}
+	if err := MatchCase(have, want); err != nil {
+		t.Fatal(err)
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 1 || entries[0].Name() != "Q4-ABC123.md" {
+		var names []string
+		for _, e := range entries {
+			names = append(names, e.Name())
+		}
+		t.Fatalf("dir holds %v, want [Q4-ABC123.md]", names)
+	}
+}
