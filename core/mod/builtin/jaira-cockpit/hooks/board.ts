@@ -563,56 +563,36 @@ export function worktreeOfBranch(porcelain: string, branch: string): string | un
   return worktreesOf(porcelain).find(w => w.branch === branch)?.path
 }
 
-// Which branch a ticket's work rides on, from what git says: the branch
-// holding the newest commit that is the ticket's own — and of several that
-// hold it, the ticket's own: its worktree's branch, else one named
-// <prefix>/<slug> — else the ticket's own worktree's branch, else a
-// <prefix>/<slug> left behind without a worktree. undefined: no branch of the
-// ticket's at all, and spawn.sh makes <prefix>/<slug>. holders is `git branch
-// --contains <that commit>`, slugBranches `git branch --list '*/<slug>'`,
-// both as --format=%(refname:short) lists them.
-// Several branches holding the commit, none of them the ticket's own: the
-// one whose tip every other one's tip has in its history — a wip or a branch
-// stacked on top of it is built on it — and of tips that are equal, the first
-// git lists. Where no tip lies under all the others — master merged into the
-// branch the work rode on after another was stacked on it — neither git's
-// order nor the distance to a tip tells them apart (review and bughunt,
-// QTQW15), and a wrong guess starts a worker in another ticket's worktree:
-// ambiguous names them, and the person picks. under maps a branch to the
-// others whose history holds its tip, from `git merge-base --is-ancestor`.
+// Which branch a ticket's work rides on, in this order and nothing more:
+// the branch its own worktree stands on, else a branch named <prefix>/<slug>
+// (its worktree removed), else the one branch that holds the newest commit
+// that is the ticket's own. Several holding that commit, none of them the
+// ticket's by worktree or name, is never guessed at: ambiguous names them and
+// the person picks (Alex, QTQW15). Three rounds of rules that guessed —
+// git's order, the distance to a tip, which tip lies under which — each
+// started a worker in another ticket's worktree in a case the next round
+// found. undefined: no branch of the ticket's at all, and spawn.sh makes
+// <prefix>/<slug>. base is the default branch, never a carrier; holders is
+// `git branch --contains <that commit>`, slugBranches `git branch --list
+// '*/<slug>'`, both as --format=%(refname:short) lists them.
 export type Carrier = { branch: string; by: 'commit' | 'worktree' | 'name' } | { ambiguous: string[] }
 
-export function holdersOf(holders: string, base: string): string[] {
-  const listed = holders.split('\n').map(l => l.trim()).filter(b => b && b !== base && !b.startsWith('('))
-  // Herdr's review/<branch> only wraps another one listed: never a carrier.
-  return listed.filter(b => !listed.some(o => b.endsWith(`/${o}`)))
-}
-
-export function carrierFor(input: { slug: string; own?: string; base: string; holders?: string; slugBranches?: string; under?: Readonly<Record<string, readonly string[]>> }): Carrier | undefined {
-  const { slug, own, base, holders, slugBranches, under = {} } = input
-  if (holders !== undefined && holders.trim() !== '') {
-    const branches = holdersOf(holders, base)
-    const named = branches.filter(b => b.endsWith(`/${slug}`))
-    const lowest = branches.find(b => branches.every(o => o === b || (under[b] ?? []).includes(o)))
-    const branch = own !== undefined && branches.includes(own) ? own : named[0] ?? lowest
-    if (branch !== undefined) return { branch, by: 'commit' }
-    if (branches.length > 1) return { ambiguous: branches }
-  }
+export function carrierFor(input: { own?: string; base: string; holders?: string; slugBranches?: string }): Carrier | undefined {
+  const { own, base, holders, slugBranches } = input
   if (own !== undefined && own !== base) return { branch: own, by: 'worktree' }
   const named = slugBranches === undefined ? undefined : carrierBranch(slugBranches, base)
-  return named === undefined ? undefined : { branch: named, by: 'name' }
+  if (named !== undefined) return { branch: named, by: 'name' }
+  const branches = holders === undefined ? [] : holdersOf(holders, base)
+  if (branches.length === 1) return { branch: branches[0]!, by: 'commit' }
+  return branches.length > 1 ? { ambiguous: branches } : undefined
 }
 
-// The slug a new worktree for `branch` is made under: the ticket's own,
-// unless a worktree on another branch already stands at that place — then
-// the branch's last part leads, and the path still ends in the ticket's id.
-export function slugFor(porcelain: string, repo: string, id: string, branch: string): string {
-  const slug = id.toLowerCase()
-  const place = newWorktreeFor(repo, slug)
-  const there = worktreesOf(porcelain).find(w => w.path === place)
-  if (there === undefined || there.branch === branch) return slug
-  const head = branch.slice(branch.lastIndexOf('/') + 1).replace(/[^A-Za-z0-9._-]/g, '-')
-  return `${head}-${slug}`
+// The branches a `git branch --contains` listing names, without the default
+// branch, a detached HEAD, or Herdr's review/<branch>, which only wraps
+// another one listed.
+function holdersOf(holders: string, base: string): string[] {
+  const listed = holders.split('\n').map(l => l.trim()).filter(b => b && b !== base && !b.startsWith('('))
+  return listed.filter(b => !listed.some(o => b.endsWith(`/${o}`)))
 }
 
 export function newWorktreeFor(repo: string, branch: string): string {

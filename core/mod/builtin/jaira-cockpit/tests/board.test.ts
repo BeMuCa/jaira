@@ -1682,7 +1682,6 @@ describe('after Accept', () => {
     // A wip holding the same commit has fewer parts and is no reason to leave
     // it; a main checkout detached mid-rebase lists first and is no branch.
     w.holders = ['(HEAD detached at abc123)', 'master', 'feat/mg677r', 'wip']
-    w.contains['@/repo'] = ['feat/mg677r']
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-ZZ99ZZ' })
@@ -2078,26 +2077,15 @@ describe('give back', () => {
     expect(lastNote(w)).toContain('no parent session reachable')
   })
 
-  test('the branch the ticket\'s commits ride on wins over an empty feat/<id>, in the worktree it has', async ($, on) => {
+  test('no worktree of its own: the one branch holding its commit, in the worktree that branch has', async ($, on) => {
     const w = world(on, { herdr: true })
-    w.worktrees = WORKTREES + '\nworktree /.worktrees/repo-fix-login\nHEAD 3\nbranch refs/heads/fix-login\n'
+    w.worktrees = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-fix-login\nHEAD 3\nbranch refs/heads/fix-login\n'
     w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }, { sha: 'c1', subject: 'chore(X1Y2Z3): other' }]
     w.holders = ['fix-login']
     await startSession($)
     await giveBack($, w)
     expect(spawned(w)).toEqual([['--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'worker', '/.worktrees/repo-fix-login']])
     expect(lastNote(w)).toContain('branch fix-login holds the newest commit naming the ticket, worktree /.worktrees/repo-fix-login')
-  })
-
-  test('a branch stacked on the one the work rode on never wins, whatever order git lists them in', async ($, on) => {
-    const w = world(on, { herdr: true })
-    w.worktrees = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-0gmyqb\nHEAD 4\nbranch refs/heads/feat/0gmyqb\n\nworktree /.worktrees/repo-fix-login\nHEAD 3\nbranch refs/heads/fix-login\n'
-    w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }]
-    w.holders = ['feat/0gmyqb', 'fix-login']
-    w.contains['@/repo'] = ['fix-login']
-    await startSession($)
-    await giveBack($, w)
-    expect(spawned(w)[0]?.at(-1)).toBe('/.worktrees/repo-fix-login')
   })
 
   test('several branches hold the commit and none is the ticket\'s own: nothing is started, the teamlead hears which', async ($, on) => {
@@ -2109,19 +2097,21 @@ describe('give back', () => {
     // feat/0gmyqb was stacked on it.
     await startSession($)
     await giveBack($, w)
-    expect(ran(w, 'git', 'merge-base', '--is-ancestor').map(r => r.slice(3, 5))).toEqual([['feat/0gmyqb', 'fix-login'], ['fix-login', 'feat/0gmyqb']])
     expect(spawned(w)).toEqual([])
     expect(lastNote(w)).toContain("feat/0gmyqb and fix-login all hold MG677R's newest commit and none is its own")
     expect(w.submitted[0]).toContain('worker none: feat/0gmyqb and fix-login all hold')
+    // The band says why, not only the note.
+    expect(w.toasts.at(-1)).toContain("MG677R: feat/0gmyqb and fix-login all hold MG677R's newest commit")
   })
 
-  test('a branch whose worktree was removed is checked out again, beside the place an empty feat/<id> holds', async ($, on) => {
+  test('a branch whose worktree was removed is checked out again', async ($, on) => {
     const w = world(on, { herdr: true })
+    w.worktrees = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n'
     w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }]
     w.holders = ['fix-login']
     await startSession($)
     await giveBack($, w)
-    expect(spawned(w)).toEqual([['--branch', 'fix-login', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'fix-login-mg677r', 'MG677R', 'worker', '/repo']])
+    expect(spawned(w)).toEqual([['--branch', 'fix-login', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'worker', '/repo']])
   })
 
   test('two branches hold the commit: the ticket\'s own worktree branch, not the one stacked on it', async ($, on) => {
@@ -2211,41 +2201,33 @@ describe('give back', () => {
 // Of several branches that hold the ticket's newest commit, the ticket's own
 // wins — its worktree's, else the one named after it — so a branch stacked on
 // top of it never takes the work, whatever order git lists them in (QTQW15).
+// Give back takes the ticket's own worktree, else its <prefix>/<slug>, else
+// the one branch holding its own commit — and guesses at nothing else
+// (Alex, QTQW15, after three rounds of guessing rules).
 describe('the branch a ticket rides on', () => {
   const cases: [string, Parameters<typeof carrierFor>[0], string | undefined][] = [
-    ['stacked listed first, no worktree', { slug: 'qtqw15', base: 'master', holders: 'feat/0gmyqb\nfeat/qtqw15\n' }, 'feat/qtqw15'],
-    ['stacked listed last, no worktree', { slug: 'qtqw15', base: 'master', holders: 'feat/qtqw15\nfeat/0gmyqb\n' }, 'feat/qtqw15'],
-    ['a review wrapper beside it', { slug: 'qtqw15', base: 'master', holders: 'review/feat/qtqw15\nfeat/qtqw15\nfix-x\n' }, 'feat/qtqw15'],
-    ['its worktree on a branch of another name', { slug: 'qtqw15', own: 'fix-login', base: 'master', holders: 'feat/qtqw15\nfix-login\n' }, 'fix-login'],
-    ['only another ticket\'s branch holds it', { slug: 'qtqw15', own: 'feat/qtqw15', base: 'master', holders: 'feat/0gmyqb\n' }, 'feat/0gmyqb'],
-    ['no commit, its worktree', { slug: 'qtqw15', own: 'feat/qtqw15', base: 'master' }, 'feat/qtqw15'],
-    ['no commit, no worktree, its branch left behind', { slug: 'qtqw15', base: 'master', slugBranches: 'review/feat/qtqw15\nfeat/qtqw15\n' }, 'feat/qtqw15'],
-    ['nothing at all', { slug: 'qtqw15', base: 'master', holders: '', slugBranches: '' }, undefined],
-    ['only the base holds it', { slug: 'qtqw15', base: 'master', holders: 'master\n' }, undefined],
-    ['one branch of another name holds it', { slug: 'qtqw15', base: 'master', holders: 'fix-login\n' }, 'fix-login'],
-    ['one branch and its review wrapper', { slug: 'qtqw15', base: 'master', holders: 'review/fix-login\nfix-login\n' }, 'fix-login'],
-    ['a branch stacked on its branch, listed first', { slug: 'qtqw15', base: 'master', holders: 'feat/0gmyqb\nfix-login\n', under: { 'fix-login': ['feat/0gmyqb'] } }, 'fix-login'],
-    ['a wip on its branch, listed last', { slug: 'qtqw15', base: 'master', holders: 'fix-login\nwip\n', under: { 'fix-login': ['wip'] } }, 'fix-login'],
-    ['two equal tips: git\'s order', { slug: 'qtqw15', base: 'master', holders: 'fix-login\nwip\n', under: { 'fix-login': ['wip'], wip: ['fix-login'] } }, 'fix-login'],
-    ['three, one under both others', { slug: 'qtqw15', base: 'master', holders: 'a\nb\nfix-login\n', under: { 'fix-login': ['a', 'b'], a: ['b'] } }, 'fix-login'],
+    ['its worktree, whatever holds the commit', { own: 'feat/qtqw15', base: 'master', holders: 'feat/0gmyqb\nfix-login\n' }, 'feat/qtqw15'],
+    ['its worktree on a branch of another name', { own: 'fix-login', base: 'master' }, 'fix-login'],
+    ['no worktree, its branch left behind', { base: 'master', slugBranches: 'review/feat/qtqw15\nfeat/qtqw15\n', holders: 'feat/0gmyqb\n' }, 'feat/qtqw15'],
+    ['one holder of another name', { base: 'master', holders: 'fix-login\n' }, 'fix-login'],
+    ['one holder and its review wrapper', { base: 'master', holders: 'review/fix-login\nfix-login\n' }, 'fix-login'],
+    ['the branch the main checkout stands on holds it alone', { base: 'master', holders: 'fix-login\nmaster\n' }, 'fix-login'],
+    ['a detached HEAD is no holder', { base: 'master', holders: '(HEAD detached at c2)\nfix-login\n' }, 'fix-login'],
+    ['nothing at all', { base: 'master', holders: '', slugBranches: '' }, undefined],
+    ['only the default branch holds it', { base: 'master', holders: 'master\n' }, undefined],
   ]
   for (const [name, input, want] of cases) test(name, () => {
     const got = carrierFor(input)
     expect(got !== undefined && 'branch' in got ? got.branch : undefined).toBe(want)
   })
-  // Several hold it and none is the ticket's own: a stacked branch and the
-  // one the work rode on look alike to git, so nothing is picked.
-  for (const holders of ['feat/0gmyqb\nfix-login\n', 'fix-login\nfeat/0gmyqb\n', 'fix-login\nreview/fix-login\nzz-stack\n']) {
-    test(`several, none its own: ${holders.trim().replaceAll('\n', ', ')}`, () => {
-      const got = carrierFor({ slug: 'qtqw15', base: 'master', holders })
-      expect(got !== undefined && 'ambiguous' in got ? [...got.ambiguous].sort() : undefined).toEqual(holders.trim().split('\n').filter(b => !b.startsWith('review/')).sort())
+  for (const holders of ['feat/0gmyqb\nfix-login\n', 'fix-login\nfeat/0gmyqb\n', 'fix-login\nreview/fix-login\nwip\n']) {
+    test(`several holders, none its own, nothing picked: ${holders.trim().replaceAll('\n', ', ')}`, () => {
+      const got = carrierFor({ base: 'master', holders })
+      expect(got !== undefined && 'ambiguous' in got ? got.ambiguous : undefined).toEqual(holders.trim().split('\n').filter(b => !b.startsWith('review/')))
     })
   }
 })
 
-// Only the ticket's own commits say where its work rides: the scope is the
-// handle and nothing else. A follow-up's commit that lists it beside its own,
-// or names it in the text, is the follow-up's (Alex, QTQW15).
 describe('the commit that is a ticket\'s own', () => {
   const log = (...subjects: string[]) => subjects.map((s, i) => `c${i} ${s}`).join('\n')
   const cases: [string, string, string | undefined][] = [

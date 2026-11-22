@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { ElementTable, EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
-  branchesFor, carrierFor, holdersOf, type Carrier, commitNaming, slugFor, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
+  branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf,
   createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, languageOf, nextChoice, NOTE_MARK, rephrasedOf, rephrasePrompt, standOf,
@@ -746,9 +746,11 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   // branch's own word for itself.
   const land = base !== undefined && await landsWithoutPullRequest($, b.repo, base)
   if (typeof asked === 'string' && !land) return { step: stepAfterAccept(0, [], undefined), hint: t.prUnchecked(asked) }
-  const carrier = await ticketBranch($, b, id, porcelain, base)
-  if (carrier !== undefined && 'ambiguous' in carrier) return { step: 'none', hint: t.branchAmbiguous(id, carrier.ambiguous) }
-  const branch = carrier?.branch
+  // Of several branches holding its commit Accept takes the first git lists,
+  // as before QTQW15: a pull request is seen before it lands, a worker in
+  // the wrong worktree is not. Only Give back refuses to pick.
+  const carrier = await ticketBranch($, b, id, porcelain, base, found.base ?? '')
+  const branch = carrier === undefined ? undefined : 'ambiguous' in carrier ? carrier.ambiguous[0] : carrier.branch
   if (branch === undefined || base === undefined || branch === found.base) return { step: 'none', hint: '' }
   // One subject per commit ahead: the count and the tickets in one walk.
   const subjects = await run($, ['git', 'log', '--format=%s', `${base}..${branch}`], b.repo)
@@ -1366,7 +1368,10 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   const place = await workPlace($, board, id)
   // No branch it can tell for the ticket's own: nothing is started, the old
   // tab stays, and the person hears which branches it is between.
-  if (place.stop) return handedTo('none', `${why}; ${place.why}, old tab left open`, `none: ${place.why}`)
+  if (place.stop) {
+    await handedTo('none', `${why}; ${place.why}, old tab left open`, `none: ${place.why}`)
+    return say($, `${id}: ${place.why}`)
+  }
   if (tab !== undefined) await run($, [bin, 'tab', 'close', tab.tab_id], dir)
   // In its own tab, on the branch the ticket's commits ride on, reporting to
   // the ticket's teamlead.
@@ -1383,58 +1388,39 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
 type Place = { args: string[]; slug: string; root: string; branch?: string; why: string; stop?: true }
 
 // The branch a ticket's work rides on, for Accept's pull request and Give
-// back's new worker alike, as carrierFor (board.ts) settles it from git:
-// the newest commit naming the ticket that is not in base yet, the ticket's
-// own worktree, a <prefix>/<slug> left without one. undefined: none.
-async function ticketBranch($: EngineInterface, b: { dir: string; repo: string }, id: string, porcelain: string, base: string | undefined): Promise<Carrier | undefined> {
+// back's new worker alike, as carrierFor (board.ts) settles it: its own
+// worktree's, a <prefix>/<slug>, or the one branch holding its newest own
+// commit; git is asked only as far as the answer is still open. base is
+// what the log counts against, origin's default where there is one; never
+// is the branch that is never a carrier: for Give back the local default
+// branch, so the branch the main checkout stands on counts like any other,
+// for Accept the main checkout's branch, as before QTQW15.
+async function ticketBranch($: EngineInterface, b: { dir: string; repo: string }, id: string, porcelain: string, base: string | undefined, never: string): Promise<Carrier | undefined> {
   const found = branchesFor(porcelain, id)
-  let holders: string | undefined
-  if (base !== undefined) {
-    const log = await run($, ['git', 'log', '--branches', '--not', base, '--format=%H %s'], b.repo)
-    const sha = log?.exitCode === 0 ? commitNaming(log.stdout, id) : undefined
-    const held = sha ? await run($, ['git', 'branch', '--contains', sha, '--format=%(refname:short)'], b.repo) : undefined
-    if (held?.exitCode === 0) holders = held.stdout
-  }
-  // Several hold it: which tips lie under which, so a branch built on the
-  // ticket's never wins over it (carrierFor).
-  const under: Record<string, string[]> = {}
-  const many = holders === undefined ? [] : holdersOf(holders, found.base ?? base ?? '')
-  if (many.length > 1 && !(found.ticket !== undefined && many.includes(found.ticket)) && !many.some(m => m.endsWith(`/${id.toLowerCase()}`))) {
-    for (const a of many) {
-      under[a] = []
-      for (const o of many) {
-        if (o === a) continue
-        const r = await run($, ['git', 'merge-base', '--is-ancestor', a, o], b.repo)
-        if (r?.exitCode === 0) under[a]!.push(o)
-      }
-    }
-  }
-  let slugBranches: string | undefined
-  if (holders === undefined && found.ticket === undefined) {
-    const listed = await run($, ['git', 'branch', '--list', '--format=%(refname:short)', `*/${id.toLowerCase()}`], b.repo)
-    if (listed?.exitCode === 0) slugBranches = listed.stdout
-  }
-  return carrierFor({
-    slug: id.toLowerCase(),
-    ...(found.ticket !== undefined ? { own: found.ticket } : {}),
-    base: found.base ?? base ?? '',
-    ...(holders !== undefined ? { holders } : {}),
-    ...(slugBranches !== undefined ? { slugBranches } : {}),
-    under,
-  })
+  const local = never
+  if (found.ticket !== undefined) return carrierFor({ own: found.ticket, base: local })
+  const listed = await run($, ['git', 'branch', '--list', '--format=%(refname:short)', `*/${id.toLowerCase()}`], b.repo)
+  const slugBranches = listed?.exitCode === 0 ? listed.stdout : undefined
+  const named = carrierFor({ base: local, ...(slugBranches !== undefined ? { slugBranches } : {}) })
+  if (named !== undefined || base === undefined) return named
+  const log = await run($, ['git', 'log', '--branches', '--not', base, '--format=%H %s'], b.repo)
+  const sha = log?.exitCode === 0 ? commitNaming(log.stdout, id) : undefined
+  const held = sha ? await run($, ['git', 'branch', '--contains', sha, '--format=%(refname:short)'], b.repo) : undefined
+  return carrierFor({ base: local, ...(held?.exitCode === 0 ? { holders: held.stdout } : {}) })
 }
 
 async function workPlace($: EngineInterface, b: { dir: string; repo: string }, id: string): Promise<Place> {
   const slug = id.toLowerCase()
   const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
   const porcelain = trees?.exitCode === 0 ? trees.stdout : ''
-  const carrier = await ticketBranch($, b, id, porcelain, (await originDefault($, b.repo)) ?? branchesFor(porcelain, id).base)
+  const base = (await originDefault($, b.repo)) ?? branchesFor(porcelain, id).base
+  const carrier = await ticketBranch($, b, id, porcelain, base, (base ?? '').replace(/^[^/]+\//, ''))
   if (carrier === undefined) return { args: [], slug, root: b.repo, why: 'no branch carries the ticket yet, a new one is made' }
   if ('ambiguous' in carrier) return { args: [], slug, root: b.repo, why: t.branchAmbiguous(id, carrier.ambiguous), stop: true }
   const how = carrier.by === 'commit' ? 'holds the newest commit naming the ticket' : carrier.by === 'worktree' ? "is the ticket's worktree's" : 'is named after the ticket'
   const wt = worktreeOfBranch(porcelain, carrier.branch)
   if (wt !== undefined) return { args: ['--no-worktree'], slug, root: wt, branch: carrier.branch, why: `branch ${carrier.branch} ${how}, worktree ${wt}` }
-  return { args: ['--branch', carrier.branch], slug: slugFor(porcelain, b.repo, id, carrier.branch), root: b.repo, branch: carrier.branch, why: `branch ${carrier.branch} ${how}, its worktree made again` }
+  return { args: ['--branch', carrier.branch], slug, root: b.repo, branch: carrier.branch, why: `branch ${carrier.branch} ${how}, its worktree made again` }
 }
 
 // spawn.sh for a ticket's new worker, with the ticket's teamlead as its
