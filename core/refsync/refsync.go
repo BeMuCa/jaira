@@ -457,9 +457,13 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 // moved on from — the same test a ticket's file gets (hadBefore). A file that
 // differs from its ref in any other way was edited by hand and is what the
 // write is about to send, so it stays; so does one with a write still queued
-// here. Known limit: a hand edit made on a copy that had already fallen
-// behind is such a file too, and the write puts it over the newer ref —
-// 'jaira fetch' before editing a milestone file by hand avoids it. Only files named after their ID are looked at: an old-format file is
+// here. Known limits, both from telling a hand edit from an old copy by its
+// bytes alone: a hand edit made on a copy that had already fallen behind is
+// such a file too, and the write puts it over the newer ref ('jaira fetch'
+// before editing avoids it); and a hand edit that happens to restore an
+// earlier state of the ref — a line just added taken out again — is taken for
+// an old copy and brought up to the ref ('jaira milestone rm'/'add' do it
+// right). Only files named after their ID are looked at: an old-format file is
 // Migrate's, and a ref without a file on this disk is the fetch's to write.
 func (y *Syncer) CatchUpMilestones(root string) error {
 	if y == nil || y.Usable() != nil {
