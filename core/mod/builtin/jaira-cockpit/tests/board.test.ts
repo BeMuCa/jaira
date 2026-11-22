@@ -3920,18 +3920,31 @@ describe('a ticket not on the disk the press writes from', () => {
     expect(ran(w, 'git', 'clean')).toHaveLength(1)
   })
 
-  test('a copy that cannot be taken away is shown with its path, after the press has gone through', async ($, on) => {
+  test('a copy that cannot be taken away is said beside the band, leaving the message pane to what the press said', async ($, on) => {
     const w = world(on)
     w.worktrees = ALONE
     w.disk[MAIN] = 'ref-only'
-    w.cleanFails = "warning: failed to remove .jaira/tickets/01MG677R-cache-key.md: Permission denied"
+    w.cleanFails = 'warning: failed to remove .jaira/tickets/01MG677R-cache-key.md: Permission denied'
+    w.refusals = [{ code: 'dod_open', message: 'definition of done item 2 is open' }]
     await startSession($)
     await press($, w, 'accept')
-    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
-    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Copy of MG677R left behind', focus: true })
-    const text = (await (await $.ui.mount(MESSAGE('Copy of MG677R left behind'))).findAll({ type: 'Text' })).map(x => x.text).join('\n')
-    expect(text).toContain('Permission denied')
-    expect(text).toContain("git clean -fqx -- '/repo/.jaira/tickets/01MG677R-cache-key.md'")
+    // The refusal stays the last pane opened: nothing the copy says replaces it.
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Accept MG677R failed', focus: true })
+    const said = w.toasts.at(-1) ?? ''
+    expect(said).toContain('Permission denied')
+    expect(said).toContain("git clean -fqx -- '/repo/.jaira/tickets/01MG677R-cache-key.md'")
+  })
+
+  test('a lost give-back note stays in the message pane when the copy cannot be taken away either', async ($, on) => {
+    const w = world(on)
+    w.worktrees = ALONE
+    w.disk[MAIN] = 'ref-only'
+    w.cleanFails = 'Permission denied'
+    w.noteFails = true
+    await startSession($)
+    await press($, w, 'give back')
+    expect(w.opened.filter(o => o.id === 'cockpit-message').at(-1)?.title).toBe('Note on MG677R failed')
+    expect(w.toasts.some(x => x.includes('git clean -fqx'))).toBe(true)
   })
 
   for (const how of ['accept', 'give back'] as const) {

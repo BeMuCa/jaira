@@ -563,7 +563,9 @@ async function ticketHere($: EngineInterface, b: { dir: string; repo: string }, 
     dir,
     leave: async () => {
       const r = await run($, ['git', 'clean', '-fqx', '--', path], dir)
-      if (r?.exitCode !== 0) await show($, t.copyLeft(id), t.copyNotRemoved(id, path, output(r)))
+      // A line beside the band, never the message pane: that already holds
+      // what the press itself had to say (a refusal, a note that was lost).
+      if (r?.exitCode !== 0) await say($, t.copyNotRemoved(id, path, output(r)))
     },
   }
 }

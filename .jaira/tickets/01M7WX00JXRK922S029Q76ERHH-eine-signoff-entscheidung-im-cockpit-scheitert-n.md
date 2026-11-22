@@ -20,7 +20,7 @@ related:
   - 01M5ZJ57ARFWR06TS7TJFYHJ39
 commits: []
 created-at: 2026-11-20T16:35:21Z
-updated-at: 2026-11-22T17:16:23Z
+updated-at: 2026-11-22T17:20:37Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2175608
 claimed-at: 2026-11-22T17:03:48Z
@@ -28,13 +28,13 @@ outcome-what: "Accept, Give back und eine gewaehlte Entscheidung im Cockpit zieh
 outcome-why: "Die Entscheidung lief in einem Verzeichnis, dessen Platte das Ticket nicht oder veraltet trug, und jaira lehnte jede Schreibung mit 'on its ref and not on your disk' bzw. stale_file ab."
 outcome-resolves: "Signoff-Entscheidungen im Cockpit scheitern nicht mehr an einem Ticket, das nur im Worktree/auf dem Ref liegt."
 review-summary: none
-review-gaps: "none - geprueft: kein zweiter pull/on-ref-only-Leser im Cockpit (grep hooks/); ticketDir und ticketHere teilen ownTree(); die zweite show/worktree-Lesung in Accept/Give back nach einer decide-Note ist ein Klick-Pfad und bleibt"
-test-verdict: "pass: claude plugin test . 322 pass 0 fail (RC=0), 12 neue Tests fallen ohne den Fix rot; go test core/release core/shipped core/mod gruen; DoD 1-5 im Baum geprueft. Live mit echtem jaira auf einem Scratch-Repo mit Remote: ref-only -> move/note abgelehnt 'on its ref and not on your disk'; pull, move/note, git clean -fqx -- <path> -> Datei weg, Ref traegt Lane und Note (show: on-ref-only true, status todo). Fehlerpfad: pull offline rc=1, keine Datei; pull fremdes Ticket rc=3 'not yours to pull'. Zwei parallele pull+note: beide Noten auf dem Ref."
-hunt-verdict: "fail: 2 change (0 blocker) - 2a: ein gescheitertes git clean laesst die Kopie still im Haupt-Checkout; wird in derselben Runde geschlossen (Interim-Regel 5)"
-round: 2
+review-gaps: "none - Runde 2: der Fix nutzt output() und show(), nichts Neues zu falten"
+test-verdict: "pass: Runde 2 (Diff seit f43fc94d2: register.tsx leave(), texts.ts, board.test.ts): claude plugin test . 323 pass 0 fail (RC=0); neuer Test 'a copy that cannot be taken away is shown with its path' zeigt Fenster 'Copy of MG677R left behind' mit Fehler und git-clean-Zeile; DoD 1-5 mit aktualisierten Proof-Zeilen geprueft. Runde 1: Live-Lauf mit echtem jaira (pull/move/note/git clean, offline rc=1, fremd rc=3, zwei Schreiber)."
+hunt-verdict: "fail: 1 change (Blocker) - leave() ueberschreibt das Meldungsfenster (Ablehnung, noteLost)"
+round: 3
 back-from: testing
 back-by: lane
-back-count: 1
+back-count: 2
 ---
 
 # Eine Signoff-Entscheidung im Cockpit scheitert nicht, wenn das Ticket nur im Worktree liegt
@@ -42,15 +42,15 @@ back-count: 1
 ## Definition of Done
 
 - [x] Accept und Give back auf einem Ticket, das nur im Worktree/auf dem Ref liegt, gelingen (Test)
-  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts:3862 describe 'a ticket not on the disk the press writes from' (accept/give back x own worktree/no worktree x ref-only)
+  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts:3865 describe 'a ticket not on the disk the press writes from' (accept/give back x own worktree/no worktree x ref-only)
 - [x] Ohne Worktree holt das Cockpit das Ticket selbst und entscheidet, statt abzulehnen
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx ticketHere(); test 'accept, no worktree, file ref-only: pulled first, then decided, the pulled copy taken away after'
 - [x] Klasse statt Symptom: jede Schreibaktion einer Entscheidung (decide-Note, Accept inkl. Dry-run, Give back) laeuft erst, wenn die Platte den Ref-Stand traegt - on-ref-only und behind-ref werden vorher mit jaira pull geholt (Tabellentest ueber beide Faelle und den Normalfall)
   proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts table cases × state ref-only|behind|current; register.tsx decide()/accept()/giveBack() all via ticketHere
 - [x] Eine nur fuer die Entscheidung in den Haupt-Checkout gezogene Kopie ist danach wieder weg, auch wenn die Entscheidung scheitert; eine Kopie im eigenen Worktree bleibt
-  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts:3908 'a pulled copy is taken away from the main checkout when the press is refused too'; core/mod/builtin/jaira-cockpit/tests/board.test.ts:3923 failed clean shown with path; cleans:false for own worktree rows
+  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts:3911 'a pulled copy is taken away from the main checkout when the press is refused too'; core/mod/builtin/jaira-cockpit/tests/board.test.ts:3923 failed clean said beside the band, message pane kept; cleans:false for own worktree rows
 - [x] Ein abgelehnter pull (taken/offline) stoppt die Entscheidung mit seiner Meldung, schreibt nichts und nimmt nie --steal
-  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts:3938 'a refused pull stops the press with its reason, writes nothing and never steals'
+  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts:3951 'a refused pull stops the press with its reason, writes nothing and never steals'
 
 ## Options
 
@@ -77,3 +77,7 @@ back-count: 1
 - **2026-11-22 17:14 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:561 - class: the copy pulled into the main checkout can stay there and nobody is told, which is the stale copy the comment at :537 says outranks the ref and shows a lane the ticket left. (a) leave() drops the result of 'git clean' ('void (await run(...))'): a failed or timed-out clean leaves the file silently. (b) the row lock once() frees after BUSY_MS = 20s (register.tsx:96, :862) while a press can run longer (pull 30s + dry run 30s + move 30s + spawn.sh 120s in givingBack); a second press on the same row then finds A's copy as 'current', takes no leave() of its own, and A's leave() cleans the file under it. That second press then either fails with 'on its ref and not on your disk' (the error this ticket removes) or, when its jaira write lands its atomic rename after A's clean, recreates the file, and it stays in the main checkout. example: Give back on a ref-only ticket with no worktree, spawn.sh slow, Accept pressed again on the row after 20s. Not a blocker: needs a slow press plus a second press, or a failing clean. confirmed: read (timing not run)
 - **2026-11-22 17:14 · Alexander Sacharov** — bughunt: done at f43fc94d2 - 2 findings (2 change, 0 blocker, 0 pre-existing) in 3 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/76ERHH.md
 - **2026-11-22 17:15 · Alexander Sacharov** — testing: class: eine Aufraeum-Aktion des Cockpits scheitert still; example: leave() verwirft das Ergebnis von git clean (register.tsx:561); fix: Fehlschlag mit Pfad im Meldungsfenster zeigen, Test mit scheiterndem clean. Bughunt-Fund 1 (Claim durch pull) bleibt known limit: ein Ticket ohne assignee verlaesst backlog nicht, in human/signoff ist pull fuer den eigenen assignee ein No-op und fuer einen fremden abgelehnt (DoD 5). Fund 2b (zweiter Druck nach BUSY_MS 20s waehrend ein langsamer Druck laeuft) bleibt known limit: braucht einen >20s-Druck plus zweiten Druck auf dieselbe Zeile.
+- **2026-11-22 17:16 · Alexander Sacharov** — critique (Runde 2, nur der Fix 4e0a0a440): nichts - leave() zeigt ein gescheitertes git clean mit dem bestehenden show()-Fenster, wie noteLost es fuer eine verlorene Note tut.
+- **2026-11-22 17:18 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/register.tsx:566 - class: leave() runs in finally after the press and calls show(), which replaces the one message pane (messageAtom), so any message the press itself showed is lost whenever git clean fails; places: accept() :1088, giveBack() :1244, decide() :1088-area finally, and the messages they lose: fail() refusals (e.g. 'Accept MG677R failed: definition of done item 2 is open') and noteLost at :1264 and :1187, which holds the only copy of the give-back reason the person typed plus its 'jaira note ... ' paste line (data loss of that text); example: refused Accept + git clean 'Permission denied' -> panes opened: 'Accept MG677R failed' then 'Copy of MG677R left behind', and the mounted Accept pane reads only the copy text; blocker because the reason text is lost, but it needs two failures in one press (a refused write or note, and a refused git clean); ran: scratch copy of the plugin with an added board.test.ts case, claude plugin test . (OPENED shows both panes, the Accept reason missing from the pane)
+- **2026-11-22 17:18 · Alexander Sacharov** — bughunt: done at 4e0a0a440 - 1 finding (1 change, 1 blocker, 0 pre-existing), follow-up hunt since f43fc94d2; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/76ERHH.md
+- **2026-11-22 17:19 · Alexander Sacharov** — bughunt: correction to the change finding above: the finally blocks calling leave() are accept() register.tsx:647, decide() :1088 and giveBack() :1244
