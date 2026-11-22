@@ -87,8 +87,7 @@ move recorded it:
 
 `by: person` is the person's word, not a loop: do what they asked, whatever
 the count. Their reason is in the newest `Given back from <lane>:` or
-`decision:` note. A send-back forced past a lane's `max-rounds` is recorded
-the same way: it is the decision the refusal asked for.
+`decision:` note.
 
 A teamlead that decides to let the loop go on sets `back-count` back to 0
 beside its `decision (teamlead <date>):` note, so a count below 3 is the

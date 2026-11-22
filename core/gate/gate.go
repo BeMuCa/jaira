@@ -447,8 +447,8 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 			vs = append(vs, Violation{
 				Code: CodeMaxRounds,
 				Message: fmt.Sprintf(
-					"lane %q has sent %s back %d times in a row, its max-rounds: the teamlead decides now, or a person. Started with a parent session, leave it here, set the question with 'jaira set %s question=\"<this round's findings; is the definition of done wrong, or does the loop never end?>\"' and send it to that session; without one, move it to %s with --question and the same text. Whoever decides may send it back anyway with --force",
-					cur.ID, ticket.Handle(t.ID), t.BackCount, ticket.Handle(t.ID), where),
+					"lane %q has sent %s back %d times in a row, its max-rounds: the teamlead decides now, or a person. Started with a parent session, leave it here, set the question with 'jaira set %s question=\"<this round's findings; is the definition of done wrong, or does the loop never end?>\"' and send it to that session; without one, move it to %s with --question and the same text. Whoever decides gives the loop its rounds back with 'jaira set %s back-count=0' and sends it back; --force does not",
+					cur.ID, ticket.Handle(t.ID), t.BackCount, ticket.Handle(t.ID), where, ticket.Handle(t.ID)),
 			})
 		}
 	}

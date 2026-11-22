@@ -67,7 +67,7 @@ func TestMaxRoundsRefusalNamesThePersonsLane(t *testing.T) {
 	if v == nil {
 		t.Fatal("not refused")
 	}
-	for _, want := range []string{`"human"`, "--question", "3 times", "the teamlead decides", "parent session", "leave it here", "question="} {
+	for _, want := range []string{`"human"`, "--question", "3 times", "the teamlead decides", "parent session", "leave it here", "question=", "back-count=0", "--force does not"} {
 		if !strings.Contains(v.Message, want) {
 			t.Errorf("message lacks %s: %s", want, v.Message)
 		}

@@ -125,20 +125,18 @@ cockpit stops reading.
    A decision that changes what is built also goes into the definition of
    done, as "A person's answer goes into the definition of done" below
    says. Then tell the worker how to go on, with `SendMessage`. Accepting the
-   work is a move forward and needs nothing more; sending it back for a
-   smaller design is a send-back past the limit, which you or the worker
-   passes `--force` for, the decision note naming why. jaira records that
-   forced send-back as a decision (`back-by: person`, the count at 1), so
-   the loop gets its rounds again. Where the third return already sits in
-   `in-progress`, there is no send-back to force: give the loop its rounds
-   back with `jaira set <id> back-count=0` beside the decision note, or the
-   in-progress worker stops again on count 3 and the lane's next send-back
-   is refused once more.
+   work is a move forward and needs nothing more. Letting the loop go on —
+   another round, or a send-back for a smaller design — takes
+   `jaira set <id> back-count=0` beside the decision note: it gives the lane
+   its rounds back, and the send-back then goes through without `--force`.
+   Without it the in-progress worker stops again on count 3 and the lane's
+   next send-back is refused once more. `--force` does not reset the count:
+   a worker that forces past the limit itself leaves it counting.
 2. **Take it to the person when it is theirs** — what the product should do,
    which of two designs, whether the ticket is worth doing at all. Move the
    ticket into `human` yourself, `jaira move <id> --to human --question
    "<the worker's question>"`, and ask with `AskUserQuestion`, the worker's
-   options unchanged. Only this move puts the ticket in front of the person.
+   options unchanged. Only this move puts the ticket into a person's lane.
 
 A worker with no parent — started by the person directly — still moves the
 ticket to `human` itself; this section is about the ones you started.

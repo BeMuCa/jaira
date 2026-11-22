@@ -1657,9 +1657,9 @@ func TestThirdSendBackGoesToTheTeamleadFirst(t *testing.T) {
 			"## Three rounds of one lane: you decide first",
 			"decision (teamlead <YYYY-MM-DD>)",
 			"jaira set <id> question=",
-			"Only this move puts the ticket in front of the person.",
-			"forced send-back as a decision (`back-by: person`, the count at 1)",
+			"Only this move puts the ticket into a person's lane.",
 			"`jaira set <id> back-count=0` beside the decision note",
+			"`--force` does not reset the count",
 			"started by the person directly — still moves the",
 		},
 	} {

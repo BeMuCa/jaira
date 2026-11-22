@@ -414,12 +414,11 @@ func TestForceOverridesStaleHunt(t *testing.T) {
 	}
 }
 
-// A send-back forced past a loop lane's max-rounds is the decision the
-// refusal asked for — the teamlead's or a person's — and is recorded as one:
-// back-by person, the count starting again, so the next in-progress worker
-// works instead of stopping, and the lane may send back again. A forced
-// send-back the limit did not refuse still counts as the lane's.
-func TestForcePastMaxRoundsIsRecordedAsADecision(t *testing.T) {
+// A send-back a worker forces past a loop lane's max-rounds is no decision:
+// it stays the lane's, and the count goes on rising, so the next worker still
+// stops. Only a reset of back-count — the teamlead's or a person's decision —
+// gives the lane its rounds back, and the send-back then needs no --force.
+func TestForcePastMaxRoundsKeepsCountingUntilAReset(t *testing.T) {
 	s, env := fullBoard(t)
 	tk := mk(t, s, map[string]string{ticket.FieldStatus: "in-progress", ticket.FieldAssignee: "berk"})
 	for i := 1; i <= 3; i++ {
@@ -428,10 +427,6 @@ func TestForcePastMaxRoundsIsRecordedAsADecision(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-	}
-	got, _ := s.Load(tk.ID)
-	if got.BackBy != ticket.BackByLane || got.BackCount != 3 {
-		t.Fatalf("after three forced send-backs under the limit: %q/%d, want lane/3", got.BackBy, got.BackCount)
 	}
 	if _, err := Move(s, env, tk.ID, Request{To: "testing", Actor: "berk", Force: true}); err != nil {
 		t.Fatal(err)
@@ -446,9 +441,29 @@ func TestForcePastMaxRoundsIsRecordedAsADecision(t *testing.T) {
 	if _, err := Move(s, env, tk.ID, Request{To: "in-progress", Actor: "berk", Force: true}); err != nil {
 		t.Fatal(err)
 	}
+	got, _ := s.Load(tk.ID)
+	if got.BackFrom != "testing" || got.BackBy != ticket.BackByLane || got.BackCount != 4 {
+		t.Fatalf("a send-back forced past max-rounds reads %q/%q/%d, want testing/lane/4", got.BackFrom, got.BackBy, got.BackCount)
+	}
+
+	if _, err := s.Mutate(tk.ID, func(t *ticket.Ticket) error {
+		return t.Doc().SetRaw(ticket.FieldBackCount, "0")
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Move(s, env, tk.ID, Request{To: "testing", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	res, err = Move(s, env, tk.ID, Request{To: "in-progress", Actor: "berk"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Refused) > 0 {
+		t.Fatalf("the send-back after back-count=0 was refused: %+v", res.Refused)
+	}
 	got, _ = s.Load(tk.ID)
-	if got.BackFrom != "testing" || got.BackBy != ticket.BackByPerson || got.BackCount != 1 {
-		t.Fatalf("a send-back forced past max-rounds reads %q/%q/%d, want testing/person/1", got.BackFrom, got.BackBy, got.BackCount)
+	if got.BackBy != ticket.BackByLane || got.BackCount != 1 {
+		t.Fatalf("after the reset the send-back reads %q/%d, want lane/1", got.BackBy, got.BackCount)
 	}
 }
 
