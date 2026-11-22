@@ -190,10 +190,20 @@ func checkMilestoneRestore(s *ticket.Store, name string) error {
 		}
 		// An old-format file (<name>.md) counts with the ID its name gives:
 		// Migrate would keep the restored copy and drop it.
-		if _, other, _ := milestone.FileIdentity(b); other == id {
-			return &codedError{code: ExitNotFound, reason: "not_archived",
-				message: fmt.Sprintf("%s is already on the board as %s", base, e.Name())}
+		_, other, idNamed := milestone.FileIdentity(b)
+		if other != id {
+			continue
 		}
+		// A `renamed-to:` marker does not: it is no milestone, and Migrate
+		// only deletes it.
+		if !idNamed {
+			c, err := os.ReadFile(filepath.Join(milestone.Dir(s.Root), e.Name()))
+			if err == nil && milestone.RenamedTo(c) != "" {
+				continue
+			}
+		}
+		return &codedError{code: ExitNotFound, reason: "not_archived",
+			message: fmt.Sprintf("%s is already on the board as %s", base, e.Name())}
 	}
 	return nil
 }

@@ -1398,3 +1398,35 @@ func TestRestoreRefusesBesideAnOldFormatFileOfItsID(t *testing.T) {
 		t.Errorf("the logbook copy went: %v", err)
 	}
 }
+
+// An un-migrated `renamed-to:` marker under the old name is no milestone:
+// it must not refuse a restore of the ID its name gives (8TT890).
+func TestRestoreBesideAnOldRenamedToMarkerIsNotRefused(t *testing.T) {
+	dir := emptyStore(t)
+	_, id, _ := milestone.FileIdentity("q4")
+	if err := os.MkdirAll(milestone.Dir(dir), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	marker := filepath.Join(milestone.Dir(dir), "q4.md")
+	if err := os.WriteFile(marker, []byte("---\nrenamed-to: q5\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	logDir := filepath.Join(dir, ".jaira", "logbook", "me-2026-01-01", "milestones")
+	if err := os.MkdirAll(logDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	logged := filepath.Join(logDir, "q4-"+id+".md")
+	if err := os.WriteFile(logged, []byte("---\ncolor: 45\nstatus: filed\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := runCLI(t, dir, "restore", filepath.Base(logged)); err != nil {
+		t.Fatalf("restore beside a renamed-to marker refused: %v", err)
+	}
+	if _, err := os.Stat(logged); !os.IsNotExist(err) {
+		t.Errorf("the logbook copy is still there: %v", err)
+	}
+	ms, err := milestone.Load(dir, id)
+	if err != nil || ms == nil || ms.Filed() {
+		t.Errorf("q4 not back on the board: %+v %v", ms, err)
+	}
+}
