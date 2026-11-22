@@ -1,7 +1,7 @@
 ---
 id: 01M2N12WVABVRYM7C923WATJDQ
 title: Der GitLab-Arm der pr-Rolle benutzt ein abgekuendigtes Flag und laesst --head weg
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,23 +24,42 @@ tags:
 blocked-by: []
 related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
-commits: []
+commits:
+  - d115846a8628fc31c90a16f6e7843e147536de14
+  - e4bbee7e4a352ec21d1b88090e2e21785813fb22
+  - 82c31cbe703b1079a5f79a86c558a2b43879d22a
+  - b018a065d1e896ac7c88c1eb41412873c204e207
 created-at: 2026-09-16T11:54:25Z
-updated-at: 2026-11-22T18:54:53Z
+updated-at: 2026-11-22T19:32:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-426824
 claimed-at: 2026-11-22T18:44:01Z
 outcome-what: "jaira-role-pr SKILL.md: create lines use glab --repo/--head and gh --head; open-request lookup lists by bare branch, lifts the 30-row default and filters the head owner (gh login case-insensitive, glab source_project_id); release notes; shipped.sha256"
 outcome-why: "glab 1.114 deprecates --target-project and needs --head for a fork MR; gh pr list --head owner:branch listed nothing, so a fork never saw its open PR"
 outcome-resolves: WATJDQ
-review-summary: "none - round 2 adds only the open-request filter: list by bare branch, keep the head owner (gh headRepositoryOwner.login, glab source_project_id). Field names checked against live gh/glab JSON; the output contract (URL or empty) maps onto the existing Nothing/One listed branches."
-review-gaps: "none - the filter is one jq expression per forge; no duplicate of pr-round.sh, which has no list step"
-test-verdict: "pass: round 2 - go vet ./... RC=0, go test -race ./core/role/... ./core/shipped/... ./core/release/... RC=0; DoD 1-2 verified in the tree (SKILL.md:390-409,452,458,485; notes/WATJDQ.md two lines); gh pr list filter run live on BeMuCa/jaira (owner sashasoft90 -> #189, other owner -> empty), glab filter live on gitlab-org/cli; glab create flags parse with no deprecation (round 1); no live MR create (glab unauthenticated); the change writes nothing, so no two-writer case"
-hunt-verdict: "fail: bughunt round 2, 2 change findings (list capped at 30; case-sensitive owner compare) - fixing in round 3"
+review-summary: "jaira-role-pr/SKILL.md: both create lines now name the head explicitly - GitLab 'glab mr create --repo <target> --head <origin path>' instead of the deprecated --target-project, GitHub 'gh pr create --head <owner-of-origin>:<branch>'. The 'already open?' check lists by bare branch (gh pr list --head rejects owner:branch and returned nothing) with --limit 1000, and keeps only requests whose head is origin: GitHub by headRepositoryOwner.login (case-insensitive), GitLab by source_project_id == origin's id (--per-page 100). Two release-note lines in core/release/notes/WATJDQ.md, shipped.sha256 updated for each SKILL.md version."
+review-gaps: |-
+  note: DoD 1 still says 'a line under ## Unreleased in core/release/NOTES.md'; the diff rightly writes core/release/notes/WATJDQ.md (NOTES.md is closed history per CLAUDE.md) - the DoD wording is stale, not the change
+  note: the manual create and open-check lines take the head owner from origin, while scripts/pr-round.sh reads the branch's push remote; a checkout pushing to a remote other than origin gets a wrong --head on the manual path - fix: say "the remote the branch is pushed to" or reuse pr-round.sh's headowner logic
+  note: glab mr list reads one page of 100; more than 100 open MRs from one branch name across forks is implausible, so left as is
+test-verdict: "pass: round 3 - go vet ./core/role/... RC=0, go test -race ./core/role/... ./core/shipped/... ./core/release/... RC=0; DoD 1-2 verified in the tree (SKILL.md:390-414,457,463,490); gh filter live with a case-differing owner -> #189; glab filter with --per-page 100 live on gitlab-org/cli -> 26 URLs; no live MR create (glab unauthenticated); writes nothing, no two-writer case"
+hunt-verdict: "pass: round 3 hunt since e4bbee7e4, 0 findings (bughunt: done at 82c31cbe7)"
 round: 3
 back-from: testing
 back-by: lane
 back-count: 2
+review-verdict: "accept: both DoD items met; glab 1.114 --help lists -R/--repo and -H/--head, gh pr list --help says --head takes no <owner>: prefix; go test ./core/role/... ./core/shipped/... ./core/release/... green; no defect found"
+review-round: 3
+review-verdict-gaps: |-
+  note: DoD 1 still says 'a line under ## Unreleased in core/release/NOTES.md'; the diff rightly writes core/release/notes/WATJDQ.md (NOTES.md is closed history per CLAUDE.md) - the DoD wording is stale, not the change
+  note: the manual create and open-check lines take the head owner from origin, while scripts/pr-round.sh reads the branch's push remote; a checkout pushing to a remote other than origin gets a wrong --head on the manual path - fix: say "the remote the branch is pushed to" or reuse pr-round.sh's headowner logic
+  note: glab mr list reads one page of 100; more than 100 open MRs from one branch name across forks is implausible, so left as is
+review-check: |-
+  1. glab mr create --help | grep -E -- '--repo|--head'  -> both flags listed, plus the example '--repo upstream/project --head your-namespace/project'
+  2. gh pr list --help | grep -- --head  -> '("<owner>:<branch>" syntax not supported)'
+  3. sed -n 382,420p core/role/builtin/jaira-role-pr/SKILL.md  -> gh list by bare branch + headRepositoryOwner filter, glab list with source_project_id filter
+  4. sed -n 440,485p core/role/builtin/jaira-role-pr/SKILL.md  -> both create lines carry --repo and --head, no --target-project left
+  5. go test ./core/role/... ./core/shipped/...  -> ok
 ---
 
 # Der GitLab-Arm der pr-Rolle benutzt ein abgekuendigtes Flag und laesst --head weg
@@ -77,3 +96,4 @@ back-count: 2
 - **2026-11-22 18:53 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/SKILL.md:392-394 and :405-406 - class: the open-request check filters by head owner on the client after the forge has already cut the list to its default page (gh pr list -L 30, glab mr list --per-page 30), so the own request can fall off the page and 'nothing listed' opens a second one; example: a branch named main or master on a target with more than 30 open requests from forks on that branch name; ran: gh pr list --repo microsoft/vscode --head main --state open --json number --jq length (30) vs the same with -L 500 (54). Not a blocker: ticket branches (feat/<id>) never collide that way; a large -L / --per-page closes it
 - **2026-11-22 18:53 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-role-pr/SKILL.md:394 - class: the GitHub owner filter compares logins with case-sensitive jq ==, while SKILL.md never says where <owner-of-origin> comes from (remote URL, nameWithOwner); GitHub logins are case-insensitive, so an owner typed or read from a URL in another case matches nothing and the open pull request reads as none; example: origin git@github.com:SashaSoft90/x.git vs headRepositoryOwner.login sashasoft90; ran: echo '[{"headRepositoryOwner":{"login":"sashasoft90"}}]' | jq '.[]|select(.headRepositoryOwner.login=="SashaSoft90")' (exit 0, no output). Not a blocker: correct when the owner is taken from gh repo view nameWithOwner; name that source or compare with ascii_downcase. GitLab side compares numeric project ids and is unaffected
 - **2026-11-22 18:53 · Alexander Sacharov** — bughunt: done at e4bbee7e4 - 2 findings (2 change, 0 pre-existing, no blocker) in 3 modules, follow-up hunt since d115846a8 (diff only); concurrency, error paths, input, permissions checked; files: core/release/notes/WATJDQ.md core/role/builtin/jaira-role-pr/SKILL.md core/shipped/shipped.sha256
+- **2026-11-22 18:55 · Alexander Sacharov** — bughunt: done at 82c31cbe7 - 0 findings in 3 modules, follow-up hunt since e4bbee7e4 (diff only); concurrency, error paths, input, permissions checked; files: core/release/notes/WATJDQ.md core/role/builtin/jaira-role-pr/SKILL.md core/shipped/shipped.sha256
