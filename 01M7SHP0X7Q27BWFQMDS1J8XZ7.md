@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T23:05:21Z
+updated-at: 2026-11-22T23:05:39Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -34,7 +34,7 @@ outcome-why: "Seeing how far a milestone is meant leaving the cockpit for the bo
 outcome-resolves: "1J8XZ7: Milestones tab in the cockpit Overview with progress and tickets sorted by stand; tickets jaira list does not return are read with jaira show, so filed ones count as done."
 review-summary: none
 review-gaps: "none - pass 2 read only the repair (82710fe25): groupIn is the one place a lane maps to a group for another board, overviewOf keeps its finished/started lists for today's board because the pane needs them per render without a lanes read; board lanes are read once per distinct board, not per ticket"
-test-verdict: "pass: claude plugin test . in core/mod/builtin/jaira-cockpit 402 pass 0 fail (exit 0, 3 new Milestones tests); tsc over the mod 182 errors before and after, none new; go build of cmd/jaira exit 0 (go test not run, house rule: suite once before the PR). DoD 1-5 checked in the tree at the proof lines. Function: overview.ts run under node against the real board's lanes/list/next/milestone ls and jaira show of absent handles - release-0-6-0 reads 3 of 3 done (all logbook; jaira list --milestone gives 0 there), jaira-improvement-findings-1 3 of 17 (done,done,logbook), paging back from the first lands on the last. Failure paths: jaira show of a missing handle exits 5 -> row stays at lane '?'; milestone ls failing -> tab says it could not be read (test). Writers: the change writes no board state, only the session's own state atoms. DoD 6 (seen by a person) left open for the person."
+test-verdict: "pass: round 2 - claude plugin test . 404 pass 0 fail (exit 0) incl. 'a ticket on another board goes by that board's lanes' and 'an opening that finds no milestone keeps the one chosen'; tsc: no new error in hooks; go build exit 0 (no go test, house rule). Real board via node: same groups as round 1 (release-0-6-0 3 of 3 by logbook). Another board exercised only through the mock (the real repo has one board; round 1's hunter reproduced it on a scratch repo). Writes no board state. DoD 6 (seen by a person) left open for the person."
 hunt-verdict: "fail: bughunt done at e68f3d2ab, 3 change findings (1 blocker: another board's tickets grouped by today's lanes), 0 pre-existing"
 round: 2
 back-from: testing
