@@ -361,13 +361,6 @@ func (s *Store) archiveTarget(path string) (src, dst string, err error) {
 // the same way. Whether the caller may reject at all is decided above this
 // line, as it is for delete.
 func (s *Store) Reject(id, kind, why, duplicateOf string, now time.Time) (string, error) {
-	// One line, however it was typed: the archive listing prints the reason
-	// indented under its file, and a second line would read as an entry of
-	// its own.
-	why = strings.Join(strings.Fields(why), " ")
-	if duplicateOf != "" {
-		kind = RejectDuplicate
-	}
 	// Archive refuses a name the archive already holds, and by then the
 	// rejection would be written onto a ticket still on the board. Asked
 	// first, the refusal leaves the ticket as it was.
@@ -379,38 +372,57 @@ func (s *Store) Reject(id, kind, why, duplicateOf string, now time.Time) (string
 		return "", err
 	}
 	t, err := s.Mutate(id, func(t *Ticket) error {
-		if duplicateOf == t.ID {
-			return fmt.Errorf("%s cannot be a duplicate of itself", Handle(t.ID))
-		}
-		d := t.Doc()
-		for _, kv := range [][2]string{
-			{FieldRejectedKind, kind},
-			{FieldRejectedWhy, why},
-			{FieldRejectedBy, s.Actor},
-			{FieldRejectedAt, now.UTC().Format(time.RFC3339)},
-		} {
-			if err := d.SetScalar(kv[0], kv[1]); err != nil {
-				return err
-			}
-		}
-		if duplicateOf == "" {
-			return nil
-		}
-		if err := d.SetScalar(FieldRejectedDuplicateOf, duplicateOf); err != nil {
-			return err
-		}
-		if slices.Contains(t.Related, duplicateOf) {
-			return nil
-		}
-		if err := d.SetScalar(FieldRejectedLinked, "true"); err != nil {
-			return err
-		}
-		return d.SetList(FieldRelated, append(slices.Clone(t.Related), duplicateOf))
+		return StampRejection(t, kind, why, s.Actor, duplicateOf, now)
 	})
 	if err != nil && !errors.Is(err, ErrNotRecorded) {
 		return "", err
 	}
 	return s.Archive(t.ID)
+}
+
+// StampRejection writes the rejection fields onto t's document: kind, the
+// one-line reason, who and when, and for a duplicate the original, which it
+// also relates t to — marking FieldRejectedLinked when that link is new, so
+// restore takes off only what the rejection put there.
+//
+// It is the one place a rejection is written, whether the ticket is a file
+// here (Store.Reject) or lives only on its ref (refsync.Syncer.Reject): the two
+// must leave the same fields, or 'jaira show' tells two stories about one no.
+func StampRejection(t *Ticket, kind, why, by, duplicateOf string, now time.Time) error {
+	// One line, however it was typed: the archive listing prints the reason
+	// indented under its file, and a second line would read as an entry of
+	// its own.
+	why = strings.Join(strings.Fields(why), " ")
+	if duplicateOf != "" {
+		kind = RejectDuplicate
+	}
+	if duplicateOf == t.ID {
+		return fmt.Errorf("%s cannot be a duplicate of itself", Handle(t.ID))
+	}
+	d := t.Doc()
+	for _, kv := range [][2]string{
+		{FieldRejectedKind, kind},
+		{FieldRejectedWhy, why},
+		{FieldRejectedBy, by},
+		{FieldRejectedAt, now.UTC().Format(time.RFC3339)},
+	} {
+		if err := d.SetScalar(kv[0], kv[1]); err != nil {
+			return err
+		}
+	}
+	if duplicateOf == "" {
+		return nil
+	}
+	if err := d.SetScalar(FieldRejectedDuplicateOf, duplicateOf); err != nil {
+		return err
+	}
+	if slices.Contains(t.Related, duplicateOf) {
+		return nil
+	}
+	if err := d.SetScalar(FieldRejectedLinked, "true"); err != nil {
+		return err
+	}
+	return d.SetList(FieldRelated, append(slices.Clone(t.Related), duplicateOf))
 }
 
 // Delete removes a ticket's file and returns the path it was at.
@@ -997,7 +1009,15 @@ func (s *Store) List() ([]*Ticket, error) {
 	for _, t := range out {
 		have[t.ID] = true
 	}
-	out = append(out, s.extra(have)...)
+	for _, t := range s.extra(have) {
+		// A ticket rejected while it lived only on its ref stays there,
+		// rejection and all: no branch carries its file to an archive. It is
+		// off the board all the same — Load and show still find it.
+		if t.Rejected.Kind != "" {
+			continue
+		}
+		out = append(out, t)
+	}
 	if len(problems) > 0 {
 		return out, &PartialError{Problems: problems}
 	}

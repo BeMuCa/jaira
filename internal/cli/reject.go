@@ -9,6 +9,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/BeMuCa/jaira/core/gitref"
+	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -32,6 +34,12 @@ and says what an agent does instead: move the ticket to human with
 --question "reject? reason: ...", where a person decides. On the board, R
 rejects with a one-line reason; in a shell, a person passes --force.
 
+A ticket that lives only on its ref — nobody pulled it here — is rejected
+on the ref: the command fetches, writes the rejection there and leaves no
+file in this checkout, so no branch carries an archive file for it. Everybody
+sees it after their next fetch, and it leaves every board. A ticket with a
+file here is archived here, as before.
+
 'jaira restore' brings a rejected ticket back and takes the rejection off it.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -49,7 +57,7 @@ rejects with a one-line reason; in a shell, a person passes --force.
 			if err != nil {
 				return err
 			}
-			t, err := s.Load(args[0])
+			t, err := loadForReject(s, args[0])
 			if err != nil {
 				return err
 			}
@@ -80,6 +88,9 @@ rejects with a one-line reason; in a shell, a person passes --force.
 				}
 				duplicateOf = orig.ID
 			}
+			if t.ReadOnly {
+				return rejectOnRef(cmd, t, kind, why, duplicateOf)
+			}
 			// Stamped before the ticket leaves the board, as archive does.
 			if env, _, envErr := loadEnv(s); envErr == nil {
 				_, _ = s.StampCommits(t, env.DeriveCommits)
@@ -108,6 +119,78 @@ rejects with a one-line reason; in a shell, a person passes --force.
 	cmd.Flags().StringVar(&duplicateOf, "duplicate-of", "", "the ticket this one duplicates; sets the kind to duplicate")
 	cmd.Flags().BoolVar(&force, "force", false, "you are a person deciding this; an agent asks in the human lane instead")
 	return cmd
+}
+
+// loadForReject finds the ticket to reject wherever it lives: a file here, or
+// only its ref. A person saying "not this" should not have to know which.
+//
+// Not found here, it fetches once and looks again: a ticket created in another
+// clone after this one last fetched is unknown to the local refs, and "not
+// found" for a ticket that exists is the wrong answer. A ticket that is already
+// filed away — rejected or archived — is named as such, not as unknown.
+func loadForReject(s *ticket.Store, arg string) (*ticket.Ticket, error) {
+	t, err := s.Load(arg)
+	if errors.Is(err, ticket.ErrNotFound) && refs.Usable() == nil {
+		if ferr := refs.Repo.Fetch(); ferr == nil {
+			t, err = s.Load(arg)
+		}
+	}
+	if !errors.Is(err, ticket.ErrNotFound) {
+		if err == nil && t.ReadOnly && t.Rejected.Kind != "" {
+			return nil, alreadyRejected(t)
+		}
+		return t, err
+	}
+	if filed, _, ferr := s.LoadAnywhere(arg); ferr == nil {
+		if filed.Rejected.Kind != "" {
+			return nil, alreadyRejected(filed)
+		}
+		return nil, &codedError{code: ExitValidation, reason: "filed_away",
+			message: fmt.Sprintf("%s is already filed away (%s); 'jaira restore' brings it back first",
+				ticket.Handle(filed.ID), filepath.Base(filed.Path))}
+	}
+	return nil, &codedError{code: ExitNotFound, reason: "not_found",
+		message: fmt.Sprintf("%v — not on the board, not on a ref, not filed away", err)}
+}
+
+func alreadyRejected(t *ticket.Ticket) error {
+	return &codedError{code: ExitValidation, reason: "already_rejected",
+		message: fmt.Sprintf("%s is already rejected (%s by %s): %s",
+			ticket.Handle(t.ID), t.Rejected.Kind, t.Rejected.By, t.Rejected.Why)}
+}
+
+// rejectOnRef rejects a ticket that has no file here on its ref, and writes no
+// file anywhere: the rejection reaches everybody with their next fetch, and no
+// branch carries an archive file for a ticket nobody worked.
+func rejectOnRef(cmd *cobra.Command, t *ticket.Ticket, kind, why, duplicateOf string) error {
+	h := ticket.Handle(t.ID)
+	got, err := refs.Reject(t.ID, kind, why, duplicateOf, time.Now())
+	switch {
+	case errors.Is(err, refsync.ErrAlreadyRejected):
+		return alreadyRejected(got)
+	case errors.Is(err, gitref.ErrRaceLost):
+		return &codedError{code: ExitValidation, reason: "race",
+			message: fmt.Sprintf("%s changed on the remote while it was being rejected; nothing was written — run the same command again", h)}
+	case errors.Is(err, refsync.ErrUnsent):
+		return &codedError{code: ExitValidation, reason: "unsent",
+			message: fmt.Sprintf("%s: %v", h, err)}
+	case errors.Is(err, ticket.ErrNotFound):
+		return &codedError{code: ExitNotFound, reason: "not_found",
+			message: fmt.Sprintf("%s: no longer on the remote; nothing was written", h)}
+	case err != nil:
+		return &codedError{code: ExitError, reason: "no_remote",
+			message: fmt.Sprintf("%s lives only on its ref, and the ref could not be reached: %v\n  nothing was written; try again when the remote is reachable", h, err)}
+	}
+	kind = got.Rejected.Kind
+	if g.jsonOut {
+		return emit(cmd.OutOrStdout(), map[string]any{
+			"rejected": true, "id": got.ID, "handle": h,
+			"kind": kind, "why": got.Rejected.Why, "path": "", "file": "", "on-ref-only": true,
+		})
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "Rejected %s (%s)  %s\n", h, kind, got.Title)
+	fmt.Fprintf(cmd.OutOrStdout(), "Written to its ref, not to a file here — everybody sees it after their next 'jaira fetch'.\n")
+	return nil
 }
 
 // questionLane is the lane on t's board that stops for a person's answer —

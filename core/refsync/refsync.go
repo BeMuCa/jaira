@@ -1543,6 +1543,72 @@ func (y *Syncer) Release(id string, force bool) (*Released, error) {
 	return out, nil
 }
 
+// ErrAlreadyRejected means the ref already carries a rejection.
+var ErrAlreadyRejected = errors.New("refsync: the ticket is already rejected")
+
+// Reject writes a rejection onto a ticket that lives only on its ref, and
+// leaves it there: fetch, read, stamp, write back under the lease of what was
+// read.
+//
+// A person who says "not this, because ..." should not have to pick a branch
+// for the ticket's archive file first. Pulled into whatever checkout they stand
+// in, the file would travel in that branch's pull request, the work of an
+// unrelated ticket. On the ref, everybody sees the rejection after their next
+// fetch, and Store.List keeps it off every board.
+//
+// Synchronous like Pull and Release, for their reason: there is nothing to
+// reject without a ref to read. It fetches first, so a stale local copy is
+// never the state stamped. A push the remote refuses because the ref moved
+// since the fetch is gitref.ErrRaceLost, and nothing is written.
+func (y *Syncer) Reject(id, kind, why, duplicateOf string, now time.Time) (*ticket.Ticket, error) {
+	if y == nil || y.Store == nil {
+		return nil, errors.New("refsync: no board here")
+	}
+	if err := y.Usable(); err != nil {
+		return nil, err
+	}
+	if _, ok := y.localPath(id); ok {
+		return nil, fmt.Errorf("refsync: %s has a file here; reject it through the store", ticket.Handle(id))
+	}
+	if _, ok := y.Pending(id); ok {
+		return nil, fmt.Errorf("%w: send it first ('jaira fetch' sends what is queued)", ErrUnsent)
+	}
+	if err := y.Repo.Fetch(); err != nil {
+		return nil, err
+	}
+	content, lease, err := y.Repo.Read(id)
+	if errors.Is(err, gitref.ErrNoRef) {
+		return nil, fmt.Errorf("%s: %w", ticket.Handle(id), ticket.ErrNotFound)
+	}
+	if err != nil {
+		return nil, err
+	}
+	d, err := ticket.ParseDoc(content)
+	if err != nil {
+		return nil, fmt.Errorf("refsync: the ref for %s does not carry a ticket: %w", id, err)
+	}
+	t, err := ticket.Decode(d, "")
+	if err != nil {
+		return nil, err
+	}
+	if t.Rejected.Kind != "" {
+		return t, fmt.Errorf("%s: %w (%s by %s)", ticket.Handle(id), ErrAlreadyRejected, t.Rejected.Kind, t.Rejected.By)
+	}
+	if err := ticket.StampRejection(t, kind, why, y.Actor, duplicateOf, now); err != nil {
+		return nil, err
+	}
+	if err := ticket.Touch(d, now); err != nil {
+		return nil, err
+	}
+	if err := ticket.TouchBy(d, y.Actor); err != nil {
+		return nil, err
+	}
+	if _, err := y.Repo.Write(id, d.Bytes(), lease); err != nil {
+		return nil, err
+	}
+	return ticket.Decode(d, "")
+}
+
 // Extra hands the store the tickets this board can see but has no file for —
 // the ones still travelling on their refs, unpulled. It satisfies
 // ticket.TicketSource.

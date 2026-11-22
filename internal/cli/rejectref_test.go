@@ -1,0 +1,282 @@
+package cli
+
+import (
+	"encoding/json"
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/BeMuCa/jaira/core/gitref"
+	"github.com/BeMuCa/jaira/core/ticket"
+)
+
+// secondClone clones the board's bare repository again — a teammate's
+// checkout, or the main checkout beside a worktree — and gives it a board of its
+// own. It has fetched nothing the first clone created after this moment.
+func secondClone(t *testing.T, first string) string {
+	t.Helper()
+	bare := strings.TrimSpace(gitOut(t, first, "remote", "get-url", "origin"))
+	other := filepath.Join(filepath.Dir(first), "other-"+filepath.Base(t.TempDir()))
+	gitRun(t, filepath.Dir(first), "clone", "--quiet", bare, other)
+	gitRun(t, other, "config", "user.name", "grace")
+	gitRun(t, other, "config", "user.email", "grace@example.test")
+	if out, err := runCLI(t, other, "init"); err != nil {
+		t.Fatalf("init: %v\n%s", err, out)
+	}
+	return other
+}
+
+// onlyRefID is the full id of the one ticket ref in the clone.
+func onlyRefID(t *testing.T, clone string) string {
+	t.Helper()
+	ids, err := (&gitref.Repo{Dir: clone}).List()
+	if err != nil || len(ids) != 1 {
+		t.Fatalf("ticket refs: %v (%v)", ids, err)
+	}
+	return ids[0]
+}
+
+// remoteTicket reads the ticket the remote's ref carries, through a fresh fetch.
+func remoteTicket(t *testing.T, clone, id string) *ticket.Ticket {
+	t.Helper()
+	r := &gitref.Repo{Dir: clone}
+	if err := r.Fetch(); err != nil {
+		t.Fatal(err)
+	}
+	content, _, err := r.Read(id)
+	if err != nil {
+		t.Fatalf("read ref %s: %v", id, err)
+	}
+	d, err := ticket.ParseDoc(content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tk, err := ticket.Decode(d, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return tk
+}
+
+// filesUnder lists every .md under .jaira — tickets, archive, logbook — so a
+// test can say no file was written anywhere in the checkout.
+func filesUnder(t *testing.T, dir string) []string {
+	t.Helper()
+	var out []string
+	_ = filepath.Walk(filepath.Join(dir, ".jaira"), func(p string, info os.FileInfo, err error) error {
+		if err == nil && !info.IsDir() && strings.HasSuffix(p, ".md") && strings.HasPrefix(filepath.Base(p), "01") {
+			out = append(out, p)
+		}
+		return nil
+	})
+	return out
+}
+
+// The HS3K1E accident: the ticket was created in another checkout, this one's
+// refs had not seen it, and it never was a file here. Rejecting it by its short
+// handle now fetches, writes the rejection onto the ref and leaves no file in
+// this checkout; the creator's board drops it after a fetch and show still
+// says why.
+func TestRejectATicketThatLivesOnlyOnAStaleRef(t *testing.T) {
+	for _, form := range []string{"handle", "ulid"} {
+		t.Run(form, func(t *testing.T) {
+			t.Setenv("JAIRA_USER", "ada")
+			creator := cloneWithRemotes(t, "origin")
+			h := ticketIn(t, creator, "nobody needs this")
+			other := secondClone(t, creator)
+			id := onlyRefID(t, creator)
+			arg := h
+			if form == "ulid" {
+				arg = id
+			}
+
+			out, err := runCLI(t, other, "reject", arg, "--why", "not  worth\nit", "--force")
+			if err != nil {
+				t.Fatalf("reject: %v\n%s", err, out)
+			}
+			if !strings.Contains(out, "next 'jaira fetch'") {
+				t.Errorf("output does not say where the rejection went:\n%s", out)
+			}
+			if got := filesUnder(t, other); len(got) != 0 {
+				t.Errorf("reject left a file in the checkout: %v", got)
+			}
+			r := remoteTicket(t, creator, id).Rejected
+			if r.Kind != ticket.RejectWontfix || r.Why != "not worth it" || r.By == "" || r.At.IsZero() {
+				t.Errorf("the ref does not carry the rejection in full: %+v", r)
+			}
+
+			// The creator fetches: the ticket is off the board, and show still
+			// tells what it was and why it will not be done.
+			if out, err := runCLI(t, creator, "fetch"); err != nil {
+				t.Fatalf("fetch: %v\n%s", err, out)
+			}
+			s, err := ticket.At(creator)
+			if err != nil {
+				t.Fatal(err)
+			}
+			all, _ := s.List()
+			for _, tk := range all {
+				if tk.ID == id {
+					t.Errorf("the rejected ticket is still on the creator's board")
+				}
+			}
+			out, err = runCLI(t, creator, "show", h)
+			if err != nil || !strings.Contains(out, "not worth it") {
+				t.Errorf("show does not say why it was rejected: %v\n%s", err, out)
+			}
+		})
+	}
+}
+
+// A ticket somebody pulled into this branch is rejected the way it always was:
+// archived here, where its file is.
+func TestRejectATicketWithAFileHereStillArchivesIt(t *testing.T) {
+	t.Setenv("JAIRA_USER", "ada")
+	clone := cloneWithRemotes(t, "origin")
+	h := ticketIn(t, clone, "pulled and dropped")
+	if out, err := runCLI(t, clone, "pull", h); err != nil {
+		t.Fatalf("pull: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, clone, "reject", h, "--why", "changed our mind", "--force", "--json")
+	if err != nil {
+		t.Fatalf("reject: %v\n%s", err, out)
+	}
+	var got map[string]any
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("not json: %v\n%s", err, out)
+	}
+	if got["path"] == "" || got["on-ref-only"] == true {
+		t.Errorf("a ticket with a file was not archived here: %v", got)
+	}
+	id := onlyRefID(t, clone)
+	if r := archivedTicket(t, clone, id).Rejected; r.Why != "changed our mind" {
+		t.Errorf("archived without the rejection: %+v", r)
+	}
+}
+
+// installRaceHook makes the next push of the ticket's ref lose a race: a
+// pre-push hook pushes another commit onto the same ref first, after the
+// command has fetched and read its lease — the window a teammate's write lands
+// in.
+func installRaceHook(t *testing.T, clone, id string) {
+	t.Helper()
+	ref := gitref.RefName(id)
+	guard := filepath.Join(t.TempDir(), "raced")
+	script := "#!/bin/sh\n" +
+		"[ -f '" + guard + "' ] && exit 0\n" +
+		"touch '" + guard + "'\n" +
+		"tree=$(git rev-parse " + ref + "^{tree}) || exit 1\n" +
+		"c=$(git commit-tree \"$tree\" -p " + ref + " -m race) || exit 1\n" +
+		"git push --quiet --no-verify origin \"$c:" + ref + "\" || exit 1\n"
+	hooks := filepath.Join(clone, ".git", "hooks")
+	if err := os.MkdirAll(hooks, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(hooks, "pre-push"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Every way a reject of a ref-only ticket can fail says so in one line and
+// with an exit code a script can branch on — and writes nothing.
+func TestRejectOnTheRefRefusals(t *testing.T) {
+	cases := []struct {
+		name   string
+		setup  func(t *testing.T, clone, h, id string) string // returns the argument
+		code   int
+		reason string
+		says   string
+	}{
+		{
+			name: "unknown ticket",
+			setup: func(t *testing.T, clone, h, id string) string {
+				return "ZZZZZZ"
+			},
+			code: ExitNotFound, says: "ZZZZZZ",
+		},
+		{
+			name: "already rejected on its ref",
+			setup: func(t *testing.T, clone, h, id string) string {
+				if out, err := runCLI(t, clone, "reject", h, "--why", "first no", "--force"); err != nil {
+					t.Fatalf("first reject: %v\n%s", err, out)
+				}
+				return h
+			},
+			code: ExitValidation, reason: "already_rejected", says: "first no",
+		},
+		{
+			name: "already rejected and archived here",
+			setup: func(t *testing.T, clone, h, id string) string {
+				if out, err := runCLI(t, clone, "pull", h); err != nil {
+					t.Fatalf("pull: %v\n%s", err, out)
+				}
+				if out, err := runCLI(t, clone, "reject", h, "--why", "first no", "--force"); err != nil {
+					t.Fatalf("first reject: %v\n%s", err, out)
+				}
+				return id
+			},
+			code: ExitValidation, reason: "already_rejected", says: "first no",
+		},
+		{
+			name: "archived here, not rejected",
+			setup: func(t *testing.T, clone, h, id string) string {
+				if out, err := runCLI(t, clone, "pull", h); err != nil {
+					t.Fatalf("pull: %v\n%s", err, out)
+				}
+				if out, err := runCLI(t, clone, "archive", h); err != nil {
+					t.Fatalf("archive: %v\n%s", err, out)
+				}
+				return h
+			},
+			code: ExitValidation, reason: "filed_away", says: "jaira restore",
+		},
+		{
+			name: "remote unreachable",
+			setup: func(t *testing.T, clone, h, id string) string {
+				gitRun(t, clone, "remote", "set-url", "origin", filepath.Join(t.TempDir(), "gone.git"))
+				return h
+			},
+			code: ExitError, reason: "no_remote", says: "nothing was written",
+		},
+		{
+			name: "ref moved while rejecting",
+			setup: func(t *testing.T, clone, h, id string) string {
+				installRaceHook(t, clone, id)
+				return h
+			},
+			code: ExitValidation, reason: "race", says: "run the same command again",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			t.Setenv("JAIRA_USER", "ada")
+			clone := cloneWithRemotes(t, "origin")
+			h := ticketIn(t, clone, "refused")
+			id := onlyRefID(t, clone)
+			arg := c.setup(t, clone, h, id)
+			before := filesUnder(t, clone)
+
+			out, err := runCLI(t, clone, "reject", arg, "--why", "second no", "--force")
+			if exitCode(err) != c.code {
+				t.Fatalf("exit %d, want %d: %v\n%s", exitCode(err), c.code, err, out)
+			}
+			var ce *codedError
+			if c.reason != "" && (!errors.As(err, &ce) || ce.reason != c.reason) {
+				t.Errorf("reason %v, want %q", err, c.reason)
+			}
+			if !strings.Contains(err.Error(), c.says) {
+				t.Errorf("message %q does not say %q", err.Error(), c.says)
+			}
+			if after := filesUnder(t, clone); strings.Join(after, ",") != strings.Join(before, ",") {
+				t.Errorf("a refused reject changed the checkout: %v -> %v", before, after)
+			}
+			if c.name == "ref moved while rejecting" {
+				if r := remoteTicket(t, clone, id).Rejected; r.Kind != "" {
+					t.Errorf("the lost race still wrote the rejection: %+v", r)
+				}
+			}
+		})
+	}
+}
