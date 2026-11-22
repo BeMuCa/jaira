@@ -5,7 +5,7 @@
 // a session: so it is the same after a night, a restart or another session.
 // register.tsx runs the commands; this file only reads what they printed.
 
-import { isPersons, oneLine, parse, PERSONS_TABS, WORKING, type Agent, type Lane } from './board.ts'
+import { isPersons, oneLine, openOf, parse, PERSONS_TABS, WORKING, type Agent, type Item, type Lane } from './board.ts'
 import type { Tab } from './sessions.ts'
 
 export type Row = {
@@ -125,12 +125,6 @@ export type WorkerState = 'working' | 'idle' | 'question'
 // has open — what it adds to the stone.
 export type Worker = { id: string; role: string; state: WorkerState; lane: string; title: string; open: number }
 
-type Item = { done?: boolean; state?: string }
-
-// The items still open: neither done nor superseded.
-export function openOf(items: readonly Item[] | undefined): number {
-  return (items ?? []).filter(i => i.state !== 'superseded' && i.done !== true).length
-}
 
 // What a subagent is called on the Workers tab, having no tab label.
 export const SUBAGENT = 'subagent'

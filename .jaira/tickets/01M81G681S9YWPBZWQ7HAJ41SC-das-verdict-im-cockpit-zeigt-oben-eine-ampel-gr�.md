@@ -15,13 +15,20 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T11:27:46Z
-updated-at: 2026-11-22T11:33:59Z
+updated-at: 2026-11-22T11:36:14Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1232016
 claimed-at: 2026-11-22T11:29:15Z
 outcome-what: "Verdict-Pane des Cockpits zeigt als erste Zeile eine Ampel (grün/gelb/rot) mit dem ersten Grund und '+N more'"
 outcome-why: "Alex soll ohne Urteil, Gaps und Notizen zu lesen sehen, ob er annehmen kann"
 outcome-resolves: "AJ41SC: fehlende Ampel im Verdict"
+review-summary: |-
+  core/mod/builtin/jaira-cockpit/hooks/board.ts dodOpenOf repeats the open-item filter of overview.ts openOf (done/superseded); move openOf into board.ts (overview.ts already imports board.ts, the other way is a cycle) and count with it
+  core/mod/builtin/jaira-cockpit/hooks/board.ts lightOf pushes the red kind 'dodOpen' with n=0 as a yellow reason for a ticket without dod_items; give it a kind of its own ('dodIncomplete') so texts.ts lightReason needs no n>0 branch
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Das Verdict im Cockpit zeigt oben eine Ampel: grün annehmen, gelb ansehen, rot zurückgeben
@@ -31,7 +38,7 @@ outcome-resolves: "AJ41SC: fehlende Ampel im Verdict"
 - [x] Das Verdict zeigt als erste Zeile eine Ampel (grün/gelb/rot) mit einem kurzen Grund
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1945; test 'a ticket in the band is one row' expects '● red: 1 blocker in the review (+4 more)' as first pane line
 - [x] Die Farbe wird aus vorhandenen Ticketdaten berechnet (review-verdict, Bughunt auf HEAD, Gates, Notizen, seen by a person:), Regeln mit Test pro Farbe
-  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:231 lightOf; core/mod/builtin/jaira-cockpit/tests/board.test.ts:3803 'the verdict light' green/yellow/red
+  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:237 lightOf; core/mod/builtin/jaira-cockpit/tests/board.test.ts 'the verdict light' green/yellow/red
 - [x] Release-Note core/release/notes/<ID>.md, shipped.sha256
   proof: core/release/notes/AJ41SC.md; core/shipped/shipped.sha256 via scripts/shipped-history.sh --write; go test ./core/role ./core/shipped ok
 - [ ] seen by a person: Alex sieht die Ampel im laufenden Cockpit an einem Ticket in signoff
@@ -48,3 +55,4 @@ outcome-resolves: "AJ41SC: fehlende Ampel im Verdict"
 ## Progress
 - **2026-11-22 11:29 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/25712.sock
 - **2026-11-22 11:30 · Alexander Sacharov** — decision (worker, no open question): Ampel-Regeln. rot: Review lehnt ab (REFUSAL), Blocker in review-gaps, Bughunt fail (fehlt/nicht auf HEAD), ein DoD-Punkt ausser 'seen by a person:' offen (= das Gate des Terminal-Lanes). gelb: Review mit Vorbehalt, note:-Zeilen, offener 'seen by a person:'-Punkt, offene Frage, Review aus frueherer Runde, Notizen unbekannt, Bughunt unknown/unbekannt (aeltere jaira), noch kein Review. gruen: sonst. 'Gates' = DoD-Gate, weil der Worker-Statuszeile-gates-Wert nicht am Ticket liegt; Texte englisch wie texts.ts. Erster Grund in Reihenfolge rot vor gelb wird gezeigt, plus '+N' weitere.
+- **2026-11-22 11:34 · Alexander Sacharov** — critique: (1) openOf aus overview.ts nach board.ts ziehen und in dodOpenOf benutzen statt den Filter zu kopieren; (2) gelber Fallback ohne dod_items bekommt eine eigene kind 'dodIncomplete' statt dodOpen n=0.

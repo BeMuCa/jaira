@@ -54,7 +54,7 @@ type Ticket = {
   goal?: string
   status: string
   dod_complete?: boolean
-  dod_items?: { done?: boolean; state?: string; text?: string }[]
+  dod_items?: Item[]
   next_lane?: string
   question?: string
   assignee?: string
@@ -207,13 +207,19 @@ function hasReservation(verdict: string): boolean {
   return RESERVATION.test(unnegated) || REFUSAL.test(verdict)
 }
 
-// The open definition-of-done items, superseded ones left out: those a person
-// ticks at acceptance ('seen by a person: ...') and the rest.
+export type Item = { done?: boolean; state?: string; text?: string }
+
+// The items still open: neither done nor superseded.
+export function openOf(items: readonly Item[] | undefined): number {
+  return (items ?? []).filter(i => i.state !== 'superseded' && i.done !== true).length
+}
+
+// The open definition-of-done items: those a person ticks at acceptance
+// ('seen by a person: ...') and the rest.
 const BY_A_PERSON = /^\s*seen by a person\s*:/i
-function dodOpenOf(items: NonNullable<Ticket['dod_items']>): { person: number; other: number } {
-  const open = items.filter(i => i.state !== 'superseded' && i.done !== true)
-  const person = open.filter(i => BY_A_PERSON.test(i.text ?? '')).length
-  return { person, other: open.length - person }
+function dodOpenOf(items: readonly Item[]): { person: number; other: number } {
+  const person = openOf(items.filter(i => BY_A_PERSON.test(i.text ?? '')))
+  return { person, other: openOf(items) - person }
 }
 
 // The light on top of the Verdict pane: green where the person can accept,
@@ -225,7 +231,7 @@ function dodOpenOf(items: NonNullable<Ticket['dod_items']>): { person: number; o
 export type LightReason =
   | { kind: 'refused' } | { kind: 'blockers'; n: number } | { kind: 'noHunt' } | { kind: 'dodOpen'; n: number }
   | { kind: 'notReviewed' } | { kind: 'reservation' } | { kind: 'oldReview'; round: number } | { kind: 'notesUnknown' }
-  | { kind: 'notes'; n: number } | { kind: 'byAPerson'; n: number } | { kind: 'question' } | { kind: 'huntUnknown' }
+  | { kind: 'notes'; n: number } | { kind: 'byAPerson'; n: number } | { kind: 'dodIncomplete' } | { kind: 'question' } | { kind: 'huntUnknown' }
 export type Light = { color: 'green' | 'yellow' | 'red'; reasons: LightReason[] }
 
 export function lightOf(w: Waiting, hunt: Hunt | undefined): Light {
@@ -245,7 +251,7 @@ export function lightOf(w: Waiting, hunt: Hunt | undefined): Light {
   if (!w.findingsKnown) yellow.push({ kind: 'notesUnknown' })
   if (w.notes.length > 0) yellow.push({ kind: 'notes', n: w.notes.length })
   if (w.dodOpen !== undefined && w.dodOpen.person > 0) yellow.push({ kind: 'byAPerson', n: w.dodOpen.person })
-  if (w.dodOpen === undefined && w.dodComplete === false) yellow.push({ kind: 'dodOpen', n: 0 })
+  if (w.dodOpen === undefined && w.dodComplete === false) yellow.push({ kind: 'dodIncomplete' })
   if (w.question !== '') yellow.push({ kind: 'question' })
   // unknown: a hunted file is changed and not committed; undefined: a jaira
   // that does not say, or a fail in a checkout without the hunt's commit.

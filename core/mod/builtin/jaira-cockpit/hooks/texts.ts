@@ -110,7 +110,8 @@ export const t = {
       case 'refused': return 'the review gives it back'
       case 'blockers': return `${r.n} blocker${s(r.n)} in the review`
       case 'noHunt': return 'no bughunt on HEAD'
-      case 'dodOpen': return r.n > 0 ? `${r.n} DoD item${s(r.n)} open` : 'DoD not complete'
+      case 'dodOpen': return `${r.n} DoD item${s(r.n)} open`
+      case 'dodIncomplete': return 'DoD not complete'
       case 'notReviewed': return 'not reviewed yet'
       case 'reservation': return 'the review has a reservation'
       case 'oldReview': return `review of round ${r.round}, changed since`
