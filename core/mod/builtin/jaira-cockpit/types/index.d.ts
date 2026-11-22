@@ -1,6 +1,6 @@
 // Self-contained, as a contract must be: these mirror hooks/board.ts.
 export type Waiting = {
-  id: string; title: string; lane: string; verdict: string; question: string; acceptTo: string | null; assignee: string; explainable: boolean
+  id: string; title: string; lane: string; verdict: string; question: string; acceptTo: string | null; assignee: string
 }
 export type Counts = { worker: number; review: number; person: number }
 
@@ -26,7 +26,7 @@ declare module 'claude-code' {
       board: BoardView | null
       cache: CacheState
       threads: ThreadTally
-      // The ticket the Give back pane asks "what is missing?" about.
+      // The ticket the Acceptance pane shows.
       giving: string | null
       // The review notes that pane lists, each with what the person chose
       // for it (fix now, follow-up, accept).
@@ -49,8 +49,23 @@ declare module 'claude-code' {
       // the ticket the own-answer pane asks about.
       explaining: { id: string; text: string; decided?: string } | null
       answering: string | null
-      // The ticket the Verdict pane shows: its goal, verdict and every note.
-      verdictTicket: string | null
+      // The Acceptance pane's head and history, read when it was opened:
+      // these mirror hooks/board.ts Story, with what git and the forge add.
+      story: {
+        id: string
+        story?: { title: string; goal: string; what: string; why: string; round: number; back?: { count: number; from: string }; dod: { done: number; superseded: number; total: number }; verdict: string; created?: number }
+        commits?: { commits: number; files: number }
+        release: string[]
+        pr: boolean
+      } | null
+      // What the person typed into the Acceptance pane's field so far.
+      typed: string
+      // Why the last Execute changed nothing - a gate that refused done - by
+      // ticket, shown in the pane until the next press.
+      refusal: { id: string; text: string } | null
+      // Explain on one note, by ticket and note text: the sentence, or ''
+      // while the model is asked.
+      reasons: Record<string, Record<string, string>>
       // The review notes of each ticket in the person's language, original
       // text to the text shown; a note without an entry is shown as written.
       rephrased: Record<string, Record<string, string>>

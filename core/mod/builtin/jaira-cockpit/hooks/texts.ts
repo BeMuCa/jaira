@@ -30,6 +30,46 @@ export const t = {
   waiting: 'Waiting for you',
   accept: 'Accept',
   giveBack: 'Give back',
+  // The Acceptance pane (2V50Y5): one window for Accept, Give back and the
+  // verdict - the ticket, how it got here, and what happens to each note.
+  acceptance: 'Acceptance',
+  acceptanceOf: (id: string) => `Acceptance of ${id}`,
+  done: 'Done:',
+  why: 'Why:',
+  historyHeading: 'History',
+  round: (n: number) => `round ${n}`,
+  backFrom: (count: number, from: string) => `back ${count}x${from ? ` from ${from}` : ''}`,
+  age: (ms: number) => {
+    const min = Math.max(0, Math.floor(ms / 60_000))
+    return min < 60 ? `${min} min` : min < 48 * 60 ? `${Math.floor(min / 60)} h` : `${Math.floor(min / 1440)} days`
+  },
+  dodCount: (done: number, total: number, superseded: number) => `DoD ${done}/${total - superseded}${superseded > 0 ? ` (${superseded} superseded)` : ''}`,
+  huntOnHead: (state: string) => `bughunt ${state === 'ok' ? '✓ on HEAD' : state === 'fail' ? '✗ not on HEAD' : state === 'skipped' ? '– skipped' : '?'}`,
+  review: (verdict: string) => `review: ${verdict || 'none yet'}`,
+  commitsFiles: (commits: number, files: number) => `${commits} commit${commits === 1 ? '' : 's'}, ${files} file${files === 1 ? '' : 's'}`,
+  prOpen: 'pull request exists',
+  releaseNote: 'Release note:',
+  notesChoose: 'Review notes - choose for each:',
+  choiceOk: 'ok',
+  choiceFix: 'fix',
+  choiceTicket: 'ticket',
+  explainNote: '?',
+  explaining: 'explaining…',
+  noReason: 'no explanation came back',
+  explainAll: 'Explain all',
+  execute: 'Execute',
+  // What Execute will do, in the pane's last line before the button.
+  summary: (step: 'giveBack' | 'accept' | 'needWhy' | 'notTerminal', fix: number, followUps: number, to: string) => {
+    const tickets = followUps > 0 ? ` + ${followUps} follow-up ticket${followUps === 1 ? '' : 's'}` : ''
+    switch (step) {
+      case 'giveBack': return `Execute: give back${fix > 0 ? ` with ${fix} note${fix === 1 ? '' : 's'} to fix` : ' with what you typed'}${tickets}`
+      case 'accept': return `Execute: ${to}${tickets}`
+      case 'needWhy': return `Execute: type why the blocker is accepted${tickets}`
+      case 'notTerminal': return 'Execute: nothing to accept in this lane - mark a note fix, or type what is missing'
+    }
+  },
+  notTerminal: (id: string, lane: string) => `${id} waits in ${lane}, which does not end the work: nothing to accept there. Mark a note fix, or type what is missing, to give it back.`,
+  refused: (id: string) => `${id} was not accepted, nothing was changed:`,
   explain: 'Explain',
   discuss: 'Discuss',
   more: (n: number) => `+${n} more`,
@@ -37,20 +77,16 @@ export const t = {
   theirs: (n: number, names: string[]) => `${n} waiting for ${names.join(', ')}`,
   reasonLabel: 'What is missing?',
   reasonPlaceholder: 'goes onto the ticket as a note',
-  // The Give back pane with the review's notes, one row each.
-  gapsHeading: 'Review notes - press a row to change what happens to it:',
-  choice: { now: '[fix now]', later: '[follow-up]', accept: '[accept]' } as Record<string, string>,
   decidedBefore: '(decided before)',
   moreLabel: 'Anything else?',
   morePlaceholder: 'optional, goes onto the ticket with the notes',
-  acceptWithNow: (id: string, n: number) => `${id}: ${n} note${n === 1 ? ' is' : 's are'} marked fix now - press Give back, or mark ${n === 1 ? 'it' : 'them'} follow-up or accept`,
-  blockerNeedsWhy: (id: string) => `${id}: a blocker is not marked fix now - type why it is accepted anyway, or mark it fix now and press Give back`,
-  blockerNeedsTyping: (id: string) => `${id}: the review names a blocker - accepting it needs a reason typed in a terminal or on the desktop; nothing was accepted`,
+  blockerNeedsWhy: (id: string) => `${id}: a blocker is not marked fix - type why it is accepted anyway, or mark it fix`,
+  blockerNeedsTyping: (id: string) => `${id}: a blocker is not marked fix - accepting it needs a reason typed in a terminal or on the desktop; nothing was accepted`,
   whyLabel: 'Why accept it with the blocker?',
   whyPlaceholder: 'required - goes onto the ticket as a decision',
   acceptedDespite: 'accepted with a blocker not fixed',
   alreadyIn: (id: string, lane: string) => `${id} is already in ${lane}: someone else decided it meanwhile. Nothing was written.`,
-  nothingToFix: (id: string) => `${id}: no note is marked fix now and nothing is typed - mark one, type what is missing, or press Accept`,
+  nothingToFix: (id: string) => `${id}: no note is marked fix now and nothing is typed - mark one, type what is missing, or press Execute to accept`,
   followUpsOf: (id: string) => `Follow-up tickets of ${id}`,
   followUpsLost: (id: string, texts: string[]) => `These notes of ${id} were marked follow-up, but jaira created no ticket for them; the note on ${id} names each as not created:\n${texts.map(x => `- ${x}`).join('\n')}`,
   movedMeanwhile: (id: string, lane: string, now: string) => `${id} is no longer in ${lane} but in ${now}: someone else decided it meanwhile. Nothing was written.`,
@@ -100,7 +136,7 @@ export const t = {
   dryRunFailed: "Nothing was written and no update is offered: 'jaira update --roles --lanes --dry-run' gave no preview. It said:",
   close: 'Close',
   bandTitle: 'jaira-cockpit',
-  noRoom: 'No room for a pane here: widen the terminal and press Give back again.',
+  noRoom: 'No room for a pane here: widen the terminal and press Acceptance again.',
   readExplanation: 'Read explanation',
   reviewedIn: (round: number) => `review of round ${round}, changed since`,
   // The band's row: one mark per check, counts for the review's findings.
@@ -111,10 +147,9 @@ export const t = {
   markOldReview: (round: number) => `review of round ${round}`,
   markBlockersUnknown: '? blockers',
   markNotesUnknown: '? notes',
-  // The Verdict pane: what the ticket is for, then the review whole.
+  // The Acceptance pane: what the ticket is for, then how it got here.
   goal: 'Goal:',
-  verdictHeading: 'Verdict:',
-  // The light on top of the Verdict pane: its colour, the reason it names
+  // The light on top of the Acceptance pane: its colour, the reason it names
   // first, and how many more there are.
   light: { green: 'green', yellow: 'yellow', red: 'red' } as Record<'green' | 'yellow' | 'red', string>,
   lightAccept: 'accept',
@@ -139,7 +174,6 @@ export const t = {
       case 'huntUnknown': return 'bughunt unknown'
     }
   },
-  notesHeading: 'Review notes:',
   noVerdict: 'not reviewed yet',
   notesNotKept: 'The notes of that review were not kept: a later lane rewrote them.',
   explanationOf: (id: string) => `Explanation of ${id}`,
@@ -156,8 +190,6 @@ export const t = {
   decisionFor: (id: string, text: string) =>
     `Decision on ${id} in the cockpit's explanation pane, noted on the ticket and not acted on: ${text}`,
   answerOn: (id: string) => `Answer on ${id}`,
-  verdict: 'Verdict',
-  verdictOf: (id: string) => `Review verdict of ${id}`,
   readDecision: 'Read decision',
   decisionOf: (id: string) => `Decision on ${id}`,
   noSpawn: 'A chat of its own opens in a Herdr tab through spawn.sh, and none was found: run jaira roles install.',
