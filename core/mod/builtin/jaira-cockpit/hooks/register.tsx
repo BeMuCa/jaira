@@ -601,11 +601,13 @@ async function fail($: EngineInterface, what: string, why: string): Promise<void
 // an open definition-of-done item or plan step still stops the press.
 async function accept($: EngineInterface, w: Waiting, after?: (dir: string) => Promise<void>): Promise<void> {
   if (!board || w.acceptTo === null) return
-  if (await heldInSignoff($, w)) return
   const dir = await ticketDir($, board, w.id)
   const dry = await run($, ['jaira', 'move', w.id, '--to', w.acceptTo, '--dry-run', '--json'], dir, 30_000)
   const refused = dry === undefined ? 'jaira did not run' : dry.exitCode === 0 ? undefined : otherRefusal(dry.stderr || dry.stdout)
   if (refused !== undefined) return fail($, `${t.accept} ${w.id}`, refused)
+  // After the gates, never before: a ticket an open definition-of-done item
+  // still refuses opens no pull request either.
+  if (await heldInSignoff($, w)) return
   const done = await jaira($, dir, ['move', w.id, '--to', w.acceptTo, '--force'])
   if (movedBefore(done, w.id, w.acceptTo)) return movedFirst($, t.accept, w.id, w.acceptTo)
   if (done.ok) {

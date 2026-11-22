@@ -3979,6 +3979,18 @@ describe('following a pull request (CRASZS)', () => {
       expect(moved(w)).toEqual([])
     })
 
+    test('an open definition-of-done item refuses the press before any pull request is opened', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 3
+      w.refusals = [...w.refusals, { code: 'needs_nonmodel_signal', message: 'the definition of done is not met: criterion 1 is still open' }]
+      await press($)
+      expect(ran(w, 'bash', SPAWN)).toEqual([])
+      expect(ran(w, 'jaira', 'roles')).toEqual([])
+      expect(moved(w)).toEqual([])
+      expect(await paneText($)).toContain('criterion 1 is still open')
+    })
+
     test('pr-when that cannot be read counts as done: Accept moves the ticket as on any board', async ($, on) => {
       const w = world(on, { herdr: true })
       w.rolesFails = true

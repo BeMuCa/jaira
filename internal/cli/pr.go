@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/BeMuCa/jaira/core/pr"
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // prRun and prLook are how 'jaira pr' reaches git, gh and glab; tests swap
@@ -83,6 +84,8 @@ answered with an error.`,
 				return fail(ExitUsage, "usage", "pr: --watch follows one pull request — leave --all out")
 			case watch && g.jsonOut:
 				return fail(ExitUsage, "usage", "pr: --watch prints lines, not JSON")
+			case number < 0:
+				return fail(ExitUsage, "usage", "pr: --number %d is no pull request number", number)
 			case every < minEvery:
 				return fail(ExitUsage, "usage", "pr: --every %s is too short — at least %s", every, minEvery)
 			}
@@ -93,6 +96,7 @@ answered with an error.`,
 				}
 				q.Branch = b
 			}
+			q.Known = knownHandles()
 			st, err := pr.Read(prRun, prLook, q)
 			if err != nil {
 				return prFailure(err)
@@ -112,6 +116,20 @@ answered with an error.`,
 	cmd.Flags().BoolVar(&watch, "watch", false, "follow the pull request and print one line per change until it is merged or closed")
 	cmd.Flags().DurationVar(&every, "every", time.Minute, "with --watch: how long to wait between two reads")
 	return cmd
+}
+
+// knownHandles reports whether a handle names a ticket of this board — on
+// it, in its logbook or in its archive. Without a board nothing is known, so
+// no pull request is labelled with a ticket.
+func knownHandles() func(string) bool {
+	s, err := openStore()
+	if err != nil {
+		return func(string) bool { return false }
+	}
+	return func(h string) bool {
+		t, _, err := s.LoadAnywhere(h)
+		return err == nil && ticket.Handle(t.ID) == h
+	}
 }
 
 func currentBranch(dir string) (string, error) {
@@ -184,7 +202,7 @@ func watchPR(w io.Writer, q pr.Query, st *pr.Status, every time.Duration) error 
 		fmt.Fprintf(w, "%s: %s\n", pr.Label(last), last.State)
 		return nil
 	}
-	q = pr.Query{Dir: q.Dir, Number: last.Number}
+	q = pr.Query{Dir: q.Dir, Number: last.Number, Known: q.Known}
 	failed := ""
 	for {
 		prSleep(every)

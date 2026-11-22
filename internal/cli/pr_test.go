@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 type prExit struct {
@@ -73,25 +75,64 @@ func oneAnswer(node string) string {
 	return `{"data":{"viewer":{"login":"me"},"repository":{"pullRequest":` + node + `}}}`
 }
 
+// prBoard is a board with one ticket, and that ticket's branch: a pull
+// request is labelled only with a handle the board knows.
+func prBoard(t *testing.T) (dir, h, branch string) {
+	t.Helper()
+	dir = t.TempDir()
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Init(); err != nil {
+		t.Fatal(err)
+	}
+	h = ticket.Handle(createTicket(t, dir, "followed"))
+	return dir, h, "feat/" + strings.ToLower(h)
+}
+
+// onBranch puts a fake answer's pull request on branch.
+func onBranch(answer, branch string) string {
+	return strings.ReplaceAll(answer, "feat/craszs", branch)
+}
+
 func TestPRShowsTheCheckedOutBranch(t *testing.T) {
-	calls := fakeForge(t, "feat/craszs", listAnswer(prNode("OPEN", "FAILURE", "2026-11-20T10:00:00Z")))
-	out, err := runCLI(t, t.TempDir(), "pr")
+	dir, h, branch := prBoard(t)
+	calls := fakeForge(t, branch, onBranch(listAnswer(prNode("OPEN", "FAILURE", "2026-11-20T10:00:00Z")), branch))
+	out, err := runCLI(t, dir, "pr")
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
-	for _, want := range []string{"#7 (CRASZS) feat/craszs", "CI: failure", "comments from others: 1"} {
+	for _, want := range []string{"#7 (" + h + ") " + branch, "CI: failure", "comments from others: 1"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output lacks %q:\n%s", want, out)
 		}
 	}
-	if !strings.Contains(strings.Join(*calls, "\n"), "head=feat/craszs") {
+	if !strings.Contains(strings.Join(*calls, "\n"), "head="+branch) {
 		t.Errorf("the read was not for the checked-out branch:\n%s", strings.Join(*calls, "\n"))
 	}
 }
 
+// A branch slug that only looks like a handle names no ticket: fix/master,
+// or a handle this board has never had.
+func TestPRLabelsOnlyTicketsOfThisBoard(t *testing.T) {
+	dir, _, _ := prBoard(t)
+	for _, branch := range []string{"fix/master", "feat/b7xq2m"} {
+		fakeForge(t, branch, onBranch(listAnswer(prNode("OPEN", "SUCCESS", "")), branch))
+		out, err := runCLI(t, dir, "pr")
+		if err != nil {
+			t.Fatalf("%v\n%s", err, out)
+		}
+		if !strings.Contains(out, "#7 "+branch) {
+			t.Errorf("%s: labelled with a ticket the board does not have:\n%s", branch, out)
+		}
+	}
+}
+
 func TestPRWatchReportsEachChangeOnceAndEnds(t *testing.T) {
+	dir, h, branch := prBoard(t)
 	open := prNode("OPEN", "PENDING", "2026-11-20T10:00:00Z")
-	fakeForge(t, "feat/craszs",
+	answers := []string{
 		listAnswer(open),
 		oneAnswer(open), // nothing new
 		"!HTTP 502: Bad Gateway",
@@ -99,18 +140,22 @@ func TestPRWatchReportsEachChangeOnceAndEnds(t *testing.T) {
 		oneAnswer(prNode("OPEN", "FAILURE", "2026-11-20T11:00:00Z")),
 		oneAnswer(prNode("OPEN", "FAILURE", "2026-11-20T11:00:00Z")), // the same again: nothing
 		oneAnswer(prNode("MERGED", "FAILURE", "2026-11-20T11:00:00Z")),
-	)
-	out, err := runCLI(t, t.TempDir(), "pr", "--watch")
+	}
+	for i := range answers {
+		answers[i] = onBranch(answers[i], branch)
+	}
+	fakeForge(t, branch, answers...)
+	out, err := runCLI(t, dir, "pr", "--watch")
 	if err != nil {
 		t.Fatalf("%v\n%s", err, out)
 	}
 	want := []string{
-		"watching #7 (CRASZS) https://x/7: threads: 0 waiting, 0 answered, 0 resolved · comments from others: 1 · CI: pending · settled",
-		"#7 (CRASZS): read failed, trying again in 1m0s: gh: HTTP 502: Bad Gateway",
-		"#7 (CRASZS): read again",
-		"#7 (CRASZS): new comment by bob",
-		"#7 (CRASZS): CI red",
-		"#7 (CRASZS): merged",
+		"watching #7 (" + h + ") https://x/7: threads: 0 waiting, 0 answered, 0 resolved · comments from others: 1 · CI: pending · settled",
+		"#7 (" + h + "): read failed, trying again in 1m0s: gh: HTTP 502: Bad Gateway",
+		"#7 (" + h + "): read again",
+		"#7 (" + h + "): new comment by bob",
+		"#7 (" + h + "): CI red",
+		"#7 (" + h + "): merged",
 	}
 	if got := strings.Split(strings.TrimSpace(out), "\n"); strings.Join(got, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("lines:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
@@ -136,6 +181,7 @@ func TestPRExitCodes(t *testing.T) {
 		{"watch with json", "feat/x", listAnswer(), []string{"pr", "--watch", "--json"}, ExitUsage, "not JSON"},
 		{"every too short", "feat/x", listAnswer(), []string{"pr", "--watch", "--every", "1s"}, ExitUsage, "too short"},
 		{"all with a branch", "feat/x", listAnswer(), []string{"pr", "--all", "feat/x"}, ExitUsage, "--all"},
+		{"negative number", "feat/x", listAnswer(), []string{"pr", "--number", "-3"}, ExitUsage, "no pull request number"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

@@ -269,6 +269,12 @@ func TestReadGitLab(t *testing.T) {
 	if !reflect.DeepEqual(p.Tickets, []string{"B7XQ2M"}) || p.LastForeign.Author != "bob" {
 		t.Errorf("tickets %v, last %+v", p.Tickets, p.LastForeign)
 	}
+	// A handle the board does not know labels nothing.
+	f = &fake{rules: base()}
+	st, err = Read(f.run, found, Query{Branch: "feat/b7xq2m", Known: func(string) bool { return false }})
+	if err != nil || len(st.PRs) != 1 || len(st.PRs[0].Tickets) != 0 {
+		t.Errorf("with nothing known: %+v, %v", st, err)
+	}
 	if !reflect.DeepEqual(p.ChangesRequested, []string{"rev"}) || !reflect.DeepEqual(p.ReviewRequested, []string{"ann"}) || p.Settled {
 		t.Errorf("reviews %v / %v settled %v", p.ChangesRequested, p.ReviewRequested, p.Settled)
 	}
@@ -485,5 +491,28 @@ func TestChangesCIAcrossPending(t *testing.T) {
 				t.Fatalf("got %q, want %q", got, c.want)
 			}
 		})
+	}
+}
+
+func TestTicketsOf(t *testing.T) {
+	cases := []struct {
+		subjects []string
+		branch   string
+		want     []string
+	}{
+		{[]string{"fix(A3K9QP): x"}, "feat/craszs", []string{"A3K9QP", "CRASZS"}},
+		{[]string{"fix(CRASZS): x"}, "feat/craszs", []string{"CRASZS"}},
+		{nil, "feat/craszs", []string{"CRASZS"}},
+		{[]string{"chore: bump"}, "master", []string{}},
+		{nil, "fix/master", []string{"MASTER"}}, // a candidate: Read drops it unless Query.Known knows it
+		{nil, "feat/hotfix", []string{}},
+		{[]string{"fix(B7XQ2M): y"}, "master", []string{"B7XQ2M"}},
+		{nil, "fix/update-flow", []string{}},
+		{nil, "", []string{}},
+	}
+	for _, c := range cases {
+		if got := ticketsOf(c.subjects, c.branch); !reflect.DeepEqual(got, c.want) {
+			t.Errorf("ticketsOf(%q, %q) = %q, want %q", c.subjects, c.branch, got, c.want)
+		}
 	}
 }

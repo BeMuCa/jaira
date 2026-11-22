@@ -103,6 +103,10 @@ type Query struct {
 	Dir    string
 	Branch string
 	Number int
+	// Known reports whether a handle is a ticket of this board. A pull
+	// request is labelled only with handles it knows, so a branch fix/master
+	// or a subject feat(UPDATE) names no ticket. Nil takes every handle.
+	Known func(handle string) bool
 }
 
 // Read asks the forge of the repository in q.Dir for its open pull requests.
@@ -122,10 +126,17 @@ func Read(run Run, look func(string) (string, error), q Query) (*Status, error) 
 		}
 		return out, nil
 	}
+	read := readGitLab
 	if forge == "github" {
-		return readGitHub(call, origin, q)
+		read = readGitHub
 	}
-	return readGitLab(call, origin, q)
+	st, err := read(call, origin, q)
+	if st != nil && q.Known != nil {
+		for i := range st.PRs {
+			st.PRs[i].Tickets = slices.DeleteFunc(st.PRs[i].Tickets, func(h string) bool { return !q.Known(h) })
+		}
+	}
+	return st, err
 }
 
 // forgeOf decides the forge as the cockpit's forgeOf does: git config
@@ -187,23 +198,24 @@ func firstLine(s string) string {
 	return s
 }
 
-// ticketsOf names the tickets a pull request carries: every handle its
-// commit subjects name the way this board's commits do, then the branch's
-// last part where it is a handle — spawn.sh names a ticket's branch
-// <prefix>/<slug>.
+// ticketsOf names the tickets a pull request may carry: every handle its
+// commit subjects name the way this board's commits do, then the slug of a
+// branch named the way spawn.sh names a ticket's, <prefix>/<slug>, where the
+// slug can be a handle — six characters of Crockford's base32, which has no
+// I, L, O or U. Read keeps only those Query.Known knows.
 func ticketsOf(subjects []string, branch string) []string {
 	out := gitrepo.HandlesInSubjects(strings.Join(subjects, "\n"))
 	if out == nil {
 		out = []string{}
 	}
-	last := branch[strings.LastIndexByte(branch, '/')+1:]
-	if h := strings.ToUpper(last); handle.MatchString(h) && !slices.Contains(out, h) {
+	cut := strings.LastIndexByte(branch, '/')
+	if h := strings.ToUpper(branch[cut+1:]); cut > 0 && handle.MatchString(h) && !slices.Contains(out, h) {
 		out = append(out, h)
 	}
 	return out
 }
 
-var handle = regexp.MustCompile(`^[0-9A-Z]{6}$`)
+var handle = regexp.MustCompile(`^[0-9A-HJKMNP-TV-Z]{6}$`)
 
 // newer reports whether RFC 3339 time a is after b; an unreadable a never is.
 func newer(a, b string) bool {
