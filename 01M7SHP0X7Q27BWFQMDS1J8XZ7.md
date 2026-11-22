@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T23:09:34Z
+updated-at: 2026-11-22T23:09:40Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -111,3 +111,4 @@ review-check: |-
 - **2026-11-22 23:04 · BeMuCa** — in-progress round 2: fixed both hunt findings at their cause. (1) shownOf now returns a non-filed ticket's board; showMilestone reads 'jaira lanes --board <b> --json' once per distinct board among them and sets the group with groupIn (terminal=done, agentic or person's=in work, else not started); standOf uses that group before today's lanes. (2) an opening no longer writes overviewMilestone - only a press does; pagedTo treats an unknown id as the first (the one shown), so the first press from a fresh or vanished choice goes to the second. plugin test: 404 pass 0 fail (2 new tests). tsc: hooks have no new errors; tests/board.test.ts gains 5 more of the pre-existing 'MountTarget<terminal, AbovePrompt>' error, one per new $.ui.mount(BAND) - the same types drift every existing BAND mount shows. AGENTS.md/CLAUDE.md drift left unstaged, not this ticket's.
 - **2026-11-22 23:05 · BeMuCa** — critique pass 2 (only the repair, against the two hunt findings): both addressed at their cause - group from the ticket's own board's lanes, and the choice written only by a press. The repair's pagedTo change (unknown id counts as the first, the one shown) keeps paging consistent with what is drawn. No finding.
 - **2026-11-22 23:06 · BeMuCa** — bughunt: done at 82710fe25 - 0 findings in 6 modules, follow-up hunt (diff since e68f3d2ab: overview.ts, register.tsx, board.test.ts, types/index.d.ts, AGENTS.md, CLAUDE.md; no new files); concurrency, error paths, input, permissions checked; files: AGENTS.md CLAUDE.md core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/1J8XZ7.md
+- **2026-11-22 23:09 · BeMuCa** — review: accept, no blocker, 5 notes. The move to signoff was first refused by the hunt-coverage gate because of uncommitted AGENTS.md/CLAUDE.md drift (jaira 0.6.1 regenerated the lanes block, reverting the human-lane line) - not this ticket's. Set aside with git stash (stash message '1J8XZ7 review: AGENTS.md/CLAUDE.md drift ...'), not committed, not dropped; 'git stash pop' brings it back if anyone wants it.
