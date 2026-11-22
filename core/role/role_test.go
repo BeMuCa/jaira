@@ -550,9 +550,18 @@ esac
 		}
 	}
 	// A lane that takes no parent gets none, and --no-parent — what the
-	// cockpit passes, so the worker stays in its own tab — none either.
+	// cockpit passes when its session has no socket, so the worker asks in
+	// its own tab — none either.
 	if out, err := run("ab12cd", "ab12cd", "review"); err != nil || strings.Contains(out, "--parent") {
 		t.Errorf("spawn.sh review: %v\n%s", err, out)
+	}
+	// The pr lane takes a parent only when it is given one: the cockpit
+	// passes its own session after Accept, and the role reports there.
+	if out, err := run("ab12cd", "ab12cd", "pr"); err != nil || !strings.Contains(out, "/jaira-role-pr ab12cd --by-person\n") {
+		t.Errorf("spawn.sh pr without --parent: %v\n%s", err, out)
+	}
+	if out, err := run("--parent", "uds:"+own, "ab12cd", "ab12cd", "pr"); err != nil || !strings.Contains(out, "/jaira-role-pr ab12cd --by-person --parent uds:"+own+"\n") {
+		t.Errorf("spawn.sh --parent pr: %v\n%s", err, out)
 	}
 	if out, err := run("--no-parent", "ab12cd", "ab12cd", "worker"); err != nil || !strings.Contains(out, "/jaira-worker ab12cd\n") {
 		t.Errorf("spawn.sh --no-parent worker: %v\n%s", err, out)
@@ -611,8 +620,9 @@ esac
 		"explain": "Erklaere mir in einfachen Worten das Review zu Ticket ab12cd …",
 		"discuss": "Ticket ab12cd wartet auf eine Entscheidung von mir …",
 		// The cockpit's Accept, a person's press: the flag is what lets
-		// jaira-role-pr open the pull request instead of handing it back.
-		"pr": "/jaira-role-pr ab12cd --by-person",
+		// jaira-role-pr open the pull request instead of handing it back;
+		// the parent is where its stops and report go.
+		"pr": "/jaira-role-pr ab12cd --by-person --parent uds:" + sock,
 	} {
 		_ = os.Remove(typed)
 		cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "lead", "ab12cd", "ab12cd", lane)

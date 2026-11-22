@@ -823,7 +823,7 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
     const added = await run($, ['git', 'worktree', 'add', wt, branch], b.repo, 60_000)
     if (added?.exitCode !== 0) return stuck(`git worktree add ${wt} ${branch}: ${output(added)}`)
   }
-  const r = await run($, [...script, '--no-worktree', id.toLowerCase(), id, 'pr', wt], wt, 120_000)
+  const r = await run($, [...script, '--no-worktree', ...await parentArgs($), id.toLowerCase(), id, 'pr', wt], wt, 120_000)
   if (r?.exitCode !== 0) return stuck(`spawn.sh: ${output(r).slice(-160)}`)
   return said(land ? t.landStarted(id, branch) : t.prStarted(id, branch))
 }
@@ -924,6 +924,19 @@ async function herdr($: EngineInterface): Promise<string | undefined> {
   return script?.[1]?.replace(/spawn\.sh$/, 'herdr-hc.sh')
 }
 
+// The parent a tab this mod starts reports to: this session, by its
+// messaging socket — the address spawn.sh and SendMessage take, as a
+// teamlead's spawn.sh hands its workers. A question or a report then arrives
+// here instead of waiting in a tab nobody looks at (T5QN9P). No socket, or
+// one whose file is gone: no parent at all, and the tab asks in itself as
+// before — spawn.sh refuses a parent nobody listens on, and would start no
+// tab at all.
+async function parentArgs($: EngineInterface): Promise<string[]> {
+  const socket = await $.env.get('CLAUDE_CODE_MESSAGING_SOCKET')
+  const live = socket ? await $.fs.exists(socket).catch(() => false) : false
+  return live ? ['--parent', `uds:${socket}`] : ['--no-parent']
+}
+
 // Explain a review finding, or talk an open question through, in a Herdr tab
 // of its own: the teamlead's chat is not where that conversation belongs.
 // Without Herdr this session is asked instead: Explain by a subagent, which
@@ -940,10 +953,8 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
   }
   const script = await spawnScript($)
   if (script === undefined) return fail($, what, t.noSpawn)
-  // A Discuss chat sends its decision to this session: its messaging socket
-  // is the address SendMessage takes.
-  const socket = kind === 'discuss' ? await $.env.get('CLAUDE_CODE_MESSAGING_SOCKET') : undefined
-  const parent = socket ? ['--parent', `uds:${socket}`] : []
+  // A Discuss chat sends its decision to this session.
+  const parent = kind === 'discuss' ? await parentArgs($) : []
   const r = await run($, [...script, '--no-worktree', ...parent, id.toLowerCase(), id, kind, dir], dir, 120_000)
   if (r?.exitCode !== 0) return fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
   chats.set(`${id}/${kind}`, await $.clock.now())
@@ -1364,8 +1375,8 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   // whatever worker it has.
   if (script === undefined) return handedTo('none', `${why}; no spawn.sh found (jaira roles install), old tab left open`)
   if (tab !== undefined) await run($, [bin, 'tab', 'close', tab.tab_id], dir)
-  // In its own tab, like the one after Accept: not this chat's child.
-  const started = await run($, [...script, '--no-parent', id.toLowerCase(), id, 'worker', board.repo], board.repo, 120_000)
+  // In its own tab, like the one after Accept, reporting to this session.
+  const started = await run($, [...script, ...await parentArgs($), id.toLowerCase(), id, 'worker', board.repo], board.repo, 120_000)
   if (started?.exitCode === 0) return handedTo('new', why)
   await handedTo('none', `${why}; spawn.sh failed: ${(started?.stderr ?? '').trim().slice(-160)}`)
 }
