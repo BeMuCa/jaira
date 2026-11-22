@@ -108,6 +108,11 @@ const OVERVIEW_ROWS = 1
 const SEP = ' | '
 // A filter's choice with one item pressed: out if it was in, in if it was not.
 const toggled = (chosen: string[], x: string) => (chosen.includes(x) ? chosen.filter(y => y !== x) : [...chosen, x])
+// A pane left with nothing to show (its ticket gone from the board, its state
+// cleared) keeps its head: [ Close ] closes it as in every other state.
+const nothingPane = ({ Box, Button, Text }: Pick<ElementTable, 'Box' | 'Button' | 'Text'>, head: string, close: { key: string; onPress: () => void }) => (
+  <Box flexDirection="column">{headRow({ Box, Button }, head, { ...close, label: t.close })}<Text dimColor>{t.paneNothing}</Text></Box>
+)
 
 // ── what this module keeps between events (a reload starts it over) ──────
 
@@ -1704,15 +1709,15 @@ export const register: Register = (on, options) => {
     const table = $.ui.resolve(e)
     const { Box, Button, Text } = table
     const Input = 'Input' in table ? table.Input : undefined
-    if (w === undefined || Input === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
-    // The review's notes, one row each, when it wrote any: a press changes
-    // what happens to it. Without them the pane asks only what is missing.
-    const items = choosing?.id === w.id ? choosing.items : []
     const close = () => {
       void update($, givingAtom, () => null)
       void update($, choosingAtom, () => null)
       void $.ui.close({ id: GIVE_BACK })
     }
+    if (w === undefined || Input === undefined) return nothingPane(table, 'give-back-head', { key: 'give-back-close', onPress: close })
+    // The review's notes, one row each, when it wrote any: a press changes
+    // what happens to it. Without them the pane asks only what is missing.
+    const items = choosing?.id === w.id ? choosing.items : []
     const toggle = (n: number) =>
       void update($, choosingAtom, c => (c === null || c.id !== w.id ? c : { ...c, items: c.items.map((x, i) => (i === n ? { ...x, choice: nextChoice(x.choice) } : x)) }))
     const choiceColour = (c: GapItem['choice']) => (c === 'now' ? 'error' : c === 'later' ? 'suggestion' : 'success')
@@ -1790,7 +1795,7 @@ export const register: Register = (on, options) => {
   on('ui.render', { component: 'Pane', requestId: EXPLANATION }, async ($, e) => {
     const explaining = await read($, explainingAtom)
     const { Box, Button, Text } = $.ui.resolve(e)
-    if (explaining === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    if (explaining === null) return nothingPane({ Box, Button, Text }, 'explanation-head', { key: 'explanation-close', onPress: () => void $.ui.close({ id: EXPLANATION }) })
     const { id, decided } = explaining
     const x = explanationOf(explaining.text)
     const ticket = await waitingTicket($, id)
@@ -1941,7 +1946,7 @@ export const register: Register = (on, options) => {
     const id = await read($, verdictAtom)
     const { Box, Button, Text } = $.ui.resolve(e)
     const w = await waitingTicket($, id)
-    if (w === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    if (w === undefined) return nothingPane({ Box, Button, Text }, 'verdict-head', { key: 'verdict-close', onPress: () => void $.ui.close({ id: VERDICT }) })
     // The light first: whether to accept, at a glance, and the reason it names.
     const light = lightOf(w, (await read($, huntsAtom))[w.id])
     const first = light.reasons[0]
@@ -1998,7 +2003,7 @@ export const register: Register = (on, options) => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const id = await read($, paneAtom)
     const { Box, Button, Text } = $.ui.resolve(e)
-    if (id === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    if (id === null) return nothingPane({ Box, Button, Text }, 'ticket-head', { key: 'ticket-close', onPress: () => void $.ui.close({ id: PANE }) })
     // Opening a ticket reads its reports: they count as read, as after report.
     const kept = await locked(async () => readReports($, keyOf(await project($), id)))
     let csv = ''

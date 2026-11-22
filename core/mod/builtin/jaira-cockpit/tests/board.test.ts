@@ -1953,6 +1953,28 @@ describe('the head of every pane', () => {
       expect(w.closed.at(-1)).toBe(id)
     }
   })
+
+  test('a pane left with nothing to show keeps its head, and its Close closes it', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    // Mounted with nothing opened: the state each reads is empty, as after
+    // its ticket left the board.
+    const panes: [string, unknown, string][] = [
+      ['verdict', VERDICT('Review verdict of MG677R'), 'cockpit-verdict'],
+      ['give-back', GIVE('Give back MG677R'), 'cockpit-give-back'],
+      ['explanation', EXPLANATION('Explanation of MG677R'), 'cockpit-explanation'],
+      ['ticket', { plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-ticket', props: { title: 'Ticket MG677R', isFocused: false, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } }, 'cockpit-ticket'],
+    ]
+    for (const [name, element, id] of panes) {
+      const pane = await $.ui.mount(element as never)
+      expect(await pane.find({ type: 'Text', text: 'nothing recorded yet' })).toBeDefined()
+      const { left } = await headOf(pane as never, `${name}-head`)
+      expect(left).toEqual([])
+      await pane.press({ key: `${name}-close` })
+      expect(w.closed.at(-1)).toBe(id)
+      await pane.unmount()
+    }
+  })
 })
 
 describe('give back', () => {
