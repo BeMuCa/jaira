@@ -21,7 +21,7 @@ related:
   - 01M7WX040JC9Z202EH852EF48S
 commits: []
 created-at: 2026-11-20T16:34:31Z
-updated-at: 2026-11-22T17:01:58Z
+updated-at: 2026-11-22T17:07:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3910889
 claimed-at: 2026-11-22T14:48:02Z
@@ -29,13 +29,15 @@ outcome-what: "Neuer Befehl 'jaira pr [<branch>] [--all|--number n] [--json] [--
 outcome-why: "Den Stand eines PR hielt der Teamlead im Kopf; jaira wusste nichts davon. Alex 22.11.: Befehl im Binary, kein Dauer-Polling im Cockpit, Teamlead beobachtet selbst per Monitor; JG3REW-Rest (Accept in signoff) gehoert hierher."
 outcome-resolves: "DoD 1-7. Vier Kategorien geprueft: Nebenlaeufigkeit - zwei Cockpit-Sessions koennen denselben PR im selben Moment beide melden (Store get/set nicht atomar), schlimmstenfalls eine Zeile doppelt; Fehlerpfade - halber Lauf ist ein Fehler, nie ein PR ohne Threads; Watch sagt einen Lesefehler einmal und liest weiter, verlorener Login beendet ihn (Exit 3); ungewoehnliche Eingabe - Branchnamen gehen als ein Argument an gh/glab bzw. URL-escaped an die GitLab-API, Fenster: 50 PRs, 100 Threads, 20 Kommentare je Thread; Rechte - nur Lesen mit dem gh/glab-Login der Person."
 review-summary: "none"
-round: 5
-back-from: testing
-back-by: lane
-back-count: 3
-review-gaps: "round 3: pullRequestIn and the pr-opening store marker are gone with the change (followNamed, Herdr tab); nothing else orphaned. Left as before (round 1 list)."
-test-verdict: "pass (round 4): go vet ./... clean, go test ./... RC=0, cockpit plugin test 316 pass (only cockpit changed this round; Go untouched since round 3's live checks). DoD 1-7 proofs re-read; DoD 4/5 now covered by the reworked tests (report URL checked with jaira pr --number, signoff hold on a PR not open from origin, a second press gated by the pr lane's Herdr tab)."
-hunt-verdict: "fail: 2 change findings, no blocker; #1 (idle pr tab blocks every press) fixed next round, #2 (merged PR held like a fork's) kept as a fail-closed decision for the person"
+round: 6
+back-from: human
+back-by: person
+back-count: 1
+review-gaps: "round 4: one-line status fix, nothing to remove. Left as before (round 1 list)."
+test-verdict: "pass (round 5): go vet clean, go test ./... RC=0, cockpit plugin test 316 pass; the one change this round (only a 'working' pr tab holds a second press) is tested by the idle-tab case in board.test.ts. DoD 1-7 as verified in round 3/4."
+hunt-verdict: "fail: 1 change finding (blocker per hunter): a pr lane tab in 'blocked' (approval dialog) or 'unknown' lets a second Accept start a second pr agent"
+question: ""
+stop_after_fix: "true"
 ---
 
 # Ein offener PR wird begleitet: jaira sieht neue Kommentare, CI-Stand und wartende Re-Requests und meldet sie
@@ -56,6 +58,8 @@ hunt-verdict: "fail: 2 change findings, no blocker; #1 (idle pr tab blocks every
   proof: core/pr/pr_test.go TestReadInputClasses, TestReadGitLab, TestReadPagesAndOrigin (pages, fork namesake, empty/broken page), TestClassify (401 only as sign-in); internal/cli/pr_test.go TestPRExitCodes
 - [x] Kein Doppeltmelden: derselbe Stand meldet nichts erneut, auch nach Neustart der Session; ein neuer PR ist Ausgangsstand, keine Meldung (Test)
   proof: watch: first read is the baseline (internal/cli/pr.go watchPR 'watching' line), Changes compares with the previous read only (core/pr/pr_test.go TestChanges 'same activity read again'); cockpit: store key pr-followed:<project>:<n> (board.test.ts 'handed over before ... also by a later session', cockpit.test.ts 'once')
+- [x] Keine Sperre gegen ein zweites Accept während die pr-Lane läuft; ein Doppeldruck öffnet trotzdem nur einen PR (gh lehnt den zweiten ab) - Entscheidung 22.11.
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx heldInSignoff: tab-state check removed, startPrLane on every press; test core/mod/builtin/jaira-cockpit/tests/board.test.ts 'no lock against a second press...'; a second pr agent finds the open PR listed and opens none (core/role/builtin/jaira-role-pr/SKILL.md 'Nothing listed' step; gh/glab refuse a second PR for one branch)
 
 ## Options
 
@@ -122,3 +126,7 @@ Selbst entschieden (widersprechen moeglich): Ausloeser = neuer Kommentar/Thread,
 - **2026-11-22 17:00 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:683 - class: a pull request of the branch that is no longer open (merged or closed) is held like a foreign fork's; example: pr-when signoff, the maintainer merges the pull request, the person then presses Accept - decideStep's forge list (board.ts:587, gh --state all / glab --all) says has=true, 'jaira pr <branch> --json' shows only open ones and returns prs:[], so Accept is refused with prElsewhere ('merged, closed, or another fork's branch ... move the ticket by hand') on the ordinary end of the review round; before c323292c3 a merged pull request moved the ticket to done (the 'merged meanwhile' test was replaced by one asserting the hold); read (blame c323292c3, internal/cli/pr.go:40 'Shows the open pull request'); not a blocker: it fails towards holding, a person can move by hand
 - **2026-11-22 17:00 · Alexander Sacharov** — bughunt: done at c323292c3 - 2 findings (2 change, 0 blocker, 0 pre-existing), follow-up hunt of the diff since 2ed351b7f (no new files; changed: board.ts register.tsx texts.ts board.test.ts cockpit.test.ts shipped.sha256); concurrency, error paths, input, permissions checked; files: README.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/pr/github.go core/pr/gitlab.go core/pr/pr.go core/pr/pr_test.go core/pr/watch.go core/release/notes/CRASZS.md core/shipped/shipped.sha256 docs/COMMANDS.md internal/cli/pr.go internal/cli/pr_test.go internal/cli/root.go
 - **2026-11-22 17:01 · Alexander Sacharov** — Runde 4: bughunt #1 behoben (nur 'working' haelt einen zweiten Druck auf, wie board.ts/close-tab.sh). bughunt #2 bewusst stehen gelassen: ein PR, den gh pr list --state all findet und jaira pr nicht offen aus origin zeigt, kann gemergt, geschlossen oder ein fremder Fork-Branch gleichen Namens sein - das trennt nur, wer hinsieht; fail-closed mit Hinweis 'move by hand'. Fuer die Person zur Abnahme: gemergter PR vor Accept heisst hier jaira move --to done von Hand.
+- **2026-11-22 17:03 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/register.tsx:667 - class: the second-press hold counts only Herdr's 'working' as a live pr-lane agent, so every other live state lets a second Accept start a second pr agent in the same worktree - Herdr's states are idle/working/blocked/done/unknown, and 'blocked' is its state for an open approval dialog (spawn.sh:454-465 says so and refuses to type into it); example: the pr lane's claude (spawn.sh starts it without bypassing permissions) stops at the approval dialog for git push or gh/glab pr create, its tab reads agent_status 'blocked', the person presses Accept again and startPrLane runs spawn.sh a second time on the same branch and worktree - also 'unknown', and the seconds between spawn.sh typing the role line and the turn showing 'working' once once()/busyAtom has let go; the earlier !== 'done' held all of these; the test board.test.ts:3970 covers only working and idle; read (register.tsx:659-670, spawn.sh:446-465, Herdr states in logbook 01M2G9X5 review note); blame: 882328f9b fix(CRASZS)
+- **2026-11-22 17:03 · Alexander Sacharov** — bughunt: done at 882328f9b - 1 finding (1 change, 1 blocker, 0 pre-existing), follow-up hunt of the diff since c323292c3 (no new files; changed: register.tsx board.test.ts shipped.sha256, hash of register.tsx matches); concurrency, error paths, input, permissions checked; files: README.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/pr/github.go core/pr/gitlab.go core/pr/pr.go core/pr/pr_test.go core/pr/watch.go core/release/notes/CRASZS.md core/shipped/shipped.sha256 docs/COMMANDS.md internal/cli/pr.go internal/cli/pr_test.go internal/cli/root.go
+- **2026-11-22 17:04 · Alexander Sacharov** — question: testing kam dreimal zurueck, immer an derselben Regel (zweites Accept bei pr-when=signoff, waehrend die pr-Lane noch laeuft): erst stoppte ein idle-Tab jeden Druck, jetzt laesst ein 'blocked'/'unknown'-Tab einen zweiten Agenten durch. DoD ist richtig; die Schleife geht nur tiefer. Optionen: 1 (empfohlen) halten bei jedem Tab-Zustand ausser idle/done - eine Zeile, deckt beide Funde; 2 Regel streichen - Doppeldruck kann zwei pr-Agenten starten; 3 so lassen - blocked/unknown bleibt bekannte Grenze.
+- **2026-11-22 17:04 · Alexander Sacharov** — decision (teamlead 22.11., Regel 'Raender wachsen -> kleineres Design'): Option 2 - die Sperre gegen ein zweites Accept während die pr-Lane läuft wird gestrichen. Ein Doppeldruck startet höchstens einen zweiten pr-Agenten; gh/glab lehnt einen zweiten PR derselben Branch ab, der Schaden ist ein paar Tokens. Kein Tab-Zustand wird mehr ausgewertet.

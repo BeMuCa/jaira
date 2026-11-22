@@ -657,17 +657,9 @@ async function heldInSignoff($: EngineInterface, w: Waiting): Promise<boolean> {
   if (land) return false
   if (branch !== undefined && pending !== undefined && pending.length > 0) return hold(t.prWaitsSignoff(branch, pending))
   if (step === 'pr' && branch !== undefined) {
-    // A second press while the first one's pr lane still works would start
-    // a second agent in the same worktree. Its Herdr tab, labelled <id>/pr by
-    // spawn.sh, says whether it still works — 'working', as everywhere in the
-    // cockpit; a tab left idle (the lane stopped without a pull request) or
-    // gone lets the next press start the lane again.
-    const bin = await herdr($)
-    const tabs = bin === undefined ? undefined : await run($, [bin, 'tab', 'list'], b.dir)
-    if (tabs?.exitCode === 0 && tabsOf(tabs.stdout).some(x => x.label === `${w.id}/pr` && x.agent_status === 'working')) {
-      await say($, t.prBeingOpened(w.id, branch))
-      return true
-    }
+    // No lock against a second press while the lane still runs (CRASZS,
+    // decided 22.11.): gh and glab refuse a second pull request for one
+    // branch, so a double press costs a second agent's tokens at most.
     const failed = await startPrLane($, b, w.id, branch, false, porcelain)
     if (failed !== undefined) return hold(failed)
     await say($, t.prOpensInSignoff(w.id, branch))
