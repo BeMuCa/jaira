@@ -1,7 +1,7 @@
 ---
 id: 01M81G681S9YWPBZWQ7HAJ41SC
 title: "Das Verdict im Cockpit zeigt oben eine Ampel: grün annehmen, gelb ansehen, rot zurückgeben"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -13,41 +13,39 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - c348bd6e463452c181e5cb296817ecc0962900a6
+  - 3bc3233f20cea9cbff014a9bb83e4f51e469dc95
+  - c2eab0fab7ebdc20b1cb783453365f0374af380e
+  - f7dfca8a416efefaae06be5ce3c8ba2b271aa49a
+  - c347e752bd3f6d3f99e74160f48c0bba1721830e
+  - 51034e290a262b315e53b1393a5cf3ea60e75cb5
 created-at: 2026-11-22T11:27:46Z
-updated-at: 2026-11-22T11:59:35Z
+updated-at: 2026-11-22T16:21:30Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-1232016
-claimed-at: 2026-11-22T11:29:15Z
+claimed-by: DESKTOP-RFTCH11-2834322
+claimed-at: 2026-11-22T12:03:16Z
 outcome-what: "Verdict-Pane des Cockpits zeigt als erste Zeile eine Ampel (grün/gelb/rot) mit dem ersten Grund und '+N more'"
 outcome-why: "Alex soll ohne Urteil, Gaps und Notizen zu lesen sehen, ob er annehmen kann"
 outcome-resolves: "AJ41SC: fehlende Ampel im Verdict"
-review-summary: "Das Verdict-Pane des Cockpits beginnt jetzt mit einer Zeile '● green|yellow|red: <erster Grund> (+N more)'. board.ts lightOf rechnet die Farbe aus dem, was schon am Ticket steht: rot bei send-back-Urteil, blocker:-Zeilen in review-gaps, einem Bughunt, der nicht mehr HEAD deckt, oder einem offenen DoD-Punkt ausser 'seen by a person:' (das Gate des Terminal-Lanes); gelb bei kein/altem Review, Freitext-Urteil, Vorbehalt, note:-Zeilen, offenem 'seen by a person:'-Punkt, offener Frage, keinem oder unbekanntem Bughunt; sonst gruen. Welche Richtung ein Urteil hat, liest das Cockpit nicht mehr aus eigenen Wortlisten, sondern aus den Woertern der Lane: jaira lanes --json gibt dafuer neu 'verdicts' {accept, send_back} aus (tickets.go), und wayOf portiert lane.SendsBackBy; nur ohne diese Woerter (alte jaira) bleibt die alte REFUSAL-Heuristik. huntsAtom haelt jetzt {state, at}, damit 'nie gehuntet' (gelb) von 'Hunt nicht auf HEAD' (rot) getrennt wird. openOf zog von overview.ts nach board.ts. Tests pro Farbe in board.test.ts, Go-Test fuer verdicts in context_test.go, Release-Note mit zwei Zeilen."
+review-summary: "The cockpit's Verdict pane now opens with one line: a coloured dot (green/yellow/red) and the first reason. lightOf (board.ts) works it out from data jaira already gives: the review verdict - read by the lane's declared words, which jaira lanes --json now prints as 'verdicts' (tickets.go) and the cockpit folds like core/lane SendsBackBy - blockers and notes in review-gaps, the newest bug hunt ({state, at}: a hunt not covering HEAD is red, none at all yellow), the open DoD items split into 'seen by a person:' (yellow) and others (red, as the terminal gate refuses them), the question, an older review round. Red reasons before yellow; the pane shows the first plus '+N more'. In a lane that does not end the work (human) an open question makes it yellow first. openOf moved from overview.ts to board.ts and is reused; release note and shipped.sha256 updated."
 round: 5
 back-from: review
 back-by: lane
 back-count: 1
 review-gaps: |-
-  note: ein Ticket in human mit offener Frage hat fast immer offene DoD-Punkte und oft keinen aktuellen Hunt - das Licht zeigt dort rot 'N DoD items open' (Rat: zurueckgeben), obwohl der Mensch nur die Frage beantworten soll; Fix: in einem Lane ohne terminalen next (acceptTo null) die Frage als ersten Grund zeigen oder dodOpen/staleHunt dort gelb werten (board.ts lightOf)
-  note: snapshotOf sammelt verdicts aller Lanes eines Boards in eine Liste und prueft send_back vor accept ueber alle - heute deklariert nur review Woerter, mit einer zweiten Lane koennte ein Wort der einen das Urteil der anderen kippen; Fix: die Woerter des Lanes nehmen, aus dem das Urteil kommt (board.ts:135)
-  note: Hunts werden nur fuer die im Band gezeigten Tickets gelesen (register.tsx shownIds); ein Verdict-Pane fuer ein Ticket ausserhalb zeigt gelb 'bughunt unknown' - sichere Richtung, aber nicht die Wahrheit
-  note: nicht dieses Ticket: der Worktree traegt uncommittete Aenderungen an .jaira/lanes/*.md, AGENTS.md, CLAUDE.md (Lane-Texte aus einem jaira update) - nicht in einen AJ41SC-Commit mitnehmen
-test-verdict: "pass: round 3 - go test ./... RC=0, cockpit 'claude plugin test .' 301/301 RC=0. Binary on scratch repo: lanes --json review verdicts {accept:[accept], send_back:[send-back]}; brief bughunt back to null for a ticket with no hunt (as on master). Light: null hunt -> yellow 'no bughunt yet', hunt at a commit not covering HEAD -> red 'bughunt not on HEAD' (tests). DoD 1-3 verified, proofs re-checked; DoD 4 'seen by a person' left for Alex. Change writes nothing."
-hunt-verdict: "pass: bughunt done at c347e752b, 0 change, 0 pre-existing; round-2 blocker (none state) closed"
-review-verdict: "accept: DoD 1-3 erfuellt, lightOf deckt die Ticketdaten ab und liest die Urteilsrichtung wie jairas Gate; 301 Cockpit-Tests und Go-Tests gruen; vier note:-Ränder, kein Blocker"
-review-round: 4
+  note: wayOf (board.ts) matches the review verdict against the verdict words of every lane that declares some, not only the review lane's - fix: take the words of the lane the verdict belongs to (review), as core/lane does per lane; harmless on boards where only review declares words
+  note: 'no bughunt at all' is yellow, not red as the ticket context says - decided in the 11:49 note (a ticket without code has no hunt); Alex may want it red
+  note: in human with an open question every red reason is shown only as '+N more' - decided 11:57; the reason list still holds them
+test-verdict: "pass: round 4 - cockpit 'claude plugin test .' 302/302 RC=0; go test ./core/role ./core/shipped ./internal/cli ok. New test: human + open question + stale hunt + open DoD -> yellow, question first; same ticket in signoff (acceptTo done) stays red. DoD 1-3 verified, proofs re-checked; DoD 4 left for Alex. Change writes nothing."
+hunt-verdict: "pass: bughunt done at 51034e290, 0 change, 0 pre-existing"
+review-verdict: "accept: DoD 1-3 met by the diff (register.tsx light line first, lightOf rules with a test per colour, release note + shipped.sha256); plugin tests 302 pass, go test internal/cli and core/shipped ok; no blocker found"
+review-round: 5
 review-verdict-gaps: |-
-  note: ein Ticket in human mit offener Frage hat fast immer offene DoD-Punkte und oft keinen aktuellen Hunt - das Licht zeigt dort rot 'N DoD items open' (Rat: zurueckgeben), obwohl der Mensch nur die Frage beantworten soll; Fix: in einem Lane ohne terminalen next (acceptTo null) die Frage als ersten Grund zeigen oder dodOpen/staleHunt dort gelb werten (board.ts lightOf)
-  note: snapshotOf sammelt verdicts aller Lanes eines Boards in eine Liste und prueft send_back vor accept ueber alle - heute deklariert nur review Woerter, mit einer zweiten Lane koennte ein Wort der einen das Urteil der anderen kippen; Fix: die Woerter des Lanes nehmen, aus dem das Urteil kommt (board.ts:135)
-  note: Hunts werden nur fuer die im Band gezeigten Tickets gelesen (register.tsx shownIds); ein Verdict-Pane fuer ein Ticket ausserhalb zeigt gelb 'bughunt unknown' - sichere Richtung, aber nicht die Wahrheit
-  note: nicht dieses Ticket: der Worktree traegt uncommittete Aenderungen an .jaira/lanes/*.md, AGENTS.md, CLAUDE.md (Lane-Texte aus einem jaira update) - nicht in einen AJ41SC-Commit mitnehmen
-review-check: |-
-  1. cd /home/alex/projects/.worktrees/jaira-aj41sc && go install ./cmd/jaira
-  2. claude --plugin-dir /home/alex/projects/.worktrees/jaira-aj41sc/core/mod/builtin/jaira-cockpit (im Repo)
-  3. Im Cockpit-Band AJ41SC (in signoff) waehlen und das Verdict-Pane oeffnen
-  4. Erste Zeile: '● yellow: 4 review notes to weigh (+N more)' in Gelb, vor dem Titel - das ist DoD 4 (seen by a person)
-  5. Optional rot pruefen: jaira lanes --json | grep -A3 verdicts zeigt accept/send_back; ein Ticket mit 'send-back: ...'-Urteil im Pane zeigt '● red: the review gives it back'
-  6. Ohne UI: cd core/mod/builtin/jaira-cockpit && claude plugin test . -> 301 pass, Block 'the verdict light'
+  note: wayOf (board.ts) matches the review verdict against the verdict words of every lane that declares some, not only the review lane's - fix: take the words of the lane the verdict belongs to (review), as core/lane does per lane; harmless on boards where only review declares words
+  note: 'no bughunt at all' is yellow, not red as the ticket context says - decided in the 11:49 note (a ticket without code has no hunt); Alex may want it red
+  note: in human with an open question every red reason is shown only as '+N more' - decided 11:57; the reason list still holds them
+review-check: "1. In this worktree run: claude --plugin-dir core/mod/builtin/jaira-cockpit  2. Open the cockpit and pick a ticket in signoff (e.g. AJ41SC itself)  3. Open its Verdict pane: the first line is '● green/yellow/red: <reason>' with '(+N more)' when there are several  4. For AJ41SC expect yellow: 1 'seen by a person' item open (+ review notes)  5. Unit check: cd core/mod/builtin/jaira-cockpit && claude plugin test . -> 302 pass, 'the verdict light' block green"
 question: ""
 ---
 
@@ -61,7 +59,8 @@ question: ""
   proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:260 lightOf; core/mod/builtin/jaira-cockpit/tests/board.test.ts 'the verdict light' (green/yellow/red, declared verdict words, no hunt vs stale hunt, question in human); verdicts from jaira lanes --json (internal/cli/context_test.go)
 - [x] Release-Note core/release/notes/<ID>.md, shipped.sha256
   proof: core/release/notes/AJ41SC.md (2 lines); core/shipped/shipped.sha256 via scripts/shipped-history.sh --write; go test ./... RC=0
-- [ ] seen by a person: Alex sieht die Ampel im laufenden Cockpit an einem Ticket in signoff
+- [x] seen by a person: Alex sieht die Ampel im laufenden Cockpit an einem Ticket in signoff
+  proof: Alex 22.11. gesehen
 
 ## Options
 
@@ -93,3 +92,5 @@ question: ""
 2. Alex: jaira move AJ41SC --to signoff --force - schnell, Worktree bleibt dreckig
 3. Lane-Texte in einen AJ41SC-Commit - vermischt fremde Aenderung mit diesem Ticket
 - **2026-11-22 11:57 · Alexander Sacharov** — decision (parent/teamlead 11:57): Lane-Texte verworfen (git checkout), sie kommen ueber GPSAR2 nach master. Gap 1 jetzt fixen: in einer Lane ohne terminalen next (acceptTo null, z.B. human) mit offener Frage entscheidet die Frage das Licht - gelb, Frage als erster Grund, rote Gruende nur mitgezaehlt. Uebrige Review-Notizen bleiben bekannte Grenzen.
+- **2026-11-22 11:59 · Alexander Sacharov** — critique pass 5 (nur 51034e290): Frage-Regel steht am Ende von lightOf als frueher Return, nutzt acceptTo (snapshotOf: next terminal) statt Lane-Namen - passt zu isPersons/acceptTo. Nichts weiter.
+- **2026-11-22 12:01 · Alexander Sacharov** — bughunt: done at 51034e290 - 0 findings in 3 modules, follow-up hunt since c347e752b (diff only, no new files: lightOf's question-in-a-non-terminal-lane branch, its test, shipped.sha256); checked acceptTo is set in signoff for every supported jaira (next_lane since 0.1.1, MIN_JAIRA 0.3.7) and the hash matches HEAD's board.ts; concurrency, error paths, input, permissions checked; ran: claude plugin test . (302 pass), go test ./core/shipped (ok); files: core/gitrepo/hunt.go core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/AJ41SC.md core/shipped/shipped.sha256 internal/cli/context_test.go internal/cli/loopbrake_test.go internal/cli/tickets.go
