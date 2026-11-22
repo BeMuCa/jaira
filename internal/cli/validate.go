@@ -74,6 +74,15 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 				}
 			}
 
+			// Milestone files in a commit come back in every merge: they
+			// travel on their refs and are kept in step with them.
+			if milestonesTracked(s.Root) {
+				problems = append(problems, validate.Problem{
+					Code: "milestones_tracked", Severity: validate.SeverityWarning,
+					Path: milestonesPath, Message: trackedMilestonesMessage,
+				})
+			}
+
 			problems = append(problems, invalidNames(s.Root)...)
 
 			// The board at rest includes what it tells its agents. A lane file
