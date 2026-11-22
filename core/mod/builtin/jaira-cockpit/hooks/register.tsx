@@ -355,7 +355,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     run($, ['jaira', 'boards', '--json'], board.dir),
   ])
   if (lanes?.exitCode !== 0 || list?.exitCode !== 0) return
-  const { bin, tabs, listed, agents } = await agentsOf($, board.dir)
+  const { bin, tabs, agents } = await agentsOf($, board.dir)
   if (!meAsked) {
     meAsked = true
     const who = await run($, ['jaira', 'whoami', '--json'], board.dir)
@@ -425,12 +425,6 @@ async function refreshBoard($: EngineInterface): Promise<void> {
       continue
     }
     const tab = open.find(x => x.label === label)
-    // A Herdr chat holding a copy whose tab is gone ended without its note
-    // (closed, crashed): looked at a minute on like a chat that is done.
-    if (copy !== undefined && listed && tab === undefined) {
-      chats.set(label, { since, copy, doneAt: now })
-      continue
-    }
     if (tab?.agent_status === 'working') continue
     const from = since - (since % 60_000)
     const note = await noteOn($, board.dir, id, kind === 'explain' ? 'explain' : 'decision')
@@ -982,17 +976,22 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
   const socket = kind === 'discuss' ? await $.env.get('CLAUDE_CODE_MESSAGING_SOCKET') : undefined
   const parent = socket ? ['--parent', `uds:${socket}`] : []
   const removes = copy === undefined ? [] : ['--copy', copy]
+  // Registered before spawn.sh runs, which waits up to two minutes for
+  // claude while the row unlocks after BUSY_MS: a second press in that time
+  // already finds this chat holding the copy.
+  await opened()
   const r = await run($, [...script, '--no-worktree', ...parent, ...removes, id.toLowerCase(), id, kind, dir], dir, 120_000)
   if (r?.exitCode !== 0) {
     // spawn.sh may have failed after its tab came up (claude slow to start):
     // that chat runs and removes the copy itself, so it is not taken from
     // under it. No such tab: no chat started, and the copy goes at once.
     const tabs = await agentsOf($, dir)
-    if (copy !== undefined && tabs.listed && tabs.tabs.some(x => x.label === label)) await opened()
-    else await here.leave()
+    if (!(copy !== undefined && tabs.listed && tabs.tabs.some(x => x.label === label))) {
+      chats.delete(label)
+      await here.leave()
+    }
     return fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
   }
-  await opened()
   await say($, t.opened(id))
 }
 

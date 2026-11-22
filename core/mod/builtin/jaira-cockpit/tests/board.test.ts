@@ -109,6 +109,8 @@ type World = {
   noRoom?: boolean
   // When set, every `herdr tab list` waits here until the test lets it go.
   heldTabs?: (() => void)[]
+  // spawn.sh calls wait here until released, as one waiting for claude does.
+  heldSpawn?: (() => void)[]
   // `git worktree list --porcelain`, WORKTREES unless set.
   worktrees?: string
   // `jaira create` of a follow-up fails.
@@ -272,6 +274,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     w.ran.push([...e.argv, `@${e.init?.cwd ?? ''}`])
     if (w.held && e.argv[0] === 'jaira' && e.argv[1] === 'move') await new Promise<void>(go => w.held!.push(go))
     if (w.heldTabs && e.argv[1] === 'tab' && e.argv[2] === 'list') await new Promise<void>(go => w.heldTabs!.push(go))
+    if (w.heldSpawn && e.argv[0] === 'bash' && e.argv[1] === SPAWN) await new Promise<void>(go => w.heldSpawn!.push(go))
     const ok = (stdout = '') => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const [cmd, ...args] = e.argv
     const here = `@${e.init?.cwd ?? ''}`
@@ -4468,19 +4471,38 @@ describe('Explain and Discuss on a ticket not on the disk the chat writes from',
     expect(copyLine(w, 'MG677R')).toEqual([])
   })
 
-  test('a Herdr chat whose tab went without a note: the copy it left is named a minute on', async ($, on) => {
+  test('a second press while spawn.sh still waits for claude is refused: the chat holds the copy from before spawn.sh runs', async ($, on) => {
     const w = world(on, { herdr: true })
     setUp(w, 'MG677R', 'ref-only')
-    w.tabs = [{ tab_id: 'w1:t4', label: 'MG677R/explain', agent_status: 'working' }]
+    w.tickets = [{ ...SIGNOFF, question: 'Branch in den Schluessel?' }, HUMAN, WORKING]
+    const held: (() => void)[] = []
+    w.heldSpawn = held
+    await startSession($)
+    const first = (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
+    await w.clock.settle()
+    expect(held).toHaveLength(1)
+    // The row unlocks after BUSY_MS while spawn.sh still waits.
+    await w.clock.advance(21_000)
+    await (await $.ui.mount(BAND)).press({ key: 'discuss-MG677R' })
+    expect(ran(w, 'bash', SPAWN)).toHaveLength(1)
+    expect(w.opened.at(-1)?.title).toBe('Discuss MG677R failed')
+    held[0]!()
+    await first
+    await w.clock.settle()
+    expect(ran(w, 'git', 'clean')).toEqual([])
+  })
+
+  test('a failed spawn.sh frees the ticket for the next chat', async ($, on) => {
+    const w = world(on, { herdr: true })
+    setUp(w, 'MG677R', 'ref-only')
+    w.spawnFails = 'unknown flag: --copy'
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
-    await w.clock.advance(60_000)
-    w.tabs = []
-    await w.clock.advance(60_000)
-    expect(copyLine(w, 'MG677R')).toEqual([])
-    await w.clock.advance(60_000)
-    await w.clock.advance(60_000)
-    expect(copyLine(w, 'MG677R')).toHaveLength(1)
+    w.spawnFails = undefined
+    w.disk['@/repo'] = 'ref-only'
+    await w.clock.advance(21_000)
+    await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
+    expect(ran(w, 'bash', SPAWN)).toHaveLength(2)
   })
 
   for (const second of ['explain', 'discuss'] as const) {
