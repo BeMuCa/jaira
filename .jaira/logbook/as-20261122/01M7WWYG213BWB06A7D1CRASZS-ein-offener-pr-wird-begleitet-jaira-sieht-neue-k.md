@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYG213BWB06A7D1CRASZS
 title: "Ein offener PR wird begleitet: jaira sieht neue Kommentare, CI-Stand und wartende Re-Requests und meldet sie"
-status: testing
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,34 +19,65 @@ related:
   - 01M7WWYB5XZMD01DZY3MJG3REW
   - 01M6HZQPZZFAF3MXY3AWQFWRXH
   - 01M7WX040JC9Z202EH852EF48S
-commits: []
+commits:
+  - 696778fc850f25809690794fa48765546d9d670e
+  - 6ab32beb065cb899d925ab67d95f9ecf40e1ed69
+  - 5239634bd0dad5be5d9a7b3cd74b8d2ad485f520
+  - 5fc0b0ba5c5b78e798ae68889b9293af0538e49b
+  - 907d80cdb87087fc9a2b04c908b547eea9dd1b5c
+  - 2ed351b7f7e908dba8e1c2209a9916b9a5d2e6b9
+  - c323292c38fc3873bf1b075a4f850b67dbc6af3a
+  - 882328f9bcf7f50abf2088e4495a9aef37a8a0c7
+  - 8eecefaa716413e572b5e28cccb4665ffc8ebdb9
+  - a431e45f8bea64865e8979a78bb02ba31e4e5db6
+  - f6af703deb14ba1194e1ed00d110c2405b70ec6a
+  - a7b572953800bda5d2ee16639b1fcc018173005b
+  - d3e8866fdeb7f4c42afa1293b3699b5ee1037cdb
+  - e74185be305fd403e4988b2710adc942f5121f86
+  - bdc88f117b7fb5d7c008fb74d15a0f949508918a
+  - e02383817b854298272bec9a245da32dfe7e1a59
 created-at: 2026-11-20T16:34:31Z
-updated-at: 2026-11-22T18:56:25Z
+updated-at: 2026-11-22T19:03:33Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4157260
 claimed-at: 2026-11-22T18:32:13Z
 outcome-what: "Neuer Befehl 'jaira pr [<branch>] [--all|--number n] [--json] [--watch [--every d]]' (core/pr: gh-GraphQL bzw. glab-API; Threads wartend/beantwortet/erledigt, fremde Kommentare, CI, Reviews, Tickets, settled). --watch: Ausgangsstand als erste Zeile, dann eine Zeile je Aenderung, Ende bei merged/closed. Cockpit: reicht einen neuen PR einmal an die Teamlead-Session weiter (nach Accept begrenzte Nachschau 20x60s; Agentenbericht mit PR-URL), Store-Schluessel gegen Doppeltmelden; Accept bei pr-when=signoff oeffnet erst den PR (Ticket bleibt in signoff) und laesst done erst bei settled zu."
 outcome-why: "Den Stand eines PR hielt der Teamlead im Kopf; jaira wusste nichts davon. Alex 22.11.: Befehl im Binary, kein Dauer-Polling im Cockpit, Teamlead beobachtet selbst per Monitor; JG3REW-Rest (Accept in signoff) gehoert hierher."
 outcome-resolves: "DoD 1-7. Vier Kategorien geprueft: Nebenlaeufigkeit - zwei Cockpit-Sessions koennen denselben PR im selben Moment beide melden (Store get/set nicht atomar), schlimmstenfalls eine Zeile doppelt; Fehlerpfade - halber Lauf ist ein Fehler, nie ein PR ohne Threads; Watch sagt einen Lesefehler einmal und liest weiter, verlorener Login beendet ihn (Exit 3); ungewoehnliche Eingabe - Branchnamen gehen als ein Argument an gh/glab bzw. URL-escaped an die GitLab-API, Fenster: 50 PRs, 100 Threads, 20 Kommentare je Thread; Rechte - nur Lesen mit dem gh/glab-Login der Person."
-review-summary: "none - round: unknown CI status defaults to pending in gitlabCI/githubCI, the two places statuses are sorted"
+review-summary: "New command 'jaira pr' (internal/cli/pr.go, package core/pr) reads the pull request of a branch straight from gh (one GraphQL query, paged) or glab (REST, --paginate) and prints threads waiting/answered/resolved, comments from others, CI of the head commit, reviews pending/changes requested/approved and 'settled' (no open thread, no review pending, no changes requested, CI neither red nor running; unknown CI states count as running, no checks counts as green). --json gives the same as data, --all every open PR, --number one PR in any state. --watch prints the starting stand, then one line per new foreign comment/review, CI red / green again, settled, merged/closed, and ends on merged/closed; failures are said once and retried, a lost sign-in ends it. Pull requests are labelled only with handles that are tickets of this board. In the cockpit: on a board whose pr-when says signoff, Accept (after the dry-run DoD gate) starts the pr lane and keeps the ticket in signoff, refuses while the PR is not settled (lists what is in the way) and only moves to done once settled; the cockpit hands a new PR to the teamlead once as a line 'jaira pr --watch --number N', after the pr lane opened it (looked for 20x every 60 s) or when an agent report names its URL — remembered in the store so a restart does not repeat it. No polling in the cockpit itself."
 round: 12
 back-from: testing
 back-by: lane
 back-count: 2
-review-gaps: "none - removed the explicit pending lists (now the default); nothing else"
-test-verdict: "pass: go test -race core/pr internal/cli ok, full go test ok, plugin 317 pass; DoD 10-12 verified (board.test.ts open-DoD test, jaira pr --number -3 exit 2 live, jaira pr --all labels only board tickets live); read-only change, no writer race"
-hunt-verdict: "pass: bughunt done at d3e8866fd, 0 findings"
+review-gaps: |-
+  note: Accept with decisions (acceptWith) that is held in signoff drops the person's review-note decisions and 'accepted despite' reason silently - after() runs only on a real move; say so in the hold message or write the notes before the hold (register.tsx heldInSignoff/acceptWith)
+  note: heldInSignoff reads 'jaira lanes --json' and 'jaira roles list' without --board, so a ticket on a second board with other lanes is judged by the default board's lane order (register.tsx heldInSignoff)
+  note: a GitLab pipeline in status 'manual' (blocked on a manual job) or a GitHub required check that never reports (EXPECTED) counts as 'CI running' forever - the ticket stays in signoff with a message that says running; name the status in the line (core/pr/gitlab.go gitlabCI, github.go githubCI)
+  note: a draft pull request with nothing open is settled, so Accept moves a ticket to done while its PR is still a draft; consider Draft in settle() (core/pr/pr.go)
+  note: followLine does store.get then store.set across awaits; two lookups of the same PR finishing together (pr-lane look and a report naming it) can both send the follow line - a double line, not lost data (register.tsx followLine)
+  note: Changes reports only the newest foreign activity per read, so two comments by two people between reads give one line; the counts in jaira pr still show both (core/pr/watch.go Changes)
+test-verdict: "pass: go test core/pr internal/cli ok (-race core/pr), plugin 317 pass; DoD 13 verified: TestSettleWaitsForCI, TestGitLabCI, TestGitHubCI; live jaira pr --all: CI pending -> 'not settled', 'in the way: CI running'"
+hunt-verdict: "pass: bughunt done at e02383817, 0 findings (two earlier change findings in this give-back fixed: canceled pipeline, unknown status)"
 question: ""
 stop_after_fix: "true"
-review-verdict: "accept: all 12 DoD items are met by the diff with tests; go test ./core/pr ./internal/cli and claude plugin test (317) pass; live jaira pr / --all / --number -1 behave as documented; no blocker, five notes on edges"
-review-round: 9
+review-verdict: "accept: all 13 DoD items are met by the diff (jaira pr/--json/--all/--number/--watch over gh and glab, cockpit follow line once per PR, pr-when=signoff hold after the DoD gate, CI in settled, board-only labels, --number<0 exit 2, fail-open on unreadable roles); go test core/pr internal/cli and claude plugin test (317) pass; no blocker found, six small notes"
+review-round: 12
 review-verdict-gaps: |-
-  note: settled ignores CI - on a pr-when=signoff board a second Accept moves a ticket to done while its pull request is red (live: jaira pr --all showed #191 'CI: failure · settled'); fix: name a failing CI in the hold, or say in the release note that settled does not look at CI
-  note: a pull request with no reviewer requested and no comment is settled the moment it opens, so on pr-when=signoff Accept, wait for the pr lane, Accept again reaches done with no review round at all; same rule as pr-round.sh settled, worth one line in the release note
-  note: two Accept presses start two lookForPullRequest loops; followLine reads and then writes the store key with an await between, so both loops could in theory hand over the same pull request twice; fix: set the key before the get resolves (or keep an in-memory set of numbers being handed over)
-  note: lookForPullRequest gives up after 20 looks (20 min); a pr agent slower than that never hands its pull request to the teamlead, since the Herdr tab's report does not reach this session; a line on giving up would make that visible
-  note: the GitLab path (glab repo view <origin URL> -F json, glab api --paginate page stream) is covered only by fakes in core/pr/pr_test.go; the GitHub path was checked live here
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-craszs && go build -o /tmp/jpr ./cmd/jaira  2. /tmp/jpr pr --all  -> each open PR of BeMuCa/jaira with '#N (TICKET) branch - title', its URL, and 'threads: … · comments from others: … · CI: … · settled|not settled'  3. /tmp/jpr pr --number -1; echo $?  -> 'is no pull request number', exit 2  4. /tmp/jpr pr --watch --number 190 --every 10s  -> first line 'watching #190 …', then nothing until something changes; Ctrl-C  5. cockpit: cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> 317 pass, including 'following a pull request (CRASZS)' and '.jaira/pr-when says signoff'"
+  note: Accept with decisions (acceptWith) that is held in signoff drops the person's review-note decisions and 'accepted despite' reason silently - after() runs only on a real move; say so in the hold message or write the notes before the hold (register.tsx heldInSignoff/acceptWith)
+  note: heldInSignoff reads 'jaira lanes --json' and 'jaira roles list' without --board, so a ticket on a second board with other lanes is judged by the default board's lane order (register.tsx heldInSignoff)
+  note: a GitLab pipeline in status 'manual' (blocked on a manual job) or a GitHub required check that never reports (EXPECTED) counts as 'CI running' forever - the ticket stays in signoff with a message that says running; name the status in the line (core/pr/gitlab.go gitlabCI, github.go githubCI)
+  note: a draft pull request with nothing open is settled, so Accept moves a ticket to done while its PR is still a draft; consider Draft in settle() (core/pr/pr.go)
+  note: followLine does store.get then store.set across awaits; two lookups of the same PR finishing together (pr-lane look and a report naming it) can both send the follow line - a double line, not lost data (register.tsx followLine)
+  note: Changes reports only the newest foreign activity per read, so two comments by two people between reads give one line; the counts in jaira pr still show both (core/pr/watch.go Changes)
+review-check: |-
+  1. cd to a clone of this repo on a branch that has an open GitHub pull request, with gh signed in
+  2. run: jaira pr   -> one block: '#N (TICKET) <branch> - <title>', the URL, a line 'threads: X waiting, Y answered, Z resolved · comments from others: K · CI: success|failure|pending|none · ... · settled|not settled', and if not settled a line 'in the way: ...' (e.g. 'CI running')
+  3. run: jaira pr --json   -> the same as JSON with prs[].settled and prs[].unsettled
+  4. run: jaira pr --number -1 ; echo $?   -> a usage message and 2
+  5. run: jaira pr --watch --number N --every 10s, then write a comment on that PR from another account   -> within ~10 s a line '#N (...): new comment by <them>'; merge or close the PR -> a line '#N: merged' and the command ends
+  6. in Claude Code with the cockpit, on a board with .jaira/pr-when = signoff, press Accept on a ticket in signoff whose branch has no PR   -> pane says it stays in signoff and a Herdr tab opens the pr lane; within a few minutes the teamlead session gets one line 'jaira-cockpit: pull request #N for <ID> is open - follow it ...'
+  7. press Accept again while CI runs or a thread is open   -> pane lists '#N: CI running' / '#N: 1 open thread' and '<ID> stays in signoff; nothing was moved.'; once settled, Accept moves it to done
+  8. automated: go test ./core/pr ./internal/cli -run PR ; and in core/mod/builtin/jaira-cockpit: claude plugin test .  -> all pass
 ---
 
 # Ein offener PR wird begleitet: jaira sieht neue Kommentare, CI-Stand und wartende Re-Requests und meldet sie
@@ -171,3 +202,4 @@ Selbst entschieden (widersprechen moeglich): Ausloeser = neuer Kommentar/Thread,
 - **2026-11-22 18:54 · Alexander Sacharov** — bughunt: change: core/pr/gitlab.go:242-251 (gitlabCI) - class: a pipeline status the switch does not list falls to "none", which pr.go:258 treats as no CI, so the PR counts as settled; GitLab's transitional status "canceling" (pipeline being cancelled, before "canceled") is such a status today, as is any status GitLab adds later; example: head_pipeline.status="canceling" -> CI none -> Settled=true, the watch prints "settled — ... CI not red or running" (watch.go:73), and on the next poll "canceled" -> "CI red"; the unknown-status default favours settled over not settled; not a blocker (display/watch notice only, the next poll corrects it); blame: 696778fc8 + bdc88f117, both CRASZS; ran: read
 - **2026-11-22 18:54 · Alexander Sacharov** — bughunt: done at bdc88f117 - 1 finding (1 change, 0 blockers) in 2 modules, follow-up hunt of the diff since e74185be3 (no new files; changed: core/pr/gitlab.go core/pr/pr_test.go); concurrency, error paths, input, permissions checked; files: README.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/pr/github.go core/pr/gitlab.go core/pr/pr.go core/pr/pr_test.go core/pr/watch.go core/release/notes/CRASZS.md core/shipped/shipped.sha256 docs/COMMANDS.md internal/cli/pr.go internal/cli/pr_test.go internal/cli/root.go
 - **2026-11-22 18:56 · Alexander Sacharov** — bughunt finding #2 (canceling / future statuses) fixed by turning the default round, not by adding statuses: gitlabCI and githubCI now map any status they do not know to pending; only no pipeline/rollup at all, or GitLab 'skipped', is none. settled can no longer rest on an unknown status. Tests TestGitLabCI, TestGitHubCI.
+- **2026-11-22 18:57 · Alexander Sacharov** — bughunt: done at e02383817 - 0 findings in 3 modules, follow-up hunt of the diff since bdc88f117 (no new files; changed: core/pr/github.go core/pr/gitlab.go core/pr/pr_test.go); concurrency, error paths, input, permissions checked; files: README.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/pr/github.go core/pr/gitlab.go core/pr/pr.go core/pr/pr_test.go core/pr/watch.go core/release/notes/CRASZS.md core/shipped/shipped.sha256 docs/COMMANDS.md internal/cli/pr.go internal/cli/pr_test.go internal/cli/root.go
