@@ -382,19 +382,31 @@ at, in place of a pull request URL.
 ## Does it already have one open
 
 Ask the repository you just settled on — not `origin`, or a fork answers for the
-upstream and you open a second pull request onto a branch that has one. On
-GitHub, where a head in another repository is written `<owner-of-origin>:<branch>`
-— your fork's owner, not the target's:
+upstream and you open a second pull request onto a branch that has one. The
+branch name alone is not enough either: another fork may have a branch of the
+same name open against the same target. So list by branch and keep only the
+requests whose head lives on `origin` — your fork's owner, not the target's.
+On GitHub:
 
 ```bash
-gh pr list --repo <owner/repo> --head "<owner-of-origin>:$(git branch --show-current)" --state open
+gh pr list --repo <owner/repo> --head "$(git branch --show-current)" --state open \
+  --json number,url,headRepositoryOwner \
+  --jq '.[] | select(.headRepositoryOwner.login == "<owner-of-origin>") | .url'
 ```
 
-or on GitLab:
+`gh pr list --head` takes the bare branch name: given `<owner>:<branch>` — the
+form `gh pr create` accepts — it lists nothing, and an open pull request looks
+like none.
+
+or on GitLab, where `<origin's project id>` is `id` from the `glab repo view`
+of `origin` above:
 
 ```bash
-glab mr list --repo <owner/repo> --source-branch "$(git branch --show-current)"
+glab mr list --repo <owner/repo> --source-branch "$(git branch --show-current)" \
+  -F json --jq '.[] | select(.source_project_id == <origin's project id>) | .web_url'
 ```
+
+An empty output is **nothing listed**; a URL is **one listed**.
 
 Carry on along the branch that listing puts you on. Either way you never open a
 second one:
