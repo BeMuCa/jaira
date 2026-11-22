@@ -3,7 +3,7 @@ import type { ElementTable, EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
   branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
-  explanationNotes, explanationOf, huntOf, isOlder, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
+  explanationNotes, explanationOf, huntOf, isOlder, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf,
   createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, nextChoice, standOf,
   type Action, type Agent, type GapItem, type Hunt, type NoteClass, type Option, type Waiting,
@@ -524,8 +524,41 @@ async function noteOn($: EngineInterface, dir: string, id: string, kind: 'explai
 // Where a ticket's work lives: running jaira anywhere else answers "on its
 // ref and not on your disk".
 async function ticketDir($: EngineInterface, b: { dir: string; repo: string }, id: string): Promise<string> {
+  return (await ownTree($, b, id)) ?? b.repo
+}
+
+async function ownTree($: EngineInterface, b: { dir: string; repo: string }, id: string): Promise<string | undefined> {
   const r = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
-  return r?.exitCode === 0 ? worktreeFor(r.stdout, id, b.repo) : b.repo
+  return r?.exitCode === 0 ? ownTreeFor(r.stdout, id) : undefined
+}
+
+// Where a press writes, with the ticket on that disk as its ref has it: a
+// file on the ref alone or older than the ref refuses every write ("on its
+// ref and not on your disk", a stale file), so it is pulled first. Pulled
+// into the ticket's own worktree it stays, as the branch's; pulled into the
+// main checkout only for this press, leave() takes it away again once the
+// press is over, refused or not: a copy left there outranks the ref and shows
+// the ticket in a lane it left long ago. Every write already sits on the ref,
+// or whole in the outbox, so nothing goes with it. A refused pull (somebody
+// else holds the ticket, no remote) stops the press: it never steals.
+type Here = { ok: true; dir: string; leave: () => Promise<void> } | { ok: false; why: string }
+
+async function ticketHere($: EngineInterface, b: { dir: string; repo: string }, id: string): Promise<Here> {
+  const own = await ownTree($, b, id)
+  const dir = own ?? b.repo
+  const stays: Here = { ok: true, dir, leave: async () => {} }
+  const disk = async () => {
+    const shown = await run($, ['jaira', 'show', id, '--json'], dir)
+    return diskOf(shown?.exitCode === 0 ? shown.stdout : '')
+  }
+  const before = await disk()
+  if (before.state === 'current') return stays
+  const pulled = await jaira($, dir, ['pull', id])
+  if (!pulled.ok) return { ok: false, why: pulled.why }
+  if (own !== undefined || before.state !== 'ref-only') return stays
+  const { path } = await disk()
+  if (path === '') return stays
+  return { ok: true, dir, leave: async () => void (await run($, ['git', 'clean', '-fqx', '--', path], dir)) }
 }
 
 type Done = { ok: true; out: string } | { ok: false; why: string }
@@ -599,23 +632,32 @@ async function fail($: EngineInterface, what: string, why: string): Promise<void
 // an open definition-of-done item or plan step still stops the press.
 async function accept($: EngineInterface, w: Waiting, after?: (dir: string) => Promise<void>): Promise<void> {
   if (!board || w.acceptTo === null) return
-  const dir = await ticketDir($, board, w.id)
-  const dry = await run($, ['jaira', 'move', w.id, '--to', w.acceptTo, '--dry-run', '--json'], dir, 30_000)
+  const here = await ticketHere($, board, w.id)
+  if (!here.ok) return fail($, `${t.accept} ${w.id}`, here.why)
+  try {
+    await accepting($, w, w.acceptTo, here.dir, after)
+  } finally {
+    await here.leave()
+  }
+}
+
+async function accepting($: EngineInterface, w: Waiting, to: string, dir: string, after?: (dir: string) => Promise<void>): Promise<void> {
+  const dry = await run($, ['jaira', 'move', w.id, '--to', to, '--dry-run', '--json'], dir, 30_000)
   const refused = dry === undefined ? 'jaira did not run' : dry.exitCode === 0 ? undefined : otherRefusal(dry.stderr || dry.stdout)
   if (refused !== undefined) return fail($, `${t.accept} ${w.id}`, refused)
-  const done = await jaira($, dir, ['move', w.id, '--to', w.acceptTo, '--force'])
-  if (movedBefore(done, w.id, w.acceptTo)) return movedFirst($, t.accept, w.id, w.acceptTo)
+  const done = await jaira($, dir, ['move', w.id, '--to', to, '--force'])
+  if (movedBefore(done, w.id, to)) return movedFirst($, t.accept, w.id, to)
   if (done.ok) {
     // What the person decided on the review's notes goes onto the ticket once
     // it is accepted, as Give back writes it once the ticket went back: a
     // refused or failed Accept writes nothing and creates no follow-up.
     if (after !== undefined) await after(dir)
-    await say($, t.accepted(w.id, w.acceptTo))
-    const next = await afterAccept($, w.id, w.acceptTo)
+    await say($, t.accepted(w.id, to))
+    const next = await afterAccept($, w.id, to)
     // One line into this session, the teamlead's, once the press has done
     // all it does: it goes on from there — logbook, the next worker — without
     // the person typing it, and never starts the pull request Accept started.
-    void $.prompt.submit({ text: t.toSessionAccepted(w.id, w.lane, w.acceptTo, next) })
+    void $.prompt.submit({ text: t.toSessionAccepted(w.id, w.lane, to, next) })
   } else await fail($, `${t.accept} ${w.id}`, done.why)
   await refreshBoard($)
 }
@@ -1029,7 +1071,19 @@ async function askOwnAnswer($: EngineInterface, id: string): Promise<void> {
 // heard and not only left on the ticket.
 async function decide($: EngineInterface, id: string, text: string, action: Action | undefined, share: number): Promise<void> {
   if (!board) return
-  const done = await jaira($, await ticketDir($, board, id), ['note', id, `decision: ${text}`])
+  // One pull for the note and the press it carries out: the copy pulled for
+  // the note is the one Accept and Give back then find on the disk.
+  const here = await ticketHere($, board, id)
+  if (!here.ok) return fail($, `${t.decide} ${id}`, here.why)
+  try {
+    await deciding($, id, text, action, share, here.dir)
+  } finally {
+    await here.leave()
+  }
+}
+
+async function deciding($: EngineInterface, id: string, text: string, action: Action | undefined, share: number, dir: string): Promise<void> {
+  const done = await jaira($, dir, ['note', id, `decision: ${text}`])
   if (!done.ok) return fail($, `${t.decide} ${id}`, done.why)
   await update($, decidedAtom, d => ({ ...d, [id]: text }))
   // Answered from here on, before the next look at the notes says so too.
@@ -1175,7 +1229,17 @@ async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
 // agent, whose tab run-lane.sh closes after the lane.
 async function giveBack($: EngineInterface, id: string, lane: string, given: string | ((dir: string) => Promise<string>), share: number): Promise<void> {
   if (!board) return
-  const dir = await ticketDir($, board, id)
+  const here = await ticketHere($, board, id)
+  if (!here.ok) return fail($, `${t.giveBack} ${id}`, here.why)
+  try {
+    await givingBack($, id, lane, given, share, here.dir)
+  } finally {
+    await here.leave()
+  }
+}
+
+async function givingBack($: EngineInterface, id: string, lane: string, given: string | ((dir: string) => Promise<string>), share: number, dir: string): Promise<void> {
+  if (!board) return
   // Back to an earlier lane needs no --force since jaira 0.3.7 (MIN_JAIRA),
   // so any other refusal of the move still stops it. The move goes first: a
   // note written before a refused move would say the ticket went back.

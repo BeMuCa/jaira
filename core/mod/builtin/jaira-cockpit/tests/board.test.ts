@@ -107,6 +107,12 @@ type World = {
   createFails?: boolean
   // Another session's move came first: jaira answers this one 'already in'.
   movedFirst?: boolean
+  // Where MG677R's file is not as its ref has it, by directory ('@/...'):
+  // none there ('ref-only') or an older one ('behind'), until `jaira pull`
+  // there brings it. Every write there is refused, as jaira refuses it.
+  disk: Record<string, 'ref-only' | 'behind'>
+  // What `jaira pull` refuses with; undefined: it pulls.
+  pullFails?: string
 }
 
 const LANES = {
@@ -167,6 +173,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     version: '0.3.7',
     noteFails: false,
     toasts: [],
+    disk: {},
     bodies: {},
     hunts: {},
     contains: {},
@@ -252,6 +259,15 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (w.heldTabs && e.argv[1] === 'tab' && e.argv[2] === 'list') await new Promise<void>(go => w.heldTabs!.push(go))
     const ok = (stdout = '') => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const [cmd, ...args] = e.argv
+    const here = `@${e.init?.cwd ?? ''}`
+    const refuse = (stderr: string) => ({ value: { exitCode: 1, stdout: '', stderr, isStdoutTruncated: false, isStderrTruncated: false } })
+    if (cmd === 'jaira' && args[0] === 'pull') {
+      if (w.pullFails !== undefined) return refuse(w.pullFails)
+      delete w.disk[here]
+      return ok()
+    }
+    if (cmd === 'jaira' && ['move', 'note', 'set', 'dod'].includes(args[0]!) && args[1] === 'MG677R' && w.disk[here] === 'ref-only') return refuse('jaira: MG677R: ticket: on its ref and not on your disk; pull it first')
+    if (cmd === 'jaira' && ['move', 'note', 'set', 'dod'].includes(args[0]!) && args[1] === 'MG677R' && w.disk[here] === 'behind') return refuse('jaira: MG677R: the file here is older than its ref (stale_file); jaira pull MG677R')
     const on = args.includes('--board') ? w.boards[args[args.indexOf('--board') + 1] ?? ''] : undefined
     if (cmd === 'jaira' && args[0] === 'boards') return ok(JSON.stringify({ boards: ['default', ...Object.keys(w.boards)].map(name => ({ name })) }))
     if (cmd === 'jaira' && args.includes('--board') && (on === undefined || (args[0] === 'lanes' && on.lanes === undefined))) return failed('jaira: unknown flag: --board')
@@ -301,7 +317,9 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     }
     if (cmd === 'jaira' && args[0] === 'show') {
       const status = (w.tickets.find(x => (x as { handle: string }).handle === args[1]) as { status?: string } | undefined)?.status
-      return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '', ...(status !== undefined ? { status, board: '' } : {}) }))
+      const disk = args[1] === 'MG677R' ? w.disk[here] : undefined
+      const file = disk === 'ref-only' ? {} : { path: `${e.init?.cwd ?? ''}/.jaira/tickets/01MG677R-cache-key.md` }
+      return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '', ...(status !== undefined ? { status, board: '' } : {}), 'on-ref-only': disk === 'ref-only', 'behind-ref': disk === 'behind', ...file }))
     }
     if (cmd === 'git' && args[0] === 'rev-parse' && args[1] === '--abbrev-ref') return w.originHead === undefined ? { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } } : ok(`${w.originHead}\n`)
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
@@ -3835,5 +3853,106 @@ describe('the workers tab', () => {
     before = reads()
     await w.clock.advance(20_000)
     expect(reads()).toBe(before)
+  })
+})
+
+// 76ERHH: a press writes from a disk that holds the ticket as its ref has it.
+// A file on the ref alone, or one older than the ref, refused every Accept and
+// Give back ("on its ref and not on your disk"); the cockpit pulls it first.
+describe('a ticket not on the disk the press writes from', () => {
+  const OWN = '@/.worktrees/repo-mg677r'
+  const MAIN = '@/repo'
+  // The main checkout alone: the ticket has no worktree of its own.
+  const ALONE = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n'
+  const press = async ($: Test$, w: World, how: 'accept' | 'give back') => {
+    const ui = await $.ui.mount(BAND)
+    if (how === 'accept') return void (await ui.press({ key: 'accept-MG677R' }))
+    await ui.press({ key: 'back-MG677R' })
+    const typed = (await $.ui.mount(GIVE('Give back MG677R'))).input({ key: 'reason-MG677R', text: 'fehlt' })
+    await w.clock.advance(1000)
+    await typed
+  }
+  const moved = (w: World, how: 'accept' | 'give back') =>
+    ran(w, 'jaira', 'move', 'MG677R').filter(r => !r.includes('--dry-run') && r[4] === (how === 'accept' ? 'done' : 'in-progress'))
+
+  const cases = [
+    { tree: 'own worktree', where: OWN, state: 'ref-only', pulls: true, cleans: false },
+    { tree: 'own worktree', where: OWN, state: 'behind', pulls: true, cleans: false },
+    { tree: 'own worktree', where: OWN, state: 'current', pulls: false, cleans: false },
+    { tree: 'no worktree', where: MAIN, state: 'ref-only', pulls: true, cleans: true },
+    { tree: 'no worktree', where: MAIN, state: 'behind', pulls: true, cleans: false },
+    { tree: 'no worktree', where: MAIN, state: 'current', pulls: false, cleans: false },
+  ] as const
+  for (const how of ['accept', 'give back'] as const) {
+    for (const c of cases) {
+      test(`${how}, ${c.tree}, file ${c.state}: ${c.pulls ? 'pulled first, then decided' : 'decided as it is'}${c.cleans ? ', the pulled copy taken away after' : ''}`, async ($, on) => {
+        const w = world(on)
+        if (c.tree === 'no worktree') w.worktrees = ALONE
+        if (c.state !== 'current') w.disk[c.where] = c.state
+        await startSession($)
+        await press($, w, how)
+        expect(moved(w, how)).toHaveLength(1)
+        expect(moved(w, how)[0]!.at(-1)).toBe(c.where)
+        expect(w.opened.filter(o => o.id === 'cockpit-message')).toEqual([])
+        expect(ran(w, 'jaira', 'pull', 'MG677R').map(r => r.at(-1))).toEqual(c.pulls ? [c.where] : [])
+        // The pull before the first write, the dry run included.
+        if (c.pulls) expect(w.ran.findIndex(r => r[1] === 'pull')).toBeLessThan(w.ran.findIndex(r => r[1] === 'move'))
+        const cleaned = ran(w, 'git', 'clean')
+        expect(cleaned).toEqual(c.cleans ? [['git', 'clean', '-fqx', '--', '/repo/.jaira/tickets/01MG677R-cache-key.md', MAIN]] : [])
+        // Taken away only once the press wrote all it writes.
+        if (c.cleans) expect(w.ran.findIndex(r => r[0] === 'git' && r[1] === 'clean')).toBeGreaterThan(w.ran.findLastIndex(r => r[0] === 'jaira' && ['move', 'note', 'create'].includes(r[1]!)))
+      })
+    }
+  }
+
+  test('a pulled copy is taken away from the main checkout when the press is refused too', async ($, on) => {
+    const w = world(on)
+    w.worktrees = ALONE
+    w.disk[MAIN] = 'ref-only'
+    w.refusals = [{ code: 'dod_open', message: 'definition of done item 2 is open' }]
+    await startSession($)
+    await press($, w, 'accept')
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toEqual([])
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Accept MG677R failed', focus: true })
+    expect(ran(w, 'git', 'clean')).toHaveLength(1)
+  })
+
+  for (const how of ['accept', 'give back'] as const) {
+    test(`${how}: a refused pull stops the press with its reason, writes nothing and never steals`, async ($, on) => {
+      const w = world(on)
+      w.worktrees = ALONE
+      w.disk[MAIN] = 'ref-only'
+      w.pullFails = 'jaira: MG677R is taken by Berk; --steal takes it anyway'
+      await startSession($)
+      await press($, w, how)
+      expect(ran(w, 'jaira', 'pull', 'MG677R')).toEqual([['jaira', 'pull', 'MG677R', MAIN]])
+      expect(ran(w, 'jaira', 'move', 'MG677R')).toEqual([])
+      expect(ran(w, 'jaira', 'note')).toEqual([])
+      expect(ran(w, 'git', 'clean')).toEqual([])
+      expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: `${how === 'accept' ? 'Accept' : 'Give back'} MG677R failed`, focus: true })
+      expect(w.submitted).toEqual([])
+    })
+  }
+
+  test('a decision picked in the explanation pulls once for its note and the Give back it carries out', async ($, on) => {
+    const w = world(on)
+    w.worktrees = ALONE
+    w.disk[MAIN] = 'ref-only'
+    w.bodies.MG677R = [
+      '## Progress',
+      '',
+      '- **2026-10-12 15:00 · Alex** — explain: The cache key leaves out the branch.',
+      '1) add the branch to the key [give back]',
+      '2) accept it as it is [accept]',
+      'Empfehlung: 1',
+    ].join('\n')
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).press({ key: 'pick-MG677R-1' })
+    expect(ran(w, 'jaira', 'note', 'MG677R').map(r => r[3]).slice(0, 2)).toEqual(['decision: 1) add the branch to the key', 'Given back from signoff: 1) add the branch to the key'])
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'in-progress')).toHaveLength(1)
+    expect(ran(w, 'jaira', 'pull', 'MG677R')).toHaveLength(1)
+    expect(ran(w, 'git', 'clean')).toHaveLength(1)
+    expect(w.ran.findIndex(r => r[0] === 'git' && r[1] === 'clean')).toBeGreaterThan(w.ran.findLastIndex(r => r[0] === 'jaira' && ['move', 'note', 'create'].includes(r[1]!)))
   })
 })
