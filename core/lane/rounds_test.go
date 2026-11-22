@@ -163,7 +163,7 @@ func TestInProgressPromptHandsTheThirdReturnToTheTeamleadFirst(t *testing.T) {
 	}
 	for _, want := range []string{
 		"to the teamlead first, a person only",
-		"leave the ticket in this lane, set the question",
+		"leave\n  the ticket in this lane, set the question",
 		`jaira set <id> question="testing sent this back three times`,
 		"No parent session, or it cannot be reached",
 		`jaira move <id> --to human --question "testing sent this back three times`,

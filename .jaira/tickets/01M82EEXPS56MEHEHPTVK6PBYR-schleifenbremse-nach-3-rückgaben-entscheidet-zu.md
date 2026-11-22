@@ -18,13 +18,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T20:16:47Z
-updated-at: 2026-11-22T20:24:03Z
+updated-at: 2026-11-22T20:25:13Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2119162
 claimed-at: 2026-11-22T20:17:27Z
 outcome-what: "Nach 3 Rückgaben aus einer Lane geht die Frage zuerst an den Teamlead: Worker/Dispatcher/Lane-Worker lassen den Ticket mit gesetzter question in seiner Lane und schicken sie an die parent-Session; der Teamlead entscheidet (decision (teamlead <datum>)) oder legt ihn selbst nach human. Gate-Meldung, Board-Loop-Text, lanes show und --for-lane sagen 'the teamlead decides, or a person'."
 outcome-why: "Alex sah im Cockpit Schleifenfragen (CRASZS, DF46B9, QTQW15), die der Teamlead fast immer selbst entschied."
 outcome-resolves: "Ticket K6PBYR: Schleifenbremse entscheidet zuerst der Teamlead. Geprüft: Nebenläufigkeit n/a (Text + Meldung), Fehlerpfad: parent unerreichbar -> human wie bisher; ungewöhnliche Eingabe n/a; Rechte: --force bleibt beim Entscheidenden."
+review-summary: "core/lane/builtin/20-in-progress.md:99 '(a teamlead, or the worker or dispatcher it started)' mischt zwei Fälle: ein Lane-Worker unter einem Dispatcher kennt dessen Session nicht (jaira-role-lane: 'nothing tells you its name') — schreibe '(--parent, usually a teamlead's)' und verweise den Lane-Worker auf seine Rolle"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Schleifenbremse: nach 3 Rückgaben entscheidet zuerst der Teamlead, erst wenn er nicht kann, die Person
@@ -60,3 +65,4 @@ outcome-resolves: "Ticket K6PBYR: Schleifenbremse entscheidet zuerst der Teamlea
 ## Progress
 - **2026-11-22 20:17 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/25712.sock
 - **2026-11-22 20:18 · Alexander Sacharov** — decision (worker): keine offene Personen-Entscheidung. (1) Warten: Ticket bleibt in der verweigernden Lane, question per 'jaira set <id> question=...'. (2) Teamlead entscheidet 'trotzdem zurück/kleineres Design' mit 'jaira move --force' — der Ausweg, den die Gate-Meldung schon nennt ('as the one deciding'); vorwärts (Arbeit annehmen) braucht kein --force. Kein neues Flag: kleiner. (3) Gate prüft keine parent-Session; das Routing steht in Worker/Dispatcher/in-progress-Lane-Text, Gate-Meldung nennt beide Wege. (4) Tests: strings.Contains auf SKILL.md/Lane-Text (core/role-Muster) + Gate-Meldung in core/gate/maxrounds_test.go.
+- **2026-11-22 20:24 · Alexander Sacharov** — critique: 20-in-progress.md:99 Klammer '(a teamlead, or the worker or dispatcher it started)' falsch für Lane-Worker ohne Session-Namen -> '(--parent, usually a teamlead's)'. Stehen gelassen: --force für Teamlead-Rücksendung (bestehender Ausweg der Gate-Meldung, kein neues Flag); Regel in 4 SKILLs + Lane wiederholt = bestehendes Muster je Rolle.

@@ -95,9 +95,10 @@ third round's findings and whether the definition of done is wrong or the loop
 reads deeper every round without ending — to the teamlead first, a person only
 after it:
 
-- **Started with a parent session** (a teamlead, or the worker or dispatcher
-  it started): leave the ticket in this lane, set the question and send the
-  same text to that session. It decides — a `decision (teamlead <date>):`
+- **Started with a parent session** (`--parent`, usually a teamlead's): leave
+  the ticket in this lane, set the question and send the same text to that
+  session. A lane worker a dispatcher started sets the question and stops, as
+  its role says; the dispatcher carries it up. It decides — a `decision (teamlead <date>):`
   note — or takes it to a person and moves the ticket into `human` itself.
 
   ```bash
