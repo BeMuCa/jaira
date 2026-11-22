@@ -1,7 +1,7 @@
 ---
 id: 01M827VG20E4159Z9X6R8TT890
 title: Zwei Milestone-Dateien mit derselben ID enden mit einer klaren Fehlermeldung statt still liegen zu bleiben
-status: review
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -15,40 +15,46 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 75dae1679c6af379e379425168379ee5bc1613d8
+  - 27866b60cc0aeb03fc7189f01c23ef01cc8af7de
+  - b6a0154bc5363ab61669df2dd7b71661c16849cf
+  - 32dd84b3086e3ba35d2398e2265d1f77c61379e3
+  - 521ba40eb1c03de0a290100f0eae06b73cd01fff
+  - 77c9fd2214ff13f638caeae1c39a960d0001919f
+  - 6f7ad1e1a237ffc4d80e28fc3d890782c89a5fe5
+  - 6d2e096ec65641ad524903a333a5040ced31c2b8
+  - 9f4f514cb0d96db405d20439760af70397838ffd
+  - d41ed9743e15f801470248bc6f02efcc0897e063
+  - c7a993adcc15fd7909dff586c9db4cb86c316c0b
 created-at: 2026-11-22T18:21:19Z
-updated-at: 2026-11-22T23:18:14Z
+updated-at: 2026-11-22T23:22:23Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-72024
 claimed-at: 2026-11-22T23:09:21Z
 outcome-what: "Restore no longer counts an un-migrated renamed-to: marker as a board file of its ID; release note says only writing milestone commands refuse on twins, ls/board show the first file"
 outcome-why: "Give-back 22.11. (gelbe Notizen): false exit 5 on a valid restore, and a release note that promised more than reads do"
 outcome-resolves: "8TT890 round 10: bughunt 20:19 finding and release-note wording"
-review-summary: "none - round 10 delta: marker skip mirrors Migrate (migrate.go:162 deletes RenamedTo files), reads content only for old-format names, an unreadable old-format file still refuses; release-note line 1 accurate"
-review-gaps: "none - round 10 delta (archive.go marker skip, one test, release-note line) reuses milestone.RenamedTo; nothing to remove"
+review-summary: "Adds milestone.CheckTwinFiles: it scans .jaira/milestones/ by file name and returns a TwinFilesError (exit 3, reason milestone_twin_files, both file names in the message) for the first ID that more than one ID-named file carries. It runs in lockAndMigrate after catch-up and Migrate, so every write through Edit/Create/Rename (milestone create/add/rm/rename/set, the board) refuses, and in the CLI's migrateHeld after catch-up and before Migrate, so logbook and restore of a milestone refuse too. Restore gets a pre-check (checkMilestoneRestore, asked only when Store.RestoresMilestone says the file is in a logbook milestones/ folder): catch-up, twin check, then refusal (exit 5, not_archived) when any board file already carries the restored file's ID by name, old-format names included and renamed-to markers excluded. All of this happens before the file leaves the logbook, so a refusal has nothing to roll back. root.go's report is split into classify for the new error mapping. The catch-up still leaves a hand-edited twin in place; the refusal is what makes it visible. Reads (milestone ls, board) still show the first file, as the release note says."
+review-gaps: |-
+  note: the restore refusal for an ID already on the board uses reason not_archived, which describes a missing file, not a conflict; a dedicated reason (e.g. milestone_on_board) would let an agent tell the two apart (internal/cli/archive.go checkMilestoneRestore, release note line 2)
+  note: a milestone restore runs refs.CatchUpMilestones twice, once in checkMilestoneRestore and again in migrateHeld via unfileMilestone; harmless, one extra ref read
+  note: TwinFilesError says 'nothing was written', but lockAndMigrate already ran Migrate and the catch-up (which may move or queue other milestones) before refusing; only the requested write was not made (core/milestone/write.go TwinFilesError.Error)
+  note: pre-existing: the sync paths refsync.FetchMilestones and mergeRefused (core/refsync/refsync.go:556, :900) take the milestone lock without the twin check and read whichever file LoadAll keeps first; outside DoD 6, which limits the refusal to writing commands
 test-verdict: "pass: round 10 - go vet, go test core/milestone core/refsync core/ticket internal/cli core/release green, -race Restore|Twin green; DoD 6/7 verified (release note line 1; TestRestoreBesideAnOldRenamedToMarkerIsNotRefused fails on d41ed9743, passes now); binary: live old-format q4.md refuses exit 5 and keeps logbook copy, renamed-to marker q4.md -> exit 0 restored; twin pair: milestone ls exit 0 shows q4 only, milestone create exit 3"
 hunt-verdict: "pass: follow-up hunt over the round-10 delta, 0 findings"
 round: 10
 back-from: signoff
 back-by: person
 back-count: 1
-review-verdict: "accept: all five DoD items hold in the code and their named tests pass (go test ./core/milestone ./core/refsync ./core/ticket ./internal/cli green, go vet clean); every write path - Edit/Create/Rename via lockAndMigrate, logbook and restore via migrateHeld - refuses one ID in two files with exit 3, and restore refuses before the move, so no rollback is needed. Remaining findings are narrow notes, none loses data on a common path."
-review-round: 9
+review-verdict: "accept: all 7 DoD items hold in the code and tests (go test ./core/milestone ./core/refsync ./core/ticket ./internal/cli green, go vet clean); every user-facing milestone write (create/add/rm/rename/set, logbook, restore) reaches CheckTwinFiles under the milestone lock; Migrate cannot create a pair (it finds the ID file by ID under any name); manual run reproduces exit 3 naming both files; four notes, no blocker"
+review-round: 10
 review-verdict-gaps: |-
-  note: core/milestone/write.go:225-235 lockAndMigrate runs Migrate before CheckTwinFiles, migrateHeld (internal/cli/milestones.go:650) runs it before Migrate; with a twin pair plus an old-format <name>.md of the same LegacyID, Migrate's AdoptOld merges into whichever twin idFilePath finds first and queues its ref, then the check refuses with "nothing was written" - narrow (needs a pre-ID build writing beside a twin pair); fix: move the check before Migrate in lockAndMigrate too, as in migrateHeld
-  note: bughunt 20:19 stays open by decision (Alex 22.11.): an un-migrated old-format q4.md holding "renamed-to:" counts as a board file of its LegacyID, so restore of q4-<ID>.md is refused with a false "already on the board" (exit 5); fix: skip files with RenamedTo() != "" in the loop at internal/cli/archive.go:183
-  note: release note line 1 says "every milestone command" refuses - jaira milestone ls and the board still show only the first file of a twin (milestone.scan dedups by ID), only writes refuse; reword to "every milestone command that writes"
-  note: a restored a1-<ID>.md whose ref was renamed to z9 while no z9 file lies here comes back as z9-<ID>.md with the ref's content (catch-up in migrateHeld), while the output says "Restored a1-<ID>.md" - nothing lost, the ref is the newer state
-  note: RestoresMilestone matches by base name only; a ticket file in .jaira/archive/ with the same base as a logbook milestone would run the milestone pre-check first - names cannot realistically collide (ULID tickets vs <name>-<6>), RestoreFrom refuses that case anyway
-review-check: |-
-  1. cd /home/alex/projects/.worktrees/jaira-8tt890 && go build -o /tmp/jr ./cmd/jaira
-  2. mkdir /tmp/twin && cd /tmp/twin && git init -q && /tmp/jr init && /tmp/jr milestone create q4
-  3. ls .jaira/milestones - note the file q4-<ID>.md
-  4. cp .jaira/milestones/q4-*.md .jaira/milestones/q5-$(ls .jaira/milestones | sed -E 's/q4-(.*)\.md/\1/').md  (same ID, second name)
-  5. /tmp/jr milestone create x; echo $?  -> message names both files ("lies in 2 files ... delete the other"), exit 3
-  6. /tmp/jr --json milestone create x  -> stderr reason "milestone_twin_files"
-  7. rm .jaira/milestones/q5-*.md && /tmp/jr milestone create x; echo $?  -> 0
-  8. restore refusal and old-format cases: go test ./internal/cli -run 'Twin|Restore' -v  -> TestRestoreOfAnOldFormatFileBesideATwinGoesBackToTheLogbook, TestRestoreRefusesAnIDAlreadyOnTheBoard etc. PASS
+  note: the restore refusal for an ID already on the board uses reason not_archived, which describes a missing file, not a conflict; a dedicated reason (e.g. milestone_on_board) would let an agent tell the two apart (internal/cli/archive.go checkMilestoneRestore, release note line 2)
+  note: a milestone restore runs refs.CatchUpMilestones twice, once in checkMilestoneRestore and again in migrateHeld via unfileMilestone; harmless, one extra ref read
+  note: TwinFilesError says 'nothing was written', but lockAndMigrate already ran Migrate and the catch-up (which may move or queue other milestones) before refusing; only the requested write was not made (core/milestone/write.go TwinFilesError.Error)
+  note: pre-existing: the sync paths refsync.FetchMilestones and mergeRefused (core/refsync/refsync.go:556, :900) take the milestone lock without the twin check and read whichever file LoadAll keeps first; outside DoD 6, which limits the refusal to writing commands
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-8tt890 && go build -o /tmp/jaira8 ./cmd/jaira  2. mkdir /tmp/twin && cd /tmp/twin && git init -q && git commit -q --allow-empty -m init && /tmp/jaira8 init  3. /tmp/jaira8 milestone create q4 - then ls .jaira/milestones shows one file q4-<ID>.md  4. copy it under a second name with the same ID: cp .jaira/milestones/q4-<ID>.md .jaira/milestones/q5-<ID>.md  5. /tmp/jaira8 milestone create other; echo $? - you see 'milestone <ID> lies in 2 files here: q4-<ID>.md and q5-<ID>.md ... delete the other, and run it again' and exit 3  6. /tmp/jaira8 logbook q4; echo $? - the same message, exit 3, and q4 is still on the board in /tmp/jaira8 milestone ls  7. rm .jaira/milestones/q5-<ID>.md, then /tmp/jaira8 milestone create other - it succeeds now  8. the restore cases (old-format q4.md, ID already on the board, renamed-to marker) have no short hand path: go test ./internal/cli -run 'Restore|OneIDInTwoFiles' covers them"
 ---
 
 # Zwei Milestone-Dateien mit derselben ID enden mit einer klaren Fehlermeldung statt still liegen zu bleiben
@@ -128,3 +134,4 @@ angenommen:
 - **2026-11-22 23:12 · Alexander Sacharov** — in-progress round 10 (give-back 21:08): marker skip reads content only for old-format names; an unreadable old-format file still counts (refuses, conservative, as before). ID-named files never read. Release note line 1 now says 'that writes' and that ls/board show the first file.
 - **2026-11-22 23:17 · Alexander Sacharov** — testing round 10: gates go vet ./..., go test core/milestone core/refsync core/ticket internal/cli core/release green, -race Restore|Twin green, shipped-history ok. Binary: board with live old-format q4.md + logbook q4-24QJVY.md -> restore exit 5 'already on the board as q4.md', logbook kept; same with q4.md = 'renamed-to: q5' -> exit 0 Restored, marker gone, q4-24QJVY.md on board unfiled. New test fails on d41ed9743, passes now.
 - **2026-11-22 23:17 · Alexander Sacharov** — bughunt: done at d41ed9743 - 0 findings in 1 module, follow-up hunt since d41ed9743 (diff only, uncommitted: internal/cli/archive.go, internal/cli/milestones_test.go, core/release/notes/8TT890.md; no new files); renamed-to skip checked against Migrate, CheckTwinFiles and RestoreFrom's dst refusal; ran: go test ./internal/cli -run Restore (ok); concurrency, error paths, input, permissions checked; files: core/milestone/write.go core/milestone/write_test.go core/refsync/catchup_test.go core/refsync/refsync.go core/release/notes/8TT890.md core/ticket/store.go internal/cli/archive.go internal/cli/milestones.go internal/cli/milestones_test.go internal/cli/root.go
+- **2026-11-22 23:21 · Alexander Sacharov** — bughunt: done at c7a993adc - 0 findings in 1 module, follow-up hunt since d41ed9743 (diff only: internal/cli/archive.go checkMilestoneRestore renamed-to skip, internal/cli/milestones_test.go, core/release/notes/8TT890.md; no new files); unreadable old-format file still refuses (conservative), a marker of the same name as the restored file is still refused by RestoreFrom's dst check; ran: go test ./internal/cli -run 'Restore|OneIDInTwoFiles|TwinFiles' -count=1 (ok); concurrency, error paths, input, permissions checked; files: core/milestone/write.go core/milestone/write_test.go core/refsync/catchup_test.go core/refsync/refsync.go core/release/notes/8TT890.md core/ticket/store.go internal/cli/archive.go internal/cli/milestones.go internal/cli/milestones_test.go internal/cli/root.go
