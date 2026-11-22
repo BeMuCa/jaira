@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { commitsOf, executionOf, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, rephrasePrompt, snapshotOf, storyOf, type Waiting } from '../hooks/board.ts'
+import { clipLines, commitsOf, executionOf, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, rephrasePrompt, snapshotOf, storyOf, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -46,6 +46,9 @@ type World = {
   // what `git log --format=%h --name-only --grep=<id>` prints.
   shows: Record<string, Record<string, unknown>>
   idLog: string
+  // What \`git diff\` prints; what a move to in-progress fails with.
+  diffs?: string
+  moveFails?: string
   // When set, every cheap-model call waits here, in order, answering with
   // what w.model held when it was made.
   modelHeld?: (() => void)[]
@@ -307,6 +310,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'lanes') return ok(JSON.stringify(w.oldJaira ? { lanes: LANES.lanes.map(({ human_exit, requires_question, ...l }) => l) } : LANES))
     if (cmd === 'jaira' && args[0] === 'list') return ok(JSON.stringify({ count: w.tickets.length, tickets: w.tickets }))
     if (cmd === 'jaira' && args[0] === 'move' && w.movedFirst && !args.includes('--dry-run')) return ok(`${args[1]} is already in ${args[3]}\n`)
+    if (cmd === 'jaira' && args[0] === 'move' && args[3] === 'in-progress' && w.moveFails !== undefined) return { value: { exitCode: 3, stdout: '', stderr: w.moveFails, isStdoutTruncated: false, isStderrTruncated: false } }
     if (cmd === 'jaira' && args[0] === 'move' && args.includes('--dry-run')) {
       const error = (w.warns ? `${OLDER}\n` : '') + JSON.stringify({ error: { code: 3, reason: 'gate_refused', violations: w.refusals } })
       return { value: { exitCode: 3, stdout: '', stderr: error, isStdoutTruncated: false, isStderrTruncated: false } }
@@ -388,6 +392,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     // Newest first, as git prints them. A --grep reads the whole message,
     // body included; --format=%H %s prints the subject alone.
     if (cmd === 'git' && args[0] === 'log' && args[1] === '--format=%h') return ok(w.idLog)
+    if (cmd === 'git' && args[0] === 'diff' && w.diffs !== undefined) return ok(w.diffs)
     if (cmd === 'git' && args[0] === 'log' && args.includes('--branches')) {
       const grep = args.find(a => a.startsWith('--grep='))
       if (grep) {
@@ -4730,10 +4735,20 @@ describe('the Acceptance pane, read alone', () => {
   })
 
   test('Explain on one note asks one sentence in the language, the note word for word; the answer is one line', () => {
-    const p = reasonPrompt('Русский', 'cache key', 'note: `x` in a.go:3')
+    const ctx = { title: 'cache key', goal: '', what: '', diff: '' }
+    const p = reasonPrompt('Русский', ctx, 'note: `x` in a.go:3')
     expect(p).toContain('In Русский')
     expect(p).toContain('note: `x` in a.go:3')
-    expect(reasonPrompt(undefined, 't', 'n')).toContain('the language the note is written in')
+    expect(reasonPrompt(undefined, { ...ctx, title: 't' }, 'n')).toContain('the language the note is written in')
+    // DoD 14: the goal, what was done and the diff go along, the diff cut short.
+    const full = reasonPrompt('Deutsch', { title: 't', goal: 'a key per branch', what: 'the key names the branch', diff: '+const key = branch' }, 'note: register.tsx:12 x')
+    for (const part of ["The ticket's goal: a key per branch", 'What was done: the key names the branch', '+const key = branch', 'name concretely what the code does']) expect(full).toContain(part)
+    expect(reasonPrompt('Deutsch', ctx, 'n')).not.toContain('The change to the files')
+    // A placeholder names no file; a file named twice is one.
+    expect(notePaths('note: register.tsx:1214 reads core/release/notes/<ID>.md and hooks/board.ts, not register.tsx')).toEqual(['register.tsx', 'hooks/board.ts'])
+    expect(notePaths('nothing named here')).toEqual([])
+    expect(clipLines('a\nb\nc\n', 2)).toBe('a\nb\n... 1 more lines')
+    expect(clipLines('a\nb', 2)).toBe('a\nb')
     expect(reasonOf('  Это\nважно. ')).toBe('Это важно.')
     expect(reasonOf('  ')).toBeUndefined()
   })
@@ -4890,6 +4905,64 @@ describe('the Acceptance pane', () => {
     expect(all[0]).toBe('● green: accept')
     expect(all).toContain('⚪ note: windows paths')
     expect(all).toContain('🔵 note: pre-existing: load.go')
+  })
+
+  test('Explain on a note hands the model the goal, what was done and the diff of the file the note names', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: register.tsx:12 closes the pane early' } }, HUMAN, WORKING]
+    w.shows.MG677R = { title: 'cache key', goal: 'a key per branch', outcome: { what: 'the key names the branch', why: 'x' } }
+    w.idLog = 'abc1234\ndef5678\n'
+    w.diffs = '+  closeAcceptance($)\n'
+    w.reason = 'Das Fenster schließt vor dem Schritt.'
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await w.clock.settle()
+    await pane.press({ key: 'why-MG677R-0' })
+    const prompt = w.reasonPrompts.at(-1) ?? ''
+    expect(prompt).toContain("The ticket's goal: a key per branch")
+    expect(prompt).toContain('What was done: the key names the branch')
+    expect(prompt).toContain('+  closeAcceptance($)')
+    // From before the ticket's first commit, the bare name matched anywhere.
+    expect(ran(w, 'git', 'diff')[0]?.slice(0, 6)).toEqual(['git', 'diff', 'def5678^', 'HEAD', '--', ':(glob)**/register.tsx'])
+  })
+
+  test('a give-back the move refuses keeps the pane open with the person\'s marks', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: the size\nnote: the docs' } }, HUMAN, WORKING]
+    w.moveFails = 'jaira: lane "in-progress" refuses: the board is locked'
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await cycle(pane, 'MG677R', 0)
+    await pane.press({ key: 'execute-MG677R' })
+    expect(w.closed).not.toContain('cockpit-acceptance')
+    expect((await pane.find({ key: 'now-MG677R-0' }))?.text).toBe('[•fix]')
+    expect(ran(w, 'jaira', 'note')).toEqual([])
+    // Once the move goes through, the pane closes.
+    w.moveFails = undefined
+    await pane.press({ key: 'execute-MG677R' })
+    expect(w.closed).toContain('cockpit-acceptance')
+  })
+
+  test('a repository that keeps no release notes shows no release note line', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    const all = await texts(await acceptancePane($, await $.ui.mount(BAND), 'MG677R'))
+    await w.clock.settle()
+    expect(all.some(x => x.startsWith('Release note:'))).toBe(false)
+  })
+
+  test('the pull request is asked once in five minutes, however often the pane opens', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    for (let i = 0; i < 3; i++) {
+      await (await acceptancePane($, await $.ui.mount(BAND), 'MG677R')).unmount()
+      await w.clock.settle()
+    }
+    expect(ran(w, 'gh', 'pr', 'list')).toHaveLength(1)
+    await w.clock.advance(5 * 60_000)
+    await (await acceptancePane($, await $.ui.mount(BAND), 'MG677R')).unmount()
+    await w.clock.settle()
+    expect(ran(w, 'gh', 'pr', 'list')).toHaveLength(2)
   })
 
   test('Explain all opens the explaining chat from the pane', async ($, on) => {

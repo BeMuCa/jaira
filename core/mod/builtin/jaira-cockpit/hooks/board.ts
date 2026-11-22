@@ -1047,15 +1047,37 @@ export function commitsOf(log: string): { commits: number; files: number } {
 }
 
 // Explain on one note: the cheap model says in one everyday sentence why it
-// matters for accepting the ticket, or why it does not.
-export function reasonPrompt(language: string | undefined, title: string, note: string): string {
+// matters for accepting the ticket, or why it does not - told what the
+// ticket is for, what was done, and the change to the files the note names,
+// so it can say what happens in the code rather than repeat the note.
+export type NoteContext = { title: string; goal: string; what: string; diff: string }
+export const DIFF_LINES = 200
+
+export function reasonPrompt(language: string | undefined, ctx: NoteContext, note: string): string {
   return [
-    `A person decides whether to accept the ticket "${title}". A reviewer left the note below.`,
-    `In ${language ?? 'the language the note is written in'}, say in one short everyday sentence why this note matters for that decision, or why it does not.`,
+    `A person decides whether to accept the ticket "${ctx.title}". A reviewer left the note below.`,
+    ...(ctx.goal !== '' ? [`The ticket's goal: ${ctx.goal}`] : []),
+    ...(ctx.what !== '' ? [`What was done: ${ctx.what}`] : []),
+    `In ${language ?? 'the language the note is written in'}, say in one short everyday sentence why this note matters for that decision, or why it does not - name concretely what the code does, as the change below shows.`,
     'Keep code identifiers, file paths and ticket handles exactly as written. Answer with the sentence alone.',
     '',
     note,
+    ...(ctx.diff !== '' ? ['', `The change to the files the note names (at most ${DIFF_LINES} lines):`, ctx.diff] : []),
   ].join('\n')
+}
+
+// The files a note names: words with a file extension, a ':line' after them
+// dropped - 'register.tsx:1214', 'core/release/notes/<ID>.md'. A placeholder
+// with '<' or '>' names no file.
+export function notePaths(note: string): string[] {
+  const found = note.match(/[\w./-]+\.(?:tsx?|jsx?|go|md|sh|py|json|ya?ml|toml|css|html)(?::\d+)?\b/g) ?? []
+  return [...new Set(found.map(p => p.replace(/:\d+$/, '')))]
+}
+
+// A diff cut to its first n lines, with a line saying how many were left out.
+export function clipLines(text: string, n: number): string {
+  const lines = text.replace(/\n$/, '').split('\n')
+  return lines.length <= n ? lines.join('\n') : [...lines.slice(0, n), `... ${lines.length - n} more lines`].join('\n')
 }
 
 // The model's sentence, on one line; undefined when it said nothing.

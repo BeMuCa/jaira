@@ -5,7 +5,7 @@ import {
   branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf,
-  commitsOf, createdHandle, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, headPrompt, rephrasedOf, rephrasePrompt, standOf, storyOf,
+  clipLines, commitsOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, headPrompt, rephrasedOf, rephrasePrompt, standOf, storyOf,
   type Action, type Agent, type GapItem, type Story, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
@@ -1209,9 +1209,12 @@ async function openAcceptance($: EngineInterface, w: Waiting): Promise<void> {
 async function readStory($: EngineInterface, w: Waiting, story: Story | undefined, items: readonly GapItem[]): Promise<void> {
   const code = await codeDir($, w.id)
   const log = await run($, ['git', 'log', '--format=%h', '--name-only', '-F', `--grep=${w.id}`, 'HEAD'], code)
+  // A release note where the repository keeps them as jaira does, one file
+  // per ticket; a repository without one shows no line - nothing is asked
+  // of a board that keeps no notes.
   let note = ''
   try {
-    note = await $.fs.read(`${code}/core/release/notes/${w.id}.md`)
+    note = await $.fs.read(`${code}/${RELEASE_NOTES}/${w.id}.md`)
   } catch {}
   const pr = await openPullRequest($, w.id)
   await update($, storyAtom, s => (s?.id !== w.id ? s : { ...s, ...(log?.exitCode === 0 ? { commits: commitsOf(log.stdout) } : {}), release: releaseLines(note), pr }))
@@ -1219,6 +1222,8 @@ async function readStory($: EngineInterface, w: Waiting, story: Story | undefine
   const reason = lightOf(w, (await read($, huntsAtom))[w.id], items.map(x => x.cls)).reasons[0]
   await rephrase($, `${w.id}${HEAD}`, [...(story === undefined ? [w.title] : [story.title, story.goal, story.what, story.why]), ...(reason === undefined ? [] : [t.lightReason(reason)])].filter(x => x !== ''), headPrompt)
 }
+
+const RELEASE_NOTES = 'core/release/notes'
 
 // The checkout the ticket's code is in: its own worktree, where there is one.
 async function codeDir($: EngineInterface, id: string): Promise<string> {
@@ -1230,7 +1235,21 @@ async function codeDir($: EngineInterface, id: string): Promise<string> {
 // Whether the ticket's branch has a pull request, in any state; false where
 // nobody can tell - no forge, no branch, a failed call: the history leaves
 // it out. Two calls to the forge and no fetch: the pane only looks.
+// What the forge said, per ticket, for PULL_MS: opening the pane again in
+// that time asks it nothing.
+const PULL_MS = 5 * 60_000
+const pulls = new Map<string, { at: number; pr: boolean }>()
+
 async function openPullRequest($: EngineInterface, id: string): Promise<boolean> {
+  const now = await $.clock.now()
+  const kept = pulls.get(id)
+  if (kept !== undefined && now - kept.at < PULL_MS) return kept.pr
+  const pr = await askPullRequest($, id)
+  pulls.set(id, { at: now, pr })
+  return pr
+}
+
+async function askPullRequest($: EngineInterface, id: string): Promise<boolean> {
   if (!board) return false
   const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], board.repo)
   const branch = trees?.exitCode === 0 ? branchesFor(trees.stdout, id).ticket : undefined
@@ -1246,6 +1265,21 @@ async function openPullRequest($: EngineInterface, id: string): Promise<boolean>
 // second press asks nothing. A press is the person asking: without a
 // language set the sentence comes in the note's own.
 const REASON_PREFIX = 'reason:'
+// The change the ticket made to the files a note names: from before its
+// first commit to HEAD, in the checkout its code is in; '' where it names
+// none or git has nothing to say. A bare file name matches it anywhere.
+async function noteDiff($: EngineInterface, id: string, note: string): Promise<string> {
+  const paths = notePaths(note)
+  if (paths.length === 0) return ''
+  const code = await codeDir($, id)
+  const log = await run($, ['git', 'log', '--format=%h', '-F', `--grep=${id}`, 'HEAD'], code)
+  const first = log?.exitCode === 0 ? log.stdout.trim().split('\n').at(-1) : undefined
+  if (!first) return ''
+  const specs = paths.map(p => (p.includes('/') ? p : `:(glob)**/${p}`))
+  const diff = await run($, ['git', 'diff', `${first}^`, 'HEAD', '--', ...specs], code)
+  return diff?.exitCode === 0 ? clipLines(diff.stdout, DIFF_LINES) : ''
+}
+
 async function explainNote($: EngineInterface, id: string, title: string, text: string): Promise<void> {
   // Asked already and waiting: nothing twice. A sentence shown, or a failure,
   // is asked again - from the store where it is kept, in today's language.
@@ -1262,7 +1296,9 @@ async function explainNote($: EngineInterface, id: string, title: string, text: 
   if (kept[keyOfNote] !== undefined) return void await put(kept[keyOfNote])
   let said: string | undefined
   try {
-    const result = await $.model.complete({ model: 'haiku', prompt: reasonPrompt(language, title, text), maxTokens: 300 })
+    const story = await read($, storyAtom)
+    const ctx = { title, goal: story?.id === id ? story.story?.goal ?? '' : '', what: story?.id === id ? story.story?.what ?? '' : '', diff: await noteDiff($, id, text) }
+    const result = await $.model.complete({ model: 'haiku', prompt: reasonPrompt(language, ctx, text), maxTokens: 300 })
     said = result.isAnswered ? reasonOf(result.text) : undefined
   } catch {}
   await put(said ?? t.noReason)
@@ -1281,10 +1317,11 @@ async function execute($: EngineInterface, w: Waiting, typed: string, share: num
   await update($, refusalAtom, () => null)
   if (e.step === 'notTerminal') return refuse(t.notTerminal(w.id, w.lane))
   if (e.step === 'needWhy') return refuse(canType ? t.blockerNeedsWhy(w.id) : t.blockerNeedsTyping(w.id))
+  // The pane closes once the ticket moved, as for Accept: a refusal before
+  // that leaves the person's marks in it.
   if (e.step === 'giveBack') {
-    closeAcceptance($)
-    if (items.length === 0) return giveBack($, w.id, w.lane, typed.trim(), share)
-    return giveBackWith($, w, items, typed.trim(), share)
+    if (items.length === 0) return giveBack($, w.id, w.lane, typed.trim(), share, () => closeAcceptance($))
+    return giveBackWith($, w, items, typed.trim(), share, () => closeAcceptance($))
   }
   const moved = await acceptWith($, w, items, e.asksWhy ? typed : '', why => refuse(`${t.refused(w.id)}\n${why}`))
   if (moved) closeAcceptance($)
@@ -1403,10 +1440,10 @@ async function createFollowUps($: EngineInterface, dir: string, id: string, onBo
   return out
 }
 
-async function giveBackWith($: EngineInterface, w: Waiting, items: readonly GapItem[], extra: string, share: number): Promise<void> {
+async function giveBackWith($: EngineInterface, w: Waiting, items: readonly GapItem[], extra: string, share: number, onMoved?: () => void): Promise<void> {
   const stand = await stillIn($, w, t.giveBack)
   if (stand === undefined) return
-  await giveBack($, w.id, w.lane, async dir => decisionLines(items, await createFollowUps($, dir, w.id, stand.board, items), extra), share)
+  await giveBack($, w.id, w.lane, async dir => decisionLines(items, await createFollowUps($, dir, w.id, stand.board, items), extra), share, onMoved)
 }
 
 // why: what the person typed to accept a blocker not fixed, which goes onto
@@ -1469,18 +1506,20 @@ async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
 // a ticket never has two worker tabs. The choice and why go onto the ticket.
 // The review lane is not touched here: the worker always hands it to a new
 // agent, whose tab run-lane.sh closes after the lane.
-async function giveBack($: EngineInterface, id: string, lane: string, given: string | ((dir: string) => Promise<string>), share: number): Promise<void> {
+// onMoved: called once the ticket is back in in-progress - the Acceptance
+// pane closes then, and keeps the person's marks on any refusal before it.
+async function giveBack($: EngineInterface, id: string, lane: string, given: string | ((dir: string) => Promise<string>), share: number, onMoved?: () => void): Promise<void> {
   if (!board) return
   const here = await ticketHere($, board, id)
   if (!here.ok) return fail($, `${t.giveBack} ${id}`, here.why)
   try {
-    await givingBack($, id, lane, given, share, here.dir)
+    await givingBack($, id, lane, given, share, here.dir, onMoved)
   } finally {
     await here.leave()
   }
 }
 
-async function givingBack($: EngineInterface, id: string, lane: string, given: string | ((dir: string) => Promise<string>), share: number, dir: string): Promise<void> {
+async function givingBack($: EngineInterface, id: string, lane: string, given: string | ((dir: string) => Promise<string>), share: number, dir: string, onMoved?: () => void): Promise<void> {
   if (!board) return
   // Back to an earlier lane needs no --force since jaira 0.3.7 (MIN_JAIRA),
   // so any other refusal of the move still stops it. The move goes first: a
@@ -1488,6 +1527,7 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   const moved = await jaira($, dir, ['move', id, '--to', 'in-progress'])
   if (movedBefore(moved, id, 'in-progress')) return movedFirst($, t.giveBack, id, 'in-progress')
   if (!moved.ok) return fail($, `${t.giveBack} ${id}`, moved.why)
+  onMoved?.()
   // Decisions on the review's notes are written out only now: a follow-up
   // ticket is created for a ticket that really went back.
   const reason = typeof given === 'string' ? given : await given(dir)
