@@ -2402,11 +2402,6 @@ type refRejectedMsg struct {
 // loop.
 func (m *Model) rejectOnRef(t *ticket.Ticket, why string) tea.Cmd {
 	y := m.refSync
-	if y == nil {
-		m.mode = m.returnTo
-		m.notify(fmt.Sprintf("%s lives only on its ref, and this board has no remote to write it to.", ticket.Handle(t.ID)), true)
-		return nil
-	}
 	m.mode = modeBoard
 	m.detail = nil
 	m.notify(fmt.Sprintf("Rejecting %s on its ref …", ticket.Handle(t.ID)), false)
