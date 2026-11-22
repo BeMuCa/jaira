@@ -195,13 +195,13 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
   // The top row: the tabs and Close as one row of the same button — framed,
   // padded, three rows high — so none stands higher or lower than another and
   // each is easy to hit. A Button takes no size, so the frame is a Box's. The
-  // open tab is the one with a coloured frame and bold text; the others are
-  // dimmed. Close stays beside the host's own ×, which is small and absent on
-  // a phone.
+  // open tab is the one with a frame and bold text in the theme's accent (a
+  // theme key, as GROUP); the others are dimmed. Close stays beside the
+  // host's own ×, which is small and absent on a phone.
   const framed = (key: string, label: string, onPress: () => void, active: boolean | null) => (
-    <Box key={`${key}-frame`} borderStyle="round" paddingX={1} borderColor={active ? 'cyan' : undefined} borderDimColor={active === false}>
+    <Box key={`${key}-frame`} borderStyle="round" paddingX={1} borderColor={active ? 'claude' : undefined} borderDimColor={active === false}>
       <Button key={key} label={label} variant={active ? 'primary' : undefined} onPress={onPress}>
-        <Text bold={active !== false} color={active ? 'cyan' : undefined} dimColor={active === false}>{`  ${label}  `}</Text>
+        <Text bold={active !== false} color={active ? 'claude' : undefined} dimColor={active === false}>{`  ${label}  `}</Text>
       </Button>
     </Box>
   )

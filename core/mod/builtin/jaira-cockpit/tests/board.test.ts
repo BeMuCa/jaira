@@ -3424,7 +3424,7 @@ describe('the overview', () => {
       // primary variant; the others are dimmed. Close is never a tab.
       for (const [i, other] of ['queue', 'log', 'workers'].entries()) {
         const open = other === tab
-        expect(frames[i]?.props.borderColor).toBe(open ? 'cyan' : undefined)
+        expect(frames[i]?.props.borderColor).toBe(open ? 'claude' : undefined)
         expect(frames[i]?.props.borderDimColor).toBe(!open)
         expect((await pane.find({ key: `overview-tab-${other}` }))?.props.variant).toBe(open ? 'primary' : undefined)
       }

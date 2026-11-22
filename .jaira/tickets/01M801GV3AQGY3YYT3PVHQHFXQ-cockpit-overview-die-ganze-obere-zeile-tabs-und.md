@@ -19,13 +19,18 @@ related: []
 follows: 01M7ZPP39H62XRS3R59602D92C
 commits: []
 created-at: 2026-11-21T21:52:10Z
-updated-at: 2026-11-22T11:14:17Z
+updated-at: 2026-11-22T11:15:42Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-30716
 claimed-at: 2026-11-22T11:07:59Z
 outcome-what: "Overview-Pane: Tabs Queue/Log/Workers und Close teilen einen Helfer framed() — jeder Knopf gerahmt (round, paddingX 1), gleich hoch, in einer Zeile (overview-top-row, wrap bei schmalem Terminal); aktiver Tab cyan Rahmen + bold + primary, inaktive gedimmt. Test ersetzt den alten Close-Test; Release-Note, shipped.sha256."
 outcome-why: "Screenshot 21.11.: Tabs als schmaler Text neben dem dreizeiligen gerahmten Close — ungleiche Höhe, unruhige Zeile, kleine Treffflächen."
 outcome-resolves: "DoD 1 (Test) und 3; DoD 2 (Windows Terminal ansehen) bleibt für die Person. Geprüft: Nebenläufigkeit n/a (reines Rendern); Fehlerpfad: ungelesenes Board zeigt Close gerahmt (Test); ungewöhnliche Eingabe: schmales Terminal — Zeile bricht um statt abzuschneiden; Rechte n/a."
+review-summary: "core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:202,204 hardcodes 'cyan' for the open tab; the file colours by theme key (GROUP, line 15-16: 'they follow the person's theme') — use the theme key 'claude' instead, and the test with it"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Cockpit-Overview: die ganze obere Zeile (Tabs und Close) im gerahmten Stil des Close-Knopfs
@@ -52,3 +57,4 @@ outcome-resolves: "DoD 1 (Test) und 3; DoD 2 (Windows Terminal ansehen) bleibt f
 - **2026-11-22 11:06 · Alexander Sacharov** — Worktree auf upstream/master (0.6.1) vorgespult; lokale Regeneration der Lane-Dateien durch Binary 0.6.0 verworfen (nicht Teil des Tickets). Options: planning nicht angehakt, pre-process entfällt.
 - **2026-11-22 11:08 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/25712.sock (neuer Worker; voriger Claim-Prozess 11624 tot, Claim übernommen)
 - **2026-11-22 11:12 · Alexander Sacharov** — decision: Close bleibt neben dem × des Hosts (Vorschlag aus context übernommen, Alex wollte 'in einer Reihe mit Close'). Alle vier Knöpfe teilen einen Helfer framed() — Tabs und Close können so nicht mehr auseinanderlaufen. Aktiver Tab: cyan Rahmen + bold + variant primary; inaktive Tabs: borderDimColor + dimColor. Close bleibt key overview-close-frame.
+- **2026-11-22 11:14 · Alexander Sacharov** — critique: overview-pane.tsx framed() färbt den offenen Tab mit festem 'cyan'; die Datei nutzt Theme-Keys (GROUP) — auf 'claude' umstellen, Test mit.
