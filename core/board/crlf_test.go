@@ -76,3 +76,29 @@ func TestAStrayCRLFLineLeavesTheBlockInLF(t *testing.T) {
 		t.Errorf("update: action %q, err %v; want unchanged", action, err)
 	}
 }
+
+// A CRLF file whose block an older build wrote in LF is mixed. The file's own
+// lines say CRLF, so the update puts the block in CRLF too, however long the
+// block is.
+func TestAnLFBlockInACRLFFileBecomesCRLF(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "AGENTS.md")
+	before := "# Project\r\n\r\nSome notes.\r\nMore.\r\n\n" + jairaMarkerStart + "\nold text\n" + strings.Repeat("old line\n", 20) + jairaMarkerEnd + "\n"
+	if err := os.WriteFile(path, []byte(before), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := announceInAgentFile(root, "AGENTS.md", nil, false); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start, end, _ := blockBounds(string(got))
+	if bareLF(string(got)[start:end]) {
+		t.Errorf("the block stayed in LF in a CRLF file:\n%q", got)
+	}
+	if ok, stale := NoteIsCurrent(root, nil); !ok {
+		t.Errorf("drifted straight after the update: %v", stale)
+	}
+}

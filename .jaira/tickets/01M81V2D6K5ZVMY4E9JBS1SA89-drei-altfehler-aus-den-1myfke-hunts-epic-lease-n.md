@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T14:37:54Z
-updated-at: 2026-11-22T14:51:33Z
+updated-at: 2026-11-22T14:54:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3557981
 claimed-at: 2026-11-22T14:38:23Z
@@ -27,13 +27,13 @@ outcome-what: "rebaseEpic queues an unsent merge on the lease it was merged onto
 outcome-why: "three pre-existing defects from the 1MYFKE hunts: a teammate's epic change overwritten on the next flush, CRLF AGENTS.md always drifted, a milestone silently never reaching the remote"
 outcome-resolves: S1SA89
 review-summary: "none"
-round: 3
+round: 4
 back-from: testing
 back-by: lane
-back-count: 1
-review-gaps: "moved lineEnding above appendEntry's doc comment (it had split the comment from its function); left core/ticket/frontmatter.go:64 alone — it reads the first line's ending on purpose, a different rule in another package; epic.go repeats two lines of RecordEpic (QueueEpic + dirty) rather than widening the epic.Refs interface; no dead code, no repeated work on a hot path"
-test-verdict: "fail: bughunt change findings at 965968547 go back to in-progress (suite itself green)"
-hunt-verdict: "fail: bughunt done at 965968547, 2 change (TUI warning via notify steals the input mode; one stray CRLF flips the whole block), 2 pre-existing (other agent-file writers LF-only; epic outbox drop vs concurrent add) left as notes for the person"
+back-count: 2
+review-gaps: "none: round 2 diff (flash instead of notify, majority lineEnding) adds nothing redundant; round 1 cleanup stands (lineEnding placement, frontmatter.go:64 left alone)"
+test-verdict: "pass: round 2 - go build/vet ./... ok, go test -race core/board internal/tui internal/cli exit 0 (whole suite green in round 1); DoD 2 and 3 re-verified: TestAStrayCRLFLineLeavesTheBlockInLF and the mode check in TestTheBoardSaysWhenAMilestoneCouldNotBeQueued fail without the fix and pass with it"
+hunt-verdict: "fail: bughunt done at e3d736ef6, 1 change (majority lineEnding counts jaira's own LF block, so a mixed file an old build left stays mixed)"
 ---
 
 # Drei Altfehler aus den 1MYFKE-Hunts: Epic-Lease nach ErrRaceLost, CRLF-AGENTS.md driftet immer, TUI verschluckt Fetch-Fehler
@@ -43,7 +43,7 @@ hunt-verdict: "fail: bughunt done at 965968547, 2 change (TUI warning via notify
 - [x] rebaseEpic hält nach ErrRaceLost den Lease korrekt (core/refsync/epic.go, Test)
   proof: core/refsync/epic.go rebaseEpic oursLease; TestAnEpicThatKeepsLosingIsRequeuedOnTheStateItWasMergedOnto (core/refsync/epic_test.go)
 - [x] AGENTS.md mit CRLF gilt nach jaira update nicht als drifted (core/board/announce.go, Test)
-  proof: core/board/announce.go managedBlock + announceInAgentFile, core/board/gitignore.go lineEnding (majority); TestACRLFAgentFileIsNotDrifted, TestAStrayCRLFLineLeavesTheBlockInLF (core/board/crlf_test.go)
+  proof: core/board/announce.go managedBlock (line ending of the lines outside the block) + announceInAgentFile, core/board/gitignore.go lineEnding (majority); TestACRLFAgentFileIsNotDrifted, TestAStrayCRLFLineLeavesTheBlockInLF, TestAnLFBlockInACRLFFileBecomesCRLF (core/board/crlf_test.go)
 - [x] Ein fehlgeschlagener Hintergrund-FetchMilestones wird in der TUI angezeigt statt verschluckt (internal/tui/refs.go, Test)
   proof: internal/tui/refs.go refFetchedMsg.warn + internal/tui/model.go refFetchedMsg flash (status line, no mode change); TestTheBoardSaysWhenAMilestoneCouldNotBeQueued (internal/tui/recorderror_test.go)
 - [x] Release-Note core/release/notes/<ID>.md, shipped.sha256 falls nötig
@@ -72,3 +72,6 @@ hunt-verdict: "fail: bughunt done at 965968547, 2 change (TUI warning via notify
 - **2026-11-22 14:49 · Alexander Sacharov** — bughunt: done at 965968547 - 4 findings (2 change, 2 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/board/announce.go core/board/crlf_test.go core/board/gitignore.go core/milestone/write.go core/refsync/epic.go core/refsync/epic_test.go core/release/notes/S1SA89.md internal/cli/milestones.go internal/tui/model.go internal/tui/recorderror_test.go internal/tui/refs.go
 - **2026-11-22 14:50 · Alexander Sacharov** — testing: class: Warnung als modale Meldung in einem Hintergrundpfad; example: m.notify im refFetchedMsg-Zweig schaltet in modeMessage, Enter beim Ticket-Anlegen schließt nur die Meldung; fix: Warnung in die Statuszeile (flash) wie announceMilestones, ohne Moduswechsel. class: Zeilenende-Erkennung per 'irgendein CRLF'; example: eine CRLF-Zeile in LF-AGENTS.md schaltet den Block auf CRLF; fix: lineEnding nach Mehrheit der Zeilen, Test mit einer verirrten CRLF-Zeile.
 - **2026-11-22 14:51 · Alexander Sacharov** — Runde 2: Warnung jetzt in der Statuszeile (flash, hinter den News desselben Fetch), kein Moduswechsel. lineEnding nach Mehrheit der Zeilen. Beide Tests fallen ohne Fix. Altfunde 3 (removeBlock/setClaudeImport nur LF) und 4 (Epic-Outbox-Drop vs. paralleles epic add) bleiben Notizen für die Person.
+- **2026-11-22 14:53 · Alexander Sacharov** — bughunt: change: core/board/gitignore.go:434 (lineEnding, majority rule from e3d736ef6) via core/board/announce.go:437 managedBlock - class: the line ending is voted on by the whole file, including the jaira block jaira itself wrote, so a CRLF file whose block an older build appended in LF keeps that LF block forever: the update rewrites it in LF, and NoteIsCurrent then calls the mixed file current, so nothing repairs it (the 'any CRLF' rule at 965968547 did). Same vote in appendEntry gitignore.go:453 for .gitignore/info/exclude, smaller since an entry is 2 lines; example: CRLF '# Project / Some notes' (4 lines) + LF block of 9 lines -> action updated, LF lines remain, current=true. Possible fix: count only the lines outside the managed block. Not a blocker: no data loss, the result is stable, a fresh checkout with autocrlf makes the file CRLF again; ran: go test -overlay with a scratch test in core/board (FAIL: mixed endings remain after update)
+- **2026-11-22 14:53 · Alexander Sacharov** — bughunt: done at e3d736ef6 - 1 finding (1 change, 0 pre-existing) in 3 modules, follow-up hunt since 965968547 (diff only: core/board/gitignore.go core/board/crlf_test.go internal/tui/model.go internal/tui/recorderror_test.go); concurrency, error paths, input, permissions checked; files: core/board/announce.go core/board/crlf_test.go core/board/gitignore.go core/milestone/write.go core/refsync/epic.go core/refsync/epic_test.go core/release/notes/S1SA89.md internal/cli/milestones.go internal/tui/model.go internal/tui/recorderror_test.go internal/tui/refs.go
+- **2026-11-22 14:53 · Alexander Sacharov** — testing: class: Zeilenende wird über den eigenen Block mitgezählt; example: 4 CRLF-Nutzerzeilen + 9 LF-Blockzeilen -> Block bleibt LF, current=true; fix: Mehrheit nur über die Zeilen außerhalb des Blocks, ohne solche Zeilen über die ganze Datei; Test mit genau diesem Fall.

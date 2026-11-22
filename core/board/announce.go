@@ -434,7 +434,13 @@ func managedBlock(s, note string) (string, bool) {
 	if start < 0 || end <= start {
 		return "", false
 	}
-	nl := lineEnding(s)
+	// The file's own lines decide, not the block: a CRLF file whose block an
+	// older build wrote in LF would otherwise keep it in LF for good.
+	outside := s[:start] + s[end+len(jairaMarkerEnd):]
+	if strings.TrimSpace(outside) == "" {
+		outside = s // nothing but the block: it is the file
+	}
+	nl := lineEnding(outside)
 	note = strings.ReplaceAll(note, "\n", nl)
 	newBlock := jairaMarkerStart + nl + note + nl + jairaMarkerEnd
 	if localRel := strings.Index(s[start:end], jairaMarkerLocal); localRel >= 0 {
