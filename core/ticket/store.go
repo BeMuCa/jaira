@@ -803,6 +803,23 @@ func (s *Store) RestoreFrom(name string) (src, dst string, err error) {
 	return src, dst, nil
 }
 
+// RestoresMilestone reports whether RestoreFrom would bring name back as a
+// milestone: it lies in a logbook folder's milestones/ subfolder. The restore
+// command asks before the move, so a milestone it must refuse never leaves the
+// logbook.
+func (s *Store) RestoresMilestone(name string) bool {
+	folders, err := s.logbookFolders()
+	if err != nil {
+		return false
+	}
+	for _, folder := range folders {
+		if _, err := os.Stat(filepath.Join(folder, MilestonesSubdir, filepath.Base(name))); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
 // unreject takes a rejection off a file about to go back on the board: a
 // ticket somebody restored is a ticket somebody wants after all, and a
 // rejection left on it would say the opposite. The link a duplicate rejection

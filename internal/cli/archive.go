@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -137,6 +136,11 @@ restore fails with it rather than reporting a milestone nobody can see.`,
 			}
 			defer unlock()
 
+			if s.RestoresMilestone(args[0]) {
+				if err := checkMilestoneRestore(s, args[0]); err != nil {
+					return err
+				}
+			}
 			src, dst, err := s.RestoreFrom(args[0])
 			if err != nil {
 				return &codedError{code: ExitNotFound, reason: "not_archived", message: err.Error()}
@@ -152,6 +156,31 @@ restore fails with it rather than reporting a milestone nobody can see.`,
 			return nil
 		},
 	}
+}
+
+// checkMilestoneRestore refuses a milestone restore before the file leaves
+// the logbook, so a refusal has nothing to put back (8TT890). The catch-up
+// runs first, as in every milestone write: it clears a stale copy beside a
+// renamed file itself. Then one ID in two files on the board refuses, and so
+// does a board file that already carries the restored file's ID under any
+// name — the restore would make that pair itself, or Migrate would drop an
+// old-format file as the older side of it.
+//
+// The caller holds milestoneLockName.
+func checkMilestoneRestore(s *ticket.Store, name string) error {
+	if err := refs.CatchUpMilestones(s.Root); err != nil {
+		return err
+	}
+	if err := milestone.CheckTwinFiles(s.Root); err != nil {
+		return err
+	}
+	base := filepath.Base(name)
+	_, id, _ := milestone.FileIdentity(strings.TrimSuffix(base, ".md"))
+	if on, err := milestone.Load(s.Root, id); err == nil {
+		return &codedError{code: ExitNotFound, reason: "not_archived",
+			message: fmt.Sprintf("%s is already on the board as %s", base, on.FileName())}
+	}
+	return nil
 }
 
 // unfileMilestone takes the "filed" line back off a milestone that has just
@@ -175,32 +204,8 @@ func unfileMilestone(s *ticket.Store, src, dst string) (string, error) {
 		return "", nil
 	}
 	name, id, _ := milestone.FileIdentity(strings.TrimSuffix(filepath.Base(dst), ".md"))
-	// The catch-up inside migrateHeld may bring the restored file up to its
-	// ref or remove it as the old name of a renamed milestone before a twin
-	// refuses, so the refusal puts back what the restore took, not whatever
-	// lies at dst by then.
-	restored, err := os.ReadFile(dst)
-	if err != nil {
-		return "", err
-	}
 	moved, err := migrateHeld(s)
 	reportMigrated(moved)
-	var twin *milestone.TwinFilesError
-	if errors.As(err, &twin) {
-		// The restored file goes back to the logbook whether or not it is
-		// one of the two. The board keeps what the catch-up made of it, as
-		// it does for every other milestone write that refuses here; only
-		// an untouched copy goes.
-		if back := ticket.WriteAtomic(src, restored); back != nil {
-			return "", errors.Join(err, back)
-		}
-		if now, rerr := os.ReadFile(dst); rerr == nil && bytes.Equal(now, restored) {
-			if back := os.Remove(dst); back != nil {
-				return "", errors.Join(err, back)
-			}
-		}
-		return "", fmt.Errorf("%w; %s stays in %s", err, filepath.Base(src), filepath.Dir(src))
-	}
 	if err != nil {
 		return "", err
 	}

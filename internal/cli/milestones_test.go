@@ -1148,8 +1148,8 @@ func TestLogbookAndRestoreRefuseOneIDInTwoFiles(t *testing.T) {
 		}
 	}
 
-	// Without the twin the milestone files; a twin that turns up on the board
-	// meanwhile keeps the restore from bringing it back.
+	// Without the twin the milestone files; a file of its ID that turns up on
+	// the board meanwhile keeps the restore from bringing it back.
 	if err := os.Remove(twin); err != nil {
 		t.Fatal(err)
 	}
@@ -1164,8 +1164,8 @@ func TestLogbookAndRestoreRefuseOneIDInTwoFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err = runCLI(t, dir, "restore", ms.FileName())
-	if code, reason := classify(err); code != ExitValidation || reason != "milestone_twin_files" {
-		t.Fatalf("restore beside a twin: exit %d (%s), want 3: %v", code, reason, err)
+	if code, _ := classify(err); code != ExitNotFound || !strings.Contains(err.Error(), "q5-"+ms.ID+".md") {
+		t.Fatalf("restore beside a file of its ID: exit %d, want %d naming q5: %v", code, ExitNotFound, err)
 	}
 	if b, err := os.ReadFile(logged[0]); err != nil || !milestone.FromBytes(ms.FileName(), b).Filed() {
 		t.Errorf("the restored file is not back in the logbook, filed: %v\n%s", err, b)
@@ -1298,5 +1298,35 @@ func TestARefusedRestoreKeepsTheLogbookCopyTheCatchUpRemoved(t *testing.T) {
 	}
 	if _, err := os.Stat(ms.Path(ada)); !os.IsNotExist(err) {
 		t.Errorf("%s is on the board: %v", ms.FileName(), err)
+	}
+}
+
+// A board file that already carries the restored file's ID, under another
+// name, refuses the restore before the file leaves the logbook: the restore
+// would make the pair itself.
+func TestRestoreRefusesAnIDAlreadyOnTheBoard(t *testing.T) {
+	dir := emptyStore(t)
+	if out, err := runCLI(t, dir, "milestone", "create", "z9"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, _ := milestone.Load(dir, "z9")
+	logDir := filepath.Join(dir, ".jaira", "logbook", "me-2026-01-01", "milestones")
+	if err := os.MkdirAll(logDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	logged := filepath.Join(logDir, "a1-"+ms.ID+".md")
+	body := []byte("---\ncolor: 45\nstatus: filed\n---\n\n<!-- older -->\n")
+	if err := os.WriteFile(logged, body, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err := runCLI(t, dir, "restore", filepath.Base(logged))
+	if code, _ := classify(err); code != ExitNotFound || !strings.Contains(err.Error(), ms.FileName()) {
+		t.Fatalf("restore of an ID on the board: exit %d, want %d naming %s: %v", code, ExitNotFound, ms.FileName(), err)
+	}
+	if b, err := os.ReadFile(logged); err != nil || string(b) != string(body) {
+		t.Errorf("the logbook copy changed or went: %v\n%s", err, b)
+	}
+	if _, err := os.Stat(filepath.Join(milestone.Dir(dir), filepath.Base(logged))); !os.IsNotExist(err) {
+		t.Errorf("the restored file is on the board: %v", err)
 	}
 }

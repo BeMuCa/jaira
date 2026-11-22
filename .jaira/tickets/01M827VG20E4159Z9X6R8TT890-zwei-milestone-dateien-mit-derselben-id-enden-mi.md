@@ -17,21 +17,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T18:21:19Z
-updated-at: 2026-11-22T19:41:49Z
+updated-at: 2026-11-22T19:55:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3443254
 claimed-at: 2026-11-22T19:28:38Z
 outcome-what: "Every milestone write — create, add, rm, set, rename, and logbook/restore of a milestone — refuses with exit 3 (milestone_twin_files) naming both files when one milestone ID lies in two files"
 outcome-why: "After a rename, a stale old copy beside a hand-edited file under the new name stayed on disk unseen and the next write read whichever file sorted first"
 outcome-resolves: 8TT890
-review-summary: "nothing to change: internal/cli/milestones.go migrateHeld now holds the one twin check, after catch-up and before Migrate, and unfileMilestone's rollback is dst->src. core/milestone/write.go lockAndMigrate checks after Migrate - a different order but harmless there (Migrate makes no pair, Edit needs no rollback); left alone rather than touching core for symmetry."
-review-gaps: "none - round 5 removed the pre-check it had added in unfileMilestone; one check in migrateHeld, one new test"
-test-verdict: "fail: suite green (go test -race ./... RC=0) but bughunt change at 77c9fd221 - catch-up rewrites/removes an ID-named restored file before the twin rollback, logbook copy lost"
-hunt-verdict: "change: internal/cli/archive.go:177 rollback after catch-up loses the restored ID-named file (bughunt 19:40)"
-round: 6
+review-summary: "nothing to change: internal/cli/archive.go unfileMilestone restores the taken bytes to the logbook and removes only an untouched dst; the board keeps the catch-up's result like every refused milestone write (note round 6). Standing on the give-back notes for reads and refsync."
+review-gaps: "none - round 6 adds a byte read, a WriteAtomic and a guarded Remove in unfileMilestone, and one test; nothing duplicated or unused"
+test-verdict: "fail: suite green (go test -race ./... RC=0), bughunt change at 6f7ad1e1a - refused restore whose catch-up rewrote dst leaves the milestone on board and in the logbook"
+hunt-verdict: "change: internal/cli/archive.go:194-199 catch-up-rewritten dst stays on the board beside the logbook copy; 'nothing was written' false after catch-up (bughunt 19:43)"
+round: 7
 back-from: testing
 back-by: lane
-back-count: 2
+back-count: 3
 review-verdict: "accept: all three DoD items hold - every milestone write path (core Create/Edit/Rename via lockAndMigrate, CLI logbook/restore via migrateHeld) refuses one ID in two files with exit 3 naming both; the normal rename catch-up tests stay green; release note present. go test ./core/milestone ./core/refsync ./internal/cli green. Open findings are narrow edges, not blockers."
 review-round: 2
 review-verdict-gaps: |-
@@ -53,7 +53,9 @@ review-check: "1. go build -o /tmp/j ./cmd/jaira (from the worktree)  2. in a sc
 - [x] Release-Note core/release/notes/<ID>.md
   proof: core/release/notes/8TT890.md
 - [x] Restore einer alten Milestone-Datei ohne ID (q4.md) neben einem Zwilling: die Datei liegt danach wieder im Logbook, filed, nicht auf dem Board (Test)
-  proof: internal/cli/archive.go unfileMilestone puts the restored bytes back on a twin refusal; migrateHeld checks after catch-up, before Migrate; TestRestoreOfAnOldFormatFileBesideATwinGoesBackToTheLogbook, TestRestoreClearsAStaleCopyBesideARenamedMilestone, TestARefusedRestoreKeepsTheLogbookCopyTheCatchUpRemoved
+  proof: internal/cli/archive.go checkMilestoneRestore runs before RestoreFrom; TestRestoreOfAnOldFormatFileBesideATwinGoesBackToTheLogbook, TestRestoreClearsAStaleCopyBesideARenamedMilestone, TestARefusedRestoreKeepsTheLogbookCopyTheCatchUpRemoved
+- [x] Restore prüft Zwillinge (nach Catch-up) bevor die Datei aus dem Logbook bewegt wird; keine Rückroll-Logik in unfileMilestone (Entscheidung 22.11.)
+  proof: internal/cli/archive.go checkMilestoneRestore (catch-up, CheckTwinFiles, ID already on the board) before s.RestoreFrom; unfileMilestone has no rollback; core/ticket/store.go RestoresMilestone; TestRestoreRefusesAnIDAlreadyOnTheBoard, TestLogbookAndRestoreRefuseOneIDInTwoFiles
 
 ## Options
 
@@ -92,3 +94,8 @@ angenommen:
 - **2026-11-22 19:40 · Alexander Sacharov** — bughunt: change: blocker: internal/cli/archive.go:177 with internal/cli/milestones.go:642-651 - class: restore now runs refs.CatchUpMilestones before the twin check, so a restored ID-named file that is a past state of its ref is rewritten (ref has newer content under the same name) or removed (ref renamed it, the old name is deleted at core/refsync/refsync.go:517) before the twin refusal moves dst back to the logbook. What goes back is then the ref's content without the filed line, or nothing, while the message still says 'nothing was written'. Old-format restores are fine, the catch-up skips them, which is why TestRestoreOfAnOldFormatFileBesideATwinGoesBackToTheLogbook passes. Example: create a1, keep its file, rename a1 z9, put a hand-made hand-<ID>.md beside it, put the old a1-<ID>.md in the logbook, restore a1-<ID>.md. Result: exit non-zero with 'lies in 2 files ... nothing was written' plus 'rename .../a1-<ID>.md ...: no such file or directory', and the logbook file is gone. ran: scratch go test (same body as TestRestoreClearsAStaleCopyBesideARenamedMilestone plus the hand twin). Fails on 77c9fd221; passes on 521ba40eb (the file stays in the logbook)
 - **2026-11-22 19:40 · Alexander Sacharov** — bughunt: done at 77c9fd221 - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since 521ba40eb; concurrency, error paths, input, permissions checked; files: core/milestone/write.go core/milestone/write_test.go core/refsync/catchup_test.go core/refsync/refsync.go core/release/notes/8TT890.md internal/cli/archive.go internal/cli/milestones.go internal/cli/milestones_test.go internal/cli/root.go
 - **2026-11-22 19:41 · Alexander Sacharov** — in-progress round 6 (bughunt 77c9fd221): rollback writes the bytes read from dst before migrateHeld back to src, and removes dst only when it is still those bytes. A dst the catch-up brought up to its ref stays on the board as the ref's state - the same any other refused milestone write leaves. Chose this over a twin check before RestoreFrom: that one cannot see twins the catch-up only resolves or makes.
+- **2026-11-22 19:43 · Alexander Sacharov** — bughunt: change: blocker: internal/cli/archive.go:194-199 - class: a refused restore whose catch-up rewrote the restored file (ref newer than the logbook copy, same name) leaves the milestone in two places and reports the opposite; the TwinFilesError text 'nothing was written' is also false wherever CatchUpMilestones wrote before CheckTwinFiles refused (migrateHeld, internal/cli/milestones.go:639ff, for logbook as well); example: create a1, 'milestone set a1 --goal newer', logbook holds the older a1-ID.md, hand-ID.md is a hand-edited twin -> restore exits 3 saying 'nothing was written ... a1-ID.md stays in .../logbook', but a1-ID.md (caught up to the ref) is on the board too and the logbook copy is back; following the message (delete hand-ID.md, run it again) gives 'a1-ID.md is already on the board' and the logbook copy is stranded; blame: 6f7ad1e1a (8TT890); ran: scratch test in internal/cli via twoBoards (removed afterwards)
+- **2026-11-22 19:43 · Alexander Sacharov** — bughunt: done at 6f7ad1e1a - 1 finding (1 change, 0 pre-existing) in 1 module, follow-up hunt since 77c9fd221; concurrency, error paths, input, permissions checked; files: core/milestone/write.go core/milestone/write_test.go core/refsync/catchup_test.go core/refsync/refsync.go core/release/notes/8TT890.md internal/cli/archive.go internal/cli/milestones.go internal/cli/milestones_test.go internal/cli/root.go
+- **2026-11-22 19:44 · Alexander Sacharov** — worker: testing sent back the 3rd time in a row, every round on the same rule - the restore rollback after migrateHeld (Moved path, catch-up removal, catch-up rewrite). Stopped for the person. Smaller design on the table: check twins (after catch-up) under the lock BEFORE RestoreFrom moves the file, and delete the rollback branch in unfileMilestone - nothing moved, nothing to put back.
+- **2026-11-22 19:50 · Alexander Sacharov** — decision (Alex, 22.11.): smaller design - restore checks twins after catch-up, under the lock, BEFORE RestoreFrom moves the file; the rollback branch in unfileMilestone goes.
+- **2026-11-22 19:55 · Alexander Sacharov** — in-progress round 7 (smaller design, Alex): restore under the lock asks ticket.Store.RestoresMilestone, then checkMilestoneRestore - catch-up, CheckTwinFiles, and refuse when the restored file's ID (computed for an old-format name too) is already on the board under any name (exit 5 not_archived, as RestoreFrom's same-name refusal). Rollback branch in unfileMilestone deleted. Second release-note line for the new refusal.
