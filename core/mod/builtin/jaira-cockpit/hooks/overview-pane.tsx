@@ -306,7 +306,7 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
   }
   return (
     <Box flexDirection="column">
-      <Box key="overview-top-row" flexDirection="row" flexWrap="wrap" columnGap={1}>
+      <Box key="overview-top-row" flexDirection="row" columnGap={1}>
         {tabButton('queue', w.tabQueue)}
         {tabButton('log', w.tabLog)}
         {tabButton('workers', w.tabWorkers)}

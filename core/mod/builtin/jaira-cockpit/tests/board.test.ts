@@ -3417,7 +3417,9 @@ describe('the overview', () => {
       }
       const row = await pane.find({ key: 'overview-top-row' })
       expect(row?.children.map(c => c.props)).toEqual(frames.map(f => f?.props))
+      // It never wraps: the pane budgets it three rows (OVERVIEW_ROWS).
       expect(row?.props).toMatchObject({ flexDirection: 'row' })
+      expect(row?.props.flexWrap).toBeUndefined()
       const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
       expect(labels.slice(0, 4)).toEqual(['Queue', 'Log', 'Workers', 'Close'])
       // The open tab, and only it, is highlighted: a coloured frame and the
