@@ -3021,6 +3021,33 @@ describe('a session that carries a ticket', () => {
     expect((await $.prompt.submit({ text: order, origin: { kind: 'peer' }, wait: false })).text).toBe(order)
   })
 
+  // Every way the start line arrives: typed into the pane, and relayed by
+  // Herdr App from the teamlead's tab inside an <hc> wrapper.
+  const starts = [
+    ['typed', '/jaira-worker MG677R --parent jaira-4c', 'composer'],
+    ['typed with leading space', '  /jaira-worker MG677R', 'composer'],
+    ['relayed by Herdr App', '<hc from="t3">/jaira-worker MG677R --parent uds:/run/user/1000/cc-socks/1.sock</hc>', 'human'],
+    ['relayed with attributes and a newline', '<hc from="t3" via="x">\n/jaira-dispatcher MG677R</hc>', 'human'],
+    ['a lane relayed by Herdr App', '<hc from="t1">/jaira-role-lane MG677R critique</hc>', 'human'],
+  ] as const
+  for (const [name, text, kind] of starts) {
+    test(`recognises its start line ${name}, and a subagent's report reaches it whole`, async ($, on) => {
+      const w = world(on, { herdr: true })
+      await startSession($)
+      await $.prompt.submit({ text, origin: { kind }, wait: false })
+      expect(w.store.get('carrying:abcdef12')).toMatchObject({ ticket: 'MG677R' })
+      const report = '<task-notification>Ticket MG677R: bughunt done at b5ec407 - 0 findings</task-notification>'
+      expect((await $.prompt.submit({ text: report, origin: { kind: 'task-notification' }, wait: false })).text).toBe(report)
+    })
+  }
+
+  test('an <hc> line that starts nothing leaves the session a person\'s', async ($, on) => {
+    const w = world(on, { herdr: true })
+    await startSession($)
+    await $.prompt.submit({ text: '<hc from="t3">how far is /jaira-worker MG677R?</hc>', origin: { kind: 'human' }, wait: false })
+    expect(w.store.has('carrying:abcdef12')).toBe(false)
+  })
+
   test('stays an agent\'s session after the mod is reloaded, though the line that started it never comes again', async ($, on) => {
     // A reload starts the module over: only the store remembers the start line.
     const w = world(on, { herdr: true, store: { 'carrying:abcdef12': { ticket: 'MG677R', role: 'worker', lane: '' } } })

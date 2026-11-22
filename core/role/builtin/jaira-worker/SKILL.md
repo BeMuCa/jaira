@@ -43,6 +43,23 @@ your head that the board does not know:
   killed session never gets a turn to write anything down.
 - `jaira dod <id> <n> --doing|--done` as you go, never all at the end.
 
+## When you wait
+
+A worker that ends its turn to wait — for the bug hunter, a fresh-lane agent,
+the parent's answer — looks from outside exactly like one that hangs. So
+before you end a turn to wait, say on what:
+
+- `jaira note <id> "waiting: <what> (<agent or session>) since <HH:MM>"`
+- started with `--parent`, send the same line to the parent with `SendMessage`
+
+What comes back is the hand-back, whatever shape it arrives in: a
+task-notification, an agent's message, or one line that only says
+`[shortened by jaira-cockpit] <ID> — full report: /cockpit report <ID>`. That
+line is not noise and not a link for the person — it is your agent's report.
+Read the result off the board (`jaira show <id> --json`, the agent's note) and
+carry on in the same turn. Never end a turn on a hand-back without either the
+next step done or a new `waiting:` note.
+
 ## Before the plan: count what is still open
 
 Autonomy is not free. A ticket whose shape is still undecided gets guessed at,
