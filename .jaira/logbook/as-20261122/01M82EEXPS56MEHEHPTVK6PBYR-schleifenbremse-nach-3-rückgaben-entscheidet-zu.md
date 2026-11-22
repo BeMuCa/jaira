@@ -1,7 +1,7 @@
 ---
 id: 01M82EEXPS56MEHEHPTVK6PBYR
 title: "Schleifenbremse: nach 3 Rückgaben entscheidet zuerst der Teamlead, erst wenn er nicht kann, die Person"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -16,35 +16,38 @@ tags:
   - gates
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 06204142f355efd2a8277d036566ec868d1d9d6d
+  - fe2008000bab949a8c4f176c7b15139305ed55b8
+  - ac250fa6ed432fe3300d81311be8f642a22060d0
+  - 0ca9bdccb39d37c87ea1bfabb2564fe5fdd07743
+  - 5291ae06c33c4021891252b447c3adf46680d4f0
 created-at: 2026-11-22T20:16:47Z
-updated-at: 2026-11-22T21:13:06Z
+updated-at: 2026-11-22T21:54:49Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-2119162
-claimed-at: 2026-11-22T20:17:27Z
+claimed-by: DESKTOP-RFTCH11-3538380
+claimed-at: 2026-11-22T21:18:12Z
 outcome-what: "Give-back: Teamlead-Reset per 'jaira set <id> back-count=0' (vorhandener Weg, Test), in-progress-Text ohne die Notiz-Zeitpunkt-Regel, Kommentar overridesMaxRounds repariert"
 outcome-why: "Alex sah im Cockpit Schleifenfragen (CRASZS, DF46B9, QTQW15), die der Teamlead fast immer selbst entschied."
 outcome-resolves: "Ticket K6PBYR: Schleifenbremse entscheidet zuerst der Teamlead. Geprüft: Nebenläufigkeit n/a (Text + Meldung), Fehlerpfad: parent unerreichbar -> human wie bisher; ungewöhnliche Eingabe n/a; Rechte: --force bleibt beim Entscheidenden."
-review-summary: "After a loop lane's third send-back the refusal, the board's loop line, 'lanes show', the --for-lane text and the lane template now say 'the teamlead decides, or a person' (gate.go, announce.go, flow.go, tickets.go, template.go). The worker, dispatcher and role-lane skills and the in-progress lane text tell a worker started with a parent to leave the ticket in its lane, set 'question' and send it up instead of moving it to human; without a parent it still moves to human --question. The teamlead skill gets a section: decide (a 'decision (teamlead <date>)' note, clear the question) or move it to human and ask the person. In code, move.go records a send-back forced past max-rounds as back-by person with count 1, so the loop gets its rounds back; where the third return already sits in in-progress the teamlead runs 'jaira set <id> back-count=0', which already existed. Tests: gate message, lane section, role texts, TestForcePastMaxRoundsIsRecordedAsADecision, TestMaxRoundsBackCountResetIsTheTeamleadsDecision; release note K6PBYR.md, shipped.sha256 updated."
+review-summary: "Nach der dritten Rückgabe derselben Lane geht die Entscheidung jetzt zuerst an den Teamlead: Worker, Dispatcher und Lane-Worker mit --parent lassen das Ticket in seiner Lane, setzen 'question' und schicken die Frage an die parent-Session; ohne parent bleibt es beim Move nach human --question. Der Teamlead-SKILL bekommt den Abschnitt 'Three rounds of one lane: you decide first' (decision (teamlead <datum>)-Notiz, question leeren, oder selbst nach human eskalieren). Der einzige Reset des Zählers ist 'jaira set <id> back-count=0' — kein neuer Code: RoundsLeft rechnet max-rounds minus count, recordBack zählt ab 0+1. move.go ist netto unverändert: ein --force über das Limit bleibt by: lane und zählt weiter (TestForcePastMaxRoundsKeepsCountingUntilAReset). Gate-Meldung, jaira lanes show, --for-lane-Zeile, Board-Loop-Text und Lane-Template sagen 'the teamlead decides, or a person'; in-progress-Lane-Text, Release-Note K6PBYR.md und shipped.sha256 nachgezogen."
 round: 5
 back-from: signoff
 back-by: person
 back-count: 1
 review-gaps: |-
-  note: core/move/move.go:147 overridesMaxRounds resets the count for any --force past max_rounds, including a lane worker that forces it itself rather than the teamlead; before, the count kept rising and the next in-progress worker stopped again. The brake now relies on the role texts alone - fix: also require a decision note, or at least append an automatic note when the limit is forced
-  note: back-by: person now also means the teamlead decided (move.go:147, 20-in-progress.md:88-91) - the in-progress text "by: person is the person's word" reads as if a person spoke; one word ("the decider's word") would fix it
-  note: jaira-teamlead SKILL.md "Only this move puts the ticket in front of the person" is not strictly true: the cockpit shows any ticket with a question as a worker in state question (core/mod/builtin/jaira-cockpit/hooks/overview.ts:149), so the person sees it there before the teamlead decides
-  note: commit ac250fa6e subject still says a teamlead decision note counts as the decision; 0ca9bdccb took that back (back-count=0 instead) - history only, no code effect
-test-verdict: "pass: Give-back-Runde 0ca9bdccb — go test core/move core/lane core/role core/gate internal/cli -count=1 RC=0, shipped-history --check ok, gofmt sauber; neuer CLI-Test TestMaxRoundsBackCountResetIsTheTeamleadsDecision: 3 Rückgaben, jaira set back-count=0, rounds_left 3, nächste Rückgabe geht durch; DoD 1-5 Proofs geprüft; kein neuer Schreibpfad (set back-count existierte)"
-hunt-verdict: "pass: bughunt done at 0ca9bdccb, 0 change, 0 pre-existing"
-review-verdict: "accept: all five DoD items are met in the diff and covered by tests (go test core/move, gate, lane, role, board, shipped, internal/cli all ok); no blocker, four notes"
-review-round: 4
+  note: back-count=0 ist eine Regel im Text, kein Recht — ein Lane-Worker kann es selbst setzen und die Bremse umgehen, genau wie früher --force; der Gate-Text sagt 'Whoever decides', nicht wer. Wer das hart will: set back-count nur mit ByPerson/Interactive oder mit decision-Notiz zulassen (eigenes Ticket, Personenentscheidung)
+  note: 20-in-progress.md:89-90 nennt als Grund nur die neueste 'decision:'-Notiz bei by: person; nach dem Reset steht by: lane, count 0 — ein frischer in-progress-Worker wird nicht ausdrücklich auf die 'decision (teamlead ...)'-Notiz verwiesen und verlässt sich auf die SendMessage des Teamleads. Ein Satz 'lies die neueste decision (teamlead ...)-Notiz' im neuen Absatz Zeile 92 schließt das
+  note: DoD 3 (ohne parent wie heute) ist nur über Rollen-/Lane-Text und unveränderten Gate-Pfad belegt; ein Gate-Verhalten, das parent unterscheidet, gibt es bewusst nicht — passt zur Entscheidung vom 22.11.
+test-verdict: "pass: give-back 2 (5291ae06c) — go vet ok, go test -count=1 core/move core/lane core/role core/gate core/board internal/cli RC=0, shipped-history --check ok, gofmt sauber; core/move/move.go identisch mit master; TestForcePastMaxRoundsKeepsCountingUntilAReset: forciert über Limit -> testing/lane/4, nach back-count=0 Rückgabe ohne --force -> lane/1; Gate-Meldung nennt back-count=0 und '--force does not'; DoD 1-6 Proofs geprüft"
+hunt-verdict: "pass: bughunt done at 5291ae06c, 0 change, 0 pre-existing"
+review-verdict: "accept: alle 6 DoD-Punkte durch Diff und Tests gedeckt (go test core/move, gate, lane, role, shipped, board und internal/cli MaxRounds|ForLane grün); Code-Änderung beschränkt sich auf Meldungstexte, die Reset-Semantik nutzt vorhandenes set/RoundsLeft/recordBack ohne Sonderfall; keine Blocker, drei Notes."
+review-round: 5
 review-verdict-gaps: |-
-  note: core/move/move.go:147 overridesMaxRounds resets the count for any --force past max_rounds, including a lane worker that forces it itself rather than the teamlead; before, the count kept rising and the next in-progress worker stopped again. The brake now relies on the role texts alone - fix: also require a decision note, or at least append an automatic note when the limit is forced
-  note: back-by: person now also means the teamlead decided (move.go:147, 20-in-progress.md:88-91) - the in-progress text "by: person is the person's word" reads as if a person spoke; one word ("the decider's word") would fix it
-  note: jaira-teamlead SKILL.md "Only this move puts the ticket in front of the person" is not strictly true: the cockpit shows any ticket with a question as a worker in state question (core/mod/builtin/jaira-cockpit/hooks/overview.ts:149), so the person sees it there before the teamlead decides
-  note: commit ac250fa6e subject still says a teamlead decision note counts as the decision; 0ca9bdccb took that back (back-count=0 instead) - history only, no code effect
-review-check: "1. go test ./core/move -run TestForcePastMaxRoundsIsRecordedAsADecision -> ok (a forced 4th send-back reads testing/person/1)  2. go test ./internal/cli -run TestMaxRoundsBackCountResetIsTheTeamleadsDecision -> ok (after 'jaira set <id> back-count=0' the next send-back goes through, rounds_left 3)  3. go run ./cmd/jaira lanes show testing -> line 'Max rounds:  3 in a row, then the teamlead decides, or a person'  4. open core/role/builtin/jaira-teamlead/SKILL.md, section 'Three rounds of one lane: you decide first' -> decide with a decision note, or move to human and ask  5. open core/release/notes/K6PBYR.md -> three single-line notes"
+  note: back-count=0 ist eine Regel im Text, kein Recht — ein Lane-Worker kann es selbst setzen und die Bremse umgehen, genau wie früher --force; der Gate-Text sagt 'Whoever decides', nicht wer. Wer das hart will: set back-count nur mit ByPerson/Interactive oder mit decision-Notiz zulassen (eigenes Ticket, Personenentscheidung)
+  note: 20-in-progress.md:89-90 nennt als Grund nur die neueste 'decision:'-Notiz bei by: person; nach dem Reset steht by: lane, count 0 — ein frischer in-progress-Worker wird nicht ausdrücklich auf die 'decision (teamlead ...)'-Notiz verwiesen und verlässt sich auf die SendMessage des Teamleads. Ein Satz 'lies die neueste decision (teamlead ...)-Notiz' im neuen Absatz Zeile 92 schließt das
+  note: DoD 3 (ohne parent wie heute) ist nur über Rollen-/Lane-Text und unveränderten Gate-Pfad belegt; ein Gate-Verhalten, das parent unterscheidet, gibt es bewusst nicht — passt zur Entscheidung vom 22.11.
+review-check: "1. cd in diesen Worktree, dann: go test ./core/move -run TestForcePastMaxRoundsKeepsCountingUntilAReset -v  → PASS (erzwungene 4. Rückgabe bleibt testing/lane/4, nach back-count=0 geht die Rückgabe ohne --force)  2. go test ./internal/cli -run TestMaxRoundsBackCountResetIsTheTeamleadsDecision -v  → PASS  3. go run ./cmd/jaira lanes show testing  → Zeile 'Max rounds:  3 in a row, then the teamlead decides, or a person'  4. Öffne core/role/builtin/jaira-teamlead/SKILL.md, Abschnitt 'Three rounds of one lane: you decide first'  → zwei Wege: selbst entscheiden (decision-Notiz + back-count=0) oder move --to human --question  5. Öffne core/release/notes/K6PBYR.md  → drei einzeilige Einträge, jede Zeile beginnt mit '- '"
 ---
 
 # Schleifenbremse: nach 3 Rückgaben entscheidet zuerst der Teamlead, erst wenn er nicht kann, die Person
@@ -95,3 +98,4 @@ review-check: "1. go test ./core/move -run TestForcePastMaxRoundsIsRecordedAsADe
 - **2026-11-22 20:42 · Alexander Sacharov** — bughunt: done at 0ca9bdccb - 0 findings in 1 new module read whole (internal/cli/maxrounds_test.go) and 7 files read as diff since ac250fa6e, follow-up hunt; concurrency, error paths, input, permissions checked; ran: go test ./core/move ./core/lane ./core/role ./core/shipped ./core/gate (ok), go test ./internal/cli -run 'MaxRounds|ForLane' (ok), sha256sum of the two new shipped entries (match); files: core/board/announce.go core/board/lanesection_test.go core/gate/gate.go core/gate/maxrounds_test.go core/lane/builtin/20-in-progress.md core/lane/rounds_test.go core/lane/template.go core/move/move.go core/move/move_test.go core/release/notes/K6PBYR.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-lane/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 internal/cli/flow.go internal/cli/maxrounds_test.go internal/cli/tickets.go
 - **2026-11-22 21:08 · Alexander Sacharov** — given back by Alex (22.11.), gelbe Notiz: nur die Entscheidung des Teamleads/der Person setzt den Zähler zurück - ein --force, das ein Lane-Worker selbst gibt, darf back-count nicht zurücksetzen (z.B. Reset nur über ausdrückliches 'jaira set <id> back-count=0' durch den Teamlead) (Test). Texte zu back-by: person anpassen.
 - **2026-11-22 21:09 · Alexander Sacharov** — give-back 2 (Alex 22.11.): --force eines Lane-Workers setzt back-count nicht zurück. Umsetzung: overridesMaxRounds aus core/move/move.go entfernt (forcierte Rückgabe über das Limit bleibt by: lane, count 4); einziger Reset ist 'jaira set <id> back-count=0' durch Teamlead oder Person, danach geht die Rückgabe ohne --force. Gate-Meldung, Teamlead-SKILL, in-progress-Text und Release-Note entsprechend; 'Only this move puts the ticket in front of the person' -> 'in a person's lane' (Cockpit zeigt question schon vorher).
+- **2026-11-22 21:15 · Alexander Sacharov** — bughunt: done at 5291ae06c - 0 findings, follow-up hunt: 0 new modules, 7 files read as diff since 0ca9bdccb (core/gate/gate.go core/gate/maxrounds_test.go core/lane/builtin/20-in-progress.md core/move/move.go core/move/move_test.go core/release/notes/K6PBYR.md core/role/builtin/jaira-teamlead/SKILL.md core/role/role_test.go core/shipped/shipped.sha256); concurrency, error paths, input, permissions checked; ran: go test ./core/move ./core/gate ./core/lane ./core/role ./core/shipped (ok), go test ./internal/cli -run 'MaxRounds|ForLane|LoopBrake' (ok), sha256sum of the two new shipped entries (match), jaira set <id> back-count=0 on a scratch board (exit 0, field written), grep for leftover forced-send-back-as-decision wording (none); files: core/board/announce.go core/board/lanesection_test.go core/gate/gate.go core/gate/maxrounds_test.go core/lane/builtin/20-in-progress.md core/lane/rounds_test.go core/lane/template.go core/move/move.go core/move/move_test.go core/release/notes/K6PBYR.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-lane/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/role_test.go core/shipped/shipped.sha256 internal/cli/flow.go internal/cli/maxrounds_test.go internal/cli/tickets.go
