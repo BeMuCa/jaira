@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T22:55:28Z
+updated-at: 2026-11-22T22:55:30Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -43,7 +43,8 @@ claimed-at: 2026-11-22T22:43:54Z
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:71 overviewMilestoneAtom kept for the session like overviewTab, :1186 showMilestone(0) at each opening; test '< and > page ... the choice outlives closing the pane'
 - [x] Release-Notiz in core/release/notes/<ID>.md
   proof: core/release/notes/1J8XZ7.md
-- [ ] edge cases: no milestones, a milestone with no tickets, milestone ls failing (older jaira) shows a could-not-read line, a remembered milestone that is gone falls back to the first, a ticket jaira show cannot find stays in the list with lane '?'
+- [x] edge cases: no milestones, a milestone with no tickets, milestone ls failing (older jaira) shows a could-not-read line, a remembered milestone that is gone falls back to the first, a ticket jaira show cannot find stays in the list with lane '?'
+  proof: tests 'no milestone, and a jaira without milestone ls, each say so' (none + ls failing), '< and > page...' (remembered one gone -> first, empty milestone 0 of 0), 'one milestone...' (G0G0G0 nothing finds -> lane ?)
 - [ ] seen by a person: the Milestones tab in a real Claude Code terminal - selector paged by click and by arrow keys + Enter, rows readable, head row still on one line at 80 columns
 
 ## Options
