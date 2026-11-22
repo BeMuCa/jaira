@@ -9,9 +9,11 @@ import (
 	"testing"
 )
 
-// ci-code-changed.sh decides whether a pull request runs the test jobs in
-// .github/workflows/ci.yaml. Every case is a branch cut from a base commit;
-// the script compares the two the way the 'changes' job does.
+// ci-code-changed.sh decides whether a pull request, or the push to master
+// that merges it, runs the test jobs in .github/workflows/ci.yaml. Every case
+// is a branch cut from a base commit; the script compares the two the way the
+// 'changes' job does, and the old master tip with the merge commit the way it
+// does on a push.
 func TestCICodeChanged(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("the script runs in CI on ubuntu; bash on a Windows runner may be WSL's")
@@ -91,9 +93,14 @@ func TestCICodeChanged(t *testing.T) {
 			git("add", "-A")
 			git("commit", "-q", "-m", "master moved on")
 			base2 := git("rev-parse", "HEAD")
+			// The push to master after the merge: the 'changes' job compares the
+			// old master tip with the merge commit.
+			git("merge", "-q", "--no-ff", "-m", "merge", "feature")
+			merged := git("rev-parse", "HEAD")
 
-			for _, b := range []string{base, base2} {
-				cmd := exec.Command("bash", script, b, head)
+			for _, r := range [][2]string{{base, head}, {base2, head}, {base2, merged}} {
+				b := r[0]
+				cmd := exec.Command("bash", script, b, r[1])
 				cmd.Dir = dir
 				cmd.Env = append(os.Environ(), "GITHUB_OUTPUT=")
 				out, err := cmd.Output()
@@ -101,7 +108,7 @@ func TestCICodeChanged(t *testing.T) {
 					t.Fatalf("script: %v", err)
 				}
 				if got := strings.TrimSpace(string(out)); got != "code="+c.want {
-					t.Errorf("base %s: got %q, want code=%s", b[:7], got, c.want)
+					t.Errorf("%s...%s: got %q, want code=%s", b[:7], r[1][:7], got, c.want)
 				}
 			}
 		})
