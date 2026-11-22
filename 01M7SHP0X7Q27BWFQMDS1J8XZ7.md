@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T22:46:46Z
+updated-at: 2026-11-22T22:46:48Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -39,6 +39,7 @@ claimed-at: 2026-11-22T22:43:54Z
 - [ ] Unter dem Waehler steht 'x von n fertig' und die Ticketliste mit ID, Titel und Lane: in Arbeit oben, nicht begonnen in der Mitte, fertig unten
 - [ ] Der zuletzt gewaehlte Milestone bleibt nach Schliessen und Oeffnen des Panes gewaehlt
 - [ ] Release-Notiz in core/release/notes/<ID>.md
+- [ ] edge cases: no milestones, a milestone with no tickets, milestone ls failing (older jaira) shows a could-not-read line, a remembered milestone that is gone falls back to the first, a ticket jaira show cannot find stays in the list with lane '?'
 
 ## Options
 
