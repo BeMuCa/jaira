@@ -25,21 +25,21 @@ related:
   - 01M7WWYKK8CMJSM2S45WJDDCEZ
 commits: []
 created-at: 2026-09-16T06:46:09Z
-updated-at: 2026-11-22T11:20:20Z
+updated-at: 2026-11-22T11:23:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-33230
 claimed-at: 2026-11-22T11:08:10Z
 outcome-what: "spawn.sh no longer copies .env or writes port names; without .jaira/worktree-setup it makes the worktree only, hands out no offset, and tells a repo with a .env how to get the old behaviour from the shipped worktree-setup.example; roles install --help says an edited file is frozen"
 outcome-why: "Port names like HTTP_PORT belonged to one project; repos forked spawn.sh to add theirs, and an edited spawn.sh never gets jaira's fixes again"
 outcome-resolves: "spawn.sh schreibt Werte, die nur einem Projekt gehoeren - DoD 1-7"
-review-summary: none
-review-gaps: "nothing removed: the gitDir test helper already replaced the inline rev-parse; the .env offset scan in spawn.sh is still reached by worktrees made before jaira-offset; no helper or branch orphaned"
-test-verdict: "fail: bughunt change findings fixed in this round (stale SKILL.md text, incomplete stderr hint); suite was green"
-hunt-verdict: "fail: bughunt done at 0aa673209, 2 change (both small, closed in the next round per interim rule 5), 0 pre-existing"
-round: 2
+review-summary: "none: round 2 read only the two bughunt fixes - SKILL.md paragraph and the extra hint clause - both say what the code does"
+review-gaps: "none: round 2 added two text lines, nothing to remove"
+test-verdict: "fail: see hunt-verdict; tests green"
+hunt-verdict: "fail: bughunt done at 20f1eb391, 1 change: the hint's 'remove this one and spawn again' leaves the branch, and the next spawn dies on 'branch already exists'"
+round: 3
 back-from: testing
 back-by: lane
-back-count: 1
+back-count: 2
 ---
 
 # spawn.sh schreibt Werte, die nur einem Projekt gehoeren
@@ -55,7 +55,7 @@ back-count: 1
 - [x] Die Hilfe von 'roles install' sagt, dass eine bearbeitete Datei nicht nur unveraendert bleibt, sondern auch keine Verbesserungen mehr bekommt
   proof: internal/cli/roles.go:410-414
 - [x] Ein Board, das bisher ohne Einrichtungsskript lief, bekommt beim naechsten Arbeiter eine verstaendliche Meldung statt einer stillen Verhaltensaenderung
-  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:305-309 stderr line with install -m 755 line and 'remove this one and spawn again'; TestSpawnLetsTheRepositorySetUpItsWorktree checks it is said with .env and not without
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:305-310 stderr line: install -m 755 line plus the worktree remove + branch -D line; TestSpawnLetsTheRepositorySetUpItsWorktree checks it with .env and not without; following the printed commands then spawning again gives the example's .env (scratch repo, round 3)
 - [x] worktree-setup.example reproduces the old .env byte for byte (copy, '# worker stack' line, COMPOSE_PROJECT_NAME, HTTP_PORT, DB_PORT_HOST, DB_PORT_TEST_HOST); the offset tests use it as their setup, in a repository whose path holds a space
   proof: TestSpawnGivesEveryWorktreeItsOwnOffset byte compare of repo-8r8vts/.env; newOffsetRepo installs the example, base path 'with space'
 - [x] no setup: no port offset, no offset lock, no .env in the worktree; with a .env in the root one stderr line says so and names the cp line - a test for both repos (with and without .env)
@@ -113,3 +113,6 @@ Nicht projektspezifisch und daher in spawn.sh gehoerend, nicht in den Hook: --no
 - **2026-11-22 11:18 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:304-308 - class: the 'no longer copies .env' hint fixes only future worktrees, not the one it is printed for: setup runs only for a missing directory (spawn.sh:178), so the named worktree stays without .env, jaira-offset and jaira-setup (no teardown from reap.sh either) until it is removed by hand; the hint does not say so; example: spawn ab12cd in a repo with a .env and no setup -> hint; install -m 755 worktree-setup.example .jaira/worktree-setup as told; spawn ab12cd again -> worktree still has no .env and no jaira-* record; ran: scratch repo + installed roles, two spawn.sh runs, ls of worktree and its git dir (empty)
 - **2026-11-22 11:18 · Alexander Sacharov** — bughunt: done at 0aa673209 - 2 findings (2 change, 0 blockers, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: .gitattributes .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/optimize.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/release/notes/7MG5GB.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-dispatcher/scripts/worktree-setup.example core/role/role_test.go core/shipped/shipped.sha256 internal/cli/roles.go
 - **2026-11-22 11:19 · Alexander Sacharov** — testing: both bughunt change notes taken in a quick round instead of left as notes (interim rule 5): SKILL.md 'One worktree per ticket' now says the stack/ports come from .jaira/worktree-setup; the stderr hint says the standing worktree is not set up later - remove it and spawn again
+- **2026-11-22 11:21 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:309 - class: the no-setup hint added in 20f1eb391 tells the person to 'remove this one and spawn again', but removing a worktree leaves its branch, and spawn.sh:271 always runs 'git worktree add "$wt" -b "$branch"', which refuses an existing branch; set -e then ends spawn.sh with no worker; example: HERDR_ENV=1 spawn.sh s1 ABC123 testing <repo with .env> prints the hint, then git worktree remove --force <wt>, then the same spawn.sh -> 'fatal: a branch named feat/s1 already exists', exit 255; the hint must name the branch too (git worktree remove <wt> && git branch -D <branch>) or spawn.sh must reuse an existing branch; not a blocker: the printed instruction is wrong but nothing is lost; ran: scratch repo, both spawn.sh calls with HERDR_BIN_PATH=/bin/false
+- **2026-11-22 11:21 · Alexander Sacharov** — bughunt: done at 20f1eb391 - 1 finding (1 change, 0 blockers, 0 pre-existing) in 3 modules, follow-up hunt since 0aa673209; concurrency, error paths, input, permissions checked; files: .gitattributes .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/optimize.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/release/notes/7MG5GB.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-dispatcher/scripts/worktree-setup.example core/role/role_test.go core/shipped/shipped.sha256 internal/cli/roles.go
+- **2026-11-22 11:23 · Alexander Sacharov** — round 3: the hint now prints the exact take-down line (git worktree remove + git branch -D <branch>); a plain 'remove and spawn again' left feat/<slug> behind and the next 'git worktree add -b' died. Considered teaching spawn.sh to reuse an existing branch instead - rejected: it changes spawn.sh for every caller to serve a one-time migration hint.

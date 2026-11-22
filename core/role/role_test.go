@@ -1010,7 +1010,9 @@ esac
 				t.Errorf(".env %v: without a setup spawn.sh made %s", dotenv, f)
 			}
 		}
-		said := strings.Contains(out, "no longer copies .env") && strings.Contains(out, "worktree-setup.example")
+		// The hint names the branch too: a branch left behind makes the next
+		// spawn's 'git worktree add -b' fail.
+		said := strings.Contains(out, "no longer copies .env") && strings.Contains(out, "worktree-setup.example") && strings.Contains(out, "branch -D feat/ab12cd")
 		if said != dotenv {
 			t.Errorf(".env %v: spawn.sh said why the .env is missing: %v, want %v:\n%s", dotenv, said, dotenv, out)
 		}
