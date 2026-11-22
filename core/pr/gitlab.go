@@ -1,8 +1,10 @@
 package pr
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"strconv"
 )
@@ -123,23 +125,24 @@ func readGitLab(call func(...string) ([]byte, error), origin string, q Query) (*
 	return st, nil
 }
 
-// pages reads every page of a list (--paginate) and decodes each — a JSON
-// array of T — into one slice.
+// pages reads every page of a list (--paginate) — glab prints one JSON
+// array per page, one after the other — into one slice.
 func pages[T any](call func(...string) ([]byte, error), path string) ([]T, error) {
 	out, err := call("api", "--paginate", path)
 	if err != nil {
 		return nil, err
 	}
 	var list []T
-	err = values(out, "glab api "+path, func(page json.RawMessage) error {
-		var v []T
-		if err := json.Unmarshal(page, &v); err != nil {
-			return fmt.Errorf("glab api %s: unreadable answer: %v", path, err)
+	dec := json.NewDecoder(bytes.NewReader(out))
+	for n := 0; ; n++ {
+		var page []T
+		if err := dec.Decode(&page); err == io.EOF && n > 0 {
+			return list, nil
+		} else if err != nil {
+			return nil, fmt.Errorf("glab api %s: unreadable answer: %v", path, err)
 		}
-		list = append(list, v...)
-		return nil
-	})
-	return list, err
+		list = append(list, page...)
+	}
 }
 
 func gitlabTarget(call func(...string) ([]byte, error), origin string) (target string, own int, err error) {

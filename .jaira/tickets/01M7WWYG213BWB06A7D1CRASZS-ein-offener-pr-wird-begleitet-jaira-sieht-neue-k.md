@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYG213BWB06A7D1CRASZS
 title: "Ein offener PR wird begleitet: jaira sieht neue Kommentare, CI-Stand und wartende Re-Requests und meldet sie"
-status: in-progress
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ related:
   - 01M7WX040JC9Z202EH852EF48S
 commits: []
 created-at: 2026-11-20T16:34:31Z
-updated-at: 2026-11-22T16:49:35Z
+updated-at: 2026-11-22T16:50:16Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3910889
 claimed-at: 2026-11-22T14:48:02Z
@@ -33,7 +33,7 @@ round: 3
 back-from: testing
 back-by: lane
 back-count: 1
-review-gaps: "core/pr/pr.go: contains -> slices.Contains, plural (one caller) folded into settle, classify reads the exit code through one interface (exec.ExitError has ExitCode) and the exported ExitCoder became unexported; board.ts PullRequest dropped the unused state field. Left: the handle regex in core/pr/pr.go repeats gitrepo/named.go handleShape (unexported there; exporting it for one caller is not worth it); forge/fork detection exists in Go and in TS (two languages); pr-round.sh settled keeps its own rule (critique note)."
+review-gaps: "round 2: values() (one caller) folded into gitlab.go pages[T]; pr.go imports trimmed. Left as before: handle regex vs gitrepo handleShape, Go/TS forge detection, pr-round.sh settled (critique note)."
 test-verdict: "pass: go vet ./... + GOOS=windows vet clean; go test ./... RC=0, -race on core/pr core/role core/shipped internal/cli RC=0; claude plugin test (cockpit) 313 pass. DoD 1-7 verified in the tree (proof files/tests opened and run). Live: jaira pr on BeMuCa/jaira lists #184/#183 with CI and threads, --number 91 shows 1 answered thread; --watch --number 179 prints the baseline line and 'merged', exit 0. Failure paths: GH_TOKEN=invalid -> exit 3 'not signed in' (also under --watch), no gh on PATH -> exit 3, repo without origin -> exit 3; no PR -> exit 0 with empty prs. jaira pr writes nothing; the cockpit's one write is a store key per pull request (pr-followed:<project>:<n>), two sessions at once give at most one duplicate line."
 hunt-verdict: "fail: 7 change findings (2 blockers: first-page-only reads make settled wrong; CI green again never fires across pending)"
 ---
@@ -111,3 +111,4 @@ Selbst entschieden (widersprechen moeglich): Ausloeser = neuer Kommentar/Thread,
 - **2026-11-22 16:40 · Alexander Sacharov** — bughunt: done at 5fc0b0ba5 - 7 findings (7 change, 2 blocker, 0 pre-existing) in 4 modules (core/pr, internal/cli pr, cockpit hooks, cockpit texts), first hunt; concurrency, error paths, input, permissions checked; files: README.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/pr/github.go core/pr/gitlab.go core/pr/pr.go core/pr/pr_test.go core/pr/watch.go core/release/notes/CRASZS.md core/shipped/shipped.sha256 docs/COMMANDS.md internal/cli/pr.go internal/cli/pr_test.go internal/cli/root.go
 - **2026-11-22 16:41 · Alexander Sacharov** — testing 1 -> in-progress: bughunt 7x change. Fix-Plan je Klasse: (1) Fenster -> paginieren (GitHub PRs per --paginate, Threads je PR nachladen; GitLab glab api --paginate als JSON-Strom), wo nicht nachladbar fail-closed als unsettled; (2) CI-Vergleich gegen das letzte endgueltige Ergebnis + head-SHA statt gegen den letzten Lauf; (3) Login-Erkennung nur an gh-Exit 4 / 'HTTP 401' / 'Bad credentials' / 'auth login', nicht an jeder 401; (4) zweites Accept startet keine zweite pr-Lane (Store-Marker 20 min); (5) roles/lanes-Fehler halten in signoff fest (fail-closed); (6) Nachschau bricht nur bei Exit 2/3 ab, nicht bei Exit 1; (7) PR nur aus dem eigenen Head-Repo (headRepository bzw. source_project_id) und PR-URL im Bericht nur, wenn ihr Repo in git remote -v steht.
 - **2026-11-22 16:49 · Alexander Sacharov** — Runde 2 (bughunt-Fixes): GitHub-Liste selbst paginiert statt gh --paginate - gh sucht das erste pageInfo in der Antwort, und die Abfrage hat verschachtelte pageInfo (Threads), das waere die falsche Seite. GitLab dagegen per glab api --paginate (REST-Link-Header, keine Verschachtelung), Seiten als JSON-Strom dekodiert (core/pr/pr.go values). 'more than 100 reviewers' nicht nachgeladen, sondern fail-closed als unsettled. CI-Vergleich: Carry() traegt das letzte endgueltige Ergebnis + head-SHA ueber pending hinweg.
+- **2026-11-22 16:49 · Alexander Sacharov** — critique 3: die letzte Kritik-Runde endete mit none; diese Runde beantwortete den bughunt, nicht die Kritik. Die Reparatur (Seiten, Herkunft, CI ueber pending, fail-closed) aendert die Form nicht - nichts neu.

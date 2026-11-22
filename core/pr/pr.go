@@ -11,11 +11,8 @@
 package pr
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os/exec"
 	"regexp"
 	"slices"
@@ -207,29 +204,6 @@ func ticketsOf(subjects []string, branch string) []string {
 }
 
 var handle = regexp.MustCompile(`^[0-9A-Z]{6}$`)
-
-// values decodes what a --paginate call printed: one JSON value per page
-// (gh and glab write the pages one after another), each handed to each.
-func values(out []byte, what string, each func(json.RawMessage) error) error {
-	dec := json.NewDecoder(bytes.NewReader(out))
-	n := 0
-	for {
-		var v json.RawMessage
-		if err := dec.Decode(&v); err == io.EOF {
-			break
-		} else if err != nil {
-			return fmt.Errorf("%s: unreadable answer: %v", what, err)
-		}
-		n++
-		if err := each(v); err != nil {
-			return err
-		}
-	}
-	if n == 0 {
-		return fmt.Errorf("%s: unreadable answer: empty", what)
-	}
-	return nil
-}
 
 // newer reports whether RFC 3339 time a is after b; an unreadable a never is.
 func newer(a, b string) bool {
