@@ -493,8 +493,9 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 		// Renamed on the ref, and a file under the new name lies here already.
 		// One that is the ref, or a state it had, is this milestone too and
 		// is brought up like the old one, which then goes; one edited by hand
-		// is a twin, and which of the two is the milestone is the fetch's
-		// call, not a write's.
+		// is a twin, and which of the two is the milestone is a person's
+		// call: both stay, and the write that runs this refuses on them
+		// (milestone.TwinFilesError).
 		// A name that differs only in case is the same file where the file
 		// system ignores case (Windows, macOS, /mnt/c under WSL): neither a
 		// twin nor something to remove.

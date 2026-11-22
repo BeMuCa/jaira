@@ -1073,3 +1073,50 @@ func TestFetchWarnsOnTwinnedMilestoneNames(t *testing.T) {
 		t.Errorf("fetch --json: stdout %s stderr %q", out, stderr)
 	}
 }
+
+// One milestone ID in two files — a rename's old copy beside a hand-edited
+// file under the new name (8TT890): every milestone write exits 3 naming both
+// files and what to do, and leaves both as they were.
+func TestMilestoneWritesRefuseOneIDInTwoFiles(t *testing.T) {
+	dir := emptyStore(t)
+	if out, err := runCLI(t, dir, "milestone", "create", "q4"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, _ := milestone.Load(dir, "q4")
+	old, err := os.ReadFile(ms.Path(dir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	renamed := "q5-" + ms.ID + ".md"
+	edited := string(old) + "\n<!-- edited by hand -->\n"
+	if err := os.WriteFile(filepath.Join(milestone.Dir(dir), renamed), []byte(edited), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	id := mkTicket(t, dir, "work")
+	for _, args := range [][]string{
+		{"milestone", "add", ms.ID, id}, {"milestone", "rm", ms.ID, id},
+		{"milestone", "set", ms.ID, "--goal", "x"}, {"milestone", "rename", ms.ID, "q6"},
+		{"milestone", "create", "other"},
+	} {
+		_, err := runCLI(t, dir, args...)
+		code, reason := classify(err)
+		if code != ExitValidation || reason != "milestone_twin_files" {
+			t.Errorf("%v: exit %d (%s), want 3 milestone_twin_files: %v", args, code, reason, err)
+			continue
+		}
+		for _, want := range []string{ms.FileName(), renamed, "delete the other"} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("%v: refusal lacks %q: %v", args, want, err)
+			}
+		}
+	}
+	if b, _ := os.ReadFile(ms.Path(dir)); string(b) != string(old) {
+		t.Errorf("the old file changed:\n%s", b)
+	}
+	if b, _ := os.ReadFile(filepath.Join(milestone.Dir(dir), renamed)); string(b) != edited {
+		t.Errorf("the file under the new name changed:\n%s", b)
+	}
+	if _, err := milestone.Load(dir, "other"); err == nil {
+		t.Error("create wrote a milestone despite the refusal")
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -353,5 +354,62 @@ func TestMatchCaseRespellsTheFile(t *testing.T) {
 			names = append(names, e.Name())
 		}
 		t.Fatalf("dir holds %v, want [Q4-ABC123.md]", names)
+	}
+}
+
+// One ID in two files named after it — what a rename leaves when the old copy
+// fell behind and the new one was edited by hand (8TT890): every write door
+// refuses with both file names, writes nothing and gives the lock back. A
+// file without an ID beside them is Migrate's and does not count.
+func TestEveryWriteRefusesOneIDInTwoFiles(t *testing.T) {
+	const id = "K3F9QZ"
+	for _, tc := range []struct {
+		name  string
+		write func(root string, lk Locker, rec Recorder) error
+	}{
+		{"edit", func(root string, lk Locker, rec Recorder) error {
+			_, err := Edit(root, lk, rec, id, func(m *Milestone) error { m.Add(idA); return nil })
+			return err
+		}},
+		{"rename", func(root string, lk Locker, rec Recorder) error {
+			_, err := Rename(root, lk, rec, id, "q6")
+			return err
+		}},
+		{"create", func(root string, lk Locker, rec Recorder) error {
+			_, err := Create(root, lk, rec, func([]*Milestone) (*Milestone, error) { return New("other", 45, time.Now()), nil })
+			return err
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			old, renamed := "---\ncolor: 45\n---\n- "+idA+"\n", "---\ncolor: 45\n---\n- "+idB+"\n"
+			writeFile(t, root, "q4-"+id+".md", old)
+			writeFile(t, root, "q5-"+id+".md", renamed)
+			writeFile(t, root, "solo.md", "---\ncolor: 45\n---\n")
+			lk, rec := &fakeLock{}, &fakeRec{}
+			err := tc.write(root, lk, rec)
+			var twin *TwinFilesError
+			if !errors.As(err, &twin) || twin.ID != id || strings.Join(twin.Files, ",") != "q4-"+id+".md,q5-"+id+".md" {
+				t.Fatalf("err = %v, want a TwinFilesError naming both files", err)
+			}
+			for _, f := range twin.Files {
+				if !strings.Contains(err.Error(), f) {
+					t.Errorf("message does not name %s: %v", f, err)
+				}
+			}
+			// Migrate still moved solo.md to its ID before the check; the
+			// twin's ID and the new milestone were never queued.
+			if lk.held != 0 || slices.ContainsFunc(rec.names, func(n string) bool { return n == id || n == LegacyID("other") }) {
+				t.Errorf("lock held=%d, recorded %v", lk.held, rec.names)
+			}
+			for file, want := range map[string]string{"q4-" + id + ".md": old, "q5-" + id + ".md": renamed} {
+				if b, err := os.ReadFile(filepath.Join(Dir(root), file)); err != nil || string(b) != want {
+					t.Errorf("%s changed or went: %v\n%s", file, err, b)
+				}
+			}
+			if _, err := os.Stat(filepath.Join(Dir(root), "other-"+LegacyID("other")+".md")); err == nil {
+				t.Error("create wrote a file despite the refusal")
+			}
+		})
 	}
 }
