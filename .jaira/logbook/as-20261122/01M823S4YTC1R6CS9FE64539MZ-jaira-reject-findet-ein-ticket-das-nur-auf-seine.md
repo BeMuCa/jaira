@@ -1,7 +1,7 @@
 ---
 id: 01M823S4YTC1R6CS9FE64539MZ
 title: "jaira reject findet ein Ticket, das nur auf seinem Ref liegt, und lehnt es ohne vorheriges pull ab"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,24 +18,59 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 172d8223b5c200790213a2480858f747601d6f2f
+  - ebed0512488ebe5cfd3da44ba1a7cf4857683ad3
+  - d67f1783b1330b8f23944239bd063d87992e627f
+  - 1b904de24c483d7ec36601de4fa25d5e8d6677f7
+  - f3c902da918d4ca8b321496033f411e90dcb8ae7
+  - 66600c3aabab72503247e48ffd44216228cc5c3c
+  - 2fa98c03bd7e6402ad98f202c62dda5c24359ba4
+  - 499be42ec28380217415cf5b468d716633d877b1
+  - bdcbc2a8bddbc89fd770a4cb989962ada33a0505
+  - ba7547e1257c43550705bef0e5165c9ec302a909
 created-at: 2026-11-22T17:10:08Z
-updated-at: 2026-11-22T17:53:58Z
+updated-at: 2026-11-22T18:20:43Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-2431680
-claimed-at: 2026-11-22T17:10:39Z
+claimed-by: DESKTOP-RFTCH11-3655636
+claimed-at: 2026-11-22T17:58:09Z
 outcome-what: "jaira reject and R on the board reject a ticket that lives only on its ref: refsync.Syncer.Reject fetches, stamps the rejection (shared ticket.StampRejection) and pushes under lease; no file is written in the checkout. Store.List hides ref tickets carrying rejected-kind; Load/show still find them. CLI fetches once when an id is unknown locally and names already_rejected / filed_away / race / not_found with exit codes."
 outcome-why: "A person rejecting HS3K1E had to fetch, then pull it into an unrelated worktree, so the archive file travelled in another ticket's PR. Where a ticket lives is not the rejecter's business."
 outcome-resolves: "DoD 1: TestRejectATicketThatLivesOnlyOnAStaleRef + TUI test; DoD 2: TestRejectATicketWithAFileHereStillArchivesIt; DoD 3: TestRejectOnTheRefRefusals (unknown, already rejected on ref and in archive, archived, unreachable remote, real lost push via pre-push hook) + handle/ulid; DoD 4: core/release/notes/4539MZ.md. Checked: concurrency (lease + race test, TUI off update loop), error paths (nothing written on any refusal, asserted), input (handle/ULID/unknown), permissions (--force gate unchanged, runs before any write)."
-review-summary: "none"
+review-summary: "'jaira reject' (and R on the board) now finds a ticket that has no file here - fetching once if the local refs are stale - and, for a ref-only ticket, rejects it on the ref through new refsync.Syncer.Reject: fetch, read, stamp the same rejected-* fields as the store path (shared ticket.StampRejection), clear the assignee (warned on stderr / in the TUI notice), push under the lease; a lost push is exit 3 race, nothing is written in the checkout. A ticket with a file here is still archived as before. Store.List now drops every ticket carrying rejected-kind, file or ref, and remembers them (RejectedOffBoard) so link.Build, validate and delete's reference check still treat them as existing; links/milestone views show place 'rejected · off the board' instead of advising pull. The way back is 'jaira pull' in a checkout without the file: Pull takes the rejection off (shared ticket.Unreject) and notes it; claim refuses a rejected ticket (exit 3 rejected); pull fetches once before resolving an unknown handle. Release note and COMMANDS.md updated."
 round: 8
 back-from: human
 back-by: person
 back-count: 1
-review-gaps: "round 6: PlaceRejected is one constant read in Whereabouts and the TUI milestone rows; nothing orphaned. Earlier rounds as recorded (RejectedOffBoard fed by the existing List, shared HeldByWarning and ticket.Unreject; Syncer.Reject prologue left)"
-test-verdict: "pass: go test ./... green, -race -count=1 on core/ticket core/refsync internal/tui internal/cli green, go vet linux+windows green, shipped-history ok. DoD 1-4 re-run by their named tests. Binary in a two-clone fixture: reject by handle from a clone that never fetched -> rc 0, no file under .jaira, creator's list drops it after fetch; repeat -> rc 3 already_rejected; two parallel rejects -> one rc 0, other rc 3 race with nothing written; unknown id -> rc 5."
-hunt-verdict: "fail: round 6 - internal/tui/layer.go openMember has no case for link.PlaceRejected: Enter on a rejected milestone row says 'on the board but the filter hides it'"
+review-gaps: |-
+  note: internal/cli/claim.go:102 - on a ref-only rejected ticket the refusal says 'delete its file here and jaira pull', but there is no file; say 'jaira pull <h>' alone when t.ReadOnly
+  note: core/ticket/store.go List - s.rejected is lazily allocated without a lock (if s.rejected == nil { s.rejected = ... }); two concurrent List calls on one Store would race on the pointer. Today every caller is serial (TUI update loop, web behind its mutex, go test -race clean), but allocating it in At()/NewStore like the cache, or using sync.Once, removes the trap
+  note: RejectedOffBoard is 'what the LAST List hid' - a hidden coupling: link.Build on a Store that has not been listed yet sees no rejected tickets and reports them as dangling. All current callers list first; a comment at link.Build or passing the rejected set explicitly would make it hold by construction
+  note: internal/tui/model.go rejectOnRef runs Syncer.Reject (git fetch) as a tea.Cmd that can overlap the periodic fetchRefs; a concurrent git fetch can fail on a ref lock - safe (notice says nothing was written, retry works) but the person sees an error for no reason
+  note: known limit (teamlead 22.11.): pull of a ticket rejected and archived in another clone takes the rejection off while that clone's branch still carries the archive file - after both merge, archive and live file share one id
+  note: known limit (teamlead 22.11.): web /api/tickets/<id> answers not found for a ticket rejected on its ref (web_source.go reads List)
+  note: release-note line 2 changes exit codes scripts may read (1 -> 3/5); consider marking it '- ! ' so jaira update highlights it
+test-verdict: "pass: go test ./... green, go vet linux+windows green, -race on ticket/refsync/tui/cli green (round 4); DoD 1-5 by their named tests; binary in a two-clone fixture: reject by handle unfetched -> rc 0 no file, repeat -> rc 3, two parallel rejects -> rc 0 + rc 3 race, unknown -> rc 5, pull <handle> unfetched works. Concurrency: lease race tested with a real pre-push race."
+hunt-verdict: "pass: round 7 hunt at bdcbc2a8b, 0 findings"
 question: ""
+review-verdict: "accept: all 5 DoD items are met and covered by tests (internal/cli/rejectref_test.go, internal/tui/rejectref_test.go); go test -race on core/ticket, core/refsync, core/link, internal/cli, internal/tui passes; remaining findings are notes, none a wrong result or data loss"
+review-round: 8
+review-verdict-gaps: |-
+  note: internal/cli/claim.go:102 - on a ref-only rejected ticket the refusal says 'delete its file here and jaira pull', but there is no file; say 'jaira pull <h>' alone when t.ReadOnly
+  note: core/ticket/store.go List - s.rejected is lazily allocated without a lock (if s.rejected == nil { s.rejected = ... }); two concurrent List calls on one Store would race on the pointer. Today every caller is serial (TUI update loop, web behind its mutex, go test -race clean), but allocating it in At()/NewStore like the cache, or using sync.Once, removes the trap
+  note: RejectedOffBoard is 'what the LAST List hid' - a hidden coupling: link.Build on a Store that has not been listed yet sees no rejected tickets and reports them as dangling. All current callers list first; a comment at link.Build or passing the rejected set explicitly would make it hold by construction
+  note: internal/tui/model.go rejectOnRef runs Syncer.Reject (git fetch) as a tea.Cmd that can overlap the periodic fetchRefs; a concurrent git fetch can fail on a ref lock - safe (notice says nothing was written, retry works) but the person sees an error for no reason
+  note: known limit (teamlead 22.11.): pull of a ticket rejected and archived in another clone takes the rejection off while that clone's branch still carries the archive file - after both merge, archive and live file share one id
+  note: known limit (teamlead 22.11.): web /api/tickets/<id> answers not found for a ticket rejected on its ref (web_source.go reads List)
+  note: release-note line 2 changes exit codes scripts may read (1 -> 3/5); consider marking it '- ! ' so jaira update highlights it
+review-check: |-
+  1. cd /home/alex/projects/.worktrees/jaira-4539mz && go build -o /tmp/jr ./cmd/jaira
+  2. in a clone with a remote: /tmp/jr create test-reject --goal x --context x --dod x - it lives on its ref only (no file in .jaira/tickets/)
+  3. /tmp/jr reject <handle> --why "not needed" --force -> prints 'Rejected <h> ... Written to its ref, not to a file here'; git status shows no new file
+  4. /tmp/jr list -> the ticket is gone; /tmp/jr show <handle> -> still shows it with rejected wontfix
+  5. /tmp/jr reject <handle> --why again --force -> exit 3, 'already rejected'
+  6. /tmp/jr pull <handle> -> 'was rejected by ... the rejection is taken off'; /tmp/jr list shows it again
+  7. tests alone: go test ./internal/cli -run TestReject ; go test ./internal/tui -run TestRejectACard
 ---
 
 # jaira reject findet ein Ticket, das nur auf seinem Ref liegt, und lehnt es ohne vorheriges pull ab
@@ -97,3 +132,4 @@ question: ""
 - **2026-11-22 17:52 · Alexander Sacharov** — question (testing would send back a 3rd time in a row since the decision): round 6 found one missing case - internal/tui/layer.go openMember lacks link.PlaceRejected, so Enter on a rejected milestone row claims a filter hides it. Not deeper this time: a sibling switch of the one changed in round 5. Options: 1 (Recommended) yes - add the case (one branch + test), then testing with a hunt on the delta, review, signoff. 2 no - stop here, the person decides at signoff. Open, not a finding: web /api/tickets/<id> answers not found for a ref-rejected ticket (web_source.go untouched; reads List).
 - **2026-11-22 17:52 · Alexander Sacharov** — decision (teamlead 22.11.): Option 1 - case PlaceRejected in openMember + Test, dann Hunt nur über die Delta, review, signoff. Danach keine weitere testing-Runde für Nachbar-Switches: was dann noch auftaucht, geht als note an signoff. web /api/tickets/<id> not found für abgelehnte: bekannte Grenze, note.
 - **2026-11-22 17:53 · Alexander Sacharov** — decision: option 1, last round (teamlead jaira-d0): openMember gets a PlaceRejected case; anything further (other switches, web API not-found for ref-rejected) goes to signoff as a note, no more testing rounds.
+- **2026-11-22 17:54 · Alexander Sacharov** — bughunt: done at bdcbc2a8b - 0 findings in 1 module, follow-up hunt since 499be42ec (diff: internal/tui/layer.go internal/tui/rejectref_test.go; no new files; no diff since: the rest); concurrency, error paths, input, permissions checked; files: core/link/link.go core/refsync/refsync.go core/release/notes/4539MZ.md core/ticket/store.go docs/COMMANDS.md internal/cli/claim.go internal/cli/delete.go internal/cli/pull.go internal/cli/reject.go internal/cli/rejectref_test.go internal/tui/layer.go internal/tui/model.go internal/tui/rejectref_test.go
