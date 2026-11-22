@@ -1673,15 +1673,14 @@ describe('after Accept', () => {
     expect(prLane(w)).toHaveLength(1)
   })
 
-  test('a ticket worked on another ticket\'s branch finds that branch by the commits naming it', async ($, on) => {
+  test('a ticket worked on another ticket\'s branch finds that branch by its own commit, the one branch holding it', async ($, on) => {
     const w = world(on, { herdr: true })
     w.ahead = 2
     w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }, { ...WORKING, handle: 'MG677R', status: 'done' }]
     w.subjects = ['feat(MG677R): cache key', 'fix(ZZ99ZZ): on the same branch']
     w.branchCommits = [{ sha: 'abc123', subject: 'fix(ZZ99ZZ): on the same branch' }]
-    // A wip holding the same commit has fewer parts and is no reason to leave
-    // it; a main checkout detached mid-rebase lists first and is no branch.
-    w.holders = ['(HEAD detached at abc123)', 'master', 'feat/mg677r', 'wip']
+    // A main checkout detached mid-rebase lists first and is no branch.
+    w.holders = ['(HEAD detached at abc123)', 'master', 'feat/mg677r']
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-ZZ99ZZ' })
@@ -1689,6 +1688,22 @@ describe('after Accept', () => {
     expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
     // Its worktree is the other ticket's: the role pushes from there.
     expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+  })
+
+  // A wip or a branch stacked on the ticket's holds its commit as well: Accept
+  // opens no pull request for a guess, and says between which (Alex, QTQW15).
+  test('several branches hold its own commit: no pull request, the press names them', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 2
+    w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }, { ...WORKING, handle: 'MG677R', status: 'done' }]
+    w.branchCommits = [{ sha: 'abc123', subject: 'fix(ZZ99ZZ): on the same branch' }]
+    w.holders = ['master', 'feat/mg677r', 'wip']
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'accept-ZZ99ZZ' })
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(w.toasts.at(-1)).toContain("ZZ99ZZ accepted; feat/mg677r and wip could each be ZZ99ZZ's branch")
+    expect(w.submitted.at(-1)).toContain("feat/mg677r and wip could each be ZZ99ZZ's branch")
   })
 
   test('a ticket named only beside others in a subject has no commit of its own: no branch, no pull request (Alex, QTQW15)', async ($, on) => {

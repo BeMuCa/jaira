@@ -746,11 +746,12 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   // branch's own word for itself.
   const land = base !== undefined && await landsWithoutPullRequest($, b.repo, base)
   if (typeof asked === 'string' && !land) return { step: stepAfterAccept(0, [], undefined), hint: t.prUnchecked(asked) }
-  // Of several branches holding its commit Accept takes the first git lists,
-  // as before QTQW15: a pull request is seen before it lands, a worker in
-  // the wrong worktree is not. Only Give back refuses to pick.
+  // Several branches that could each be the ticket's: Accept picks none, as
+  // Give back picks none (Alex, QTQW15) — a pull request for a branch stacked
+  // on the ticket's proposes another ticket's work. The press says which.
   const carrier = await ticketBranch($, b, id, porcelain, base, found.base ?? '')
-  const branch = carrier === undefined ? undefined : 'ambiguous' in carrier ? carrier.ambiguous[0] : carrier.branch
+  if (carrier !== undefined && 'ambiguous' in carrier) return { step: 'none', hint: t.branchAmbiguous(id, carrier.ambiguous) }
+  const branch = carrier?.branch
   if (branch === undefined || base === undefined || branch === found.base) return { step: 'none', hint: '' }
   // One subject per commit ahead: the count and the tickets in one walk.
   const subjects = await run($, ['git', 'log', '--format=%s', `${base}..${branch}`], b.repo)

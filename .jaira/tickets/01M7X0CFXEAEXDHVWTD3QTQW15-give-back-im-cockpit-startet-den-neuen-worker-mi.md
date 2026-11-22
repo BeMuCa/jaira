@@ -24,29 +24,39 @@ related:
   - 01M5MNWDKYJGC78B3EKMX2TGXG
 commits: []
 created-at: 2026-11-20T17:34:35Z
-updated-at: 2026-11-22T20:48:51Z
+updated-at: 2026-11-22T21:12:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2387063
 claimed-at: 2026-11-22T20:23:39Z
 outcome-what: "Give back im Cockpit: neuer Worker berichtet an die parent session des Tickets (sonst an die Cockpit-Session, sonst eigener Tab), startet auf dem Branch mit dem neuesten Commit der ID (vorhandener Worktree oder spawn.sh --branch), ein arbeitender Worker bekommt die Entscheidung statt ersetzt zu werden; Accept/Give back/Decide schicken '<ID>: ... (Person, Cockpit)' in die Session, Accept auch als Note. spawn.sh: --branch, vorhandener <prefix>/<slug> wird wieder ausgecheckt, Setup-Fehler loescht nur selbst angelegte Branches, Prompt mit parent nennt SendMessage statt AskUserQuestion."
 outcome-why: "Ein Teamlead eines anderen Projekts sah am 20.11. Worker, die per AskUserQuestion fragten, in leeren feat/<id>-Worktrees starteten und dreifach liefen."
 outcome-resolves: QTQW15 DoD 1-6
-review-summary: "none"
-round: 11
-back-from: testing
-back-by: lane
+review-summary: "Give back im Cockpit startet einen neuen Worker jetzt am richtigen Ort und mit Teamlead: ticketBranch/carrierFor (board.ts, register.tsx) nimmt den eigenen Worktree des Tickets, sonst genau einen <prefix>/<slug>-Branch, sonst genau einen Branch mit dem neuesten eigenen Commit fix(<ID>); bei zwei Kandidaten startet nichts und das Band nennt sie. spawn.sh bekommt --branch, nimmt einen verwaisten <prefix>/<slug> wieder auf, loescht bei Setup-Fehler keinen fremden Branch und sperrt per flock je Ticket+Lane einen zweiten parallelen Lauf. Der neue Worker bekommt --parent aus der neuesten 'parent session:'-Note (sonst die Cockpit-Session, sonst keinen) und im Prompt das Verbot von AskUserQuestion. Ein arbeitender Worker wird nie ersetzt, sondern bekommt die Entscheidung. Accept/Give back/Decide schicken der eigenen Session eine Zeile '<ID>: ... (Person, Cockpit)', Accept schreibt sie zusaetzlich als Note."
+round: 12
+back-from: signoff
+back-by: person
 back-count: 1
-review-gaps: "round 9: removed carrierBranch (no caller left once holdersOf filters every listing); nothing else"
-test-verdict: "pass: round 9 delta - mod 393/393, go test core/role green; DoD 8 (no list fallback) and DoD 9 (two <prefix>/<slug> -> ambiguous) by their tests; DoD 1-7 proofs unchanged"
-hunt-verdict: "fail: bughunt done at f79b49087 - 1 change, not a blocker: the band's text said 'all hold the newest commit' also for two <prefix>/<slug> branches; reworded in the same round"
-review-verdict: "accept: alle 9 DoD-Punkte im Diff erfuellt und getestet (Cockpit 392/392 via claude plugin test, go test ./core/role gruen inkl. zwei gleichzeitige Spawns); nur Notes, kein Blocker"
-review-round: 9
+review-gaps: |-
+  note: Accept nimmt bei mehreren Holdern weiter ambiguous[0] (git-Reihenfolge, alphabetisch) - bei einem darauf gestapelten Folge-Branch nennt Accept dessen Branch fuer den PR; bewusst "as before" (register.tsx:752), Give back verweigert korrekt
+  note: workPlace (register.tsx:1420) leitet den nie-Traeger-Branch aus base per replace(/^[^/]+\//) ab - ohne origin-Remote und mit Hauptcheckout auf z.B. feat/x wird daraus "x", der Hauptcheckout-Branch zaehlt dann als Holder; Fix: Prefix nur bei originDefault abschneiden
+  note: commitNaming (board.ts:654) erkennt nur Typen [a-z]+ - Fix(<ID>) oder feat2(<ID>) zaehlt nicht als eigener Commit; reicht fuer die Konvention dieses Repos
+  note: holdersOf (board.ts:51) streicht jeden Branch, der auf /<anderer gelisteter Branch> endet - ein lokaler Branch namens wie der Slug selbst wuerde feat/<slug> verdecken; sehr selten
+test-verdict: "pass: round 9b delta - one text in texts.ts and its three test lines; mod 393/393"
+hunt-verdict: "pass: bughunt done at 58a9c4390 - 0 change, 0 pre-existing"
+review-verdict: "accept: alle 9 DoD-Punkte sind im Diff belegt (carrierFor ohne Raten, spawn.sh-Claim, parent-Kette, Zeilen an die Session); go test ./core/role 24s ok, claude plugin test 393/393; nur Notes, kein Blocker"
+review-round: 11
 review-verdict-gaps: |-
-  note: carrierBranch nimmt bei zwei <prefix>/<slug>-Branches (feat/qtqw15 und fix/qtqw15) still den ersten - genau das Raten, das DoD 9 fuer Holder verbietet; fix: auch dort ambiguous zurueckgeben
-  note: holdersOf (board.ts:45ff) wiederholt den Filter von carrierBranch (board.ts:675); carrierBranch koennte holdersOf(...)[0] sein
-  note: commitNaming faellt ohne eigenen (<ID>)-Commit auf Listen-Scopes wie fix(0GMYQB,QTQW15) zurueck; DoD 8 sagt "zaehlen nur", der Kommentar begruendet die Ausnahme - gewinnt aber nie gegen einen eigenen Commit
-  note: bekannte Grenze (DoD 6): ein Teamlead in einer anderen Session sieht die Entscheidung nur als Ticket-Note
-review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> 392 pass, 0 fail  2. cd core && go test -count=1 -run TestSpawn ./role/  -> ok  3. Live: claude --plugin-dir <worktree>/core/mod/builtin/jaira-cockpit, ein Ticket in signoff mit Worktree feat/<id> waehlen, Give back druecken  4. Neuer Herdr-Tab '<ID>/worker' oeffnet im vorhandenen Worktree; seine Startzeile endet mit 'every question goes to <session> by SendMessage'  5. In deiner Session erscheint '<ID> given back: <Grund>, worker new ... (Person, Cockpit; signoff -> in-progress)'  6. Give back sofort ein zweites Mal -> kein zweiter Tab, Band meldet das Ticket schon in in-progress  7. Accept auf einem anderen Ticket -> Zeile '<ID>: accepted, ... (Person, Cockpit)' und eine 'cockpit: accepted by the person'-Note in jaira show <ID>"
+  note: Accept nimmt bei mehreren Holdern weiter ambiguous[0] (git-Reihenfolge, alphabetisch) - bei einem darauf gestapelten Folge-Branch nennt Accept dessen Branch fuer den PR; bewusst "as before" (register.tsx:752), Give back verweigert korrekt
+  note: workPlace (register.tsx:1420) leitet den nie-Traeger-Branch aus base per replace(/^[^/]+\//) ab - ohne origin-Remote und mit Hauptcheckout auf z.B. feat/x wird daraus "x", der Hauptcheckout-Branch zaehlt dann als Holder; Fix: Prefix nur bei originDefault abschneiden
+  note: commitNaming (board.ts:654) erkennt nur Typen [a-z]+ - Fix(<ID>) oder feat2(<ID>) zaehlt nicht als eigener Commit; reicht fuer die Konvention dieses Repos
+  note: holdersOf (board.ts:51) streicht jeden Branch, der auf /<anderer gelisteter Branch> endet - ein lokaler Branch namens wie der Slug selbst wuerde feat/<slug> verdecken; sehr selten
+review-check: |-
+  1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> 393 pass, 0 fail
+  2. go test ./core/role -run 'TestSpawnTakesUpTheBranchTheWorkRidesOn|TestSpawnTypesTheRoleForItsLaneName'  -> ok
+  3. Live: ein Ticket in signoff/human mit Worktree, dessen Tab geschlossen ist; im Cockpit Give back druecken -> ein neuer Tab <ID>/worker oeffnet im Worktree des Tickets (nicht in einem neuen feat/<id>), und in dieser Session erscheint die Zeile 'jaira-cockpit: <ID> given back: ..., worker new ... (Person, Cockpit; ...)'
+  4. Im neuen Tab steht die Startzeile '/jaira-worker <ID> --parent ... - every question goes to ... by SendMessage, never by AskUserQuestion'
+  5. Give back sofort ein zweites Mal -> kein zweiter Tab; jaira show <ID> zeigt nur eine Note 'cockpit: given back to a new worker'
+  6. Accept auf einem Ticket -> Zeile 'jaira-cockpit: <ID>: accepted, ... (Person, Cockpit)' und auf dem Ticket die Note 'cockpit: accepted by the person, ...'
 question: ""
 ---
 
@@ -72,6 +82,8 @@ question: ""
   proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:649 commitNaming - only scope (<ID>), no list fallback; tests 'the commit that is a ticket\'s own' (9 cases), Accept 'a ticket named only beside others in a subject has no commit of its own...'
 - [x] Alex 22.11. (Schleifenbremse, Option 3): Give back nimmt nur den eigenen Worktree, sonst den Branch <prefix>/<slug>, sonst genau einen Holder des eigenen Commits; in jedem anderen Fall startet kein Worker und das Band sagt warum - kein Raten unter mehreren Kandidaten
   proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:580 carrierFor (own worktree > one <prefix>/<slug> > one holder; two named or several holders -> ambiguous); register.tsx:1371 no worker + band line; tests 'two branches named after it...', 'several holders, none its own...' x3, 'several branches hold the commit and none is the ticket\'s own...'
+- [x] Alex 22.11.: Auch Accept raet nicht - halten mehrere Branches den eigenen Commit (oder heissen zwei nach dem Ticket), oeffnet Accept keinen PR und das Band nennt die Branches; Test
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:753 decideStep returns no step with branchAmbiguous; test 'several branches hold its own commit: no pull request, the press names them'
 
 ## Options
 
@@ -148,3 +160,6 @@ question: ""
 - **2026-11-22 20:47 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/texts.ts:56 (reached from hooks/board.ts:586 via register.tsx:1419) - class: the ambiguity band has one text for two different causes, and the new cause (several <prefix>/<slug> branches) is described with the other's reason; example: branches feat/qtqw15 and fix/qtqw15 with no worktree -> carrierFor returns {ambiguous:[feat/qtqw15, fix/qtqw15]} and Give back's band reads 'feat/qtqw15 and fix/qtqw15 all hold QTQW15's newest commit and none is its own', though both are named after the ticket and neither need hold any commit; the person is told the wrong reason for the stop (no wrong worker starts); edge, not a blocker; read
 - **2026-11-22 20:47 · Alexander Sacharov** — bughunt: done at f79b49087 - 1 finding (1 change, 0 pre-existing), follow-up hunt since 34237f1c9 (diff only, no new files: carrierFor refuses two <prefix>/<slug> branches, commitNaming counts only (<ID>) scopes, carrierBranch removed - no caller left outside testdata, release note, shipped hash); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/sessions.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/QTQW15.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256
 - **2026-11-22 20:48 · Alexander Sacharov** — in-progress (Runde 9b): branchAmbiguous sagt jetzt 'could each be <ID>'s branch and none is its worktree's' - wahr fuer beide Gruende (zwei slug-Branches, mehrere Holder); Fund des Hunts auf f79b49087. 393/393.
+- **2026-11-22 20:49 · Alexander Sacharov** — bughunt: done at 58a9c4390 - 0 findings, follow-up hunt since f79b49087 (diff only, no new files: branchAmbiguous wording now covers two <prefix>/<slug> branches - checked against carrierFor, ambiguous only when no own worktree branch; test expectations; shipped hash = current texts.ts); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/sessions.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/QTQW15.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-22 21:08 · Alexander Sacharov** — given back by Alex (22.11.), gelbe Notiz: Accept bei mehreren Holdern nimmt nicht mehr ambiguous[0], sondern verhält sich wie Give back - kein Raten, Band nennt die Branches (Test). Weisse Notizen bleiben.
+- **2026-11-22 21:12 · Alexander Sacharov** — in-progress (Runde 10, gelbe Note nach Alex): Accept raet nicht mehr - ambiguous -> kein PR, die Zeile 'accepted; <branches> could each be <ID>'s branch...' im Band und in der Session; Test. Der Accept-Test 'Ticket auf fremdem Branch' prueft jetzt den Fall mit genau einem Holder. Weisse Notes bleiben Notes. 394/394.
