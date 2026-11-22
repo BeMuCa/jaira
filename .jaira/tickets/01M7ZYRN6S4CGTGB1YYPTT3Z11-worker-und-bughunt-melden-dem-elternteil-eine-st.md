@@ -1,7 +1,7 @@
 ---
 id: 01M7ZYRN6S4CGTGB1YYPTT3Z11
 title: Worker und Bughunt melden dem Elternteil eine Statuszeile; der volle Bericht steht nur auf dem Ticket
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,15 +19,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-21T21:04:00Z
-updated-at: 2026-11-22T11:44:58Z
+updated-at: 2026-11-22T11:50:55Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1588595
 claimed-at: 2026-11-22T11:38:15Z
-outcome-what: "Worker, dispatcher and bug hunt hand their parent only the status line plus an optional 'needs you:' line; the full report goes onto the ticket as a 'report:' / 'hunt report:' note. Teamlead skill reads details with jaira show. Cockpit digest keeps the needs-you line."
+outcome-what: "Worker, dispatcher and bug hunt hand their parent only the status line plus an optional 'needs you:' line; the full report goes onto the ticket as a 'report:' / 'hunt report:' note. Teamlead skill reads details with jaira show. Cockpit digest keeps the needs-you line, framed or not, and ignores an empty or 'none' one."
 outcome-why: "Reports of 1-3k tokens each filled the teamlead's session although everything was already on the ticket."
 outcome-resolves: "Teamlead context grows by one line per report, not a page."
 review-summary: none
 review-gaps: "rewrapped three over-long lines the change left in jaira-dispatcher, jaira-worker and jaira-teamlead SKILL.md (one 'them' → 'it'); replaced the intermediate shipped.sha256 hashes instead of adding a second set. Considered and left: needsYouOf beside questionOf in digest.ts — same shape, different key and no-value rule (questionOf drops 'none'/'-'); merging them would need a parameter for one caller each. No dead code, no cost on a hot path."
+test-verdict: "fail: suite green (go test ./... RC=0, cockpit 303 pass); DoD 1-3 verified in the tree; but the hunt found two change defects in digest.ts needsYouOf (framed line dropped; empty value crosses a newline) — back to in-progress"
+hunt-verdict: "fail: 2 change findings in hooks/digest.ts:103 (framed needs-you line dropped; value not validated)"
+round: 2
+back-from: testing
+back-by: lane
+back-count: 1
 ---
 
 # Worker und Bughunt melden dem Elternteil eine Statuszeile; der volle Bericht steht nur auf dem Ticket
@@ -56,3 +62,9 @@ review-gaps: "rewrapped three over-long lines the change left in jaira-dispatche
 - **2026-11-22 11:40 · Alexander Sacharov** — decision revised: point 2 dropped — per-lane lines stay upward; each is already one line, which is what the goal asks, and they keep the person able to react mid-run. Only the final report shrinks.
 - **2026-11-22 11:43 · Alexander Sacharov** — lane in-progress: done; worktree also carries uncommitted .jaira/lanes/*, AGENTS.md, CLAUDE.md changes that this ticket did not make (a lanes/agent-block regeneration, appeared before any edit) — left out of every commit
 - **2026-11-22 11:43 · Alexander Sacharov** — critique (pass 1, whole diff): nothing to change. Let stand: (a) a separate 'needs you:' key in digest.ts instead of reusing 'question:' — reusing would need no TS change but would label an acceptance link a question; (b) the bug hunt's short line has no status-line shape, so the cockpit digest shortens it to the handle and drops '2 findings (1 change...)' — that was already so for its three-line report, the testing lane reads the findings off the ticket anyway, and a hunt status line is its own ticket if wanted; (c) 'report:' note with ' | ' separators is new but one line, readable in jaira show.
+- **2026-11-22 11:45 · Alexander Sacharov** — waiting: bug hunt (background subagent) since 12:45
+- **2026-11-22 11:46 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/digest.ts:103 - class: needs-you line that shares its physical line with an engine frame tag (<agent-message from=…>, <result>) is dropped; NEEDS_YOU is anchored at ^ and, unlike statusLineOf (FRAME_OPEN, digest.ts:136), strips no frame, and register.tsx:240 hands digest() the raw framed text; since the report is now two lines, the needs-you line is exactly the first line, the one the frame opens on; example: 'Another Claude session sent a message:\n<agent-message from="w">needs you: accept at https://claude.ai/artifact/x1\njaira: 55CS2M testing -> human · notes: 2 · verdict: sent back</agent-message>' (same shape as cockpit.test.ts:118) digests to '55CS2M · testing → human · sent back · notes 2' with no needs-you; same for '<result>needs you: …'; the new test cockpit.test.ts:106 only covers an unframed line; ran: node --experimental-strip-types on a scratch script calling digest()
+- **2026-11-22 11:46 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/digest.ts:103 - class: needs-you value is not validated: the \s* after 'needs you:' crosses a newline, and no empty/'nothing' value is filtered (questionOf has NO_QUESTION for this); example: 'needs you:' with nothing after it captures the next line, so the digest reads '… · needs you: jaira: 55CS2M in-progress -> signoff · branch: … · verdict: approve' (status line shown twice, as an ask); 'needs you: nothing' / 'needs you: -' is shown as an ask too, though jaira-worker forbids that line; ran: node --experimental-strip-types on a scratch script calling digest()
+- **2026-11-22 11:46 · Alexander Sacharov** — hunt report: 2 findings, both change (1 blocker: digest drops a framed needs-you line), notes on TT3Z11 | read whole: hooks/digest.ts, the TT3Z11 diff of texts.ts, cockpit.test.ts, role_test.go, four role SKILL.md files, release note, shipped.sha256 (hashes match); frame.ts/register.tsx/gitrepo/hunt.go read as callers; uncommitted .jaira/lanes/*, AGENTS.md, CLAUDE.md are board-regeneration prose | not run: the cockpit test suite (needs the claude-code test engine); go test ./core/role ./core/shipped pass
+- **2026-11-22 11:46 · Alexander Sacharov** — bughunt: done at eb5df991f - 2 findings (2 change, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/optimize.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/mod/builtin/jaira-cockpit/hooks/digest.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/release/notes/TT3Z11.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-role-bughunt/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-22 11:50 · Alexander Sacharov** — fix round 2: needsYouOf now reads line by line like statusLineOf (frame tags stripped, last line wins), [ \t]* instead of \s* so an empty value never takes the next line, and NO_QUESTION filters empty/none — NO_QUESTION gained 'nothing', which also makes 'question: nothing' no question. Tests: cockpit.test.ts 3 new cases (framed, none/nothing, empty above status line).

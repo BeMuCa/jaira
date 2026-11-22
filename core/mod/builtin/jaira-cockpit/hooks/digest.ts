@@ -87,24 +87,13 @@ export function verdictOf(text: string): string | undefined {
 // A question ends at a quote, the line's end, or a "·" — the separator of a
 // status line, whose next field is not part of the question.
 const QUESTION = /(?:--question\s+["“]|\b(?:open question|offene frage|question|frage)\s*[:=]\s*["“]?)([^"\n”·]+)/i
-const NO_QUESTION = /^(?:none|no|keine|nein|nichts|-|—)\b/i
+const NO_QUESTION = /^(?:none|nothing|no|keine|nein|nichts|-|—)\b/i
 
 export function questionOf(text: string): string | undefined {
   const m = QUESTION.exec(text)
   if (!m) return undefined
   const q = m[1]!.trim()
   return q === '' || NO_QUESTION.test(q) ? undefined : clip(q, 100)
-}
-
-// The one line above the status line that says what waits for a person
-// (see the Report section of jaira-worker): "needs you: <what>". It is all a
-// report carries besides the status line, so a digest that dropped it would
-// drop the only thing the teamlead has to act on.
-const NEEDS_YOU = /^\s*needs you:\s*(\S.*?)\s*$/im
-
-export function needsYouOf(text: string): string | undefined {
-  const m = NEEDS_YOU.exec(text)
-  return m ? clip(m[1]!, 140) : undefined
 }
 
 // The status line a worker or dispatcher ends its report with (see the
@@ -135,6 +124,26 @@ const STATUS_HEAD = new RegExp(
 // on either side. They are not part of it.
 const FRAME_OPEN = /^(?:\s*<[a-z][a-z-]*(?:\s[^>]*)?>)+/i
 const FRAME_CLOSE = /(?:<\/[a-z][a-z-]*>\s*)+$/i
+
+// The one line above the status line that says what waits for a person
+// (see the Report section of jaira-worker): "needs you: <what>". It is all a
+// report carries besides the status line, so a digest that dropped it would
+// drop the only thing the teamlead has to act on. Read like the status line:
+// the last such line, frame tags around it stripped — in a two-line report
+// it is the first line, the one the engine's frame opens on. An empty value
+// or "none" is no ask, as for a question.
+const NEEDS_YOU = /^[ \t]*needs you:[ \t]*(.*?)[ \t]*$/i
+
+export function needsYouOf(text: string): string | undefined {
+  const lines = text.split(/\r?\n/)
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const m = NEEDS_YOU.exec(lines[i]!.replace(FRAME_OPEN, '').replace(FRAME_CLOSE, ''))
+    if (!m) continue
+    const v = m[1]!
+    return v === '' || NO_QUESTION.test(v) ? undefined : clip(v, 140)
+  }
+  return undefined
+}
 
 // The last such line in the report, or undefined when there is none: a
 // report quoting an earlier one still ends with its own. A key that is
