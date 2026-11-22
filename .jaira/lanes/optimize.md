@@ -7,6 +7,7 @@ precedence: 48
 agentic: true
 model-tier: strong
 rejects-to: in-progress
+max-rounds: 3
 input-requires: [goal, definition-of-done, outcome-what, diff]
 output-produces: [review-gaps]
 creator: BeMuCa

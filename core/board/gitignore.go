@@ -426,6 +426,18 @@ func locked(exclude string, fn func() error) error {
 	return fn()
 }
 
+// lineEnding is the line ending a file at hand is written in: CRLF where most
+// of its lines end in it — a Windows checkout with core.autocrlf — so a line
+// jaira adds does not leave the file with mixed endings. Most, not any: one
+// stray CRLF line pasted into an LF file must not turn what jaira writes into
+// CRLF, or a teammate on a build that writes LF rewrites it back every time.
+func lineEnding(s string) string {
+	if 2*strings.Count(s, "\r\n") > strings.Count(s, "\n") {
+		return "\r\n"
+	}
+	return "\n"
+}
+
 // appendEntry adds a comment and one pattern to the end of path, after a blank
 // line, creating the file where it does not exist, in the line endings the
 // file already uses. Written whole and renamed into place (ticket.WriteAtomic),
@@ -438,10 +450,7 @@ func appendEntry(path, comment, line string) error {
 		return err
 	}
 	body := string(existing)
-	nl := "\n"
-	if strings.Contains(body, "\r\n") {
-		nl = "\r\n"
-	}
+	nl := lineEnding(body)
 	if body != "" && !strings.HasSuffix(body, "\n") {
 		body += nl
 	}

@@ -42,6 +42,12 @@ type RecordError struct {
 func (e *RecordError) Error() string { return fmt.Sprintf("milestone %q: %v", e.Name, e.Err) }
 func (e *RecordError) Unwrap() error { return e.Err }
 
+// Warning is how a command or the board tells the person: the milestone is
+// written here, and reaches nobody until its ref write is queued.
+func (e *RecordError) Warning() string {
+	return fmt.Sprintf("milestone %q was written here but could not be queued for the remote: %v", e.Name, e.Err)
+}
+
 // FiledError is Edit's refusal of a milestone whose file still lies here but
 // is marked filed — what a fetch of somebody else's filing leaves behind.
 // Writing it would put the change on its ref for every clone that fetches.

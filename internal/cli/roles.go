@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -139,10 +140,10 @@ source says so. Without any base the disk is read, and the source says that.`,
 }
 
 func newRolesPRGateCmd() *cobra.Command {
-	var land bool
+	var land, merge bool
 	cmd := &cobra.Command{
 		Use:   "pr-gate <base>",
-		Short: "Say whether an agent may open this branch's pull request",
+		Short: "Say whether an agent may open, land or merge this branch's pull request",
 		Long: `Says whether an agent may open the pull request of the checked-out branch
 against <base> — the default branch of the repository it goes to, as
 <remote>/<branch>. Exit 0 only when .jaira/pr says agent or none in <base> itself, at
@@ -174,7 +175,15 @@ unnamed.
 --land asks the landing question alone: exit 0 only where <base> itself
 says none. jaira-role-pr lands only behind it, so a branch that commits
 .jaira/pr none over a base saying agent or person never lands on the agent
-rules — reason not_none.`,
+rules — reason not_none.
+
+--merge asks whether an agent may merge the pull request already open:
+exit 0 only where <base>'s .jaira/land says agent — one line, committed,
+read as <base> holds it like .jaira/pr — and every ticket named on the
+branch is in its board's terminal lane. .jaira/pr and .jaira/pr-when are not
+read. Every commit in <base>..HEAD must name a ticket, as under none.
+Anything else exits 3, reason not_agent, no_ticket, unnamed, unreadable or
+pending, and the person merges. --json carries may_merge and tickets.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -194,37 +203,60 @@ rules — reason not_none.`,
 			// .jaira/pr saying agent, or a pr-when of signoff, would
 			// otherwise open its own gate. A change to either takes effect
 			// once it has been merged into the base.
-			pr := settings.PRIn(repo.FileAt(args[0], settings.BoardPRPath(".")))
-			// Landing is decided by the base alone: what this checkout's
-			// .jaira/pr says — and roles list reports — may be the branch's
-			// own word for itself.
-			if land && pr != settings.PRNone {
-				return fail(ExitValidation, "not_none",
-					"pr-gate --land: .jaira/pr in %s says %s, not none — nothing lands without a pull request here; push the branch and stop", args[0], pr)
+			if land && merge {
+				return fail(ExitUsage, "usage", "pr-gate: --land and --merge ask two different questions; pass one")
 			}
-			// The two questions stay apart: without --land the gate answers
-			// only whether an agent may open a pull request, and a base that
-			// takes none never gets one, whatever the branch says.
-			if !land && pr == settings.PRNone {
-				return fail(ExitValidation, "no_pull_requests",
-					"pr-gate: .jaira/pr in %s says none — this board takes no pull requests; land with 'jaira roles pr-gate --land %s'", args[0], args[0])
-			}
-			if pr == settings.PRPerson {
-				// This checkout saying otherwise is a file not yet committed
-				// on the base, not a board that wants a person: say that, and
-				// not a create line the board does not want.
-				if local := board.PRModeFor(s.Root); local != settings.PRPerson {
-					return fail(ExitValidation, "pr_person",
-						"pr-gate: .jaira/pr says %s here, but not in %s — it takes effect once it is committed there (on a board not shared yet, 'jaira share' first); until then a person opens the pull request", local, args[0])
+			// Merging is its own permission, read off <base> like the rest:
+			// .jaira/pr says who opens a pull request, .jaira/land whether an
+			// agent may merge one. The pull request exists already, so who
+			// opens it is not asked, and pr-when is not read: a merge waits
+			// for done whatever the pull request was opened on.
+			var pr, then string
+			if merge {
+				if !settings.LandIn(repo.FileAt(args[0], settings.BoardLandPath("."))) {
+					// Agent on this checkout's disk only is a file not yet
+					// committed on the base, as for pr_person below.
+					if b, err := os.ReadFile(settings.BoardLandPath(s.Root)); err == nil && settings.LandIn(string(b)) {
+						return fail(ExitValidation, "not_agent",
+							"pr-gate --merge: .jaira/land says agent here, but not in %s — it takes effect once it is committed there; until then a person merges; hand the merge line back", args[0])
+					}
+					return fail(ExitValidation, "not_agent",
+						"pr-gate --merge: .jaira/land in %s does not say agent — a person merges; hand the merge line back", args[0])
 				}
-				return fail(ExitValidation, "pr_person",
-					"pr-gate: .jaira/pr in %s says neither agent nor none — a person opens the pull request; hand the create line back", args[0])
-			}
-			// What the agent does on a no: hand the create line back where a
-			// person opens pull requests; under none there is no such line.
-			then := "hand the create line back"
-			if pr == settings.PRNone {
-				then = "push the branch and stop"
+				then = "hand the merge line back"
+			} else {
+				pr = settings.PRIn(repo.FileAt(args[0], settings.BoardPRPath(".")))
+				// Landing is decided by the base alone: what this checkout's
+				// .jaira/pr says — and roles list reports — may be the branch's
+				// own word for itself.
+				if land && pr != settings.PRNone {
+					return fail(ExitValidation, "not_none",
+						"pr-gate --land: .jaira/pr in %s says %s, not none — nothing lands without a pull request here; push the branch and stop", args[0], pr)
+				}
+				// The two questions stay apart: without --land the gate answers
+				// only whether an agent may open a pull request, and a base that
+				// takes none never gets one, whatever the branch says.
+				if !land && pr == settings.PRNone {
+					return fail(ExitValidation, "no_pull_requests",
+						"pr-gate: .jaira/pr in %s says none — this board takes no pull requests; land with 'jaira roles pr-gate --land %s'", args[0], args[0])
+				}
+				if pr == settings.PRPerson {
+					// This checkout saying otherwise is a file not yet committed
+					// on the base, not a board that wants a person: say that, and
+					// not a create line the board does not want.
+					if local := board.PRModeFor(s.Root); local != settings.PRPerson {
+						return fail(ExitValidation, "pr_person",
+							"pr-gate: .jaira/pr says %s here, but not in %s — it takes effect once it is committed there (on a board not shared yet, 'jaira share' first); until then a person opens the pull request", local, args[0])
+					}
+					return fail(ExitValidation, "pr_person",
+						"pr-gate: .jaira/pr in %s says neither agent nor none — a person opens the pull request; hand the create line back", args[0])
+				}
+				// What the agent does on a no: hand the create line back where a
+				// person opens pull requests; under none there is no such line.
+				then = "hand the create line back"
+				if pr == settings.PRNone {
+					then = "push the branch and stop"
+				}
 			}
 			if len(named) == 0 {
 				return fail(ExitValidation, "no_ticket",
@@ -233,15 +265,17 @@ rules — reason not_none.`,
 			// Under none nobody reads the branch after the gate: a pull
 			// request would show a commit that names no ticket to a person
 			// before it merges, a fast-forward push shows it to nobody. So
-			// every commit must belong to a ticket a person accepted.
-			if pr == settings.PRNone {
+			// every commit must belong to a ticket a person accepted. An
+			// agent's merge is the same: nobody reads the pull request again
+			// between the acceptance and the merge.
+			if pr == settings.PRNone || merge {
 				unnamed, err := repo.UnnamedCommits(args[0])
 				if err != nil {
 					return err
 				}
 				if len(unnamed) > 0 {
 					return fail(ExitValidation, "unnamed",
-						"pr-gate: %d commit(s) in %s..HEAD name no ticket, and without a pull request nobody would see them before they land — %s; name a ticket in each, type(<ID>): ... — a revert too, as fix(<ID>): revert <what> (git rebase -i, reword) — or %s",
+						"pr-gate: %d commit(s) in %s..HEAD name no ticket, and nobody would see them before they land — %s; name a ticket in each, type(<ID>): ... — a revert too, as fix(<ID>): revert <what> (git rebase -i, reword) — or %s",
 						len(unnamed), args[0], strings.Join(unnamed, "; "), then)
 				}
 			}
@@ -267,7 +301,7 @@ rules — reason not_none.`,
 			// Without a pull request there is no review on one to wait for:
 			// under none the branch lands on the default branch, and only a
 			// person's acceptance in done is the go-ahead for that.
-			if pr == settings.PRNone {
+			if pr == settings.PRNone || merge {
 				when = settings.PRWhenDone
 			}
 			// reached is, per board, every lane a ticket may sit in for the
@@ -314,6 +348,13 @@ rules — reason not_none.`,
 					"pr-gate: not every ticket on the branch is in %s — %s; %s", when, strings.Join(pending, ", "), then)
 			}
 			w := cmd.OutOrStdout()
+			if merge {
+				if g.jsonOut {
+					return emit(w, map[string]any{"may_merge": true, "tickets": named})
+				}
+				fmt.Fprintf(w, "pr-gate: an agent may merge it — .jaira/land says agent and every ticket on the branch is in done: %s\n", strings.Join(named, ", "))
+				return nil
+			}
 			if g.jsonOut {
 				return emit(w, map[string]any{"may_open": true, "pr": pr, "pr_when": when, "tickets": named})
 			}
@@ -326,6 +367,7 @@ rules — reason not_none.`,
 		},
 	}
 	cmd.Flags().BoolVar(&land, "land", false, "exit 0 only where <base> says none: the branch may land without a pull request")
+	cmd.Flags().BoolVar(&merge, "merge", false, "exit 0 only where <base>'s .jaira/land says agent and every ticket on the branch is in done: an agent may merge the pull request")
 	return cmd
 }
 
@@ -407,7 +449,11 @@ other: --into already names the directory.
 
 A file you have edited is never replaced. It is left exactly as it is and
 reported, and the command exits 3 so a script can tell "installed" from
-"installed except the ones you changed"; --force replaces it. A file already
+"installed except the ones you changed"; --force replaces it. Left alone also
+means frozen: every later jaira skips it the same way, so no fix or
+improvement to that file reaches you until --force puts the built-in one back.
+Keep your own changes where a role reads them instead — spawn.sh, for one,
+calls the repository's .jaira/worktree-setup rather than being edited. A file already
 identical to the built-in one is not an edit — a second run reports it as
 unchanged and exits 0. Neither is a file identical to a version an earlier
 jaira shipped: it is replaced and reported as updated, without --force.`,

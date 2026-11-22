@@ -125,6 +125,26 @@ const STATUS_HEAD = new RegExp(
 const FRAME_OPEN = /^(?:\s*<[a-z][a-z-]*(?:\s[^>]*)?>)+/i
 const FRAME_CLOSE = /(?:<\/[a-z][a-z-]*>\s*)+$/i
 
+// The one line above the status line that says what waits for a person
+// (see the Report section of jaira-worker): "needs you: <what>". It is all a
+// report carries besides the status line, so a digest that dropped it would
+// drop the only thing the teamlead has to act on. Read like the status line:
+// the last such line, frame tags around it stripped — in a two-line report
+// it is the first line, the one the engine's frame opens on. Only an empty
+// value is no ask: the worker writes no line when nothing waits, and a word
+// list would also drop a real ask that starts "no answer from CI…".
+const NEEDS_YOU = /^[ \t]*needs you:[ \t]*(.*?)[ \t]*$/i
+
+export function needsYouOf(text: string): string | undefined {
+  const lines = text.split(/\r?\n/)
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const m = NEEDS_YOU.exec(lines[i]!.replace(FRAME_OPEN, '').replace(FRAME_CLOSE, ''))
+    if (!m) continue
+    return m[1] === '' ? undefined : clip(m[1]!, 140)
+  }
+  return undefined
+}
+
 // The last such line in the report, or undefined when there is none: a
 // report quoting an earlier one still ends with its own. A key that is
 // missing or holds "-" is left out; a key not in FIELDS (or verdict) is ignored.
@@ -176,6 +196,8 @@ export function digest(text: string): { ticket: string; line: string } | undefin
   // and once here: a known limit, chosen over a dedupe that lost questions.
   const question = questionOf(text)
   if (question !== undefined) parts.push(`${words.question}: ${question}`)
+  const needs = needsYouOf(text)
+  if (needs !== undefined) parts.push(`${words.needsYou}: ${needs}`)
   const line = parts.filter(p => p !== undefined).join(' · ')
   return { ticket, line: `${words.marker} ${line} — ${words.fullReport}: /cockpit report ${ticket}` }
 }
