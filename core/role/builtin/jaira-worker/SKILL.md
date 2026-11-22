@@ -475,7 +475,7 @@ jaira: <ID> <from> -> <to> · branch: <branch> · commits: <first>..<last> (<n>)
 
 Keys and their order are fixed; an empty value is `-`, never a missing key.
 The cockpit shortens the report to this line and keeps the rest for
-`/cockpit report <ID>`; a report without it is guessed at, field by field.
+`/cockpit report <ID>`; a report without it shows only the ticket id.
 
 Started with `--parent`, the short report — the status line, and the
 `needs you:` line where there is one — goes to the parent with `SendMessage`.
