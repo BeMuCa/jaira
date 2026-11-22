@@ -368,6 +368,17 @@ func PRReviewerIn(content string) string {
 	return word(firstLine(content), "._-[]/@")
 }
 
+// BoardLandPath is where the board at root says whether an agent may merge
+// a pull request whose tickets are all in done: the one line "agent" lets
+// it, anything else — missing included — leaves merging to a person.
+func BoardLandPath(root string) string {
+	return filepath.Join(root, ticket.DirName, "land")
+}
+
+// LandIn reads the content of a .jaira/land file taken from a commit: true
+// only when it says exactly agent, so a typo never lets an agent merge.
+func LandIn(content string) bool { return board.PRWordIn(content) == PRAgent }
+
 // BoardPRWhenPath is where the board at root says when a pull request opens.
 func BoardPRWhenPath(root string) string {
 	return filepath.Join(root, ticket.DirName, prWhenFile)

@@ -139,7 +139,7 @@ source says so. Without any base the disk is read, and the source says that.`,
 }
 
 func newRolesPRGateCmd() *cobra.Command {
-	var land bool
+	var land, merge bool
 	cmd := &cobra.Command{
 		Use:   "pr-gate <base>",
 		Short: "Say whether an agent may open this branch's pull request",
@@ -174,7 +174,14 @@ unnamed.
 --land asks the landing question alone: exit 0 only where <base> itself
 says none. jaira-role-pr lands only behind it, so a branch that commits
 .jaira/pr none over a base saying agent or person never lands on the agent
-rules — reason not_none.`,
+rules — reason not_none.
+
+--merge asks whether an agent may merge the pull request already open:
+exit 0 only where <base>'s .jaira/land says agent — one line, committed,
+read as <base> holds it like .jaira/pr — and every ticket named on the
+branch is in its board's terminal lane. .jaira/pr and .jaira/pr-when are not
+read. Anything else exits 3, reason not_agent, no_ticket, unreadable or
+pending, and the person merges. --json carries may_merge and tickets.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -194,37 +201,54 @@ rules — reason not_none.`,
 			// .jaira/pr saying agent, or a pr-when of signoff, would
 			// otherwise open its own gate. A change to either takes effect
 			// once it has been merged into the base.
-			pr := settings.PRIn(repo.FileAt(args[0], settings.BoardPRPath(".")))
-			// Landing is decided by the base alone: what this checkout's
-			// .jaira/pr says — and roles list reports — may be the branch's
-			// own word for itself.
-			if land && pr != settings.PRNone {
-				return fail(ExitValidation, "not_none",
-					"pr-gate --land: .jaira/pr in %s says %s, not none — nothing lands without a pull request here; push the branch and stop", args[0], pr)
+			if land && merge {
+				return fail(ExitUsage, "usage", "pr-gate: --land and --merge ask two different questions; pass one")
 			}
-			// The two questions stay apart: without --land the gate answers
-			// only whether an agent may open a pull request, and a base that
-			// takes none never gets one, whatever the branch says.
-			if !land && pr == settings.PRNone {
-				return fail(ExitValidation, "no_pull_requests",
-					"pr-gate: .jaira/pr in %s says none — this board takes no pull requests; land with 'jaira roles pr-gate --land %s'", args[0], args[0])
-			}
-			if pr == settings.PRPerson {
-				// This checkout saying otherwise is a file not yet committed
-				// on the base, not a board that wants a person: say that, and
-				// not a create line the board does not want.
-				if local := board.PRModeFor(s.Root); local != settings.PRPerson {
-					return fail(ExitValidation, "pr_person",
-						"pr-gate: .jaira/pr says %s here, but not in %s — it takes effect once it is committed there (on a board not shared yet, 'jaira share' first); until then a person opens the pull request", local, args[0])
+			// Merging is its own permission, read off <base> like the rest:
+			// .jaira/pr says who opens a pull request, .jaira/land whether an
+			// agent may merge one. The pull request exists already, so who
+			// opens it is not asked, and pr-when is not read: a merge waits
+			// for done whatever the pull request was opened on.
+			var pr, then string
+			if merge {
+				if !settings.LandIn(repo.FileAt(args[0], settings.BoardLandPath("."))) {
+					return fail(ExitValidation, "not_agent",
+						"pr-gate --merge: .jaira/land in %s does not say agent — a person merges; hand the merge line back", args[0])
 				}
-				return fail(ExitValidation, "pr_person",
-					"pr-gate: .jaira/pr in %s says neither agent nor none — a person opens the pull request; hand the create line back", args[0])
-			}
-			// What the agent does on a no: hand the create line back where a
-			// person opens pull requests; under none there is no such line.
-			then := "hand the create line back"
-			if pr == settings.PRNone {
-				then = "push the branch and stop"
+				then = "hand the merge line back"
+			} else {
+				pr = settings.PRIn(repo.FileAt(args[0], settings.BoardPRPath(".")))
+				// Landing is decided by the base alone: what this checkout's
+				// .jaira/pr says — and roles list reports — may be the branch's
+				// own word for itself.
+				if land && pr != settings.PRNone {
+					return fail(ExitValidation, "not_none",
+						"pr-gate --land: .jaira/pr in %s says %s, not none — nothing lands without a pull request here; push the branch and stop", args[0], pr)
+				}
+				// The two questions stay apart: without --land the gate answers
+				// only whether an agent may open a pull request, and a base that
+				// takes none never gets one, whatever the branch says.
+				if !land && pr == settings.PRNone {
+					return fail(ExitValidation, "no_pull_requests",
+						"pr-gate: .jaira/pr in %s says none — this board takes no pull requests; land with 'jaira roles pr-gate --land %s'", args[0], args[0])
+				}
+				if pr == settings.PRPerson {
+					// This checkout saying otherwise is a file not yet committed
+					// on the base, not a board that wants a person: say that, and
+					// not a create line the board does not want.
+					if local := board.PRModeFor(s.Root); local != settings.PRPerson {
+						return fail(ExitValidation, "pr_person",
+							"pr-gate: .jaira/pr says %s here, but not in %s — it takes effect once it is committed there (on a board not shared yet, 'jaira share' first); until then a person opens the pull request", local, args[0])
+					}
+					return fail(ExitValidation, "pr_person",
+						"pr-gate: .jaira/pr in %s says neither agent nor none — a person opens the pull request; hand the create line back", args[0])
+				}
+				// What the agent does on a no: hand the create line back where a
+				// person opens pull requests; under none there is no such line.
+				then = "hand the create line back"
+				if pr == settings.PRNone {
+					then = "push the branch and stop"
+				}
 			}
 			if len(named) == 0 {
 				return fail(ExitValidation, "no_ticket",
@@ -267,7 +291,7 @@ rules — reason not_none.`,
 			// Without a pull request there is no review on one to wait for:
 			// under none the branch lands on the default branch, and only a
 			// person's acceptance in done is the go-ahead for that.
-			if pr == settings.PRNone {
+			if pr == settings.PRNone || merge {
 				when = settings.PRWhenDone
 			}
 			// reached is, per board, every lane a ticket may sit in for the
@@ -314,6 +338,13 @@ rules — reason not_none.`,
 					"pr-gate: not every ticket on the branch is in %s — %s; %s", when, strings.Join(pending, ", "), then)
 			}
 			w := cmd.OutOrStdout()
+			if merge {
+				if g.jsonOut {
+					return emit(w, map[string]any{"may_merge": true, "tickets": named})
+				}
+				fmt.Fprintf(w, "pr-gate: an agent may merge it — .jaira/land says agent and every ticket on the branch is in done: %s\n", strings.Join(named, ", "))
+				return nil
+			}
 			if g.jsonOut {
 				return emit(w, map[string]any{"may_open": true, "pr": pr, "pr_when": when, "tickets": named})
 			}
@@ -326,6 +357,7 @@ rules — reason not_none.`,
 		},
 	}
 	cmd.Flags().BoolVar(&land, "land", false, "exit 0 only where <base> says none: the branch may land without a pull request")
+	cmd.Flags().BoolVar(&merge, "merge", false, "exit 0 only where <base>'s .jaira/land says agent and every ticket on the branch is in done: an agent may merge the pull request")
 	return cmd
 }
 

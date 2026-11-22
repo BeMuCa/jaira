@@ -617,3 +617,83 @@ func TestRolesListBaseMustResolveAndComparesWithTheMergeBase(t *testing.T) {
 		t.Errorf("branch behind the base: pr=%v source=%v, want none and no 'this branch changes'", p["pr"], p["pr_source"])
 	}
 }
+
+// --merge is its own permission: .jaira/land in the base saying exactly
+// agent, and every ticket on the branch in done. Who opens pull requests and
+// when they open change nothing about it (50RA6N, Alex 2026-11-22).
+func TestPRGateMergesOnlyWhereTheBaseSaysAgentAndEveryTicketIsDone(t *testing.T) {
+	cases := []struct {
+		name       string
+		land       string // .jaira/land committed to the base; "" none
+		onDisk     string // .jaira/land on the branch's disk only
+		pr, when   string // .jaira/pr and .jaira/pr-when in the base
+		status     string
+		wantReason string // "" means exit 0
+	}{
+		{name: "no file", status: "done", wantReason: "does not say agent"},
+		{name: "agent only on the branch's disk", onDisk: "agent", status: "done", wantReason: "does not say agent"},
+		{name: "typo", land: "agnet", status: "done", wantReason: "does not say agent"},
+		{name: "person", land: "person", status: "done", wantReason: "does not say agent"},
+		{name: "agent, ticket in signoff", land: "agent", status: "signoff", wantReason: "(signoff); hand the merge line back"},
+		{name: "agent, pr-when signoff does not open it early", land: "agent", pr: "agent", when: "signoff", status: "signoff", wantReason: "(signoff)"},
+		{name: "agent, done, .jaira/pr person", land: "agent", status: "done"},
+		{name: "agent, done, .jaira/pr agent", land: "agent", pr: "agent", status: "done"},
+		{name: "agent with a comment line", land: "# who merges\nagent", status: "done"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			dir, ticketIn, commit := prGateFixture(t)
+			if c.land != "" {
+				onBase(t, dir, settings.BoardLandPath(dir), c.land)
+			}
+			if c.pr != "" {
+				setPR(t, dir, c.pr)
+			}
+			if c.when != "" {
+				setPRWhen(t, dir, c.when)
+			}
+			if c.onDisk != "" {
+				if err := os.WriteFile(settings.BoardLandPath(dir), []byte(c.onDisk+"\n"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			h := ticketIn(c.status)
+			commit("feat(" + h + "): the work")
+			out, err := runCLI(t, dir, "roles", "pr-gate", "--merge", "master")
+			if c.wantReason == "" {
+				if err != nil || !strings.Contains(out, "may merge") || !strings.Contains(out, h) {
+					t.Fatalf("want exit 0: %v\n%s", err, out)
+				}
+				return
+			}
+			if exitCode(err) != ExitValidation || !strings.Contains(err.Error(), c.wantReason) {
+				t.Fatalf("want exit %d with %q: exit %d, %v", ExitValidation, c.wantReason, exitCode(err), err)
+			}
+		})
+	}
+}
+
+func TestPRGateMergeRefusesWhatItCannotJudge(t *testing.T) {
+	dir, _, commit := prGateFixture(t)
+	onBase(t, dir, settings.BoardLandPath(dir), "agent")
+	commit("chore: no ticket")
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "--merge", "master"); exitCode(err) != ExitValidation ||
+		!strings.Contains(err.Error(), "hand the merge line back") {
+		t.Fatalf("no ticket named: exit %d, %v", exitCode(err), err)
+	}
+	if _, err := runCLI(t, dir, "roles", "pr-gate", "--merge", "--land", "master"); exitCode(err) != ExitUsage {
+		t.Fatalf("--merge with --land: exit %d, %v", exitCode(err), err)
+	}
+	dir, ticketIn, commit := prGateFixture(t)
+	onBase(t, dir, settings.BoardLandPath(dir), "agent")
+	h := ticketIn("done")
+	commit("feat(" + h + "): accepted")
+	out, err := runCLI(t, dir, "roles", "pr-gate", "--merge", "master", "--json")
+	var got struct {
+		MayMerge bool     `json:"may_merge"`
+		Tickets  []string `json:"tickets"`
+	}
+	if err != nil || json.Unmarshal([]byte(out), &got) != nil || !got.MayMerge || len(got.Tickets) != 1 || got.Tickets[0] != h {
+		t.Fatalf("--json: %v\n%s", err, out)
+	}
+}
