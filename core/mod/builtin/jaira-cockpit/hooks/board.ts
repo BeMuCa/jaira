@@ -638,16 +638,19 @@ export function ticketsNamed(subjects: string): string[] {
   return out
 }
 
-// The newest commit whose subject names a ticket, off `git log --format=%H
-// %s`, read as ticketsNamed reads a subject: the handle alone or among
-// others in the scope. The body is never read — a merge commit quotes the
-// subjects it brought in there, and would name every ticket it merged.
+// The newest commit that is the ticket's own, off `git log --format=%H %s`:
+// its subject's scope is the handle and nothing else, `fix(A3K9QP): ...`.
+// A scope that lists it beside others — `chore(0GMYQB,A3K9QP)`, a follow-up's
+// commit on the follow-up's branch — never wins over one of its own: that
+// commit's branch is the other ticket's (Alex, QTQW15). Only a ticket with no
+// commit of its own at all is found by such a list, as before: it was worked
+// on the other ticket's branch. The handle in the text alone never counts,
+// and the body is never read — a merge commit quotes the subjects it brought
+// in there, and would name every ticket it merged.
 export function commitNaming(log: string, id: string): string | undefined {
-  for (const line of log.split('\n')) {
-    const cut = line.indexOf(' ')
-    if (cut > 0 && ticketsNamed(line.slice(cut + 1)).includes(id)) return line.slice(0, cut)
-  }
-  return undefined
+  const lines = log.split('\n').map(line => ({ sha: line.slice(0, Math.max(0, line.indexOf(' '))), subject: line.slice(line.indexOf(' ') + 1) })).filter(c => c.sha !== '')
+  const own = lines.find(c => /^[a-z]+\(([^)]*)\)!?:/.exec(c.subject.trim())?.[1]?.trim() === id)
+  return (own ?? lines.find(c => ticketsNamed(c.subject).includes(id)))?.sha
 }
 
 // Which of those are not in the terminal lane yet, off `jaira list --json`.

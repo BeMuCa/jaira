@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { carrierFor, languageOf, lightOf, rephrasedOf, rephrasePrompt, snapshotOf, type Waiting } from '../hooks/board.ts'
+import { carrierFor, commitNaming, languageOf, lightOf, rephrasedOf, rephrasePrompt, snapshotOf, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -2197,6 +2197,25 @@ describe('the branch a ticket rides on', () => {
     ['only the base holds it', { slug: 'qtqw15', base: 'master', holders: 'master\n' }, undefined],
   ]
   for (const [name, input, want] of cases) test(name, () => expect(carrierFor(input)?.branch).toBe(want))
+})
+
+// Only the ticket's own commits say where its work rides: the scope is the
+// handle and nothing else. A follow-up's commit that lists it beside its own,
+// or names it in the text, is the follow-up's (Alex, QTQW15).
+describe('the commit that is a ticket\'s own', () => {
+  const log = (...subjects: string[]) => subjects.map((s, i) => `c${i} ${s}`).join('\n')
+  const cases: [string, string, string | undefined][] = [
+    ['its own scope', log('fix(QTQW15): the key'), 'c0'],
+    ['breaking mark', log('feat(QTQW15)!: the key'), 'c0'],
+    ['a newer follow-up listing it is passed by', log('chore(0GMYQB,QTQW15): stack', 'fix(QTQW15): the key'), 'c1'],
+    ['a list with spaces is passed by', log('fix(QTQW15, 0GMYQB): both', 'fix(QTQW15): own'), 'c1'],
+    ['no commit of its own: a list naming it still finds where it was worked', log('fix(0GMYQB): other', 'chore(0GMYQB,QTQW15): both'), 'c1'],
+    ['the handle in the text only', log('fix(0GMYQB): builds on QTQW15', 'feat(QTQW15): own'), 'c1'],
+    ['another handle that contains it', log('fix(XQTQW15): no'), undefined],
+    ['no scope at all', log('QTQW15: no scope'), undefined],
+    ['nothing names it', log('fix(0GMYQB): other'), undefined],
+  ]
+  for (const [name, input, want] of cases) test(name, () => expect(commitNaming(input, 'QTQW15')).toBe(want))
 })
 
 describe('the jaira it runs beside', () => {

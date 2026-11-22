@@ -1212,7 +1212,7 @@ func TestSpawnTakesUpTheBranchTheWorkRidesOn(t *testing.T) {
 			}
 			// The second either lost the claim (exit 1, no tab) or came after
 			// the first had made it and reused it, as a respawn does.
-			if failed == 1 && !strings.Contains(all, "is being made by another spawn.sh") {
+			if failed == 1 && !strings.Contains(all, "another spawn.sh (pid ") && !strings.Contains(all, "is being made by another spawn.sh") {
 				t.Errorf("the losing spawn does not say why:\n%s", all)
 			}
 			if got := strings.Count(string(tabs), "tab"); got != 2-failed {
@@ -1220,6 +1220,67 @@ func TestSpawnTakesUpTheBranchTheWorkRidesOn(t *testing.T) {
 			}
 		})
 	}
+
+	// The first spawn.sh still runs — its worktree folder stands, its tab is
+	// not open yet — when a second one for the same ticket and lane comes:
+	// the second stops before a tab, whatever it finds on disk, and once the
+	// first is done a later spawn is a respawn again (Alex, QTQW15/CRASZS).
+	t.Run("second while the first still runs", func(t *testing.T) {
+		root, wt, bin := repo(t, "feat/ab12cd", "")
+		gate := filepath.Join(bin, "go")
+		herdr := "#!/usr/bin/env bash\ncase \"$1 $2\" in\n  \"tab create\") echo tab >> \"" + filepath.Join(bin, "tabs") + "\"; for _ in $(seq 200); do [ -e \"" + gate + "\" ] && break; sleep 0.05; done; echo '{\"result\":{\"root_pane\":{\"pane_id\":\"p1\"}}}' ;;\n  \"pane get\") echo '{\"result\":{\"pane\":{\"agent\":\"claude\",\"agent_status\":\"idle\",\"tab_id\":\"t1\"}}}' ;;\nesac\n"
+		if err := os.WriteFile(filepath.Join(bin, "herdr"), []byte(herdr), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		type result struct {
+			out string
+			err error
+		}
+		first := make(chan result, 1)
+		go func() {
+			out, err := run(root, bin)
+			first <- result{out, err}
+		}()
+		claim := filepath.Join(root, ".git", "jaira", "spawning", "AB12CD-REVIEW")
+		deadline := time.Now().Add(10 * time.Second)
+		for {
+			tabs, _ := os.ReadFile(filepath.Join(bin, "tabs"))
+			if len(tabs) > 0 {
+				break
+			}
+			if time.Now().After(deadline) {
+				t.Fatal("the first spawn.sh never reached its tab")
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		if _, err := os.Stat(wt); err != nil {
+			t.Fatalf("the first spawn's worktree is not there yet: %v", err)
+		}
+		out, err := run(root, bin)
+		var exit *exec.ExitError
+		if !errors.As(err, &exit) || exit.ExitCode() != 1 || !strings.Contains(out, "another spawn.sh (pid ") {
+			t.Errorf("the second spawn went on beside the first: %v\n%s", err, out)
+		}
+		if err := os.WriteFile(gate, nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if r := <-first; r.err != nil {
+			t.Fatalf("the first spawn.sh: %v\n%s", r.err, r.out)
+		}
+		if tabs, _ := os.ReadFile(filepath.Join(bin, "tabs")); strings.Count(string(tabs), "tab") != 1 {
+			t.Errorf("%d tabs, want the first spawn's alone", strings.Count(string(tabs), "tab"))
+		}
+		if _, err := os.Stat(claim); err == nil {
+			t.Error("the first spawn.sh left its claim behind")
+		}
+		// A claim whose spawn.sh died is taken over: no pid answers kill -0.
+		if err := os.WriteFile(claim, []byte("999999999\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if out, err := run(root, bin); err != nil {
+			t.Errorf("a respawn after the first, past a dead claim: %v\n%s", err, out)
+		}
+	})
 
 	t.Run("--branch that does not exist", func(t *testing.T) {
 		root, wt, bin := repo(t, "feat/ab12cd", "")

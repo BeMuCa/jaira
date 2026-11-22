@@ -187,6 +187,36 @@ else
   wt="$(cd "$root/.." && pwd)/.worktrees/$(basename "$root")-$slug"
 fi
 
+# One spawn.sh per ticket and lane at a time. A second one started while the
+# first still runs — a teamlead and the cockpit at once, a press repeated —
+# would find the first one's worktree folder standing, take it for a finished
+# worktree, and open a second tab beside the first (QTQW15, seen with CRASZS).
+# The claim is a file made with noclobber, which only one of two can create,
+# holding the pid of the spawn.sh that made it; it goes when that one exits,
+# and one whose spawn.sh died (kill -0 fails) is taken over. A file still
+# empty was made a moment ago and counts as held. Once the first is done its
+# claim is gone: a later spawn for the same ticket is a respawn, as before.
+# Kept in the git common directory beside the pane records, machine-local;
+# a directory outside any repository has nowhere to keep it and takes none.
+claim=""
+if common="$(git -C "$root" rev-parse --git-common-dir 2>/dev/null)" \
+  && common="$(cd "$root" && cd "$common" && pwd)"; then
+  mkdir -p "$common/jaira/spawning"
+  claim="$common/jaira/spawning/$(printf '%s' "$ticket-$lane" | tr '[:lower:]' '[:upper:]' | tr -c 'A-Za-z0-9_.-' '_')"
+  refuse_claim() {
+    echo "another spawn.sh${1:+ (pid $1)} is starting $ticket/$lane right now:" \
+         "no second one. If none runs, remove $claim" >&2
+    exit 1
+  }
+  if ! ( set -C; printf '%s\n' "$$" > "$claim" ) 2>/dev/null; then
+    held="$(cat "$claim" 2>/dev/null || true)"
+    if [ -z "$held" ] || kill -0 "$held" 2>/dev/null; then refuse_claim "$held"; fi
+    rm -f "$claim"
+    ( set -C; printf '%s\n' "$$" > "$claim" ) 2>/dev/null || refuse_claim ""
+  fi
+  trap 'rm -f "$claim"' EXIT
+fi
+
 # --branch names the branch the ticket's work rides on. A worktree standing at
 # the slug's place on another branch would put the worker beside that work, on
 # a branch without it: refused before anything is made. Asked of git, not of a
