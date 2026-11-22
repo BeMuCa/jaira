@@ -1610,13 +1610,12 @@ func (y *Syncer) Reject(id, kind, why, duplicateOf string, now time.Time) (*tick
 	if t.Rejected.Kind != "" {
 		return t, fmt.Errorf("%s: %w (%s by %s)", ticket.Handle(id), ErrAlreadyRejected, t.Rejected.Kind, t.Rejected.By)
 	}
-	// Somebody pulled it and works it in their checkout: a rejection on the
-	// ref would leave their file behind it, a live card carrying a no. Refused
-	// as Pull and Release refuse it; they hand it back, or the person rejects
-	// it where the file is.
-	if h := strings.TrimSpace(t.Assignee); h != "" && !y.isMe(h) {
-		return t, fmt.Errorf("%w: %s has it", ErrTaken, h)
-	}
+	// An assignee is not refused. On a ref it does not say whether anybody
+	// pulled the ticket — a ticket gets one long before that, to leave the
+	// backlog — and refusing it refused the very ticket this exists for. Where
+	// somebody did pull it, their file is behind the ref from now on, and
+	// their next write there is refused as stale and names the ref's state;
+	// the caller warns about it.
 	if err := ticket.StampRejection(t, kind, why, y.Actor, duplicateOf, now); err != nil {
 		return nil, err
 	}

@@ -176,9 +176,6 @@ func rejectOnRef(cmd *cobra.Command, t *ticket.Ticket, kind, why, duplicateOf st
 	switch {
 	case errors.Is(err, refsync.ErrAlreadyRejected):
 		return alreadyRejected(got)
-	case errors.Is(err, refsync.ErrTaken):
-		return &codedError{code: ExitValidation, reason: "taken",
-			message: fmt.Sprintf("%s is being worked: %v — nothing was written\n  they hand it back with 'jaira release %s', or it is rejected where its file is", h, err, h)}
 	case errors.Is(err, gitref.ErrRaceLost):
 		return &codedError{code: ExitValidation, reason: "race",
 			message: fmt.Sprintf("%s changed on the remote while it was being rejected; nothing was written — run the same command again", h)}
@@ -203,6 +200,10 @@ func rejectOnRef(cmd *cobra.Command, t *ticket.Ticket, kind, why, duplicateOf st
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "Rejected %s (%s)  %s\n", h, kind, got.Title)
 	fmt.Fprintf(cmd.OutOrStdout(), "Written to its ref, not to a file here — everybody sees it after their next 'jaira fetch'.\n")
+	if a := strings.TrimSpace(got.Assignee); a != "" {
+		fmt.Fprintf(cmd.ErrOrStderr(), "jaira: %s is assigned to %s. If it was pulled into a checkout, that file is behind the ref now: "+
+			"after a fetch there, the next write is refused as stale; 'jaira pull %s' there brings the rejection into the file\n", h, a, h)
+	}
 	return nil
 }
 

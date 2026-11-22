@@ -249,19 +249,6 @@ func TestRejectOnTheRefRefusals(t *testing.T) {
 			code: ExitError, reason: "no_remote", says: "could not be asked",
 		},
 		{
-			name: "pulled and worked by somebody else",
-			setup: func(t *testing.T, clone, h, id string) string {
-				other := secondClone(t, clone)
-				t.Setenv("JAIRA_USER", "grace")
-				if out, err := runCLI(t, other, "pull", h); err != nil {
-					t.Fatalf("grace pulls: %v\n%s", err, out)
-				}
-				t.Setenv("JAIRA_USER", "ada")
-				return h
-			},
-			code: ExitValidation, reason: "taken", says: "jaira release",
-		},
-		{
 			name: "ref moved while rejecting",
 			setup: func(t *testing.T, clone, h, id string) string {
 				installRaceHook(t, clone, id)
@@ -293,7 +280,7 @@ func TestRejectOnTheRefRefusals(t *testing.T) {
 			if after := filesUnder(t, clone); strings.Join(after, ",") != strings.Join(before, ",") {
 				t.Errorf("a refused reject changed the checkout: %v -> %v", before, after)
 			}
-			if c.name == "ref moved while rejecting" || c.name == "pulled and worked by somebody else" {
+			if c.name == "ref moved while rejecting" {
 				if r := remoteTicket(t, clone, id).Rejected; r.Kind != "" {
 					t.Errorf("the lost race still wrote the rejection: %+v", r)
 				}
@@ -334,5 +321,51 @@ func TestPullingATicketRejectedOnItsRefTakesTheRejectionOff(t *testing.T) {
 	tk, err := s.Load(h)
 	if err != nil || tk.ReadOnly || tk.Rejected.Kind != "" {
 		t.Errorf("the pulled file: %v readOnly=%v rejected=%+v", err, tk != nil && tk.ReadOnly, tk)
+	}
+}
+
+// An assignee on the ref does not say anybody pulled the ticket — tickets get
+// one to leave the backlog. Refusing it refused the ticket this exists for, so
+// the rejection goes through, and the output warns that a checkout which did
+// pull it now has a file behind the ref; that checkout's next write says so.
+func TestRejectOnTheRefGoesThroughAnAssigneeAndWarns(t *testing.T) {
+	t.Setenv("JAIRA_USER", "ada")
+	clone := cloneWithRemotes(t, "origin")
+	h := ticketIn(t, clone, "assigned elsewhere")
+	id := onlyRefID(t, clone)
+	other := secondClone(t, clone)
+	t.Setenv("JAIRA_USER", "grace")
+	if out, err := runCLI(t, other, "pull", h); err != nil {
+		t.Fatalf("grace pulls: %v\n%s", err, out)
+	}
+	t.Setenv("JAIRA_USER", "ada")
+	out, err := runCLI(t, clone, "reject", h, "--why", "not needed", "--force")
+	if err != nil {
+		t.Fatalf("reject: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "assigned to grace") || !strings.Contains(out, "behind the ref") {
+		t.Errorf("no warning about the assignee's file:\n%s", out)
+	}
+	if r := remoteTicket(t, clone, id).Rejected; r.Why != "not needed" {
+		t.Errorf("the ref does not carry the rejection: %+v", r)
+	}
+	t.Setenv("JAIRA_USER", "grace")
+	if out, err := runCLI(t, other, "fetch"); err != nil {
+		t.Fatalf("grace fetches: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, other, "note", h, "still working"); !errors.Is(err, ticket.ErrStale) {
+		t.Errorf("grace's write on the file behind the rejection was not refused as stale: %v\n%s", err, out)
+	}
+	// What the warning tells her to do: pull brings the rejection into her
+	// file, and that file then says it is rejected.
+	if out, err := runCLI(t, other, "pull", h); err != nil {
+		t.Fatalf("grace refreshes: %v\n%s", err, out)
+	}
+	s, err := ticket.At(other)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tk, err := s.Load(h); err != nil || tk.ReadOnly || tk.Rejected.Why != "not needed" {
+		t.Errorf("grace's file after pull does not carry the rejection: %v %+v", err, tk)
 	}
 }
