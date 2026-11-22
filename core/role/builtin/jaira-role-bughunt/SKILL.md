@@ -174,11 +174,33 @@ With paths only, the same line is your report instead of a note.
 
 ## Report
 
-Three lines, to whoever started you:
+Three lines. **Hunting a ticket, they go onto the ticket**, as one note written
+just before the closing line — never after it, the closing line stays last. It
+is not a `bughunt:` note, so the testing lane never reads it as a finding:
+
+```bash
+jaira note <id> "hunt report: <findings and where they went> | <modules read whole, read as a diff> | <what you could not check, and why>"
+```
 
 - how many findings, how many of them `change`, and where they went (notes on
   `<id>`, or the new ticket ids)
 - the modules you read whole, and the ones you read only as a diff since the
   last round
 - anything you could not check, and why — a finding you could not confirm is
-  this line, never a note
+  this line, never a `bughunt:` note
+
+What you hand back to whoever started you is then one line: the closing line
+without its `files:` list, the ticket's handle in front —
+
+```
+<ID> bughunt: done at 3f9c2e1 - 2 findings (1 change, 1 pre-existing) in 5 modules, first hunt
+```
+
+— and above it at most one line `needs you: <what>`, only when something you
+found waits for a person rather than for the lane that started you. Nothing
+else: the findings are notes on the ticket, and the one who started you reads
+them there. A testing lane or a teamlead holds many hunts in one session; a
+page each is what filled it.
+
+**Given paths only**, there is no ticket to write onto: the three lines are
+your report, as before.

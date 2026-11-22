@@ -870,10 +870,11 @@ export function standOf(showJson: string): { status?: string; board: string } {
   return { ...(s?.status !== undefined ? { status: s.status } : {}), board: s?.board ?? '' }
 }
 
-// A follow-up's title: the finding without its 'note:' and 'pre-existing:',
-// cut to fit a list row; the whole finding is its context.
+// A follow-up's title: the finding without its 'note:' and its mark -
+// 'pre-existing:' or the review's 'fix-now:' - cut to fit a list row; the
+// whole finding is its context.
 export function followTitle(text: string): string {
-  const bare = text.replace(PREFIXED, '').trim().replace(/^[*_`]*\s*pre-?existing\s*[*_`]*\s*:/i, '').trim() || text
+  const bare = text.replace(PREFIXED, '').trim().replace(/^[*_`]*\s*(?:pre-?existing|fix-?now)\s*[*_`]*\s*:/i, '').trim() || text
   return bare.length <= 72 ? bare : `${bare.slice(0, 71).trimEnd()}…`
 }
 

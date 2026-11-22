@@ -734,7 +734,7 @@ func warnIfRecordOnly(err error) error {
 		return err
 	}
 	warnRef(map[string]any{"milestone": re.Name, "error": re.Err.Error()},
-		"jaira: warning: milestone %q was written here but could not be queued for the remote: %v", re.Name, re.Err)
+		"jaira: warning: %s", re.Warning())
 	return nil
 }
 

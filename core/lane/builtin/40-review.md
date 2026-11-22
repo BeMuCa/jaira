@@ -68,6 +68,16 @@ Write four things, in this order:
      fault that was there before this change and lies outside its scope is
      `note: pre-existing: <what and where>`.
 
+   Mark every note of this change as one of two: `note: fix-now:` when it can
+   be closed in a few lines and brings no new behaviour — a missing guard, a
+   test of the neighbouring case, a wrong word in a message — and a plain
+   `note:` for everything else, including anything that would need a new
+   rule, a new flag or a design choice. A fix-now note is not sent to the
+   person: the work goes back once to close it (see the end of this prompt).
+   A review marks fix-now only when the ticket's notes carry no earlier
+   `review: fix-now:` line; after one, every review — delta or full — writes
+   plain notes, so the round for fix-now happens at most once.
+
    If you found nothing, write `none` explicitly — an empty field means nobody
    looked, and "none" is you saying you looked and found nothing.
 
@@ -120,18 +130,40 @@ Write four things, in this order:
    is a legitimate answer ("go test ./auth -run TestSameSite covers it; there is
    no UI path"). "Review the diff" is not.
 
+**A delta review, after a small fix round.** When the ticket's notes carry
+an earlier `review: done at <commit>` line, that commit is an ancestor of
+`HEAD` (`git merge-base --is-ancestor <commit> HEAD`), and `git diff
+--shortstat <commit> -- :/ ':(exclude,top).jaira'` counts fewer than 50 changed
+lines, and no file outside `.jaira/` is untracked (`git ls-files --others
+--exclude-standard -- :/ ':(exclude,top).jaira'` prints nothing — `--shortstat`
+does not count a new file nobody added yet), read only that
+diff: check that each finding of the previous review is answered, and look
+along the four lines above at the lines that changed and the functions they
+sit in — not at the rest of the change, which the previous review already
+read whole. A diff that touches locking or a parser (file locks, reading a
+file format, parsing command output) gets the full review, whatever its
+size. Say in `review-summary` that it was a delta review and from which
+commit.
+
 Judge against the definition of done and against the code it ships. `none`
 is an answer you have to earn: write it only after you have read the touched
 modules whole and looked along all four lines above — then a change that meets
 its criteria and ships no defect has no blocker, however much you could add to
 it.
 
+Before you move, close the review with a note naming the commit you judged
+(`git rev-parse --short HEAD`): `jaira note <id> "review: done at <commit>"`.
+The next review reads its delta from there.
+
 Then move the ticket on. A blocker sends it back to the lane the work was done
 in (`in-progress` on the default board), with the reason in a note that
 starts `review:` (`jaira note <id> "review: <blocker>"`), written last before
 the move, so the implementer reading the ticket later sees it in the trail
 rather than only in a field the next review overwrites, and counts the return
-for this lane. Without a
-blocker it goes on to the person, notes and all. You are not the last word: a
+for this lane. No blocker but `fix-now` notes: the verdict stays `accept`,
+and the ticket goes back to the lane the work was done in all the same, with
+a note that starts `review: fix-now:` listing them — a move back is free, and
+the edges are closed before the person ever sees them. Without either it
+goes on to the person, notes and all. You are not the last word: a
 person reads your verdict alongside the implementer's account and decides. Say
 plainly when you are unsure rather than rounding up to approval.
