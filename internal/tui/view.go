@@ -176,6 +176,10 @@ func (m *Model) render() string {
 		if m.returnTo == modeDetail && m.detail != nil {
 			return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), m.rejectPrompt()+" · esc cancel")
 		}
+	case modeSendBack:
+		if m.returnTo == modeDetail && m.detail != nil {
+			return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), m.sendBackPrompt()+" · esc cancel")
+		}
 	case modeDropBoard:
 		if m.drop != nil {
 			return m.drop.render(m.width, m.height)
@@ -1080,6 +1084,9 @@ func (m *Model) statusBar() string {
 	}
 	if m.mode == modeReject {
 		return truncate(m.rejectPrompt(), m.width)
+	}
+	if m.mode == modeSendBack {
+		return truncate(m.sendBackPrompt(), m.width)
 	}
 
 	// Hints are dropped from the right as the terminal narrows, rather than
