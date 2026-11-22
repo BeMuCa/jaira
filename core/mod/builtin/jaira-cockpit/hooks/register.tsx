@@ -3,7 +3,7 @@ import type { ElementTable, EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
   branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
-  explanationNotes, explanationOf, huntOf, isOlder, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
+  explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf,
   createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, nextChoice, standOf,
   type Action, type Agent, type GapItem, type Hunt, type NoteClass, type Option, type Waiting,
@@ -82,6 +82,8 @@ const MESSAGE = 'cockpit-message'
 const GIVE_BACK = 'cockpit-give-back'
 const EXPLANATION = 'cockpit-explanation'
 const VERDICT = 'cockpit-verdict'
+// The Verdict pane's light in the theme's colours.
+const LIGHT_COLOUR = { green: 'success', yellow: 'warning', red: 'error' } as const
 const ANSWER = 'cockpit-answer'
 const OVERVIEW = 'cockpit-overview'
 const UPGRADE = 'cockpit-upgrade'
@@ -1939,8 +1941,15 @@ export const register: Register = (on, options) => {
     const { Box, Button, Text } = $.ui.resolve(e)
     const w = await waitingTicket($, id)
     if (w === undefined) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
+    // The light first: whether to accept, at a glance, and the reason it names.
+    const light = lightOf(w, (await read($, huntsAtom))[w.id])
+    const first = light.reasons[0]
     return (
       <Box flexDirection="column">
+        <Text key="light" wrap="wrap">
+          <Text bold color={LIGHT_COLOUR[light.color]}>● {t.light[light.color]}</Text>
+          : {first === undefined ? t.lightAccept : t.lightReason(first)}{light.reasons.length > 1 ? t.lightMore(light.reasons.length - 1) : ''}
+        </Text>
         {about(Text, w)}
         <Box marginTop={1}><Text dimColor wrap="wrap">{w.id}{SEP}{w.lane}{w.reviewedIn !== undefined ? `${SEP}${t.reviewedIn(w.reviewedIn)}` : ''}</Text></Box>
         {w.question !== '' ? <Text color="warning" wrap="wrap">? {w.question}</Text> : null}

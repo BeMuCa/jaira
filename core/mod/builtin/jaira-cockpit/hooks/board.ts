@@ -17,6 +17,10 @@ export type Waiting = {
   // Whether every definition-of-done item is ticked; undefined where jaira
   // did not say (a build before dod_complete).
   dodComplete?: boolean
+  // The definition-of-done items still open, apart: those only a person can
+  // tick ('seen by a person: ...') and every other one; undefined where jaira
+  // listed no items.
+  dodOpen?: { person: number; other: number }
   // Where Accept moves it: the ticket's next lane, when that lane is the
   // board's terminal one (signoff -> done); null where the next lane is
   // still work to do (human -> review), so a press never skips a review.
@@ -50,6 +54,7 @@ type Ticket = {
   goal?: string
   status: string
   dod_complete?: boolean
+  dod_items?: { done?: boolean; state?: string; text?: string }[]
   next_lane?: string
   question?: string
   assignee?: string
@@ -139,6 +144,7 @@ export function snapshotOf(
       verdict,
       question: oneLine(t.question),
       ...(typeof t.dod_complete === 'boolean' ? { dodComplete: t.dod_complete } : {}),
+      ...(t.dod_items !== undefined && t.dod_items.length > 0 ? { dodOpen: dodOpenOf(t.dod_items) } : {}),
       acceptTo: next?.terminal === true ? next.id : null,
       assignee,
       explainable: explainable(verdict, reviewGaps(t)),
@@ -199,6 +205,53 @@ const NEGATED = new RegExp(`\\b(no|without|kein(e|en|er)?|ohne)\\s+([^\\s,;:.]+\
 function hasReservation(verdict: string): boolean {
   const unnegated = verdict.replace(NEGATED, m => (CONNECTIVE.test(m) ? m : ''))
   return RESERVATION.test(unnegated) || REFUSAL.test(verdict)
+}
+
+// The open definition-of-done items, superseded ones left out: those a person
+// ticks at acceptance ('seen by a person: ...') and the rest.
+const BY_A_PERSON = /^\s*seen by a person\s*:/i
+function dodOpenOf(items: NonNullable<Ticket['dod_items']>): { person: number; other: number } {
+  const open = items.filter(i => i.state !== 'superseded' && i.done !== true)
+  const person = open.filter(i => BY_A_PERSON.test(i.text ?? '')).length
+  return { person, other: open.length - person }
+}
+
+// The light on top of the Verdict pane: green where the person can accept,
+// yellow where something wants a look first, red where the ticket should go
+// back. Worked out from what the ticket already says — the review's verdict
+// and findings, the newest bug hunt, the definition of done, the question —
+// never from a field of its own. The reasons in the order they count, every
+// red one before any yellow one; the first is the one the light names.
+export type LightReason =
+  | { kind: 'refused' } | { kind: 'blockers'; n: number } | { kind: 'noHunt' } | { kind: 'dodOpen'; n: number }
+  | { kind: 'notReviewed' } | { kind: 'reservation' } | { kind: 'oldReview'; round: number } | { kind: 'notesUnknown' }
+  | { kind: 'notes'; n: number } | { kind: 'byAPerson'; n: number } | { kind: 'question' } | { kind: 'huntUnknown' }
+export type Light = { color: 'green' | 'yellow' | 'red'; reasons: LightReason[] }
+
+export function lightOf(w: Waiting, hunt: Hunt | undefined): Light {
+  const red: LightReason[] = []
+  const yellow: LightReason[] = []
+  const refused = w.verdict !== '' && REFUSAL.test(w.verdict)
+  if (refused) red.push({ kind: 'refused' })
+  if (w.blockers.length > 0) red.push({ kind: 'blockers', n: w.blockers.length })
+  if (hunt === 'fail') red.push({ kind: 'noHunt' })
+  // The terminal lane's gate reads the definition of done: an open item other
+  // than a person's own refuses the move. A jaira that listed no items says
+  // only whether all are ticked, and then an open one may be the person's.
+  if (w.dodOpen !== undefined && w.dodOpen.other > 0) red.push({ kind: 'dodOpen', n: w.dodOpen.other })
+  if (w.verdict === '') yellow.push({ kind: 'notReviewed' })
+  else if (!refused && hasReservation(w.verdict)) yellow.push({ kind: 'reservation' })
+  if (w.reviewedIn !== undefined) yellow.push({ kind: 'oldReview', round: w.reviewedIn })
+  if (!w.findingsKnown) yellow.push({ kind: 'notesUnknown' })
+  if (w.notes.length > 0) yellow.push({ kind: 'notes', n: w.notes.length })
+  if (w.dodOpen !== undefined && w.dodOpen.person > 0) yellow.push({ kind: 'byAPerson', n: w.dodOpen.person })
+  if (w.dodOpen === undefined && w.dodComplete === false) yellow.push({ kind: 'dodOpen', n: 0 })
+  if (w.question !== '') yellow.push({ kind: 'question' })
+  // unknown: a hunted file is changed and not committed; undefined: a jaira
+  // that does not say, or a fail in a checkout without the hunt's commit.
+  if (hunt === 'unknown' || hunt === undefined) yellow.push({ kind: 'huntUnknown' })
+  const color = red.length > 0 ? 'red' : yellow.length > 0 ? 'yellow' : 'green'
+  return { color, reasons: [...red, ...yellow] }
 }
 
 // The lines of a review's gaps, each on its own, the leading list marker

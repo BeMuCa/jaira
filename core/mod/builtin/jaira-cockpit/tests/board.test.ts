@@ -1,5 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
+import { lightOf, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -474,7 +475,12 @@ describe('waiting for you', () => {
     expect(colours).toContain('"color":"error"')
     // Everything left out of the row is in the Verdict pane, the goal on top.
     const { texts } = await verdictOf($, band, 'MG677R')
-    expect(texts.slice(0, 2)).toEqual(['cache key', 'Goal: Two branches never share a cache entry.'])
+    // The light comes first, before the title: red for the blocker, the
+    // other reasons counted.
+    expect(texts[0]).toBe('● red: 1 blocker in the review (+4 more)')
+    const title = texts.indexOf('cache key')
+    expect(title).toBeGreaterThan(0)
+    expect(texts.slice(title, title + 2)).toEqual(['cache key', 'Goal: Two branches never share a cache entry.'])
     for (const text of ['? keep the old key?', `Verdict: ${verdict}`, '[blocker] blocker: the key ignores the branch', '· note: a test is missing', '· note: a comment is stale']) {
       expect(texts).toContain(text)
     }
@@ -1348,9 +1354,11 @@ describe('waiting for you', () => {
     expect(w.opened).toEqual([{ id: 'cockpit-verdict', title: 'Review verdict of MG677R', focus: true }])
     const pane = await $.ui.mount(VERDICT('Review verdict of MG677R'))
     expect(await pane.find({ type: 'Text', text: `Verdict: ${long}` })).toBeDefined()
-    // It starts with what the ticket is for.
+    // It starts with the light, then what the ticket is for. No hunt was
+    // read for this ticket: nobody can tell, so yellow.
     const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
-    expect(texts[0]).toBe('cache key')
+    expect(texts[0]).toBe('● yellow: bughunt unknown')
+    expect(texts.filter(x => !x.startsWith('●'))[0]).toBe('cache key')
   })
 
   test('the Explain tab closes once its explanation is on the ticket, not on an older one', async ($, on) => {
@@ -3787,5 +3795,47 @@ describe('the workers tab', () => {
     before = reads()
     await w.clock.advance(20_000)
     expect(reads()).toBe(before)
+  })
+})
+
+// The Verdict pane's light, worked out from the ticket alone: one rule set per
+// colour, the reason it names first.
+describe('the verdict light', () => {
+  const ready: Waiting = {
+    id: 'MG677R', title: 'cache key', goal: '', lane: 'signoff', verdict: 'approve', question: '', dodComplete: true,
+    dodOpen: { person: 0, other: 0 }, acceptTo: 'done', assignee: '', explainable: false, blockers: [], notes: [], findingsKnown: true, gaps: '',
+  }
+  const first = (w: Waiting, hunt: Parameters<typeof lightOf>[1]) => {
+    const l = lightOf(w, hunt)
+    return [l.color, l.reasons[0]?.kind ?? '-']
+  }
+
+  test('green: an accepting review, a hunt on HEAD, the definition of done ticked, nothing open', () => {
+    expect(first(ready, 'ok')).toEqual(['green', '-'])
+    // A ticket that runs no hunt after a fix, by choice, is no reason to look.
+    expect(first(ready, 'skipped')).toEqual(['green', '-'])
+    expect(first({ ...ready, verdict: 'approve, no changes needed' }, 'ok')).toEqual(['green', '-'])
+  })
+
+  test('yellow: accepted, but something wants a look first', () => {
+    expect(first({ ...ready, dodComplete: false, dodOpen: { person: 1, other: 0 } }, 'ok')).toEqual(['yellow', 'byAPerson'])
+    expect(first({ ...ready, notes: ['note: a test is missing'] }, 'ok')).toEqual(['yellow', 'notes'])
+    expect(first({ ...ready, verdict: 'approve, but the docs are thin' }, 'ok')).toEqual(['yellow', 'reservation'])
+    expect(first({ ...ready, question: 'keep the old key?' }, 'ok')).toEqual(['yellow', 'question'])
+    expect(first({ ...ready, reviewedIn: 2 }, 'ok')).toEqual(['yellow', 'oldReview'])
+    expect(first({ ...ready, verdict: '' }, 'ok')).toEqual(['yellow', 'notReviewed'])
+    // Nobody can tell: a hunted file changed and not committed, or a jaira that does not say.
+    expect(first(ready, 'unknown')).toEqual(['yellow', 'huntUnknown'])
+    expect(first(ready, undefined)).toEqual(['yellow', 'huntUnknown'])
+  })
+
+  test('red: the review gives it back, a blocker, no hunt on HEAD, or a gate that refuses', () => {
+    expect(first({ ...ready, verdict: 'request changes: the key ignores the branch' }, 'ok')).toEqual(['red', 'refused'])
+    expect(first({ ...ready, blockers: ['blocker: the key ignores the branch'] }, 'ok')).toEqual(['red', 'blockers'])
+    expect(first(ready, 'fail')).toEqual(['red', 'noHunt'])
+    // An open item other than a person's own: the terminal lane's gate refuses it.
+    expect(first({ ...ready, dodComplete: false, dodOpen: { person: 1, other: 1 } }, 'ok')).toEqual(['red', 'dodOpen'])
+    // Every red reason counts before any yellow one.
+    expect(lightOf({ ...ready, question: 'why?', notes: ['note: x'] }, 'fail').reasons.map(r => r.kind)).toEqual(['noHunt', 'notes', 'question'])
   })
 })
