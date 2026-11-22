@@ -219,7 +219,7 @@ func TestSettingsEnterStepsTheLanguage(t *testing.T) {
 		if got := stripANSI(m.settingsScreen.render(150, 32)); !strings.Contains(got, "Notes language  "+label) {
 			t.Fatalf("after enter, the row does not read %q:\n%s", label, got)
 		}
-		if got := settings.Load().Language; got != want {
+		if got := string(settings.Load().Language); got != want {
 			t.Fatalf("after enter, settings.json language = %q, want %q", got, want)
 		}
 	}
@@ -237,11 +237,11 @@ func TestSettingsEnterStepsTheLanguage(t *testing.T) {
 	m.key(key("enter"))
 	t.Setenv("JAIRA_HOME", berk)
 	m.key(key("enter"))
-	if got := settings.Load().Language; got != "Deutsch" {
+	if got := string(settings.Load().Language); got != "Deutsch" {
 		t.Fatalf("Berk's settings.json: %q, want Deutsch", got)
 	}
 	t.Setenv("JAIRA_HOME", alex)
-	if got := settings.Load().Language; got != "Русский" {
+	if got := string(settings.Load().Language); got != "Русский" {
 		t.Fatalf("Alex's settings.json: %q, want Русский after Berk set theirs", got)
 	}
 
@@ -255,5 +255,45 @@ func TestSettingsEnterStepsTheLanguage(t *testing.T) {
 	m.key(key("enter"))
 	if got := settings.Load(); got.Language != "" || got.Dispatch != "worker" {
 		t.Errorf("enter on a hand-written language: %+v, want none and the rest kept", got)
+	}
+}
+
+// TestSettingsWritesNeverWipeABrokenFile: every row of S that writes
+// settings.json - logbook days, agents per ticket, notes language - refuses
+// a file that does not parse, says so on the row, and leaves it as it was.
+func TestSettingsWritesNeverWipeABrokenFile(t *testing.T) {
+	broken := `{"remote":"upstream","hook":"/bin/notify",}`
+	for _, row := range []struct {
+		name string
+		down int
+		keys []string
+	}{
+		{"logbook days", 2, []string{"enter", "1", "enter"}},
+		{"agents per ticket", 3, []string{"enter"}},
+		{"notes language", 5, []string{"enter"}},
+	} {
+		t.Run(row.name, func(t *testing.T) {
+			m := newTestModel(t, 150, 32)
+			path := settings.Path()
+			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(path, []byte(broken), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			m.key(key("S"))
+			for range row.down {
+				m.key(key("j"))
+			}
+			for _, k := range row.keys {
+				m.key(key(k))
+			}
+			if b, _ := os.ReadFile(path); string(b) != broken {
+				t.Fatalf("settings.json was written over: %q", b)
+			}
+			if got := stripANSI(m.settingsScreen.render(150, 40)); !strings.Contains(got, "does not parse") {
+				t.Fatalf("the row does not say the file does not parse:\n%s", got)
+			}
+		})
 	}
 }

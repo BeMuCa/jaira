@@ -1,8 +1,10 @@
 package settings_test
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -465,5 +467,82 @@ func TestPRSourceSaysWhenTheFileDidNotTake(t *testing.T) {
 		if _, src := settings.PRFor(root); src != want {
 			t.Errorf(".jaira/pr %q: source %q, want %q", in, src, want)
 		}
+	}
+}
+
+// TestUpdateNeverWipesTheFile: a screen's write goes through Update. Over a
+// file that does not parse it writes nothing and says where the file is; keys
+// this build does not know stay; a field emptied by the change leaves the file;
+// a "language" that is no string reads as none and costs nothing beside it.
+func TestUpdateNeverWipesTheFile(t *testing.T) {
+	cases := []struct {
+		name, file string
+		wantErr    bool
+		want       map[string]any
+	}{
+		{"trailing comma", `{"remote":"upstream","hook":"/bin/notify",}`, true, nil},
+		{"not json", "remote = upstream", true, nil},
+		{"a non-string language", `{"remote":"upstream","hook":"/bin/notify","language":5}`, false,
+			map[string]any{"remote": "upstream", "hook": "/bin/notify", "language": "Deutsch"}},
+		{"an unknown key", `{"remote":"upstream","future-key":{"a":[1,2]}}`, false,
+			map[string]any{"remote": "upstream", "future-key": map[string]any{"a": []any{1.0, 2.0}}, "language": "Deutsch"}},
+		{"empty file", "", false, map[string]any{"language": "Deutsch"}},
+		{"no file", "-", false, map[string]any{"language": "Deutsch"}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			home := t.TempDir()
+			t.Setenv("JAIRA_HOME", home)
+			path := filepath.Join(home, "settings.json")
+			if c.file != "-" {
+				if err := os.WriteFile(path, []byte(c.file), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			_, err := settings.Update(func(s *settings.Settings) { s.Language = "Deutsch" })
+			b, _ := os.ReadFile(path)
+			if c.wantErr {
+				if err == nil || !strings.Contains(err.Error(), path) {
+					t.Fatalf("want an error naming %s, got %v", path, err)
+				}
+				if string(b) != c.file {
+					t.Fatalf("the file was written over: %q", b)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got map[string]any
+			if err := json.Unmarshal(b, &got); err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(got, c.want) {
+				t.Fatalf("file %v, want %v", got, c.want)
+			}
+		})
+	}
+
+	// A field the change empties leaves the file; the rest stays.
+	home := t.TempDir()
+	t.Setenv("JAIRA_HOME", home)
+	if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(`{"language":"Русский","dispatch":"worker","x":1}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := settings.Update(func(s *settings.Settings) { s.Language = "" }); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(filepath.Join(home, "settings.json"))
+	var got map[string]any
+	_ = json.Unmarshal(b, &got)
+	if want := map[string]any{"dispatch": "worker", "x": 1.0}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("after emptying the language: %v, want %v", got, want)
+	}
+	// And Load reads a non-string language as none without losing the rest.
+	if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(`{"remote":"upstream","language":["x"]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if s := settings.Load(); s.Remote != "upstream" || s.Language != "" {
+		t.Fatalf("Load: %+v, want remote upstream and no language", s)
 	}
 }

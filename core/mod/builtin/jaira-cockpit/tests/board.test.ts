@@ -3995,6 +3995,20 @@ describe('review notes as a person reads them', () => {
     })
   }
 
+  test('a rewrite shown before goes once the language is taken away, or the next call gives none', async ($, on) => {
+    const w = withNotes(on, 'Deutsch', de)
+    await startSession($)
+    expect((await verdictNotes($))[0]).toBe(`🔴 ${de[0]}`)
+    w.files.set(SETTINGS, JSON.stringify({ dispatch: 'worker' }))
+    expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
+    expect((await giveBackRows($)).out[0]).toBe('[fix now] 🔴 blocker: the header is written twice')
+    w.files.set(SETTINGS, JSON.stringify({ language: 'Deutsch' }))
+    expect((await verdictNotes($))[0]).toBe(`🔴 ${de[0]}`)
+    w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
+    w.modelDown = true
+    expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
+  })
+
   test('a model that does not answer leaves the original text with its mark', async ($, on) => {
     const w = withNotes(on, 'Русский')
     w.modelDown = true

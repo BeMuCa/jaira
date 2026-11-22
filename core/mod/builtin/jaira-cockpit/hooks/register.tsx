@@ -1074,11 +1074,13 @@ const rephrasing = new Set<string>()
 // and Accept write onto it stays the original text. One call of the cheap
 // model per ticket and notes: the answer is kept in the store for as long as
 // the language and the notes stay the same. No language set, a failed call
-// or an answer that does not fit: nothing is shown but the original.
+// or an answer that does not fit: nothing is shown but the original, a
+// rewrite shown before included - the language may have been taken away.
 async function rephrase($: EngineInterface, id: string, texts: readonly string[]): Promise<void> {
-  if (texts.length === 0) return
+  const original = () => update($, rephrasedAtom, ({ [id]: _, ...rest }) => rest)
+  if (texts.length === 0) return original()
   const language = languageOf(await settingsJson($))
-  if (language === undefined) return
+  if (language === undefined) return original()
   const key = REPHRASED_PREFIX + id
   const kept = (await $.store.get(key)) as { language: string; source: string[]; shown: string[] } | undefined
   const same = kept?.language === language && kept.source.length === texts.length && kept.source.every((x, i) => x === texts[i])
@@ -1097,7 +1099,7 @@ async function rephrase($: EngineInterface, id: string, texts: readonly string[]
     } finally {
       rephrasing.delete(busy)
     }
-    if (shown === undefined) return
+    if (shown === undefined) return original()
     // Delete first so the key moves to the end of the store's insertion
     // order, as keep() does; the tickets read longest ago drop out.
     await $.store.delete(key)

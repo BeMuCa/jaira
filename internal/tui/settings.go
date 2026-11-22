@@ -110,7 +110,7 @@ type settingsScreen struct {
 
 func newSettingsScreen(root string) *settingsScreen {
 	cur := settings.Load()
-	s := &settingsScreen{days: cur.LogbookWindow(), dispatch: cur.DispatchMode(), root: root, language: strings.TrimSpace(cur.Language)}
+	s := &settingsScreen{days: cur.LogbookWindow(), dispatch: cur.DispatchMode(), root: root, language: string(cur.Language)}
 	s.readChatModel(cur)
 	return s
 }
@@ -173,35 +173,37 @@ func stepAfter(choices []string, cur string) string {
 }
 
 // stepLanguage moves the notes language on to the next of its choices and
-// saves at once, reading the file again first for the same reason editKey
-// does. A language written by hand that is none of the choices steps to none,
-// the first, as the chat model does.
+// saves at once, through settings.Update like every write of this screen. A
+// language written by hand that is none of the choices steps to none, the
+// first, as the chat model does.
 func (s *settingsScreen) stepLanguage() string {
-	cur := settings.Load()
-	next := stepAfter(settings.LanguageChoices, strings.TrimSpace(cur.Language))
-	cur.Language = next
-	if err := settings.Save(cur); err != nil {
+	now, err := settings.Update(func(cur *settings.Settings) {
+		cur.Language = settings.Language(stepAfter(settings.LanguageChoices, string(cur.Language)))
+	})
+	if err != nil {
 		s.languageErr = err.Error()
 		return settingsActionNone
 	}
 	// None, not saved: nothing on the board shows it, only the cockpit.
-	s.language, s.languageErr = next, ""
+	s.language, s.languageErr = string(now.Language), ""
 	return settingsActionNone
 }
 
-// switchDispatch flips lanes and worker and saves at once, reading the file
-// again first for the same reason editKey does.
+// switchDispatch flips lanes and worker and saves at once, through
+// settings.Update like every write of this screen.
 func (s *settingsScreen) switchDispatch() string {
-	cur := settings.Load()
-	next := settings.DispatchWorker
-	if cur.DispatchMode() == settings.DispatchWorker {
-		next = settings.DispatchLanes
-	}
-	cur.Dispatch = next
-	if err := settings.Save(cur); err != nil {
+	now, err := settings.Update(func(cur *settings.Settings) {
+		next := settings.DispatchWorker
+		if cur.DispatchMode() == settings.DispatchWorker {
+			next = settings.DispatchLanes
+		}
+		cur.Dispatch = next
+	})
+	if err != nil {
 		s.dispatchErr = err.Error()
 		return settingsActionNone
 	}
+	next := now.Dispatch
 	// None, not saved: nothing on the board shows this setting, so there is
 	// nothing to reload — the row above already says what the file now holds.
 	s.dispatch, s.dispatchErr = next, ""
@@ -209,9 +211,9 @@ func (s *settingsScreen) switchDispatch() string {
 }
 
 // editKey drives the number while it is open: digits type, backspace takes
-// one back, enter saves and esc leaves it as it was. Saving reads the file
-// again first, so nothing else in it — a remote, a hook — is written back from
-// a copy older than the edit.
+// one back, enter saves and esc leaves it as it was. Saving goes through
+// settings.Update, so nothing else in it — a remote, a hook — is written back
+// from a copy older than the edit, or wiped where the file does not parse.
 func (s *settingsScreen) editKey(k string) string {
 	switch k {
 	case "esc":
@@ -226,9 +228,7 @@ func (s *settingsScreen) editKey(k string) string {
 			s.err = "a number of days, 0 or more"
 			return settingsActionNone
 		}
-		cur := settings.Load()
-		cur.LogbookDays = &n
-		if err := settings.Save(cur); err != nil {
+		if _, err := settings.Update(func(cur *settings.Settings) { cur.LogbookDays = &n }); err != nil {
 			s.err = err.Error()
 			return settingsActionNone
 		}

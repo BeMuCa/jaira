@@ -128,8 +128,10 @@ type Settings struct {
 	// A language name as a person writes it (Русский, Deutsch, English); it
 	// goes to the model as it stands. Empty means the notes as the ticket has
 	// them, and no model is asked. It lives here and never on the board,
-	// because two people on one board read different languages.
-	Language string `json:"language,omitempty"`
+	// because two people on one board read different languages. A value that
+	// is no string is read as none rather than failing the whole file: a
+	// typo here must not cost the remote and the hook beside it.
+	Language Language `json:"language,omitempty"`
 
 	// Python is the command a role runs its Python scripts with — the
 	// acceptance page, the logbook summary. A command, not a path, so
@@ -159,6 +161,19 @@ func (s Settings) PythonCommand() (cmd, source string) {
 // ChatModelChoices are the values the settings screen steps through, the
 // empty account default first. Anything else is written by hand.
 var ChatModelChoices = []string{"", "sonnet", "haiku", "opus"}
+
+// Language is the language setting: a string, and anything else read as "".
+type Language string
+
+// UnmarshalJSON takes a JSON string and reads every other value as none.
+func (l *Language) UnmarshalJSON(b []byte) error {
+	var v string
+	if json.Unmarshal(b, &v) != nil {
+		v = ""
+	}
+	*l = Language(strings.TrimSpace(v))
+	return nil
+}
 
 // LanguageChoices are the values the settings screen steps through, none
 // first. Anything else is written by hand.
@@ -462,6 +477,71 @@ func Load() Settings {
 		return Settings{}
 	}
 	return s
+}
+
+// Update changes the settings file with change and returns what it now holds.
+// It is the write path for a person's choice made on a screen: it reads the
+// file again right before writing, so nothing set meanwhile is written back
+// from an older copy; it refuses to write over a file it cannot read whole —
+// Load's defaults written back would wipe the remote, the hook and
+// everything else — and says where the file is; and keys this build does not
+// know, written by a newer jaira or by hand, stay in the file as they were.
+func Update(change func(*Settings)) (Settings, error) {
+	path := Path()
+	if path == "" {
+		return Settings{}, nil
+	}
+	raw := map[string]json.RawMessage{}
+	var s Settings
+	b, err := os.ReadFile(path)
+	switch {
+	case os.IsNotExist(err):
+	case err != nil:
+		return Settings{}, err
+	case strings.TrimSpace(string(b)) != "":
+		if err := json.Unmarshal(b, &raw); err != nil {
+			return Settings{}, fmt.Errorf("%s does not parse (%v): fix it by hand, nothing was written", path, err)
+		}
+		if err := json.Unmarshal(b, &s); err != nil {
+			return Settings{}, fmt.Errorf("%s does not parse (%v): fix it by hand, nothing was written", path, err)
+		}
+	}
+	before, err := known(s)
+	if err != nil {
+		return Settings{}, err
+	}
+	change(&s)
+	after, err := known(s)
+	if err != nil {
+		return Settings{}, err
+	}
+	// The fields this build knows are written as the struct now has them —
+	// one emptied by change is gone, as omitempty leaves it out; the rest of
+	// the file is kept.
+	for k := range before {
+		delete(raw, k)
+	}
+	for k, v := range after {
+		raw[k] = v
+	}
+	out, err := json.MarshalIndent(raw, "", "  ")
+	if err != nil {
+		return Settings{}, err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return Settings{}, err
+	}
+	return s, os.WriteFile(path, append(out, '\n'), 0o644)
+}
+
+// known is s as the keys and values its JSON form carries.
+func known(s Settings) (map[string]json.RawMessage, error) {
+	b, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+	m := map[string]json.RawMessage{}
+	return m, json.Unmarshal(b, &m)
 }
 
 // Save writes the settings, creating ~/.jaira if it is not there yet.

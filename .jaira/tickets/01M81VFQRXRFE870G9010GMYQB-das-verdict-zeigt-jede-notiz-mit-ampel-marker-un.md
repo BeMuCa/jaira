@@ -1,7 +1,7 @@
 ---
 id: 01M81VFQRXRFE870G9010GMYQB
 title: "Das Verdict zeigt jede Notiz mit Ampel-Marker und in der Sprache der Person, verständlich umformuliert"
-status: optimize
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,7 +24,7 @@ related: []
 follows: 01M81G681S9YWPBZWQ7HAJ41SC
 commits: []
 created-at: 2026-11-22T14:45:11Z
-updated-at: 2026-11-22T15:01:30Z
+updated-at: 2026-11-22T15:08:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3863384
 claimed-at: 2026-11-22T14:47:40Z
@@ -33,6 +33,12 @@ outcome-why: "Alex liest langsam und auf Russisch; er musste jede englische Noti
 outcome-resolves: "DoD 1-4, 6-8; DoD 5 (Alex sieht es) offen. Geprüft: Nebenläufigkeit (ein Aufruf pro Ticket+Notizen, Set rephrasing), Fehlerpfade (Modell wirft/antwortet nicht/falsche Form -> Original), ungewöhnliche Eingabe (leere/kaputte settings, falsche Anzahl, leere Strings), Rechte (Sprache nur aus eigener settings.json, Notiztext nur zur Anzeige)."
 review-summary: none
 review-gaps: "folded the two choice-stepping loops (stepChatModel, stepLanguage) into stepAfter in internal/tui/settings.go; replaced the type-guard closure in rephrase with one boolean. Left: rephrase's delete+set+prune mirrors keep() in register.tsx but keys and limits differ, so no shared helper; Explain pane's own [label] marks untouched (not this change)."
+test-verdict: "pass: go vet + go build + go test ./... RC=0, -race tui/settings RC=0, cockpit 316 pass, check-ticket-commits and shipped-history --check RC=0; DoD 1-4,6-8 verified in tree; real haiku answered the prompt in Russian, parsed to 3 notes, paths kept; Save failure (JAIRA_HOME=/dev/null/nope) shows mkdir error, row stays none"
+hunt-verdict: "fail: bughunt done at ddd89fd6a, 2 change (1 blocker: settings step overwrites an unparseable settings.json; stale rephrased text after language set to none or failed call)"
+round: 2
+back-from: testing
+back-by: lane
+back-count: 1
 ---
 
 # Das Verdict zeigt jede Notiz mit Ampel-Marker und in der Sprache der Person, verständlich umformuliert
@@ -44,7 +50,7 @@ review-gaps: "folded the two choice-stepping loops (stepChatModel, stepLanguage)
 - [x] Die Notizen erscheinen in der eingestellten Sprache der Person, kurz und einfach umformuliert; das Ticket selbst bleibt unverändert
   proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'a person who set Русский/Deutsch reads the notes in it, the ticket keeps its words' (rephrase in hooks/register.tsx, rephrasePrompt in hooks/board.ts)
 - [x] Die Umformulierung wird pro Ticket und Notizen-Stand gecacht; ohne LLM (Fehler, offline) zeigt das Verdict den Originaltext mit Marker
-  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'kept per ticket and notes: a second look asks nothing...', 'an answer that does not fit...', 'a model that does not answer...'
+  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'kept per ticket and notes...', 'an answer that does not fit...', 'a model that does not answer...', 'a rewrite shown before goes once the language is taken away...'
 - [x] Release-Note core/release/notes/<ID>.md, shipped.sha256
   proof: core/release/notes/0GMYQB.md; core/shipped/shipped.sha256 (core/role TestEveryInstalledFileIsAShippedVersion green)
 - [ ] seen by a person: Alex liest das Verdict eines Tickets in signoff auf Russisch mit Markern
@@ -53,7 +59,7 @@ review-gaps: "folded the two choice-stepping loops (stepChatModel, stepLanguage)
 - [x] Die Sprache gilt pro Person: Alex sieht Russisch, ein Kollege mit Deutsch sieht Deutsch; nichts davon steht im Board (Test mit zwei Spracheinstellungen) - Alex 22.11.
   proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: two tests 'a person who set <language>...'; internal/tui/settings_test.go TestSettingsEnterStepsTheLanguage (two JAIRA_HOMEs, board dir unchanged)
 - [x] Neue Einstellung für die Sprache in ~/.jaira/settings.json und im Settings-Fenster (S); ohne Einstellung bleibt der Originaltext - Alex 22.11.
-  proof: core/settings/settings.go Settings.Language; internal/tui/settings.go stepLanguage; TestSettingsEnterStepsTheLanguage; core/mod/builtin/jaira-cockpit/tests/board.test.ts 'without a language nothing is sent'
+  proof: core/settings/settings.go Settings.Language + Update; internal/tui/settings.go stepLanguage; TestSettingsEnterStepsTheLanguage, TestSettingsWritesNeverWipeABrokenFile, TestUpdateNeverWipesTheFile; cockpit test 'without a language nothing is sent'
 
 ## Options
 
@@ -72,3 +78,8 @@ review-gaps: "folded the two choice-stepping loops (stepChatModel, stepLanguage)
 - **2026-11-22 14:49 · Alexander Sacharov** — decisions (worker, settled from code, no open question left): (1) Klasse pro Notiz kommt aus gapItems (board.ts), wie im Give-back-Fenster - Verdict und Give back zeigen dieselbe Klasse; Marker 🔴 blocker, 🟡 edge, ⚪ limit, 🔵 elsewhere ersetzen die Text-Labels [blocker]/[not this ticket]/[known limit]. (2) Einstellung heisst "language" in ~/.jaira/settings.json, frei als Sprachname (an das Modell gegeben); S-Fenster steppt durch none, Deutsch, English, Русский, andere von Hand. (3) Modell: haiku über $.model.complete wie der Thread-Classifier - billiger als chat-model, eine Übersetzung braucht kein sonnet. (4) Cache in $.store je Ticket (Schlüssel rephrased:<id>), gültig solange Sprache und Notizentexte gleich sind; höchstens 50 Tickets. (5) Geschrieben wird immer der Originaltext (decisionLines), nur die Anzeige wird umformuliert.
 - **2026-11-22 14:59 · Alexander Sacharov** — known limits (in-progress): (a) 40+ lange Notizen können maxTokens 4000 sprengen -> Antwort passt nicht, Originale werden gezeigt; (b) der Notiztext geht ans Modell - eine Notiz, die das Modell anweist, kann nur die Anzeige verfälschen, nie das Ticket (Anzahl wird geprüft); (c) zwei gleichlautende Notizen teilen eine Übersetzung (Map nach Text). Verdict-Pane listet Notizen jetzt nach Klasse sortiert (blocker zuerst), Give back in Reihenfolge der gaps (Index = Toggle).
 - **2026-11-22 15:00 · Alexander Sacharov** — critique (pass 1): none. Left standing: Explain pane keeps its coloured [label] marks - its text comes from the Explain chat, not this ticket's DoD; haiku instead of chat-model per decision note (3); cache keyed by handle only, language and source compared, so a handle collision costs one more call, never a wrong text.
+- **2026-11-22 15:04 · Alexander Sacharov** — bughunt: change: blocker: internal/tui/settings.go:179-186 (stepLanguage) - class: a settings-screen step does settings.Load() then settings.Save(), and Load returns an empty Settings for any file it cannot read whole, so the Save overwrites the person's settings.json with defaults plus the stepped field; keys the Go struct does not know are dropped the same way. The change adds two ways in: the new Notes language row, and the new typed Language field - a non-string "language" (was an ignored unknown key before) now makes Load fail, so every jaira command ignores remote/hook too, and one press on any settings row wipes them. Same pattern, older (60155dd, 881cb39): switchDispatch settings.go:194-203, editKey settings.go:229-231. example: settings.json {"remote":"upstream","hook":"/bin/notify",} (trailing comma) or {...,"language":5}, one enter on Notes language -> file is {"language":"Deutsch"}; {"remote":"upstream","future-key":"x",...} loses future-key. ran: scratch go test calling newSettingsScreen + stepLanguage under JAIRA_HOME (deleted afterwards)
+- **2026-11-22 15:04 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1078-1110 (rephrase) - class: the rephrasedAtom entry for a ticket is only ever replaced, never cleared, so whenever the current rephrase produces nothing the panes go on showing the last rewrite; register.tsx:1773 and :2002 read said[text] ?? text. example: language set to Deutsch, Verdict opened (German shown), then Notes language stepped to none -> languageOf is undefined, rephrase returns at line 1081 before touching the atom, and Verdict/Give back still show German for the rest of the session, against the settings row's 'none shows them as the ticket has them'; same when the language is switched to Русский and the haiku call fails or is offline -> German stays. read
+- **2026-11-22 15:04 · Alexander Sacharov** — bughunt: done at ddd89fd6a - 2 findings (2 change, 1 of them blocker; 0 pre-existing) in 8 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/0GMYQB.md core/settings/settings.go core/shipped/shipped.sha256 internal/tui/settings.go internal/tui/settings_test.go
+- **2026-11-22 15:05 · Alexander Sacharov** — testing: class: a settings write from a copy Load could not read whole (and a typed field that makes a whole file unreadable); example: hunter's settings.json with trailing comma or language:5, enter on Notes language -> file reduced to language; fix: one Update path in core/settings that refuses to write over a file that does not parse and keeps unknown keys, used by all three screen writes; Language tolerant of a non-string. Second: rephrase clears the ticket's shown texts whenever it produces none.
+- **2026-11-22 15:08 · Alexander Sacharov** — round 2 fix: settings.Update (core/settings) is now the one write path of the S screen - logbook days, dispatch, language: refuses a file that does not parse (error names the path), keeps unknown keys, drops a field the change emptied. Language is its own type that reads a non-string as none, so a typo no longer makes Load drop remote/hook. Save stays for tests and no screen calls it. rephrase clears the ticket's shown texts on no language/failed call.
