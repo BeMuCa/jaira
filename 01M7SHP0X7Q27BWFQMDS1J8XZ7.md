@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T23:04:54Z
+updated-at: 2026-11-22T23:04:57Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -51,7 +51,7 @@ back-count: 1
 - [x] Unter dem Waehler steht 'x von n fertig' und die Ticketliste mit ID, Titel und Lane: in Arbeit oben, nicht begonnen in der Mitte, fertig unten
   proof: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:345 'x of n done' (English like the cockpit), overview.ts:191 standOf groups in work/not started/done, another board's tickets by its own lanes; tests 'one milestone: x of n done counts the logbook...', 'a ticket on another board goes by that board's lanes...'
 - [x] Der zuletzt gewaehlte Milestone bleibt nach Schliessen und Oeffnen des Panes gewaehlt
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:71 overviewMilestoneAtom kept for the session like overviewTab, :1186 showMilestone(0) at each opening; test '< and > page ... the choice outlives closing the pane'
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:71 overviewMilestoneAtom kept for the session, :1188 showMilestone writes it only on a press; tests '< and > page ... the choice outlives closing the pane', 'an opening that finds no milestone keeps the one chosen for the next'
 - [x] Release-Notiz in core/release/notes/<ID>.md
   proof: core/release/notes/1J8XZ7.md
 - [x] edge cases: no milestones, a milestone with no tickets, milestone ls failing (older jaira) shows a could-not-read line, a remembered milestone that is gone falls back to the first, a ticket jaira show cannot find stays in the list with lane '?'
