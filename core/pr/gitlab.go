@@ -237,16 +237,18 @@ func fromGitLab(m glMR, discussions []glDiscussion, reviewers []glReviewer, subj
 }
 
 // gitlabCI sorts a pipeline status as githubCI sorts a rollup state. A
-// canceled pipeline is red, as a cancelled check is on GitHub, so it holds
-// settled; skipped ran nothing and counts as no checks.
+// canceled pipeline is red, as a cancelled check is on GitHub; skipped ran
+// nothing and counts as no checks. Any other status — canceling, or one
+// GitLab adds later — is running: settled never rests on a status jaira
+// does not know.
 func gitlabCI(status string) string {
 	switch status {
 	case "success":
 		return "success"
 	case "failed", "canceled":
 		return "failure"
-	case "created", "waiting_for_resource", "preparing", "pending", "running", "scheduled", "manual":
-		return "pending"
+	case "skipped":
+		return "none"
 	}
-	return "none"
+	return "pending"
 }

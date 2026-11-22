@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYG213BWB06A7D1CRASZS
 title: "Ein offener PR wird begleitet: jaira sieht neue Kommentare, CI-Stand und wartende Re-Requests und meldet sie"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,19 +21,19 @@ related:
   - 01M7WX040JC9Z202EH852EF48S
 commits: []
 created-at: 2026-11-20T16:34:31Z
-updated-at: 2026-11-22T18:53:02Z
+updated-at: 2026-11-22T18:56:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-4157260
 claimed-at: 2026-11-22T18:32:13Z
 outcome-what: "Neuer Befehl 'jaira pr [<branch>] [--all|--number n] [--json] [--watch [--every d]]' (core/pr: gh-GraphQL bzw. glab-API; Threads wartend/beantwortet/erledigt, fremde Kommentare, CI, Reviews, Tickets, settled). --watch: Ausgangsstand als erste Zeile, dann eine Zeile je Aenderung, Ende bei merged/closed. Cockpit: reicht einen neuen PR einmal an die Teamlead-Session weiter (nach Accept begrenzte Nachschau 20x60s; Agentenbericht mit PR-URL), Store-Schluessel gegen Doppeltmelden; Accept bei pr-when=signoff oeffnet erst den PR (Ticket bleibt in signoff) und laesst done erst bei settled zu."
 outcome-why: "Den Stand eines PR hielt der Teamlead im Kopf; jaira wusste nichts davon. Alex 22.11.: Befehl im Binary, kein Dauer-Polling im Cockpit, Teamlead beobachtet selbst per Monitor; JG3REW-Rest (Accept in signoff) gehoert hierher."
 outcome-resolves: "DoD 1-7. Vier Kategorien geprueft: Nebenlaeufigkeit - zwei Cockpit-Sessions koennen denselben PR im selben Moment beide melden (Store get/set nicht atomar), schlimmstenfalls eine Zeile doppelt; Fehlerpfade - halber Lauf ist ein Fehler, nie ein PR ohne Threads; Watch sagt einen Lesefehler einmal und liest weiter, verlorener Login beendet ihn (Exit 3); ungewoehnliche Eingabe - Branchnamen gehen als ein Argument an gh/glab bzw. URL-escaped an die GitLab-API, Fenster: 50 PRs, 100 Threads, 20 Kommentare je Thread; Rechte - nur Lesen mit dem gh/glab-Login der Person."
-review-summary: "none - round e74185be3: CI joins settle() in core/pr/pr.go, the one place jaira pr, --watch and the cockpit hold read settled from; no cockpit change needed"
-round: 11
+review-summary: "none - round: unknown CI status defaults to pending in gitlabCI/githubCI, the two places statuses are sorted"
+round: 12
 back-from: testing
 back-by: lane
-back-count: 1
-review-gaps: "none - round e74185be3: four lines in settle(), one test table; nothing duplicated or orphaned"
+back-count: 2
+review-gaps: "none - removed the explicit pending lists (now the default); nothing else"
 test-verdict: "pass: go test -race core/pr internal/cli ok, full go test ok, plugin 317 pass; DoD 10-12 verified (board.test.ts open-DoD test, jaira pr --number -3 exit 2 live, jaira pr --all labels only board tickets live); read-only change, no writer race"
 hunt-verdict: "pass: bughunt done at d3e8866fd, 0 findings"
 question: ""
@@ -78,7 +78,7 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-craszs && go build -o 
 - [x] Ein PR wird nur mit Handles beschriftet, die ein Ticket dieses Boards sind (kein (MASTER)/(UPDATE)) (Test) - teamlead 22.11.
   proof: core/pr/pr.go Read filters Tickets through Query.Known; internal/cli/pr.go knownHandles (LoadAnywhere, handle equal); tests internal/cli/pr_test.go TestPRLabelsOnlyTicketsOfThisBoard (fix/master, feat/b7xq2m), core/pr/pr_test.go TestReadGitLab 'nothing known', TestTicketsOf
 - [x] settled verlangt grünes CI: rotes oder laufendes CI hält das Ticket in signoff und wird gemeldet; ein PR ohne CI-Checks gilt als grün (Test) - Alex 22.11.
-  proof: core/pr/pr.go settle adds 'CI red'/'CI running' to Unsettled, 'none' passes; core/pr/gitlab.go:246 canceled pipeline is red; cockpit heldInSignoff shows Unsettled unchanged; tests core/pr/pr_test.go TestSettleWaitsForCI, TestGitLabCI, TestReadInputClasses (unsettled ends 'CI red'), internal/cli/pr_test.go TestPRWatchReportsEachChangeOnceAndEnds
+  proof: core/pr/pr.go settle adds 'CI red'/'CI running' to Unsettled, 'none' (no checks) passes; core/pr/gitlab.go:248 gitlabCI and core/pr/github.go githubCI: canceled red, unknown status running; cockpit heldInSignoff shows Unsettled unchanged; tests core/pr/pr_test.go TestSettleWaitsForCI, TestGitLabCI, TestGitHubCI, TestReadInputClasses, internal/cli/pr_test.go TestPRWatchReportsEachChangeOnceAndEnds
 
 ## Options
 
@@ -168,3 +168,6 @@ Selbst entschieden (widersprechen moeglich): Ausloeser = neuer Kommentar/Thread,
 - **2026-11-22 18:52 · Alexander Sacharov** — bughunt: change: core/pr/gitlab.go:239-248 (gitlabCI) reached by core/pr/pr.go:258 (settle) - class: a GitLab head pipeline that ended without passing but is not 'failed' (canceled, skipped) maps to CI 'none', and since settle now reads CI, 'none' counts as green, so the round is settled and the cockpit Accept on a pr-when=signoff board lets the ticket through to done; the same situation on GitHub (a cancelled check) rolls up as FAILURE and holds it, so the two forges disagree; example: a pipeline cancelled by hand on the MR head -> settled true, Unsettled empty; not a blocker by the letter of the rule ('CI not red and not running' is met), but 'no checks counts as green' was meant for a pull request with no pipeline, not one whose pipeline was cancelled; ran: scratch test settle(&PR{CI: gitlabCI("canceled")}) and gitlabCI("skipped") -> both CI "none" settled true (test file removed); blame: 696778fc8 feat(CRASZS)
 - **2026-11-22 18:52 · Alexander Sacharov** — bughunt: done at e74185be3 - 1 finding (1 change, 0 blockers) in 7 modules, follow-up hunt of the diff since d3e8866fd (no new files; changed: core/pr/pr.go core/pr/pr_test.go core/pr/watch.go core/release/notes/CRASZS.md docs/COMMANDS.md internal/cli/pr.go internal/cli/pr_test.go); concurrency, error paths, input, permissions checked; files: README.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/pr/github.go core/pr/gitlab.go core/pr/pr.go core/pr/pr_test.go core/pr/watch.go core/release/notes/CRASZS.md core/shipped/shipped.sha256 docs/COMMANDS.md internal/cli/pr.go internal/cli/pr_test.go internal/cli/root.go
 - **2026-11-22 18:52 · Alexander Sacharov** — bughunt finding fixed: core/pr/gitlab.go gitlabCI maps canceled to failure (GitHub's rollup already reads a cancelled check as FAILURE); skipped stays none - a pipeline that ran nothing counts as no checks. Test TestGitLabCI.
+- **2026-11-22 18:54 · Alexander Sacharov** — bughunt: change: core/pr/gitlab.go:242-251 (gitlabCI) - class: a pipeline status the switch does not list falls to "none", which pr.go:258 treats as no CI, so the PR counts as settled; GitLab's transitional status "canceling" (pipeline being cancelled, before "canceled") is such a status today, as is any status GitLab adds later; example: head_pipeline.status="canceling" -> CI none -> Settled=true, the watch prints "settled — ... CI not red or running" (watch.go:73), and on the next poll "canceled" -> "CI red"; the unknown-status default favours settled over not settled; not a blocker (display/watch notice only, the next poll corrects it); blame: 696778fc8 + bdc88f117, both CRASZS; ran: read
+- **2026-11-22 18:54 · Alexander Sacharov** — bughunt: done at bdc88f117 - 1 finding (1 change, 0 blockers) in 2 modules, follow-up hunt of the diff since e74185be3 (no new files; changed: core/pr/gitlab.go core/pr/pr_test.go); concurrency, error paths, input, permissions checked; files: README.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts core/pr/github.go core/pr/gitlab.go core/pr/pr.go core/pr/pr_test.go core/pr/watch.go core/release/notes/CRASZS.md core/shipped/shipped.sha256 docs/COMMANDS.md internal/cli/pr.go internal/cli/pr_test.go internal/cli/root.go
+- **2026-11-22 18:56 · Alexander Sacharov** — bughunt finding #2 (canceling / future statuses) fixed by turning the default round, not by adding statuses: gitlabCI and githubCI now map any status they do not know to pending; only no pipeline/rollup at all, or GitLab 'skipped', is none. settled can no longer rest on an unknown status. Tests TestGitLabCI, TestGitHubCI.

@@ -533,10 +533,21 @@ func TestSettleWaitsForCI(t *testing.T) {
 func TestGitLabCI(t *testing.T) {
 	for status, want := range map[string]string{
 		"success": "success", "failed": "failure", "canceled": "failure",
-		"running": "pending", "manual": "pending", "skipped": "none", "": "none",
+		"running": "pending", "manual": "pending", "canceling": "pending", "skipped": "none",
 	} {
 		if got := gitlabCI(status); got != want {
 			t.Errorf("gitlabCI(%q) = %q, want %q", status, got, want)
+		}
+	}
+}
+
+func TestGitHubCI(t *testing.T) {
+	for state, want := range map[string]string{
+		"SUCCESS": "success", "FAILURE": "failure", "ERROR": "failure",
+		"PENDING": "pending", "EXPECTED": "pending", "SOMETHING_NEW": "pending",
+	} {
+		if got := githubCI(state); got != want {
+			t.Errorf("githubCI(%q) = %q, want %q", state, got, want)
 		}
 	}
 }

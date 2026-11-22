@@ -335,14 +335,14 @@ func fromGitHub(n ghPR, viewer string) PR {
 	return p
 }
 
+// githubCI sorts a rollup state; one jaira does not know is running, so
+// settled never rests on it. A commit without checks has no rollup at all.
 func githubCI(state string) string {
 	switch state {
 	case "SUCCESS":
 		return "success"
 	case "FAILURE", "ERROR":
 		return "failure"
-	case "PENDING", "EXPECTED":
-		return "pending"
 	}
-	return "none"
+	return "pending"
 }
