@@ -502,7 +502,25 @@ export function mainRepoOf(gitCommonDir: string, fallback: string): string {
 // detached tree — the ticket's own in the middle of a rebase — ranks after
 // <prefix>/<id> and before any branch nested deeper than that.
 export function worktreeFor(porcelain: string, id: string, fallback: string): string {
-  return ticketsTree(worktreesOf(porcelain), id)?.path ?? fallback
+  return ownTreeFor(porcelain, id) ?? fallback
+}
+
+// The ticket's own worktree, undefined where it has none: a copy pulled into
+// any other tree is there only for the press, a copy here belongs on the branch.
+export function ownTreeFor(porcelain: string, id: string): string | undefined {
+  return ticketsTree(worktreesOf(porcelain), id)?.path
+}
+
+// What the disk a press writes from holds of the ticket, off `jaira show
+// --json` there: no file (on its ref alone), a file older than the ref, or a
+// file a write can go to. Either of the first two refuses every write — "on
+// its ref and not on your disk", a stale file — until `jaira pull` brings it.
+// path is the file, once there is one. Unreadable output is taken as current:
+// the write itself then says what is wrong.
+export function diskOf(showJson: string): { state: 'ref-only' | 'behind' | 'current'; path: string } {
+  const t = parse<{ 'on-ref-only'?: boolean; 'behind-ref'?: boolean; path?: string }>(withoutWarnings(showJson))
+  const state = t?.['on-ref-only'] ? 'ref-only' : t?.['behind-ref'] ? 'behind' : 'current'
+  return { state, path: t?.path ?? '' }
 }
 
 function ticketsTree(trees: Worktree[], id: string): Worktree | undefined {

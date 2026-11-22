@@ -417,7 +417,15 @@ func logbookMilestone(s *ticket.Store, key, name string, w io.Writer) error {
 	if err := ms.Save(s.Root); err != nil {
 		return err
 	}
-	recordMilestone(ms)
+	// Without the mark on its ref every other clone keeps the milestone, and
+	// a fetch here would write it back beside the logbook copy: not filed.
+	if err := recordMilestone(ms); err != nil {
+		ms.SetStatus("")
+		if serr := ms.Save(s.Root); serr != nil {
+			err = errors.Join(err, serr)
+		}
+		return fail(ExitError, "record_failed", "milestone %q was not filed: its ref could not be queued for the remote: %v", name, err)
+	}
 
 	folder := logbookFolder()
 	dst, err := s.LogbookMilestone(ms.FileName(), folder)

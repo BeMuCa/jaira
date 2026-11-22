@@ -441,7 +441,14 @@ func TestATicketRejectedOnItsRefStillExistsForLinksAndCannotBeClaimed(t *testing
 	if out, err := runCLI(t, clone, "reject", b, "--why", "not needed", "--force"); err != nil {
 		t.Fatalf("reject: %v\n%s", err, out)
 	}
-	out, err := runCLI(t, clone, "validate")
+	// Claiming it, with no file here, names only the pull: there is no file
+	// to delete.
+	out, err := runCLI(t, clone, "claim", b)
+	if exitCode(err) != ExitValidation || !strings.Contains(fmt.Sprint(err), "'jaira pull "+b+"'") ||
+		strings.Contains(fmt.Sprint(err), "delete its file") {
+		t.Errorf("claim of a ticket rejected only on its ref: exit %d %v\n%s", exitCode(err), err, out)
+	}
+	out, err = runCLI(t, clone, "validate")
 	if strings.Contains(out+fmt.Sprint(err), "exists nowhere") {
 		t.Errorf("validate calls a ref-rejected blocker missing: %v\n%s", err, out)
 	}
@@ -481,7 +488,8 @@ func TestATicketRejectedOnItsRefStillExistsForLinksAndCannotBeClaimed(t *testing
 	}
 	out, err = runCLI(t, other, "claim", c)
 	var ce *codedError
-	if exitCode(err) != ExitValidation || !errors.As(err, &ce) || ce.reason != "rejected" {
+	if exitCode(err) != ExitValidation || !errors.As(err, &ce) || ce.reason != "rejected" ||
+		!strings.Contains(ce.message, "delete its file here") {
 		t.Errorf("claim of a rejected file: exit %d %v\n%s", exitCode(err), err, out)
 	}
 }
