@@ -1,7 +1,7 @@
 ---
 id: 01M81VFQRXRFE870G9010GMYQB
 title: "Das Verdict zeigt jede Notiz mit Ampel-Marker und in der Sprache der Person, verständlich umformuliert"
-status: in-progress
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,7 +24,7 @@ related: []
 follows: 01M81G681S9YWPBZWQ7HAJ41SC
 commits: []
 created-at: 2026-11-22T14:45:11Z
-updated-at: 2026-11-22T15:08:22Z
+updated-at: 2026-11-22T15:09:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3863384
 claimed-at: 2026-11-22T14:47:40Z
@@ -32,7 +32,7 @@ outcome-what: "Verdict- und Give-back-Pane zeigen jede Review-Notiz mit 🔴/�
 outcome-why: "Alex liest langsam und auf Russisch; er musste jede englische Notiz lesen, um zu sehen, ob sie blockiert."
 outcome-resolves: "DoD 1-4, 6-8; DoD 5 (Alex sieht es) offen. Geprüft: Nebenläufigkeit (ein Aufruf pro Ticket+Notizen, Set rephrasing), Fehlerpfade (Modell wirft/antwortet nicht/falsche Form -> Original), ungewöhnliche Eingabe (leere/kaputte settings, falsche Anzahl, leere Strings), Rechte (Sprache nur aus eigener settings.json, Notiztext nur zur Anzeige)."
 review-summary: none
-review-gaps: "folded the two choice-stepping loops (stepChatModel, stepLanguage) into stepAfter in internal/tui/settings.go; replaced the type-guard closure in rephrase with one boolean. Left: rephrase's delete+set+prune mirrors keep() in register.tsx but keys and limits differ, so no shared helper; Explain pane's own [label] marks untouched (not this change)."
+review-gaps: "round 2: one error return for the two unmarshals in settings.Update. Left: settings.Save is now called only by tests for setup - kept as the plain writer; earlier round's choices stand (stepAfter, keep() vs rephrase store pattern)."
 test-verdict: "pass: go vet + go build + go test ./... RC=0, -race tui/settings RC=0, cockpit 316 pass, check-ticket-commits and shipped-history --check RC=0; DoD 1-4,6-8 verified in tree; real haiku answered the prompt in Russian, parsed to 3 notes, paths kept; Save failure (JAIRA_HOME=/dev/null/nope) shows mkdir error, row stays none"
 hunt-verdict: "fail: bughunt done at ddd89fd6a, 2 change (1 blocker: settings step overwrites an unparseable settings.json; stale rephrased text after language set to none or failed call)"
 round: 2
@@ -83,3 +83,4 @@ back-count: 1
 - **2026-11-22 15:04 · Alexander Sacharov** — bughunt: done at ddd89fd6a - 2 findings (2 change, 1 of them blocker; 0 pre-existing) in 8 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/0GMYQB.md core/settings/settings.go core/shipped/shipped.sha256 internal/tui/settings.go internal/tui/settings_test.go
 - **2026-11-22 15:05 · Alexander Sacharov** — testing: class: a settings write from a copy Load could not read whole (and a typed field that makes a whole file unreadable); example: hunter's settings.json with trailing comma or language:5, enter on Notes language -> file reduced to language; fix: one Update path in core/settings that refuses to write over a file that does not parse and keeps unknown keys, used by all three screen writes; Language tolerant of a non-string. Second: rephrase clears the ticket's shown texts whenever it produces none.
 - **2026-11-22 15:08 · Alexander Sacharov** — round 2 fix: settings.Update (core/settings) is now the one write path of the S screen - logbook days, dispatch, language: refuses a file that does not parse (error names the path), keeps unknown keys, drops a field the change emptied. Language is its own type that reads a non-string as none, so a typo no longer makes Load drop remote/hook. Save stays for tests and no screen calls it. rephrase clears the ticket's shown texts on no language/failed call.
+- **2026-11-22 15:08 · Alexander Sacharov** — critique (pass 2, repair only): none. settings.Update sits in core/settings beside Load/Save, where the file is owned; all three screen writes use it. Save left for test setup.

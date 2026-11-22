@@ -499,10 +499,11 @@ func Update(change func(*Settings)) (Settings, error) {
 	case err != nil:
 		return Settings{}, err
 	case strings.TrimSpace(string(b)) != "":
-		if err := json.Unmarshal(b, &raw); err != nil {
-			return Settings{}, fmt.Errorf("%s does not parse (%v): fix it by hand, nothing was written", path, err)
+		err := json.Unmarshal(b, &raw)
+		if err == nil {
+			err = json.Unmarshal(b, &s)
 		}
-		if err := json.Unmarshal(b, &s); err != nil {
+		if err != nil {
 			return Settings{}, fmt.Errorf("%s does not parse (%v): fix it by hand, nothing was written", path, err)
 		}
 	}
