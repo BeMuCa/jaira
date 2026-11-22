@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Worktree + Herdr pane + claude + role prompt for one jaira lane.
-# Usage: spawn.sh [--no-worktree] [--parent <session> | --no-parent] <slug> <ticket-id> <lane> [repo-root]
+# Usage: spawn.sh [--no-worktree] [--branch <name>] [--parent <session> | --no-parent] <slug> <ticket-id> <lane> [repo-root]
 # Prints the pane id on stdout; everything else goes to stderr.
 set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-spawn.sh [--no-worktree] [--parent <session> | --no-parent] <slug> <ticket-id> <lane> [repo-root]
+spawn.sh [--no-worktree] [--branch <name>] [--parent <session> | --no-parent] <slug> <ticket-id> <lane> [repo-root]
 
   --no-worktree   Start the worker in the repository directory itself: no
                   worktree, no branch of its own. For a one-lane job that
@@ -17,6 +17,14 @@ spawn.sh [--no-worktree] [--parent <session> | --no-parent] <slug> <ticket-id> <
                   nothing it does can collide. The slug is still required but
                   unused: it names a worktree, and there is none.
                   JAIRA_NO_WORKTREE=1 in the environment does the same.
+  --branch <b>    The new worktree checks out the branch <b>, which must
+                  exist, instead of <prefix>/<slug>: the ticket's work rides
+                  on a branch of another name (the cockpit's Give back finds
+                  it by the commits that name the ticket). Without it, a
+                  <prefix>/<slug> that already exists — its worktree removed,
+                  the branch left — is checked out again rather than refused
+                  by git. A worktree already standing at the slug's place on
+                  another branch stops the spawn before a tab is made.
   --parent <s>    Only with the lane <dispatch>, <worker> or <discuss>: the
                   session of whoever starts it (a name, as ListAgents shows
                   it, or a uds: address). A dispatcher or worker hands its
@@ -26,8 +34,10 @@ spawn.sh [--no-worktree] [--parent <session> | --no-parent] <slug> <ticket-id> <
                   passed on as its uds: address, and one that names no running
                   session stops the spawn before a tab is made.
   --no-parent     No parent at all, not even this session: the dispatcher or
-                  worker asks in its own tab. The cockpit passes it whenever
-                  it starts a dispatcher or worker itself.
+                  worker asks in its own tab. The cockpit's Give back passes
+                  it only where neither the ticket's parent session nor its
+                  own listens. With a parent, the line typed into the tab
+                  says that every question goes there by SendMessage.
   -h, --help      This text.
 
 Five lane names are special. <dispatch> starts the dispatcher itself in the tab
@@ -76,9 +86,11 @@ USAGE
 no_worktree="${JAIRA_NO_WORKTREE:-}"
 parent=""
 no_parent=""
+want_branch=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-worktree) no_worktree=1; shift ;;
+    --branch)      want_branch="${2:?--branch needs a branch name}"; shift 2 ;;
     --parent)      parent="${2:?--parent needs a session name}"; no_parent=""; shift 2 ;;
     --no-parent)   parent=""; no_parent=1; shift ;;
     -h|--help)     usage; exit 0 ;;
@@ -175,6 +187,19 @@ else
   wt="$(cd "$root/.." && pwd)/.worktrees/$(basename "$root")-$slug"
 fi
 
+# --branch names the branch the ticket's work rides on. A worktree standing at
+# the slug's place on another branch would put the worker beside that work, on
+# a branch without it: refused before anything is made. Asked of git, not of a
+# path: a worktree in the middle of a rebase has no branch and is refused too.
+if [ -n "$want_branch" ] && [ "$wt" != "$root" ] && [ -d "$wt" ]; then
+  on_branch="$(git -C "$wt" symbolic-ref --short -q HEAD 2>/dev/null)" || on_branch=""
+  if [ "$on_branch" != "$want_branch" ]; then
+    echo "--branch $want_branch: $wt already stands on ${on_branch:-no branch}." \
+         "Remove that worktree, or pass the slug of the one on $want_branch" >&2
+    exit 1
+  fi
+fi
+
 if [ ! -d "$wt" ]; then
   # A repository that knows what its worktrees need says so in an executable
   # .jaira/worktree-setup, and then spawn.sh writes nothing into the worktree
@@ -191,7 +216,18 @@ if [ ! -d "$wt" ]; then
 
   # feat/, the prefix this board's own branches use. A repository that names
   # them differently sets JAIRA_BRANCH_PREFIX rather than editing this script.
-  branch="${JAIRA_BRANCH_PREFIX:-feat}/$slug"
+  branch="${want_branch:-${JAIRA_BRANCH_PREFIX:-feat}/$slug}"
+  # A branch that is there already is checked out again: its worktree was
+  # removed and the branch left, or --branch names where the work rides.
+  # Only a branch made here is deleted again when the setup fails below — one
+  # that was there before holds commits nobody else has.
+  made_branch=1
+  if git -C "$root" show-ref --verify -q "refs/heads/$branch"; then
+    made_branch=""
+  elif [ -n "$want_branch" ]; then
+    echo "--branch $want_branch: no such branch in $root" >&2
+    exit 1
+  fi
 
   # The port offset, 1-40, so two workers never share a stack. 0 stays free:
   # it belongs to the main directory's own stack. Handed out once, here, when
@@ -268,7 +304,11 @@ if [ ! -d "$wt" ]; then
 
   # 9>&-: a checkout hook that leaves something running must not keep the
   # offset lock held through an inherited fd 9.
-  git -C "$root" worktree add "$wt" -b "$branch" >&2 9>&-
+  if [ -n "$made_branch" ]; then
+    git -C "$root" worktree add "$wt" -b "$branch" >&2 9>&-
+  else
+    git -C "$root" worktree add "$wt" "$branch" >&2 9>&-
+  fi
   if [ -n "$off" ]; then
     printf '%s\n' "$off" > "$(git -C "$wt" rev-parse --absolute-git-dir)/jaira-offset" \
       || echo "could not write the offset $off down for $wt: the next worktree may get it too" >&2
@@ -284,9 +324,11 @@ if [ ! -d "$wt" ]; then
     "$setup" "$wt" "$slug" "$off" "$root" >&2 || rc=$?
     if [ "$rc" != 0 ]; then
       git -C "$root" worktree remove --force "$wt" >&2 || true
-      git -C "$root" branch -D "$branch" >&2 || true
+      [ -z "$made_branch" ] || git -C "$root" branch -D "$branch" >&2 || true
+      gone="worktree and branch $branch removed again"
+      [ -n "$made_branch" ] || gone="worktree removed again, branch $branch kept"
       echo "$setup $wt $slug $off $root failed (exit $rc):" \
-           "no worker started, worktree and branch $branch removed again" >&2
+           "no worker started, $gone" >&2
       exit 1
     fi
     # What the setup was given, for reap.sh to hand .jaira/worktree-teardown
@@ -469,10 +511,15 @@ esac
 # Without Herdr the cockpit asks its own session the same two requests
 # (explainBySubagent and discussInThisChat in jaira-cockpit's hooks/texts.ts):
 # a change to one belongs in the other.
+# With a parent the line says once more where questions go: a worker started
+# from the cockpit's Give back that asked the person in its own tab is what
+# QTQW15 was filed for. Words after the arguments: the cockpit's startOf reads
+# the role and the ticket at the head of the line and nothing behind them.
+asks="${parent:+ --parent $parent - every question goes to $parent by SendMessage, never by AskUserQuestion}"
 if [ "$lane" = dispatch ]; then
-  prompt="/jaira-dispatcher $ticket${parent:+ --parent $parent}"
+  prompt="/jaira-dispatcher $ticket$asks"
 elif [ "$lane" = worker ]; then
-  prompt="/jaira-worker $ticket${parent:+ --parent $parent}"
+  prompt="/jaira-worker $ticket$asks"
 elif [ "$lane" = pr ]; then
   # A person pressed Accept in the cockpit: --by-person tells jaira-role-pr
   # the invocation is theirs, so it opens the pull request instead of handing

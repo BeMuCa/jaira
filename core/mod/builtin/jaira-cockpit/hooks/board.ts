@@ -563,6 +563,52 @@ export function worktreeOfBranch(porcelain: string, branch: string): string | un
   return worktreesOf(porcelain).find(w => w.branch === branch)?.path
 }
 
+// The session a ticket's agents report to, off its notes: the newest
+// 'parent session: <address>' — the line a worker writes the first time it
+// reads its --parent, so a worker started later for the same ticket reports
+// to the same teamlead. undefined where no note names one.
+export function parentOf(showJson: string): string | undefined {
+  const body = parse<{ body?: string }>(withoutWarnings(showJson))?.body ?? ''
+  let found: string | undefined
+  for (const line of body.split('\n')) {
+    const m = /^- \*\*[^*]*\*\* — parent session: `?([^\s`]+)`?/.exec(line)
+    if (m) found = m[1]
+  }
+  return found
+}
+
+// Which branch a new worker for a ticket takes up, from what git says: the
+// branch holding the newest commit that names the ticket — the ticket's own
+// worktree's branch where that is one of them, so a stacked branch on top
+// of it does not win — else the ticket's own worktree's branch, else a
+// <prefix>/<slug> left behind without a worktree. undefined: no branch of
+// the ticket's at all, and spawn.sh makes <prefix>/<slug>. holders is
+// `git branch --contains <that commit>`, slugBranches `git branch --list
+// '*/<slug>'`, both as --format=%(refname:short) lists them.
+export function carrierFor(input: { own?: string; base: string; holders?: string; slugBranches?: string }): { branch: string; by: 'commit' | 'worktree' | 'name' } | undefined {
+  const { own, base, holders, slugBranches } = input
+  if (holders !== undefined && holders.trim() !== '') {
+    const listed = holders.split('\n').map(l => l.trim())
+    const branch = own !== undefined && listed.includes(own) ? own : carrierBranch(holders, base)
+    if (branch !== undefined) return { branch, by: 'commit' }
+  }
+  if (own !== undefined && own !== base) return { branch: own, by: 'worktree' }
+  const named = slugBranches === undefined ? undefined : carrierBranch(slugBranches, base)
+  return named === undefined ? undefined : { branch: named, by: 'name' }
+}
+
+// The slug a new worktree for `branch` is made under: the ticket's own,
+// unless a worktree on another branch already stands at that place — then
+// the branch's last part leads, and the path still ends in the ticket's id.
+export function slugFor(porcelain: string, repo: string, id: string, branch: string): string {
+  const slug = id.toLowerCase()
+  const place = newWorktreeFor(repo, slug)
+  const there = worktreesOf(porcelain).find(w => w.path === place)
+  if (there === undefined || there.branch === branch) return slug
+  const head = branch.slice(branch.lastIndexOf('/') + 1).replace(/[^A-Za-z0-9._-]/g, '-')
+  return `${head}-${slug}`
+}
+
 export function newWorktreeFor(repo: string, branch: string): string {
   const cut = repo.lastIndexOf('/')
   return `${repo.slice(0, cut)}/.worktrees/${repo.slice(cut + 1)}-${branch.slice(branch.lastIndexOf('/') + 1)}`

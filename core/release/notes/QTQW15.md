@@ -1,0 +1,5 @@
+- Expect a worker started by the cockpit's Give back to report to the ticket's teamlead (its newest "parent session:" note, else the cockpit's own session) and never to ask you in its own tab; only where neither session listens does it ask there.
+- Expect Give back to start the new worker on the branch that holds the ticket's commits, in that branch's worktree or in a new one on it; only a ticket without any branch still gets a new feat/<id>.
+- Expect Give back to type the decision into a worker that is still at work instead of closing its tab and starting a second one.
+- Read the cockpit's lines to the teamlead by their new shape: "<ID>: accepted, ... (Person, Cockpit)", "<ID> given back: <reason>, worker <tab> (Person, Cockpit; ...)" and "<ID>: <decision> (Person, Cockpit)"; Accept now also leaves a "cockpit: accepted by the person" note on the ticket.
+- Pass spawn.sh --branch <name> to start a worktree on an existing branch; a <prefix>/<slug> branch left behind without its worktree is now checked out again instead of failing, and a failed worktree setup no longer deletes a branch spawn.sh did not create.

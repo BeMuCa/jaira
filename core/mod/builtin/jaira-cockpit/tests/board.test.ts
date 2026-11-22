@@ -123,6 +123,8 @@ type World = {
   pullFails?: string
   // What `git clean` refuses with; undefined: it removes the file.
   cleanFails?: string
+  // Parents spawn.sh refuses as no session listening there (exit 2).
+  deadParents?: string[]
 }
 
 const LANES = {
@@ -278,6 +280,11 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
       return ok()
     }
     if (cmd === 'git' && args[0] === 'clean' && w.cleanFails !== undefined) return refuse(w.cleanFails)
+    if (args[0] === SPAWN && args.includes('--parent') && w.deadParents?.includes(args[args.indexOf('--parent') + 1]!)) {
+      const p = args[args.indexOf('--parent') + 1]
+      return { value: { exitCode: 2, stdout: '', stderr: `--parent ${p}: no session listens there. Leave --parent out`, isStdoutTruncated: false, isStderrTruncated: false } }
+    }
+    if (args[0] === SPAWN) return ok('w1:p42\n')
     if (cmd === 'jaira' && ['move', 'note', 'set', 'dod'].includes(args[0]!) && args[1] === 'MG677R' && w.disk[here] === 'ref-only') return refuse('jaira: MG677R: ticket: on its ref and not on your disk; pull it first')
     if (cmd === 'jaira' && ['move', 'note', 'set', 'dod'].includes(args[0]!) && args[1] === 'MG677R' && w.disk[here] === 'behind') return refuse('jaira: MG677R: the file here is older than its ref (stale_file); jaira pull MG677R')
     const on = args.includes('--board') ? w.boards[args[args.indexOf('--board') + 1] ?? ''] : undefined
@@ -1159,7 +1166,7 @@ describe('waiting for you', () => {
     expect(w.closed).toEqual(['cockpit-explanation'])
     // No mark: nothing moves, and the conversation the band sits in hears it.
     expect(ran(w, 'jaira', 'move')).toEqual([])
-    expect(w.submitted).toEqual(["Decision on MG677R in the cockpit's explanation pane, noted on the ticket and not acted on: b) accept it as it is"])
+    expect(w.submitted).toEqual(['jaira-cockpit: MG677R: b) accept it as it is (Person, Cockpit) - decided in the explanation pane, noted on the ticket, not acted on'])
     const band = await $.ui.mount(BAND)
     expect(await band.find({ type: 'Text', text: /MG677R \| decided/ })).toBeDefined()
     await band.press({ key: 'decision-MG677R' })
@@ -1205,7 +1212,7 @@ describe('waiting for you', () => {
     expect(ran(w, 'jaira', 'note').map(r => r[3]).slice(0, 2)).toEqual(['decision: 1) add the branch to the key', 'Given back from signoff: 1) add the branch to the key'])
     expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'MG677R', '--to', 'in-progress'])
     // The decision itself is not sent: only the line every Give back hands this session.
-    expect(w.submitted).toEqual(["jaira-cockpit: the person gave MG677R back in the cockpit (signoff -> in-progress), no worker started (the ticket's note says why): 1) add the branch to the key"])
+    expect(w.submitted).toEqual(["jaira-cockpit: MG677R given back: 1) add the branch to the key, worker none (the ticket's note says why) (Person, Cockpit; signoff -> in-progress)"])
   })
 
   test('an option marked [accept] accepts the ticket as the band\'s Accept does', async ($, on) => {
@@ -1214,9 +1221,9 @@ describe('waiting for you', () => {
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
     await (await $.ui.mount(EXPLANATION('Explanation of MG677R'))).press({ key: 'pick-MG677R-2' })
-    expect(ran(w, 'jaira', 'note').map(r => r[3])).toEqual(['decision: 2) accept it as it is'])
+    expect(ran(w, 'jaira', 'note').map(r => r[3])).toEqual(['decision: 2) accept it as it is', 'cockpit: accepted by the person, signoff -> done'])
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
-    expect(w.submitted).toEqual(['jaira-cockpit: the person accepted MG677R in the cockpit (signoff -> done)'])
+    expect(w.submitted).toEqual(['jaira-cockpit: MG677R: accepted, signoff -> done (Person, Cockpit)'])
   })
 
   test('after a restart an answered explanation is read with its decision, not offered again; a newer one is open', async ($, on) => {
@@ -1927,6 +1934,8 @@ describe('give back', () => {
     // Herdr is given a second between the text and its Enter.
     await w.clock.advance(1000)
     await typed
+    await pane.unmount()
+    await ui.unmount()
     return w
   }
 
@@ -2007,7 +2016,7 @@ describe('give back', () => {
     await startSession($)
     await giveBack($, w)
     expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
-    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe("cockpit: given back to a new worker - old worker's context 300k >= 250k (50% of its window)")
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toStartWith("cockpit: given back to a new worker - old worker's context 300k >= 250k (50% of its window); ")
   })
 
   test('the share is a setting', { options: { workerContextShare: 70 } }, async ($, on) => {
@@ -2032,6 +2041,110 @@ describe('give back', () => {
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to the old worker - tab alive, cache warm for 40 more min, context 80k')
   })
 
+  // QTQW15: the new worker reports to the ticket's teamlead, starts where the
+  // ticket's commits are, and is never a second one beside a worker at work.
+  const PARENT = '- **2026-11-20 10:00 · Alex** — parent session: uds:/run/lead.sock\n'
+  const spawned = (w: World) => ran(w, 'bash', SPAWN).map(r => r.slice(2, -1))
+  const lastNote = (w: World) => ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3] ?? ''
+
+  test('the new worker reports to the parent session the ticket names, and the teamlead hears who took it', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.bodies.MG677R = `## Progress\n- **2026-11-19 09:00 · Alex** — parent session: uds:/run/old.sock\n${PARENT}`
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w)).toEqual([['--no-worktree', '--parent', 'uds:/run/lead.sock', 'mg677r', 'MG677R', 'worker', '/.worktrees/repo-mg677r']])
+    expect(lastNote(w)).toContain("reports to uds:/run/lead.sock, the ticket's parent session")
+    expect(w.submitted).toEqual(['jaira-cockpit: MG677R given back: der Branch fehlt im Schluessel, worker new MG677R/worker (pane w1:p42, on feat/mg677r) (Person, Cockpit; signoff -> in-progress)'])
+  })
+
+  test('a parent session that is gone: this session takes the reports, never no parent at once', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.bodies.MG677R = PARENT
+    w.deadParents = ['uds:/run/lead.sock']
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w).map(a => a.slice(1, 3))).toEqual([['--parent', 'uds:/run/lead.sock'], ['--parent', 'uds:/tmp/cc-socks-1000/77.sock']])
+    expect(lastNote(w)).toContain('reports to this session (uds:/run/lead.sock does not listen)')
+  })
+
+  test('no parent anywhere: the worker asks in its own tab, and the note says so', async ($, on) => {
+    const w = world(on, { herdr: true, env: { HOME: '/home/a', HERDR_ENV: '1', HERDR_BIN_PATH: 'herdr', HERDR_PANE_ID: 'w1:p1' } })
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w).map(a => a[1])).toEqual(['--no-parent'])
+    expect(lastNote(w)).toContain('no parent session reachable')
+  })
+
+  test('the branch the ticket\'s commits ride on wins over an empty feat/<id>, in the worktree it has', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.worktrees = WORKTREES + '\nworktree /.worktrees/repo-fix-login\nHEAD 3\nbranch refs/heads/fix-login\n'
+    w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }, { sha: 'c1', subject: 'chore(X1Y2Z3): other' }]
+    w.holders = ['fix-login']
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w)).toEqual([['--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'worker', '/.worktrees/repo-fix-login']])
+    expect(lastNote(w)).toContain('branch fix-login holds the newest commit naming the ticket, worktree /.worktrees/repo-fix-login')
+  })
+
+  test('a branch whose worktree was removed is checked out again, beside the place an empty feat/<id> holds', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }]
+    w.holders = ['fix-login']
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w)).toEqual([['--branch', 'fix-login', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'fix-login-mg677r', 'MG677R', 'worker', '/repo']])
+  })
+
+  test('two branches hold the commit: the ticket\'s own worktree branch, not the one stacked on it', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }]
+    w.holders = ['stacked-on-it', 'feat/mg677r']
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w)[0]?.at(-1)).toBe('/.worktrees/repo-mg677r')
+  })
+
+  test('no branch of the ticket\'s at all: spawn.sh makes one, as before', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.worktrees = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n'
+    await startSession($)
+    await giveBack($, w)
+    expect(spawned(w)).toEqual([['--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'worker', '/repo']])
+    expect(lastNote(w)).toContain('no branch carries the ticket yet')
+  })
+
+  test('a worker at work gets the decision, however full its context: its tab is never closed, no second one starts', async ($, on) => {
+    const w = world(on, { herdr: true, store: big(500_000) })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker', agent_status: 'working' }]
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
+    expect(spawned(w)).toEqual([])
+    expect(lastNote(w)).toBe('cockpit: given back to the old worker - the old worker is at work in its tab')
+  })
+
+  test('a worker at work with nothing recorded to reach it: still no second one, and the note says where it is', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker', agent_status: 'working' }]
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
+    expect(spawned(w)).toEqual([])
+    expect(lastNote(w)).toContain('tell it in tab MG677R/worker - no second worker started')
+  })
+
+  test('Give back twice in a row: one worker, the second press finds the ticket already back', async ($, on) => {
+    const w = world(on, { herdr: true })
+    await startSession($)
+    await giveBack($, w)
+    w.movedFirst = true
+    await w.clock.advance(60_000)
+    await giveBack($, w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(2)
+    expect(spawned(w)).toHaveLength(1)
+  })
+
   test('otherwise closes the old worker\'s tab first, then starts a new one', async ($, on) => {
     const w = world(on, { herdr: true, store: { 'session:old': {
       session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
@@ -2044,9 +2157,9 @@ describe('give back', () => {
     const spawn = w.ran.findIndex(r => r[1] === SPAWN)
     expect(w.ran[close]?.[3]).toBe('w1:t9')
     expect(close).toBeLessThan(spawn)
-    expect(w.ran[spawn]?.slice(0, 7)).toEqual(['bash', SPAWN, '--no-parent', 'mg677r', 'MG677R', 'worker', '/repo'])
+    expect(w.ran[spawn]?.slice(0, 8)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'worker'])
     expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
-    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to a new worker - old worker\'s prompt cache cold for 10 min')
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toStartWith('cockpit: given back to a new worker - old worker\'s prompt cache cold for 10 min; ')
   })
   test('a pane gone since the tab list takes no text: the old tab is closed and a new worker started', async ($, on) => {
     const w = world(on, { herdr: true, store: { 'session:old': {
@@ -2059,8 +2172,8 @@ describe('give back', () => {
     await giveBack($, w)
     expect(ran(w, 'herdr', 'pane', 'send-keys')).toEqual([])
     expect(ran(w, 'herdr', 'tab', 'close')[0]?.[3]).toBe('w1:t9')
-    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 7)).toEqual(['bash', SPAWN, '--no-parent', 'mg677r', 'MG677R', 'worker', '/repo'])
-    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to a new worker - tab alive, cache warm for 40 more min, context 80k, but its pane took no text')
+    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 8)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'worker'])
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toStartWith('cockpit: given back to a new worker - tab alive, cache warm for 40 more min, context 80k, but its pane took no text; ')
   })
 })
 
@@ -2520,6 +2633,7 @@ describe('give back with the review notes', () => {
     expect(notes(w)).toEqual([
       'Accepted from signoff: angenommen:\n- blocker: the header\n- note: the size',
       'decision: accepted with a blocker not fixed: the header is harmless for now',
+      'cockpit: accepted by the person, signoff -> done',
     ])
   })
 
@@ -2688,7 +2802,7 @@ describe('the line a press hands this session', () => {
     w.ahead = 3
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
-    expect(w.submitted).toEqual(['jaira-cockpit: the person accepted MG677R in the cockpit (signoff -> done); MG677R: opening the pull request for feat/mg677r in a Herdr tab'])
+    expect(w.submitted).toEqual(['jaira-cockpit: MG677R: accepted, signoff -> done (Person, Cockpit); MG677R: opening the pull request for feat/mg677r in a Herdr tab'])
   })
 
   test('Accept whose next step fails: still one line, since the ticket is in done', async ($, on) => {
@@ -2696,7 +2810,7 @@ describe('the line a press hands this session', () => {
     w.ahead = 3
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
-    expect(w.submitted).toEqual(['jaira-cockpit: the person accepted MG677R in the cockpit (signoff -> done); the next step after MG677R failed, see the cockpit'])
+    expect(w.submitted).toEqual(['jaira-cockpit: MG677R: accepted, signoff -> done (Person, Cockpit); the next step after MG677R failed, see the cockpit'])
   })
 
   test('Give back: one line naming who carries the work now, the reason on one line', async ($, on) => {
@@ -2710,9 +2824,9 @@ describe('the line a press hands this session', () => {
     await (await $.ui.mount(GIVE('Give back MG677R'))).input({ key: 'reason-MG677R', text: 'der Branch\nfehlt   im Schluessel ' + 'x'.repeat(200) })
     expect(w.submitted).toHaveLength(1)
     const line = w.submitted[0]!
-    expect(line.startsWith('jaira-cockpit: the person gave MG677R back in the cockpit (signoff -> in-progress), a new worker started: der Branch fehlt im Schluessel xx')).toBe(true)
+    expect(line.startsWith('jaira-cockpit: MG677R given back: der Branch fehlt im Schluessel xx')).toBe(true)
     expect(line).not.toContain('\n')
-    expect(line.endsWith('…')).toBe(true)
+    expect(line.endsWith('…, worker new MG677R/worker (pane w1:p42, on feat/mg677r) (Person, Cockpit; signoff -> in-progress)')).toBe(true)
   })
 
   test('a reason cut at its limit never splits a character outside the BMP', async ($, on) => {
@@ -2722,7 +2836,7 @@ describe('the line a press hands this session', () => {
     // 118 characters, then emoji: the cut at 119 falls inside a surrogate pair by UTF-16 index.
     await (await $.ui.mount(GIVE('Give back MG677R'))).input({ key: 'reason-MG677R', text: 'x'.repeat(118) + '\u{1F44D}\u{1F44D}\u{1F44D} passt nicht' })
     const line = w.submitted[0]!
-    expect(line.endsWith('x\u{1F44D}…')).toBe(true)
+    expect(line).toContain('x\u{1F44D}…, worker')
     expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(line)).toBe(false)
   })
 })
