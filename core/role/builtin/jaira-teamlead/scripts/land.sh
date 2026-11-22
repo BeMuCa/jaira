@@ -79,7 +79,7 @@ basebranch="$(jaira json get baseRefName <<<"$prv")"
 # remote whose URL names the parent.
 remote=""
 pat="[:/]$(printf '%s' "$repo" | sed 's/[.]/[.]/g')(\.git)?/?\$"
-for r in origin $(git remote); do
+for r in $(git remote); do
   if grep -qiE "$pat" <<<"$(git remote get-url "$r" 2>/dev/null || true)"; then remote="$r"; break; fi
 done
 [ -n "$remote" ] || die 2 "no remote here points at $repo — git remote add upstream <its url>"

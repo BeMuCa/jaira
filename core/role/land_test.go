@@ -107,11 +107,9 @@ func TestLandMergesOnlyWhereTheBoardLetsIt(t *testing.T) {
 }
 
 type landRig struct {
-	tmp, origin, skills, merged, checksFail string
-	store                                   *ticket.Store
-	boardDir                                string
-	env                                     []string
-	at                                      time.Time
+	tmp, origin, skills, merged, checksFail, boardDir string
+	env                                               []string
+	at                                                time.Time
 }
 
 func newLandRig(t *testing.T, land string, regen bool) *landRig {
@@ -212,10 +210,6 @@ func (r *landRig) clone(t *testing.T, h string) string {
 	r.git(t, wt, "config", "user.email", "t@example.com")
 	r.git(t, wt, "config", "user.name", "t")
 	r.git(t, wt, "checkout", "-qb", "feat/"+strings.ToLower(h))
-	// Init may leave its own files tracked-looking; the test wants a clean tree.
-	if st := r.git(t, wt, "status", "--porcelain", "--untracked-files=no"); st != "" {
-		r.git(t, wt, "commit", "-qam", "chore("+h+"): board")
-	}
 	return wt
 }
 
