@@ -1,0 +1,2 @@
+- Run `jaira update --lanes` to get the new review prompt: it marks each note `note: fix-now:` (a few lines, no new behaviour) or plain `note:`, and sends a ticket with fix-now notes back once to close them, so they no longer reach signoff.
+- A fix round after review that changes fewer than 50 lines and touches no lock or parser now runs lean: the worker sets `stop-after-fix`, critique and optimize run as one pass, and the review reads only the delta since its `review: done at <commit>` note.

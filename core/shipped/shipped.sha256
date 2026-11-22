@@ -52,6 +52,7 @@ dea4f27bb429f6bd1a65bb2abba453146aea1f0413ade312b486cc23a3a93b79  core/lane/buil
 e3eb5dfec3b7294135e579f5b1a9eead3eefb62b4ad4ab13eb35bd9d9c5ec945  core/lane/builtin/20-in-progress.md
 1a5497ad8cde416fcbed6c315f7d4756e464283348f4d03eb943c75ea7a617a1  core/lane/builtin/25-critique.md
 37d32fbd2fe80053a095a762bcc187bc7095a2c85381b140e5167cc84916267e  core/lane/builtin/25-critique.md
+7105f29d52a8022a4c47a075e73e3b1cd30b58a6574f1cd26ecd8eb18fc434d8  core/lane/builtin/25-critique.md
 7d3e33a062df131ce294a631d973fcb9202c9119bae84185affa9248692f3257  core/lane/builtin/25-critique.md
 9532957a8c333e6916324167c58bbf949381b91693be3a55a20c79bccf19afcd  core/lane/builtin/25-critique.md
 bb28d1a25d78659db823bca81617a8c7fc7d425dabd6b57a441e606671fa46b6  core/lane/builtin/25-critique.md
@@ -63,6 +64,7 @@ dabf76d9aa42f5390c85979278d0090c06299cadef60128551c2693aaa27306c  core/lane/buil
 ff24696adad9b7a6e8f96cd844ea3add2b3ff01e28506bbd3831fd7072f24371  core/lane/builtin/26-optimize.md
 075005c18576d809b915029edd05287e033743a77e5344682929dec819c7e1a9  core/lane/builtin/27-testing.md
 0b12cce56410588ded71bd758649cc74f67dd0fb9d8abf09fa27e9fad8afb284  core/lane/builtin/27-testing.md
+24c3a23a747a83daa17a975809c97bc222464b51e7fa3b20ff357d9b307f5dbc  core/lane/builtin/27-testing.md
 4aaa6f0be4950de206f6cbab3c1ca2b2b82bb7281434332931b10c0efe559b74  core/lane/builtin/27-testing.md
 67b4ba84a39a0cd3aeeffd46766f1999bccf5e7520b0c350a91f271c8a988bb5  core/lane/builtin/27-testing.md
 7183bb2639647f4087dab1283bd0fa05f0e58bb7e57293ba8e3e2d9fc4582ce5  core/lane/builtin/27-testing.md
@@ -89,6 +91,7 @@ fd7239d62183ea99c9404231e7a7ddb5db4e249e6b008ab1374bc424c27a85a0  core/lane/buil
 4c3caf385f0f52cbd1bba743bde89985aba9221eeb86eade0b8d995a5379a805  core/lane/builtin/40-review.md
 73b18658cb550d50cada155eaaa921a0ef584babee1a0a56b19d99ff4b36a168  core/lane/builtin/40-review.md
 73cbb62c1904343c00758829ea6c27b6535b1fcee7a96923f544587ded0afdd7  core/lane/builtin/40-review.md
+8ddd80823bb8a83dc73e66532b646ddb41ddf7fc1770ea005ec6038731bfb8b6  core/lane/builtin/40-review.md
 9eac34beffc8eac8323135f86fc62eacc5e18f2f4130df40aebff684dd2892a9  core/lane/builtin/40-review.md
 a27ce6ad77c477c29e6f5ec96c9141459042b5255b55ded7df1cec0fd22cd35d  core/lane/builtin/40-review.md
 a7b11e21f8777d8ea50ac6adb7baf5aafbd5090b5394ae22ae518000b1e12308  core/lane/builtin/40-review.md
@@ -923,6 +926,7 @@ cceace92864839c19bd4646c772cf743928369fa308dfe475a96c0813ca910fb  core/role/buil
 d590146c92f50ac2dd6183e178140540a147f2de6e10cc7c7b527d3845c2b77a  core/role/builtin/jaira-teamlead/scripts/land.sh
 075340ef48a95e2d9ef2c2db12c8c2481f455799982ba6f20d8ced6b154c93b2  core/role/builtin/jaira-worker/SKILL.md
 079cdcbef2656d30dafea01295d52a109eb68cd54c87945cb128f3f27a7ba998  core/role/builtin/jaira-worker/SKILL.md
+0d011bbab9157ed856b61ccbbcbef3083c075e59c55fc57a52133ef8e75407e8  core/role/builtin/jaira-worker/SKILL.md
 1042ae01cbc61d6df5f4ea52e6cd57b6cb7b10fcd5675f7ad466ff128e95e352  core/role/builtin/jaira-worker/SKILL.md
 1d9fbad333db53c34c8735b60a5986514f56a3cbfbca12320425f448b19b60b1  core/role/builtin/jaira-worker/SKILL.md
 20f2e76e9d6049ad58e49828cf90eb14fc4218d1861f33e84255e1643c3b247d  core/role/builtin/jaira-worker/SKILL.md

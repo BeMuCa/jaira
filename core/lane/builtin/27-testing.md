@@ -34,7 +34,10 @@ no hint where to look:
 this lane's payload (`jaira show <handle> --for-lane testing --json`) and
 `round` above 1: start no hunt this round, run your passes over what changed
 since the last hunt, and write
-`hunt-verdict="pass: stop-after-fix, no hunt in round <n>"`. Off — the default
+`hunt-verdict="pass: stop-after-fix, no hunt in round <n>"` — unless that
+change touches locking or a parser (file locks, reading a file format,
+parsing command output): there the hunt runs, opt-out or not, because a
+small fix in either is where a new defect hides. Off — the default
 — the hunt runs every round, over the diff since the last one.
 
 It changes nothing and moves nothing; it leaves one `bughunt:` note per

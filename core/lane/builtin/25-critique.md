@@ -67,6 +67,16 @@ Then:
 - **Nothing left to say.** Write `review-summary="none"` explicitly — an empty
   field means nobody looked — and move the ticket on to the next lane.
 
+**A small change is critiqued and optimized in one pass.** When the diff
+changes fewer than 50 lines outside `.jaira/`, read it once with both lists —
+the four questions above and the optimize lane's four passes (`jaira show
+<handle> --for-lane optimize --json` hands you its prompt). Findings of your
+own send the ticket back as above, and optimize waits for the next round.
+Nothing to say: write `review-summary="none"`, carry out optimize's passes on
+the same reading — its edits, its test run and its `review-gaps` — and move
+the ticket through `optimize` on to the lane after it. From 50 lines up the
+lanes stay two.
+
 Four rules for this lane:
 
 **A finding names a file and a concrete alternative.** "Could be cleaner",
