@@ -25,21 +25,22 @@ related:
   - 01M7WWYKK8CMJSM2S45WJDDCEZ
 commits: []
 created-at: 2026-09-16T06:46:09Z
-updated-at: 2026-11-22T11:23:22Z
+updated-at: 2026-11-22T11:26:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-33230
 claimed-at: 2026-11-22T11:08:10Z
 outcome-what: "spawn.sh no longer copies .env or writes port names; without .jaira/worktree-setup it makes the worktree only, hands out no offset, and tells a repo with a .env how to get the old behaviour from the shipped worktree-setup.example; roles install --help says an edited file is frozen"
 outcome-why: "Port names like HTTP_PORT belonged to one project; repos forked spawn.sh to add theirs, and an edited spawn.sh never gets jaira's fixes again"
 outcome-resolves: "spawn.sh schreibt Werte, die nur einem Projekt gehoeren - DoD 1-7"
-review-summary: "none: round 2 read only the two bughunt fixes - SKILL.md paragraph and the extra hint clause - both say what the code does"
-review-gaps: "none: round 2 added two text lines, nothing to remove"
+review-summary: "none: round 3 read only the hint line and its test assertion"
+review-gaps: "none: round 3 changed one message and one assertion"
 test-verdict: "fail: see hunt-verdict; tests green"
-hunt-verdict: "fail: bughunt done at 20f1eb391, 1 change: the hint's 'remove this one and spawn again' leaves the branch, and the next spawn dies on 'branch already exists'"
-round: 3
+hunt-verdict: "fail: bughunt done at abfa818f4, 1 change, blocker (data loss): the hint's 'git branch -D' runs while the worker spawn.sh just started may already have committed - its unmerged commits go silently"
+round: 4
 back-from: testing
 back-by: lane
-back-count: 2
+back-count: 3
+question: ""
 ---
 
 # spawn.sh schreibt Werte, die nur einem Projekt gehoeren
@@ -55,11 +56,13 @@ back-count: 2
 - [x] Die Hilfe von 'roles install' sagt, dass eine bearbeitete Datei nicht nur unveraendert bleibt, sondern auch keine Verbesserungen mehr bekommt
   proof: internal/cli/roles.go:410-414
 - [x] Ein Board, das bisher ohne Einrichtungsskript lief, bekommt beim naechsten Arbeiter eine verstaendliche Meldung statt einer stillen Verhaltensaenderung
-  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:305-310 stderr line: install -m 755 line plus the worktree remove + branch -D line; TestSpawnLetsTheRepositorySetUpItsWorktree checks it with .env and not without; following the printed commands then spawning again gives the example's .env (scratch repo, round 3)
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:305-309 stderr line: install -m 755 line, 'applies to worktrees made from then on'; TestSpawnLetsTheRepositorySetUpItsWorktree checks it with .env and not without
 - [x] worktree-setup.example reproduces the old .env byte for byte (copy, '# worker stack' line, COMPOSE_PROJECT_NAME, HTTP_PORT, DB_PORT_HOST, DB_PORT_TEST_HOST); the offset tests use it as their setup, in a repository whose path holds a space
   proof: TestSpawnGivesEveryWorktreeItsOwnOffset byte compare of repo-8r8vts/.env; newOffsetRepo installs the example, base path 'with space'
 - [x] no setup: no port offset, no offset lock, no .env in the worktree; with a .env in the root one stderr line says so and names the cp line - a test for both repos (with and without .env)
   proof: TestSpawnLetsTheRepositorySetUpItsWorktree no-setup loop over dotenv true/false
+- [x] Der setup-Hinweis in spawn.sh enthält keinen zerstörenden Befehl (kein worktree remove, kein git branch -D/-d), nur die install-Zeile und den Satz, dass er für neue worktrees gilt
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:305-309 (no remove/branch command); TestSpawnLetsTheRepositorySetUpItsWorktree fails on 'worktree remove', 'branch -D', 'branch -d' in the output
 
 ## Options
 
@@ -116,3 +119,7 @@ Nicht projektspezifisch und daher in spawn.sh gehoerend, nicht in den Hook: --no
 - **2026-11-22 11:21 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:309 - class: the no-setup hint added in 20f1eb391 tells the person to 'remove this one and spawn again', but removing a worktree leaves its branch, and spawn.sh:271 always runs 'git worktree add "$wt" -b "$branch"', which refuses an existing branch; set -e then ends spawn.sh with no worker; example: HERDR_ENV=1 spawn.sh s1 ABC123 testing <repo with .env> prints the hint, then git worktree remove --force <wt>, then the same spawn.sh -> 'fatal: a branch named feat/s1 already exists', exit 255; the hint must name the branch too (git worktree remove <wt> && git branch -D <branch>) or spawn.sh must reuse an existing branch; not a blocker: the printed instruction is wrong but nothing is lost; ran: scratch repo, both spawn.sh calls with HERDR_BIN_PATH=/bin/false
 - **2026-11-22 11:21 · Alexander Sacharov** — bughunt: done at 20f1eb391 - 1 finding (1 change, 0 blockers, 0 pre-existing) in 3 modules, follow-up hunt since 0aa673209; concurrency, error paths, input, permissions checked; files: .gitattributes .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/optimize.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/release/notes/7MG5GB.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-dispatcher/scripts/worktree-setup.example core/role/role_test.go core/shipped/shipped.sha256 internal/cli/roles.go
 - **2026-11-22 11:23 · Alexander Sacharov** — round 3: the hint now prints the exact take-down line (git worktree remove + git branch -D <branch>); a plain 'remove and spawn again' left feat/<slug> behind and the next 'git worktree add -b' died. Considered teaching spawn.sh to reuse an existing branch instead - rejected: it changes spawn.sh for every caller to serve a one-time migration hint.
+- **2026-11-22 11:24 · Alexander Sacharov** — bughunt: change: blocker: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:308-310 - class: the .env hint tells the reader to force-delete the worker's branch (git branch -D) although spawn.sh does not stop after printing it but opens the worker tab, so by the time a person follows it the worker may have committed - unmerged commits are deleted without a word; example: spawn with root .env and no .jaira/worktree-setup, worker commits once, reader runs the printed 'git worktree remove <wt> && git branch -D feat/<slug>' -> worktree remove succeeds on the clean tree and branch -D drops the commit from every ref (no branch reflog left); 'git branch -d' would refuse instead; written by abfa818f4 (names 7MG5GB); ran: scratch repo, worktree add -b feat/ab12cd, commit in worktree, worktree remove + branch -D -> rc=0, 'git log --all' shows only init
+- **2026-11-22 11:24 · Alexander Sacharov** — bughunt: done at abfa818f4 - 1 finding (1 change, 1 blocker, 0 pre-existing), follow-up hunt since 20f1eb391, diff only, no new files; concurrency, error paths, input, permissions checked; files: .gitattributes .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/optimize.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/release/notes/7MG5GB.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-dispatcher/scripts/worktree-setup.example core/role/role_test.go core/shipped/shipped.sha256 internal/cli/roles.go
+- **2026-11-22 11:25 · Alexander Sacharov** — question (3rd send-back from testing, worker stops here). Round 3 finding verbatim: spawn.sh:308-310 hint tells to 'git branch -D' the worker's branch, but spawn.sh goes on to open the worker's tab; by the time the person follows the hint the worker may have committed, and -D drops unmerged commits silently (reproduced in a scratch repo). My view: the DoD is right; the loop is not getting deeper, but each round's fix to the hint added one more edge - the hint grew from 'install the example' to 'take the worktree down', and the take-down part is the edge factory. Options: 1) (Recommended) shrink the hint: keep only the install -m 755 line plus 'takes effect for worktrees made from now on' - no destructive command at all; one short round, then review. 2) keep the take-down line with 'git branch -d' (refuses unmerged) as the hunter suggests - smallest diff, but the hint stays a recipe that can fail midway. 3) stop here and hand it to the person as is.
+- **2026-11-22 11:25 · Alexander Sacharov** — decision (Teamlead 22.11., Alex' Regel 'Ränder wachsen → kleineres Design'): Variante 1 — der Hinweis in spawn.sh nennt nur die install -m 755-Zeile und 'gilt für neue worktrees'; keine zerstörenden Befehle (kein worktree remove, kein branch -D/-d).

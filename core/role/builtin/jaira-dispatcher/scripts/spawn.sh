@@ -305,9 +305,8 @@ if [ ! -d "$wt" ]; then
   elif [ -f "$root/.env" ]; then
     echo "spawn.sh no longer copies .env into a worktree: $wt has none." \
          "To get it back as before, install -m 755" \
-         "\"$(cd "$(dirname "$0")" && pwd)/worktree-setup.example\" \"$setup\" and adapt it" \
-         "— a setup runs only for a worktree spawn.sh makes, so take this one down" \
-         "first: git -C \"$root\" worktree remove \"$wt\" && git -C \"$root\" branch -D $branch" >&2
+         "\"$(cd "$(dirname "$0")" && pwd)/worktree-setup.example\" \"$setup\" and adapt it;" \
+         "it applies to worktrees made from then on" >&2
   fi
 fi
 

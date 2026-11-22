@@ -1010,9 +1010,14 @@ esac
 				t.Errorf(".env %v: without a setup spawn.sh made %s", dotenv, f)
 			}
 		}
-		// The hint names the branch too: a branch left behind makes the next
-		// spawn's 'git worktree add -b' fail.
-		said := strings.Contains(out, "no longer copies .env") && strings.Contains(out, "worktree-setup.example") && strings.Contains(out, "branch -D feat/ab12cd")
+		said := strings.Contains(out, "no longer copies .env") && strings.Contains(out, "worktree-setup.example") && strings.Contains(out, "worktrees made from then on")
+		// No command that destroys anything: the worker this spawn starts may
+		// commit before a person reads the line.
+		for _, bad := range []string{"worktree remove", "branch -D", "branch -d"} {
+			if strings.Contains(out, bad) {
+				t.Errorf(".env %v: the hint tells to run %q:\n%s", dotenv, bad, out)
+			}
+		}
 		if said != dotenv {
 			t.Errorf(".env %v: spawn.sh said why the .env is missing: %v, want %v:\n%s", dotenv, said, dotenv, out)
 		}
