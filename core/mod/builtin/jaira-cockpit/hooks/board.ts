@@ -813,16 +813,16 @@ export function pullRequestIn(text: string): number | undefined {
 
 // One pull request as `jaira pr --json` prints it, as far as the cockpit
 // reads it.
-export type PullRequest = { number: number; state: string; tickets: string[]; settled: boolean; unsettled: string[] }
+export type PullRequest = { number: number; tickets: string[]; settled: boolean; unsettled: string[] }
 
 // The open pull requests `jaira pr --json` lists; undefined where the
 // answer is not that command's.
 export function pullRequestsOf(prJson: string): PullRequest[] | undefined {
-  const st = parse<{ prs?: Partial<PullRequest>[] }>(withoutWarnings(prJson))
+  const st = parse<{ prs?: (Partial<PullRequest> & { state?: string })[] }>(withoutWarnings(prJson))
   if (!Array.isArray(st?.prs)) return undefined
   return st.prs
     .filter(p => typeof p.number === 'number' && (p.state ?? 'open') === 'open')
-    .map(p => ({ number: p.number!, state: p.state ?? 'open', tickets: p.tickets ?? [], settled: p.settled === true, unsettled: p.unsettled ?? [] }))
+    .map(p => ({ number: p.number!, tickets: p.tickets ?? [], settled: p.settled === true, unsettled: p.unsettled ?? [] }))
 }
 
 // When a board's pull request opens, from `jaira roles list --json`:

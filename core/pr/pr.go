@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"os/exec"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -35,13 +36,11 @@ var (
 )
 
 // Run runs one command in dir and returns its standard output. A failure
-// carries the exit code (as *exec.ExitError or ExitCoder) and the command's
-// standard error in its message.
+// carries the exit code — an *exec.ExitError, or any error with an
+// ExitCode() method — and the command's standard error.
 type Run func(dir, name string, args ...string) ([]byte, error)
 
-// ExitCoder is what a failed Run may return so a caller can read the code
-// without an *exec.ExitError — tests use it.
-type ExitCoder interface{ ExitCode() int }
+type exitCoder interface{ ExitCode() int }
 
 // Status is every open pull request the query found, newest activity first.
 type Status struct {
@@ -154,16 +153,13 @@ func forgeOf(run Run, dir string) (forge, origin string, err error) {
 // words otherwise.
 func classify(tool string, err error) error {
 	code := -1
-	var ee *exec.ExitError
-	var ec ExitCoder
-	switch {
-	case errors.As(err, &ee):
-		code = ee.ExitCode()
-	case errors.As(err, &ec):
+	var ec exitCoder
+	if errors.As(err, &ec) {
 		code = ec.ExitCode()
 	}
 	msg := err.Error()
-	if ee != nil && len(ee.Stderr) > 0 {
+	var ee *exec.ExitError
+	if errors.As(err, &ee) && len(ee.Stderr) > 0 {
 		msg = strings.TrimSpace(string(ee.Stderr))
 	}
 	lower := strings.ToLower(msg)
@@ -191,22 +187,13 @@ func ticketsOf(subjects []string, branch string) []string {
 		out = []string{}
 	}
 	last := branch[strings.LastIndexByte(branch, '/')+1:]
-	if h := strings.ToUpper(last); handle.MatchString(h) && !contains(out, h) {
+	if h := strings.ToUpper(last); handle.MatchString(h) && !slices.Contains(out, h) {
 		out = append(out, h)
 	}
 	return out
 }
 
 var handle = regexp.MustCompile(`^[0-9A-Z]{6}$`)
-
-func contains(list []string, s string) bool {
-	for _, x := range list {
-		if x == s {
-			return true
-		}
-	}
-	return false
-}
 
 // newer reports whether RFC 3339 time a is after b; an unreadable a never is.
 func newer(a, b string) bool {
@@ -233,8 +220,12 @@ func seen(last **Activity, a Activity) {
 // pr-round.sh settled uses.
 func settle(p *PR) {
 	p.Unsettled = []string{}
-	if open := p.Threads.Waiting + p.Threads.Answered; open > 0 {
-		p.Unsettled = append(p.Unsettled, plural(open, "open thread", "open threads"))
+	switch open := p.Threads.Waiting + p.Threads.Answered; open {
+	case 0:
+	case 1:
+		p.Unsettled = append(p.Unsettled, "1 open thread")
+	default:
+		p.Unsettled = append(p.Unsettled, fmt.Sprintf("%d open threads", open))
 	}
 	for _, r := range p.ReviewRequested {
 		p.Unsettled = append(p.Unsettled, "review pending: "+r)
@@ -243,13 +234,6 @@ func settle(p *PR) {
 		p.Unsettled = append(p.Unsettled, "changes requested: "+r)
 	}
 	p.Settled = len(p.Unsettled) == 0
-}
-
-func plural(n int, one, many string) string {
-	if n == 1 {
-		return "1 " + one
-	}
-	return fmt.Sprintf("%d %s", n, many)
 }
 
 func orEmpty(s []string) []string {

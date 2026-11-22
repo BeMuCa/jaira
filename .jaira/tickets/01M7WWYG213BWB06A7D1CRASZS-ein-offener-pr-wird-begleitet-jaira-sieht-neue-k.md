@@ -1,7 +1,7 @@
 ---
 id: 01M7WWYG213BWB06A7D1CRASZS
 title: "Ein offener PR wird begleitet: jaira sieht neue Kommentare, CI-Stand und wartende Re-Requests und meldet sie"
-status: critique
+status: optimize
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -21,18 +21,19 @@ related:
   - 01M7WX040JC9Z202EH852EF48S
 commits: []
 created-at: 2026-11-20T16:34:31Z
-updated-at: 2026-11-22T16:34:48Z
+updated-at: 2026-11-22T16:36:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3910889
 claimed-at: 2026-11-22T14:48:02Z
 outcome-what: "Neuer Befehl 'jaira pr [<branch>] [--all|--number n] [--json] [--watch [--every d]]' (core/pr: gh-GraphQL bzw. glab-API; Threads wartend/beantwortet/erledigt, fremde Kommentare, CI, Reviews, Tickets, settled). --watch: Ausgangsstand als erste Zeile, dann eine Zeile je Aenderung, Ende bei merged/closed. Cockpit: reicht einen neuen PR einmal an die Teamlead-Session weiter (nach Accept begrenzte Nachschau 20x60s; Agentenbericht mit PR-URL), Store-Schluessel gegen Doppeltmelden; Accept bei pr-when=signoff oeffnet erst den PR (Ticket bleibt in signoff) und laesst done erst bei settled zu."
 outcome-why: "Den Stand eines PR hielt der Teamlead im Kopf; jaira wusste nichts davon. Alex 22.11.: Befehl im Binary, kein Dauer-Polling im Cockpit, Teamlead beobachtet selbst per Monitor; JG3REW-Rest (Accept in signoff) gehoert hierher."
 outcome-resolves: "DoD 1-7. Vier Kategorien geprueft: Nebenlaeufigkeit - zwei Cockpit-Sessions koennen denselben PR im selben Moment beide melden (Store get/set nicht atomar), schlimmstenfalls eine Zeile doppelt; Fehlerpfade - halber Lauf ist ein Fehler, nie ein PR ohne Threads; Watch sagt einen Lesefehler einmal und liest weiter, verlorener Login beendet ihn (Exit 3); ungewoehnliche Eingabe - Branchnamen gehen als ein Argument an gh/glab bzw. URL-escaped an die GitLab-API, Fenster: 50 PRs, 100 Threads, 20 Kommentare je Thread; Rechte - nur Lesen mit dem gh/glab-Login der Person."
-review-summary: "internal/cli/pr.go:113 defines maxArgs beside the command; exactArgs/minArgs live in internal/cli/root.go:57-75 - move maxArgs there so the three argument validators sit together"
+review-summary: "none"
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "core/pr/pr.go: contains -> slices.Contains, plural (one caller) folded into settle, classify reads the exit code through one interface (exec.ExitError has ExitCode) and the exported ExitCoder became unexported; board.ts PullRequest dropped the unused state field. Left: the handle regex in core/pr/pr.go repeats gitrepo/named.go handleShape (unexported there; exporting it for one caller is not worth it); forge/fork detection exists in Go and in TS (two languages); pr-round.sh settled keeps its own rule (critique note)."
 ---
 
 # Ein offener PR wird begleitet: jaira sieht neue Kommentare, CI-Stand und wartende Re-Requests und meldet sie
@@ -97,3 +98,4 @@ Selbst entschieden (widersprechen moeglich): Ausloeser = neuer Kommentar/Thread,
 - **2026-11-22 16:19 · Alexander Sacharov** — Plan nach F2-Wechsel: Benachrichtigung des Cockpits nach Accept braucht eine begrenzte Nachschau, weil die pr-Lane (spawn.sh pr) ohne --parent laeuft - ihr Bericht erreicht die Teamlead-Session nicht. Nicht gewaehlt: spawn.sh/jaira-role-pr um --parent erweitern (Rollentext + shipped-Manifest, groesser).
 - **2026-11-22 16:24 · Alexander Sacharov** — jaira pr steht (696778fc8). Gelernt: GitHub-GraphQL pullRequests nimmt headRefName als Filter, also ein Aufruf fuer Branch und --all; GitLab braucht je MR vier Aufrufe (MR fuer head_pipeline - die Liste hat es nicht -, discussions, reviewers, commits). 'offen/beantwortet' = ungeloester Thread, letzter Kommentar fremd vs. eigener (viewer). Watch meldet nur gegen den vorigen Lauf; Ausgangsstand = erste Zeile 'watching', keine Meldung -> DoD 7 fuer den Watch. Rest: Cockpit (Plan 4, 5).
 - **2026-11-22 16:34 · Alexander Sacharov** — critique 1: maxArgs (internal/cli/pr.go) gehoert zu exactArgs/minArgs nach internal/cli/root.go. Stehen gelassen, mit Grund: (a) core/pr settle wiederholt die Regel von pr-round.sh settled (GitHub-only Rollenskript); die Rolle auf 'jaira pr --number N --json' umzustellen waere ein Eingriff in jaira-role-pr + Manifest, nicht Teil dieses Tickets. (b) Forge-/Fork-Erkennung gibt es jetzt in Go (core/pr) und TS (board.ts forgeOf/targetRepoOf) - zwei Sprachen, nicht zusammenlegbar. (c) followPr-Zeile auf Englisch statt 'PR #N fuer <ID> offen - begleiten': texts.ts schreibt jeden Cockpit-Text englisch vor. (d) --all bleibt: DoD 1 verlangt den Stand je Ticket mit PR, ueber alle PRs.
+- **2026-11-22 16:34 · Alexander Sacharov** — critique 2: maxArgs liegt jetzt in internal/cli/root.go neben exactArgs/minArgs (5239634bd) - erledigt, nichts weiter.
