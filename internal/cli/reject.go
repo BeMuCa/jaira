@@ -172,7 +172,7 @@ func alreadyRejected(t *ticket.Ticket) error {
 // branch carries an archive file for a ticket nobody worked.
 func rejectOnRef(cmd *cobra.Command, t *ticket.Ticket, kind, why, duplicateOf string) error {
 	h := ticket.Handle(t.ID)
-	got, err := refs.Reject(t.ID, kind, why, duplicateOf, time.Now())
+	got, heldBy, err := refs.Reject(t.ID, kind, why, duplicateOf, time.Now())
 	switch {
 	case errors.Is(err, refsync.ErrAlreadyRejected):
 		return alreadyRejected(got)
@@ -200,9 +200,8 @@ func rejectOnRef(cmd *cobra.Command, t *ticket.Ticket, kind, why, duplicateOf st
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "Rejected %s (%s)  %s\n", h, kind, got.Title)
 	fmt.Fprintf(cmd.OutOrStdout(), "Written to its ref, not to a file here — everybody sees it after their next 'jaira fetch'.\n")
-	if a := strings.TrimSpace(got.Assignee); a != "" {
-		fmt.Fprintf(cmd.ErrOrStderr(), "jaira: %s is assigned to %s. If it was pulled into a checkout, that file is behind the ref now: "+
-			"after a fetch there, the next write is refused as stale; 'jaira pull %s' there brings the rejection into the file\n", h, a, h)
+	if heldBy != "" {
+		fmt.Fprintf(cmd.ErrOrStderr(), "jaira: %s\n", refsync.HeldByWarning(h, heldBy))
 	}
 	return nil
 }

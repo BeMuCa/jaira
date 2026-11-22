@@ -2391,9 +2391,10 @@ func (m *Model) confirmReject() tea.Cmd {
 
 // refRejectedMsg is the outcome of rejecting a card on its ref.
 type refRejectedMsg struct {
-	t   *ticket.Ticket
-	why string
-	err error
+	t      *ticket.Ticket
+	why    string
+	heldBy string
+	err    error
 }
 
 // rejectOnRef rejects a card that has no file here on its ref, as 'jaira
@@ -2406,8 +2407,8 @@ func (m *Model) rejectOnRef(t *ticket.Ticket, why string) tea.Cmd {
 	m.detail = nil
 	m.notify(fmt.Sprintf("Rejecting %s on its ref …", ticket.Handle(t.ID)), false)
 	return func() tea.Msg {
-		_, err := y.Reject(t.ID, ticket.RejectWontfix, why, "", time.Now())
-		return refRejectedMsg{t: t, why: why, err: err}
+		_, heldBy, err := y.Reject(t.ID, ticket.RejectWontfix, why, "", time.Now())
+		return refRejectedMsg{t: t, why: why, heldBy: heldBy, err: err}
 	}
 }
 
@@ -2421,8 +2422,11 @@ func (m *Model) refRejected(msg refRejectedMsg) {
 		m.notify(err.Error(), true)
 		return
 	}
-	m.notify(fmt.Sprintf("Rejected %s: %s\n\nWritten to its ref, not to a file here — everybody sees it after their next fetch.",
-		h, msg.why), false)
+	text := fmt.Sprintf("Rejected %s: %s\n\nWritten to its ref, not to a file here — everybody sees it after their next fetch.", h, msg.why)
+	if msg.heldBy != "" {
+		text += "\n\n" + refsync.HeldByWarning(h, msg.heldBy)
+	}
+	m.notify(text, false)
 }
 
 // nextBoard shows the repository's next board, in the order today's board

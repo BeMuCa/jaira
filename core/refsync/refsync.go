@@ -1576,59 +1576,72 @@ var ErrAlreadyRejected = errors.New("refsync: the ticket is already rejected")
 // reject without a ref to read. It fetches first, so a stale local copy is
 // never the state stamped. A push the remote refuses because the ref moved
 // since the fetch is gitref.ErrRaceLost, and nothing is written.
-func (y *Syncer) Reject(id, kind, why, duplicateOf string, now time.Time) (*ticket.Ticket, error) {
+//
+// The assignee goes with it, and the one it had is returned as heldBy: on a
+// ref an assignee does not say whether anybody pulled the ticket — a ticket
+// gets one to leave the backlog — so it refuses nothing, but left in place it
+// would make the way back, 'jaira pull', refuse everybody else as "taken".
+func (y *Syncer) Reject(id, kind, why, duplicateOf string, now time.Time) (rejected *ticket.Ticket, heldBy string, err error) {
 	if y == nil || y.Store == nil {
-		return nil, errors.New("refsync: no board here")
+		return nil, "", errors.New("refsync: no board here")
 	}
 	if err := y.Usable(); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if _, ok := y.localPath(id); ok {
-		return nil, fmt.Errorf("refsync: %s has a file here; reject it through the store", ticket.Handle(id))
+		return nil, "", fmt.Errorf("refsync: %s has a file here; reject it through the store", ticket.Handle(id))
 	}
 	if _, ok := y.Pending(id); ok {
-		return nil, fmt.Errorf("%w: send it first ('jaira fetch' sends what is queued)", ErrUnsent)
+		return nil, "", fmt.Errorf("%w: send it first ('jaira fetch' sends what is queued)", ErrUnsent)
 	}
 	if err := y.Repo.Fetch(); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	content, lease, err := y.Repo.Read(id)
 	if errors.Is(err, gitref.ErrNoRef) {
-		return nil, fmt.Errorf("%s: %w", ticket.Handle(id), ticket.ErrNotFound)
+		return nil, "", fmt.Errorf("%s: %w", ticket.Handle(id), ticket.ErrNotFound)
 	}
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	d, err := ticket.ParseDoc(content)
 	if err != nil {
-		return nil, fmt.Errorf("refsync: the ref for %s does not carry a ticket: %w", id, err)
+		return nil, "", fmt.Errorf("refsync: the ref for %s does not carry a ticket: %w", id, err)
 	}
 	t, err := ticket.Decode(d, "")
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if t.Rejected.Kind != "" {
-		return t, fmt.Errorf("%s: %w (%s by %s)", ticket.Handle(id), ErrAlreadyRejected, t.Rejected.Kind, t.Rejected.By)
+		return t, "", fmt.Errorf("%s: %w (%s by %s)", ticket.Handle(id), ErrAlreadyRejected, t.Rejected.Kind, t.Rejected.By)
 	}
-	// An assignee is not refused. On a ref it does not say whether anybody
-	// pulled the ticket — a ticket gets one long before that, to leave the
-	// backlog — and refusing it refused the very ticket this exists for. Where
-	// somebody did pull it, their file is behind the ref from now on, and
-	// their next write there is refused as stale and names the ref's state;
-	// the caller warns about it.
+	heldBy = strings.TrimSpace(t.Assignee)
 	if err := ticket.StampRejection(t, kind, why, y.Actor, duplicateOf, now); err != nil {
-		return nil, err
+		return nil, "", err
+	}
+	if err := d.SetScalar(ticket.FieldAssignee, ""); err != nil {
+		return nil, "", err
 	}
 	if err := ticket.Touch(d, now); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if err := ticket.TouchBy(d, y.Actor); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if _, err := y.Repo.Write(id, d.Bytes(), lease); err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return ticket.Decode(d, "")
+	rejected, err = ticket.Decode(d, "")
+	return rejected, heldBy, err
+}
+
+// HeldByWarning is what a rejection on the ref says about the assignee Reject
+// took off: if that person pulled the ticket, a file in their checkout is
+// behind the ref now. 'jaira reject' and R on the board say it alike.
+func HeldByWarning(handle, heldBy string) string {
+	return fmt.Sprintf("%s was assigned to %s. If it was pulled into a checkout, that file is behind the ref now: "+
+		"after a fetch there, the next write is refused as stale, and 'jaira pull %s' brings the rejection in and takes the card off that board",
+		handle, heldBy, handle)
 }
 
 // Extra hands the store the tickets this board can see but has no file for —

@@ -84,6 +84,11 @@ no ref to read, so there is nothing to take over.`,
 			if got.Was != "" {
 				fmt.Fprintf(cmd.OutOrStdout(), "%s was behind its ref and is up to date now: %s\n", ticket.Handle(got.ID), got.Path)
 				fmt.Fprintf(cmd.OutOrStdout(), "  was: %s\n  now: %s\n", got.Was, got.Now)
+				if tk, lerr := s.Load(got.ID); lerr == nil && tk.Rejected.Kind != "" {
+					// The board no longer shows it; say why, and the way back.
+					fmt.Fprintf(cmd.OutOrStdout(), "  rejected by %s (%s: %s) — it is off the board; to work it after all, delete this file and pull again\n",
+						tk.Rejected.By, tk.Rejected.Kind, tk.Rejected.Why)
+				}
 				return nil
 			}
 			if got.AlreadyHere {

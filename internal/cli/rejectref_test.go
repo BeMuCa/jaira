@@ -325,10 +325,12 @@ func TestPullingATicketRejectedOnItsRefTakesTheRejectionOff(t *testing.T) {
 }
 
 // An assignee on the ref does not say anybody pulled the ticket — tickets get
-// one to leave the backlog. Refusing it refused the ticket this exists for, so
-// the rejection goes through, and the output warns that a checkout which did
-// pull it now has a file behind the ref; that checkout's next write says so.
-func TestRejectOnTheRefGoesThroughAnAssigneeAndWarns(t *testing.T) {
+// one to leave the backlog — so it refuses nothing. The rejection takes it off,
+// so pull, the way back, does not answer "taken"; the output warns that a
+// checkout which did pull it now has a file behind the ref. There the card
+// leaves the board once the rejection is pulled in, and anybody can bring the
+// ticket back by pulling it into a checkout without its file.
+func TestRejectOnTheRefTakesTheAssigneeOffAndLeavesEveryBoard(t *testing.T) {
 	t.Setenv("JAIRA_USER", "ada")
 	clone := cloneWithRemotes(t, "origin")
 	h := ticketIn(t, clone, "assigned elsewhere")
@@ -338,6 +340,7 @@ func TestRejectOnTheRefGoesThroughAnAssigneeAndWarns(t *testing.T) {
 	if out, err := runCLI(t, other, "pull", h); err != nil {
 		t.Fatalf("grace pulls: %v\n%s", err, out)
 	}
+
 	t.Setenv("JAIRA_USER", "ada")
 	out, err := runCLI(t, clone, "reject", h, "--why", "not needed", "--force")
 	if err != nil {
@@ -346,9 +349,13 @@ func TestRejectOnTheRefGoesThroughAnAssigneeAndWarns(t *testing.T) {
 	if !strings.Contains(out, "assigned to grace") || !strings.Contains(out, "behind the ref") {
 		t.Errorf("no warning about the assignee's file:\n%s", out)
 	}
-	if r := remoteTicket(t, clone, id).Rejected; r.Why != "not needed" {
-		t.Errorf("the ref does not carry the rejection: %+v", r)
+	r := remoteTicket(t, clone, id)
+	if r.Rejected.Why != "not needed" || r.Assignee != "" {
+		t.Errorf("the ref: rejection %+v, assignee %q — want the rejection and no assignee", r.Rejected, r.Assignee)
 	}
+
+	// Grace's checkout: refused as stale after a fetch, then pulled up to the
+	// ref — and the card is gone from her board, while show still finds it.
 	t.Setenv("JAIRA_USER", "grace")
 	if out, err := runCLI(t, other, "fetch"); err != nil {
 		t.Fatalf("grace fetches: %v\n%s", err, out)
@@ -356,16 +363,47 @@ func TestRejectOnTheRefGoesThroughAnAssigneeAndWarns(t *testing.T) {
 	if out, err := runCLI(t, other, "note", h, "still working"); !errors.Is(err, ticket.ErrStale) {
 		t.Errorf("grace's write on the file behind the rejection was not refused as stale: %v\n%s", err, out)
 	}
-	// What the warning tells her to do: pull brings the rejection into her
-	// file, and that file then says it is rejected.
-	if out, err := runCLI(t, other, "pull", h); err != nil {
+	out, err = runCLI(t, other, "pull", h)
+	if err != nil {
 		t.Fatalf("grace refreshes: %v\n%s", err, out)
 	}
-	s, err := ticket.At(other)
+	if !strings.Contains(out, "off the board") {
+		t.Errorf("pull did not say the refreshed ticket is rejected:\n%s", out)
+	}
+	gs, err := ticket.At(other)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if tk, err := s.Load(h); err != nil || tk.ReadOnly || tk.Rejected.Why != "not needed" {
-		t.Errorf("grace's file after pull does not carry the rejection: %v %+v", err, tk)
+	onBoard := func(s *ticket.Store) bool {
+		all, _ := s.List()
+		for _, tk := range all {
+			if tk.ID == id {
+				return true
+			}
+		}
+		return false
+	}
+	if onBoard(gs) {
+		t.Errorf("the rejected ticket is still a card on grace's board, file and all")
+	}
+	if tk, err := gs.Load(h); err != nil || tk.Rejected.Why != "not needed" {
+		t.Errorf("show/Load on grace's side lost the rejection: %v %+v", err, tk)
+	}
+
+	// Anybody without a file brings it back: ada, who rejected it.
+	t.Setenv("JAIRA_USER", "ada")
+	out, err = runCLI(t, clone, "pull", h)
+	if err != nil {
+		t.Fatalf("ada pulls it back: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "rejection is taken off") {
+		t.Errorf("pull did not take the rejection off:\n%s", out)
+	}
+	as, err := ticket.At(clone)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !onBoard(as) {
+		t.Errorf("the pulled-back ticket is not on ada's board")
 	}
 }

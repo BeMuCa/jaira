@@ -1018,15 +1018,14 @@ func (s *Store) List() ([]*Ticket, error) {
 	for _, t := range out {
 		have[t.ID] = true
 	}
-	for _, t := range s.extra(have) {
-		// A ticket rejected while it lived only on its ref stays there,
-		// rejection and all: no branch carries its file to an archive. It is
-		// off the board all the same — Load and show still find it.
-		if t.Rejected.Kind != "" {
-			continue
-		}
-		out = append(out, t)
-	}
+	out = append(out, s.extra(have)...)
+	// A rejected ticket is off every board, wherever its bytes are. One
+	// rejected while it lived only on its ref stays there, rejection and all:
+	// no branch carries its file to an archive. A file here that carries a
+	// rejection — pulled in before the ticket was rejected on its ref, or
+	// brought up to that ref since — is a leftover, not a card to work on.
+	// Load and show still find both.
+	out = slices.DeleteFunc(out, func(t *Ticket) bool { return t.Rejected.Kind != "" })
 	if len(problems) > 0 {
 		return out, &PartialError{Problems: problems}
 	}
