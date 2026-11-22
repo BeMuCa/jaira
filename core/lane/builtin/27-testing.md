@@ -144,8 +144,9 @@ alone never starts a round.
   optimize, and back here — until you have nothing left to find. A round after
   a fix tests and hunts only what changed since the last hunt — the commit in
   its `bughunt: done at <commit>` line: pass 1 runs the tests that cover the files
-  `git diff --name-only <commit>` touches, and passes 2 and 3 and the hunt
-  read only that diff, so the loop ends; the whole suite ran in the first
+  `git diff --name-only <commit>` touches and the new files
+  `git ls-files --others --exclude-standard` lists (a diff does not show a
+  file nobody added yet), and passes 2 and 3 and the hunt read only those, so the loop ends; the whole suite ran in the first
   round and runs again in CI. When that commit is not an ancestor of `HEAD`
   (`git merge-base --is-ancestor <commit> HEAD` exits non-zero — the branch
   was rebased; the old commit may still exist, but a diff against it lists

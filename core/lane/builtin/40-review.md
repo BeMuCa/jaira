@@ -133,7 +133,9 @@ Write four things, in this order:
 an earlier `review: done at <commit>` line, that commit is an ancestor of
 `HEAD` (`git merge-base --is-ancestor <commit> HEAD`), and `git diff
 --shortstat <commit> -- . ':(exclude).jaira'` counts fewer than 50 changed
-lines, read only that
+lines, and no file outside `.jaira/` is untracked (`git ls-files --others
+--exclude-standard -- . ':(exclude).jaira'` prints nothing — `--shortstat`
+does not count a new file nobody added yet), read only that
 diff: check that each finding of the previous review is answered, and look
 along the four lines above at the lines that changed and the functions they
 sit in — not at the rest of the change, which the previous review already
