@@ -1,1 +1,3 @@
 - The cockpit's Verdict pane now opens with a light: green means accept, yellow means look at the named reason first, red means give it back. Read its first line before the review.
+- `jaira lanes --json` now carries `verdicts` (`accept`, `send_back`) for a lane that declares its verdict words; read them there instead of guessing from a verdict's wording.
+- `jaira show <id> --brief --json` now reports `bughunt` as `{"state":"none"}` for a ticket whose commits changed no code; treat `null` as "a hunt is owed" only.

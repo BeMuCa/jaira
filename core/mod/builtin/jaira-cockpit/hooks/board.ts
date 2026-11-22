@@ -13,6 +13,10 @@ export type Waiting = {
   goal: string
   lane: string
   verdict: string
+  // Which way the verdict goes by the words the board's review lane declares
+  // (`verdicts` in lanes --json): accept, sendBack, or other for free text.
+  // undefined where no lane declares words — a jaira before that key.
+  verdictWay?: VerdictWay
   question: string
   // Whether every definition-of-done item is ticked; undefined where jaira
   // did not say (a build before dod_complete).
@@ -47,7 +51,11 @@ export type Waiting = {
 
 export type Counts = { worker: number; review: number; person: number }
 
-export type Lane = { id: string; agentic: boolean; terminal?: boolean; context: string; human_exit?: boolean; requires_question?: boolean }
+export type Lane = {
+  id: string; agentic: boolean; terminal?: boolean; context: string; human_exit?: boolean; requires_question?: boolean
+  verdicts?: { accept?: string[]; send_back?: string[] }
+}
+export type VerdictWay = 'accept' | 'sendBack' | 'other'
 type Ticket = {
   handle: string
   title: string
@@ -124,6 +132,7 @@ export function snapshotOf(
   const lanes = parse<{ lanes: Lane[] }>(lanesJson)?.lanes ?? []
   const tickets = parse<{ tickets: Ticket[] }>(listJson)?.tickets ?? []
   const byId = new Map(lanes.map(l => [l.id, l]))
+  const words = lanes.flatMap(l => (l.verdicts === undefined ? [] : [l.verdicts]))
   const waiting: Waiting[] = []
   const theirs: Waiting[] = []
   const counts: Counts = { worker: 0, review: 0, person: 0 }
@@ -142,6 +151,7 @@ export function snapshotOf(
       goal: (t.goal ?? '').trim(),
       lane: t.status,
       verdict,
+      ...(words.length > 0 && verdict !== '' ? { verdictWay: wayOf(t.review?.verdict ?? '', words) } : {}),
       question: oneLine(t.question),
       ...(typeof t.dod_complete === 'boolean' ? { dodComplete: t.dod_complete } : {}),
       ...(t.dod_items !== undefined && t.dod_items.length > 0 ? { dodOpen: dodOpenOf(t.dod_items) } : {}),
@@ -207,6 +217,19 @@ function hasReservation(verdict: string): boolean {
   return RESERVATION.test(unnegated) || REFUSAL.test(verdict)
 }
 
+// Which way a review-verdict goes, read as jaira reads it (core/lane
+// verdict.go SendsBackBy): its first line before the first ':', folded —
+// case, a space like a dash, a closing full stop — must begin with a declared
+// word, followed by its end or by anything that is not a letter.
+const fold = (s: string) => s.trim().replace(/[.!;,]+$/, '').toLowerCase().replace(/-/g, ' ').split(/\s+/).filter(Boolean).join('-')
+function wayOf(verdict: string, words: NonNullable<Lane['verdicts']>[]): VerdictWay {
+  const head = fold((verdict.trim().split('\n')[0] ?? '').split(':')[0] ?? '')
+  const begins = (w: string) => head.startsWith(w) && !/^\p{L}/u.test(head.slice(w.length))
+  if (words.some(v => (v.send_back ?? []).some(begins))) return 'sendBack'
+  if (words.some(v => (v.accept ?? []).some(begins))) return 'accept'
+  return 'other'
+}
+
 export type Item = { done?: boolean; state?: string; text?: string }
 
 // The items still open: neither done nor superseded.
@@ -230,14 +253,16 @@ function dodOpenOf(items: readonly Item[]): { person: number; other: number } {
 // red one before any yellow one; the first is the one the light names.
 export type LightReason =
   | { kind: 'refused' } | { kind: 'blockers'; n: number } | { kind: 'noHunt' } | { kind: 'dodOpen'; n: number }
-  | { kind: 'notReviewed' } | { kind: 'reservation' } | { kind: 'oldReview'; round: number } | { kind: 'notesUnknown' }
+  | { kind: 'notReviewed' } | { kind: 'freeVerdict' } | { kind: 'reservation' } | { kind: 'oldReview'; round: number } | { kind: 'notesUnknown' }
   | { kind: 'notes'; n: number } | { kind: 'byAPerson'; n: number } | { kind: 'dodIncomplete' } | { kind: 'question' } | { kind: 'huntUnknown' }
 export type Light = { color: 'green' | 'yellow' | 'red'; reasons: LightReason[] }
 
 export function lightOf(w: Waiting, hunt: Hunt | undefined): Light {
   const red: LightReason[] = []
   const yellow: LightReason[] = []
-  const refused = w.verdict !== '' && REFUSAL.test(w.verdict)
+  // The lane's own words where it declares them; a jaira that does not say
+  // them leaves only the verdict's wording to go by.
+  const refused = w.verdictWay !== undefined ? w.verdictWay === 'sendBack' : w.verdict !== '' && REFUSAL.test(w.verdict)
   if (refused) red.push({ kind: 'refused' })
   if (w.blockers.length > 0) red.push({ kind: 'blockers', n: w.blockers.length })
   if (hunt === 'fail') red.push({ kind: 'noHunt' })
@@ -246,6 +271,7 @@ export function lightOf(w: Waiting, hunt: Hunt | undefined): Light {
   // only whether all are ticked, and then an open one may be the person's.
   if (w.dodOpen !== undefined && w.dodOpen.other > 0) red.push({ kind: 'dodOpen', n: w.dodOpen.other })
   if (w.verdict === '') yellow.push({ kind: 'notReviewed' })
+  else if (w.verdictWay === 'other') yellow.push({ kind: 'freeVerdict' })
   else if (!refused && hasReservation(w.verdict)) yellow.push({ kind: 'reservation' })
   if (w.reviewedIn !== undefined) yellow.push({ kind: 'oldReview', round: w.reviewedIn })
   if (!w.findingsKnown) yellow.push({ kind: 'notesUnknown' })
@@ -842,14 +868,16 @@ export function followTitle(text: string): string {
 }
 
 // The newest bug hunt's state, read off `jaira show <id> --brief --json`:
-// ok, fail, unknown or skipped as jaira worked it out against the checkout
+// ok, fail, unknown, skipped or none as jaira worked it out against the checkout
 // it ran in; fail where no hunt finished (bughunt null); undefined where the
 // brief has no bughunt key — a jaira older than the hunt state — or did not
 // parse, so the band says it does not know rather than guess. `at` is the
 // commit the hunt ran at, '' where none finished: jaira also answers fail
 // for a checkout that does not hold that commit, which the caller checks.
-export type Hunt = 'ok' | 'fail' | 'unknown' | 'skipped'
-const HUNTS = new Set<string>(['ok', 'fail', 'unknown', 'skipped'])
+// none: no hunt finished and the ticket's commits changed no code, so there
+// is nothing to hunt.
+export type Hunt = 'ok' | 'fail' | 'unknown' | 'skipped' | 'none'
+const HUNTS = new Set<string>(['ok', 'fail', 'unknown', 'skipped', 'none'])
 export function huntOf(briefJson: string): { state: Hunt; at: string } | undefined {
   const brief = parse<{ bughunt?: { state?: string; at?: string } | null }>(withoutWarnings(briefJson))
   if (brief === undefined || !('bughunt' in brief)) return undefined

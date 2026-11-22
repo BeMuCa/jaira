@@ -1,7 +1,7 @@
 ---
 id: 01M81G681S9YWPBZWQ7HAJ41SC
 title: "Das Verdict im Cockpit zeigt oben eine Ampel: grün annehmen, gelb ansehen, rot zurückgeben"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -15,7 +15,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T11:27:46Z
-updated-at: 2026-11-22T11:37:39Z
+updated-at: 2026-11-22T11:46:04Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1232016
 claimed-at: 2026-11-22T11:29:15Z
@@ -23,11 +23,13 @@ outcome-what: "Verdict-Pane des Cockpits zeigt als erste Zeile eine Ampel (grün
 outcome-why: "Alex soll ohne Urteil, Gaps und Notizen zu lesen sehen, ob er annehmen kann"
 outcome-resolves: "AJ41SC: fehlende Ampel im Verdict"
 review-summary: none
-round: 2
-back-from: critique
+round: 3
+back-from: testing
 back-by: lane
 back-count: 1
 review-gaps: "texts.ts lightReason: 'not reviewed yet' und 'review of round N, changed since' nutzen jetzt t.noVerdict und t.reviewedIn statt Kopien; overview.ts: doppelte Leerzeile nach dem Verschieben von openOf entfernt. Gelassen: lightOf liest dieselben Felder wie explainable/marks, aber entscheidet etwas anderes (Farbe), keine zweite Implementierung. Keine toten Pfade, kein Kostenproblem (eine Berechnung pro Pane-Render)."
+test-verdict: "fail: suite green, but the hunt's two change blockers make the light give wrong results (see bughunt notes)"
+hunt-verdict: "fail: 2 change blockers - refusal read by own word list instead of the review lane's send_back/accept words; a ticket without code change shows red 'no bughunt on HEAD'"
 ---
 
 # Das Verdict im Cockpit zeigt oben eine Ampel: grün annehmen, gelb ansehen, rot zurückgeben
@@ -37,9 +39,9 @@ review-gaps: "texts.ts lightReason: 'not reviewed yet' und 'review of round N, c
 - [x] Das Verdict zeigt als erste Zeile eine Ampel (grün/gelb/rot) mit einem kurzen Grund
   proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1945; test 'a ticket in the band is one row' expects '● red: 1 blocker in the review (+4 more)' as first pane line
 - [x] Die Farbe wird aus vorhandenen Ticketdaten berechnet (review-verdict, Bughunt auf HEAD, Gates, Notizen, seen by a person:), Regeln mit Test pro Farbe
-  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:237 lightOf; core/mod/builtin/jaira-cockpit/tests/board.test.ts 'the verdict light' green/yellow/red
+  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:260 lightOf; core/mod/builtin/jaira-cockpit/tests/board.test.ts 'the verdict light' (green/yellow/red, declared verdict words, hunt none); verdicts from jaira lanes --json (internal/cli/context_test.go), bughunt none (TestBriefCarriesTheHunt)
 - [x] Release-Note core/release/notes/<ID>.md, shipped.sha256
-  proof: core/release/notes/AJ41SC.md; core/shipped/shipped.sha256 via scripts/shipped-history.sh --write; go test ./core/role ./core/shipped ok
+  proof: core/release/notes/AJ41SC.md (3 lines); core/shipped/shipped.sha256 via scripts/shipped-history.sh --write; go test ./... RC=0
 - [ ] seen by a person: Alex sieht die Ampel im laufenden Cockpit an einem Ticket in signoff
 
 ## Options
@@ -56,3 +58,8 @@ review-gaps: "texts.ts lightReason: 'not reviewed yet' und 'review of round N, c
 - **2026-11-22 11:30 · Alexander Sacharov** — decision (worker, no open question): Ampel-Regeln. rot: Review lehnt ab (REFUSAL), Blocker in review-gaps, Bughunt fail (fehlt/nicht auf HEAD), ein DoD-Punkt ausser 'seen by a person:' offen (= das Gate des Terminal-Lanes). gelb: Review mit Vorbehalt, note:-Zeilen, offener 'seen by a person:'-Punkt, offene Frage, Review aus frueherer Runde, Notizen unbekannt, Bughunt unknown/unbekannt (aeltere jaira), noch kein Review. gruen: sonst. 'Gates' = DoD-Gate, weil der Worker-Statuszeile-gates-Wert nicht am Ticket liegt; Texte englisch wie texts.ts. Erster Grund in Reihenfolge rot vor gelb wird gezeigt, plus '+N' weitere.
 - **2026-11-22 11:34 · Alexander Sacharov** — critique: (1) openOf aus overview.ts nach board.ts ziehen und in dodOpenOf benutzen statt den Filter zu kopieren; (2) gelber Fallback ohne dod_items bekommt eine eigene kind 'dodIncomplete' statt dodOpen n=0.
 - **2026-11-22 11:36 · Alexander Sacharov** — critique pass 2: beide Befunde beantwortet (openOf in board.ts, kind dodIncomplete); nichts weiter.
+- **2026-11-22 11:40 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/board.ts:240 - class: the light decides 'the review gives it back' by its own word list (REFUSAL, board.ts:196: request|reject|refuse|fail|zurück|ablehn|nicht|not) instead of the review lane's declared verdict words (verdict-send-back: [send-back], verdict-accept: [accept]; jaira lanes --json carries them as send_back, internal/cli/flow.go:755; the gate reads them in core/lane/verdict.go:40). The lane's own send-back word is not in the list, and plain negations are; example: verdict 'send-back: DoD 2 - an empty export still writes a header' with gaps 'none' lights GREEN 'accept' (the same verdict with a 'note:' gap lights yellow, never red); verdict 'Not a single defect found; accept.' or 'Nicht zu beanstanden - accept' lights RED 'the review gives it back'. Reachable whenever a send-back verdict sits in a person's lane: a move made in the board (Interactive skips verdictAgainstMove) or with --force. REFUSAL itself is older (75637606), but lightOf is the new caller that turns it into a colour; ran: node --experimental-strip-types scratch script calling snapshotOf+lightOf(w,'ok') on these verdicts (outputs green / red as stated)
+- **2026-11-22 11:40 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/board.ts:243 - class: a ticket that owes no bug hunt because it changed no code is lit red 'no bughunt on HEAD'. jaira show --brief --json reports bughunt:null for every ticket without a finished hunt (internal/cli/tickets.go:830 calls LastHunt, which never checks whether code changed), huntOf maps null to fail with at='' (board.ts:856), register.tsx:398 skips its ancestor check for at='', and lightOf pushes red noHunt. The gate does not ask for a hunt there (core/gitrepo/hunt.go HuntCheck: CodeChanged false when the ticket's commits touch only board data or there are none, so huntAgainstMove passes). Example: a decision or research ticket moved into human with --question, or into signoff, with no code commits: Verdict light red 'no bughunt on HEAD (+1 more)' although nothing is owed and the move would pass. The band's dim cross for the same state is older (d16585f9); the red 'give it back' meaning is new with the light; ran: fresh repo, jaira init, jaira create 'decide x' -> jaira show XV0ZCB --brief --json prints "bughunt":null (exit 0)
+- **2026-11-22 11:40 · Alexander Sacharov** — bughunt: done at c2eab0fab - 2 findings (2 change, 0 pre-existing) in 5 modules, first hunt; concurrency, error paths, input, permissions checked; files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/optimize.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/AJ41SC.md core/shipped/shipped.sha256
+- **2026-11-22 11:42 · Alexander Sacharov** — decision (round 2, nach bughunt): (1) jaira lanes --json gibt 'verdicts' {accept, send_back} einer Lane aus, die sie deklariert (wie der --for-lane-Payload); das Cockpit liest den Verdict damit wie lane.SendsBackBy: send-back -> rot, accept -> kein Grund, anderes Freitext auf einem Board mit Woertern -> gelb 'verdict outside the lane's words'; nur ohne deklarierte Woerter (alte jaira) bleibt die REFUSAL-Heuristik. (2) show --brief: bughunt-State 'none', wenn kein Hunt fertig ist und HuntCheck sagt, die Commits aenderten keinen Code; das Cockpit zaehlt 'none' wie skipped (neutral, Strich im Band). Kleinere Variante als Wortlisten im Cockpit zu pflegen (memory: edges grow -> reuse jaira code).
+- **2026-11-22 11:46 · Alexander Sacharov** — round 2 fix: beide bughunt-Blocker ueber jaira selbst geloest (lanes --json verdicts, brief bughunt none via HuntCheck). Band zeigt none wie skipped als '–'. Explain-Prompt kennt none.

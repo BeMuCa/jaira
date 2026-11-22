@@ -22,6 +22,8 @@ import (
 //   - skipped: the ticket sets stop-after-fix, so a fix round runs its tests
 //     and no hunt — a hunt that no longer covers the code, or none at all,
 //     is the choice the ticket made, not a fault
+//   - none: no hunt finished, and the ticket's commits changed no code —
+//     nothing to hunt, as the gate sees it (BriefHunt only)
 type Hunt struct {
 	At    string `json:"at"`
 	State string `json:"state"`
@@ -33,6 +35,7 @@ const (
 	HuntFail    = "fail"
 	HuntUnsure  = "unknown"
 	HuntSkipped = "skipped"
+	HuntNone    = "none"
 )
 
 // huntDone is the closing line a bug hunt writes: "bughunt: done at <commit>
@@ -51,6 +54,20 @@ func (r *Repo) LastHunt(t *ticket.Ticket) *Hunt {
 		h.State = HuntSkipped
 	}
 	return h
+}
+
+// BriefHunt is LastHunt for `show --brief`: where no hunt finished, it asks
+// the gate's question too — did the ticket's commits change code at all — and
+// says none for a ticket that has nothing to hunt, so a reader does not take
+// it for one whose hunt is missing. nil still means a hunt is owed.
+func (r *Repo) BriefHunt(t *ticket.Ticket) *Hunt {
+	if h := r.LastHunt(t); h != nil {
+		return h
+	}
+	if !r.HuntCheck(t).CodeChanged {
+		return &Hunt{State: HuntNone}
+	}
+	return nil
 }
 
 func (r *Repo) newestHunt(t *ticket.Ticket) *Hunt {

@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { lightOf, type Waiting } from '../hooks/board.ts'
+import { lightOf, snapshotOf, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -885,7 +885,7 @@ describe('waiting for you', () => {
     // the hunt's note has scrolled out of the four newest notes by then: the brief says whether it covers the code
     expect(asked).toContain("bughunt on HEAD ends in the brief's bughunt.state word as it stands")
     // the format line and the status sentence name all four words, so unknown is never written as fail
-    expect(asked).toContain('bughunt on HEAD ok|fail|unknown|skipped')
+    expect(asked).toContain('bughunt on HEAD ok|fail|unknown|skipped|none')
     expect(asked).not.toContain('each check ends in ok or fail')
     for (const cls of ['[blocker]', '[small edge]', '[known limit]', '[not this ticket]']) expect(asked).toContain(cls)
     expect(asked).toContain('[give back]')
@@ -3837,5 +3837,36 @@ describe('the verdict light', () => {
     expect(first({ ...ready, dodComplete: false, dodOpen: { person: 1, other: 1 } }, 'ok')).toEqual(['red', 'dodOpen'])
     // Every red reason counts before any yellow one.
     expect(lightOf({ ...ready, question: 'why?', notes: ['note: x'] }, 'fail').reasons.map(r => r.kind)).toEqual(['noHunt', 'notes', 'question'])
+  })
+
+  // A ticket whose commits changed no code has nothing to hunt: no reason to look.
+  test('a ticket with nothing to hunt is not held up by its hunt', () => {
+    expect(first(ready, 'none')).toEqual(['green', '-'])
+  })
+
+  // Which way a verdict goes is read off the words the review lane declares,
+  // as jaira's own gate reads them, never off its wording.
+  test('the review lane\'s declared words decide which way a verdict goes', () => {
+    const lanes = JSON.stringify({ lanes: [
+      { id: 'review', agentic: true, context: 'fresh', verdicts: { accept: ['accept'], send_back: ['send-back'] } },
+      { id: 'signoff', agentic: false, context: '', human_exit: true },
+    ] })
+    const light = (verdict: string, gaps = 'none') => {
+      const list = JSON.stringify({ tickets: [{ handle: 'MG677R', title: 't', status: 'signoff', dod_complete: true, review: { verdict, gaps } }] })
+      const w = snapshotOf(lanes, list, [], []).waiting[0]!
+      return first(w, 'ok')
+    }
+    // A send-back with nothing in its gaps is still a send-back.
+    expect(light('send-back: DoD 2 unmet')).toEqual(['red', 'refused'])
+    expect(light('Send back, DoD 1')).toEqual(['red', 'refused'])
+    expect(light('accept')).toEqual(['green', '-'])
+    expect(light('Accept.')).toEqual(['green', '-'])
+    // Free text on a board with words: neither way, so a look — never red for a word like 'not'.
+    expect(light('Not a single defect found; accept.')).toEqual(['yellow', 'freeVerdict'])
+    expect(light('send-backs')).toEqual(['yellow', 'freeVerdict'])
+    // Without declared words (an older jaira) the wording is all there is.
+    const old = JSON.stringify({ lanes: [{ id: 'signoff', agentic: false, context: '', human_exit: true }] })
+    const list = JSON.stringify({ tickets: [{ handle: 'MG677R', title: 't', status: 'signoff', dod_complete: true, review: { verdict: 'request changes', gaps: 'none' } }] })
+    expect(first(snapshotOf(old, list, [], []).waiting[0]!, 'ok')).toEqual(['red', 'refused'])
   })
 })

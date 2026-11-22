@@ -827,7 +827,7 @@ there are as notes_total.`,
 				return showForLane(cmd, s, env, t, forLane)
 			}
 			if brief {
-				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body, (&gitrepo.Repo{Dir: s.Root}).LastHunt(t)))
+				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body, (&gitrepo.Repo{Dir: s.Root}).BriefHunt(t)))
 				if err != nil {
 					return err
 				}
@@ -1352,6 +1352,13 @@ func newLanesCmd() *cobra.Command {
 						"input_requires":    l.InputRequires, "output_produces": l.OutputProduces,
 						"source": l.Source, "prompt": l.Prompt, "creator": l.Creator,
 					})
+					// Only for a lane that declares its verdict words, as in the
+					// --for-lane payload: the cockpit's verdict light reads which
+					// way a review-verdict sends the ticket off these, not off
+					// words of its own.
+					if l.DeclaresVerdicts() {
+						arr[len(arr)-1]["verdicts"] = map[string][]string{"accept": l.VerdictAccept, "send_back": l.VerdictSendBack}
+					}
 				}
 				avail := make([]map[string]any, 0, len(available))
 				for _, l := range available {

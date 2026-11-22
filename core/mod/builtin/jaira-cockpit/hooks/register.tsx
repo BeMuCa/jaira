@@ -1572,7 +1572,7 @@ export const register: Register = (on, options) => {
       ok === undefined ? <Text key={key} dimColor>?</Text> : <Text key={key} color={ok ? 'success' : 'error'}>{ok ? '✓' : '✗'}</Text>
     const marks = (w: Waiting, hunt: Hunt | undefined) => [
       `${t.markDod} `, tick('dod', w.dodComplete),
-      `${SEP}${t.markHunt} `, hunt === 'skipped' ? <Text key="hunt" dimColor>–</Text> : tick('hunt', hunt === 'ok' ? true : hunt === 'fail' ? false : undefined),
+      `${SEP}${t.markHunt} `, hunt === 'skipped' || hunt === 'none' ? <Text key="hunt" dimColor>–</Text> : tick('hunt', hunt === 'ok' ? true : hunt === 'fail' ? false : undefined),
       ...(w.verdict !== ''
         ? [
           SEP, <Text key="blockers" {...(w.blockers.length > 0 ? { color: 'error' as const, bold: true } : { dimColor: true })}>{w.findingsKnown ? t.markBlockers(w.blockers.length) : t.markBlockersUnknown}</Text>,
