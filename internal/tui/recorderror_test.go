@@ -20,9 +20,6 @@ func TestTheBoardSaysWhenAMilestoneCouldNotBeQueued(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git is not on PATH")
 	}
-	if os.Geteuid() == 0 {
-		t.Skip("root writes into a read-only directory")
-	}
 	root := t.TempDir()
 	t.Setenv("JAIRA_HOME", filepath.Join(root, "home"))
 	bare := filepath.Join(root, "board.git")
@@ -50,14 +47,14 @@ func TestTheBoardSaysWhenAMilestoneCouldNotBeQueued(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(milestone.Dir(clone), "backend.md"), ms.Bytes(), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	box := filepath.Join(s.StateDir(), "outbox")
-	if err := os.MkdirAll(box, 0o555); err != nil {
+	// A folder where the outbox files this milestone's entry (an old file
+	// carries no ID, so its key is the legacy one): the write
+	// cannot replace it on any system. A read-only directory would not do:
+	// Windows ignores the read-only bit on directories, and root writes into
+	// one anyway.
+	if err := os.MkdirAll(filepath.Join(s.StateDir(), "outbox", "milestone-ids", milestone.LegacyID("backend")+".json", "x"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(box, 0o555); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chmod(box, 0o755) })
 
 	m, err := New(s)
 	if err != nil {
