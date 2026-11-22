@@ -1,1 +1,4 @@
-- A milestone you created before your board had a remote now reaches your teammates: the next `jaira fetch` (or the board's own fetch) sends it to its ref and says so ("now sent to the remote"); `jaira fetch --json` lists these under `milestones_published`.
+- A milestone you created before your board had a remote now reaches your teammates: the next `jaira fetch` (or the board's own fetch) queues it for its ref and says so ("now queued for the remote"); `jaira fetch --json` lists these under `milestones_published`.
+- Commit the `/.jaira/milestones/` line that `jaira share`, and `jaira init` or `jaira update` on a shared board, now add to `.gitignore`: milestone files travel on their refs and stay out of git (`--json`: `milestones_ignored`).
+- ! If your repository has milestone files committed, `jaira update` and `jaira validate` now warn (`milestones_tracked`); take them out with `git rm -r --cached .jaira/milestones` and commit that.
+- A milestone command run in a worktree whose milestone file is older than its ref now starts from the ref, so an old copy no longer drops the tickets added since; a file you edited by hand is still what gets written.

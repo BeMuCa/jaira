@@ -130,7 +130,7 @@ func (m *Model) announceMilestones(f refsync.MilestonesFetched, merged []string)
 		parts = append(parts, fmt.Sprintf("moved %d milestone file(s) to ID names", len(f.Moved)))
 	}
 	if len(f.Published) > 0 {
-		parts = append(parts, "milestones sent to the remote for the first time: "+strings.Join(f.Published, ", "))
+		parts = append(parts, "milestones queued for the remote for the first time: "+strings.Join(f.Published, ", "))
 	}
 	if len(f.Conflicts) > 0 {
 		parts = append(parts, fmt.Sprintf("%d milestone edit(s) of an older build clashed with yours, yours kept", len(f.Conflicts)))

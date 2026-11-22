@@ -183,7 +183,7 @@ func printPublishedMilestones(w io.Writer, names []string) {
 	if len(names) == 0 {
 		return
 	}
-	fmt.Fprintf(w, "\nMilestones that were on this disk only, now sent to the remote: %s\n", strings.Join(names, ", "))
+	fmt.Fprintf(w, "\nMilestones that were on this disk only, now queued for the remote: %s\n", strings.Join(names, ", "))
 }
 
 // printMilestones says which milestone files this fetch put on disk. Named

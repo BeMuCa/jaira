@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -12,6 +13,7 @@ import (
 	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/gitrepo"
 	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -271,6 +273,15 @@ installed.`,
 			if err != nil {
 				return fail(ExitError, "prepare_failed", "could not move the board's ignore entry: %v", err)
 			}
+			// A shared board's milestone files stay out of git; a private
+			// board's are excluded with the rest of .jaira/.
+			var msIgnored bool
+			if isShared(s) {
+				if msIgnored, err = board.AddMilestonesIgnore(s.Root, setup.dry); err != nil {
+					return fail(ExitError, "prepare_failed", "could not write .gitignore: %v", err)
+				}
+			}
+			msTracked := milestonesTracked(s.Root)
 			// Stamp last: if the note had failed, the board would not actually
 			// be prepared by this version, and must not claim to be.
 			if !setup.dry {
@@ -286,7 +297,8 @@ installed.`,
 					"agent_notes":  notesWritten,
 					"ignore_moved": ignore.moved, "ignore_added": ignore.added, "ignore_unknown": ignore.unknown,
 					"ignore_stale_dropped": ignore.stale,
-					"notes":                entriesJSON(notes),
+					"milestones_ignored":   msIgnored, "milestones_tracked": msTracked,
+					"notes": entriesJSON(notes),
 				}))
 			}
 
@@ -301,6 +313,7 @@ installed.`,
 					printRoleRuns(w, setup.roleRuns, s.Root, true)
 				}
 				fmt.Fprint(w, ignore.line(s.Root, true))
+				fmt.Fprint(w, milestonesLine(msIgnored, msTracked, true))
 				fmt.Fprint(w, hintLines(s.Root, setup.roles, setup.lanes))
 				fmt.Fprintln(w, "nothing was written (--dry-run)")
 				return nil
@@ -313,6 +326,7 @@ installed.`,
 				printRoleRuns(w, setup.roleRuns, s.Root, false)
 			}
 			fmt.Fprint(w, ignore.line(s.Root, false))
+			fmt.Fprint(w, milestonesLine(msIgnored, msTracked, false))
 			fmt.Fprint(w, hintLines(s.Root, setup.roles, setup.lanes))
 			if len(notes) == 0 {
 				fmt.Fprintf(w, "\nNothing has changed since the version that last set this board up.\n")
@@ -453,6 +467,44 @@ func entriesJSON(entries []release.Entry) []map[string]any {
 	out := make([]map[string]any, 0, len(entries))
 	for _, e := range entries {
 		out = append(out, map[string]any{"version": e.Version, "changes": e.Changes})
+	}
+	return out
+}
+
+// milestonesPath is where a board keeps its milestone files, relative to its root.
+var milestonesPath = filepath.ToSlash(filepath.Join(ticket.DirName, milestone.Subdir))
+
+// trackedMilestonesMessage is what update, init and validate say about
+// milestone files somebody committed.
+var trackedMilestonesMessage = "milestone files are committed under " + milestonesPath + "/: they travel on their refs, and a committed copy only adds commits and merge conflicts; " +
+	"take them out of git with: git rm -r --cached " + milestonesPath + " && git commit -m \"stop committing jaira milestones\""
+
+// milestonesTracked reports whether git tracks a file under the board's
+// milestone directory.
+func milestonesTracked(root string) bool {
+	return (&gitrepo.Repo{Dir: root}).Tracks(milestonesPath)
+}
+
+// warnTrackedMilestones writes the warning about committed milestone files
+// to w when there are any.
+func warnTrackedMilestones(w io.Writer, root string) {
+	if milestonesTracked(root) {
+		fmt.Fprintf(w, "jaira: warning: %s\n", trackedMilestonesMessage)
+	}
+}
+
+// milestonesLine is what update says about the milestone files: the
+// .gitignore line it added, and the warning about committed ones.
+func milestonesLine(added, tracked, dry bool) string {
+	out := ""
+	switch {
+	case added && dry:
+		out += fmt.Sprintf("Would add %s to .gitignore: milestone files travel on their refs and stay out of git.\n", board.MilestonesIgnoreLine)
+	case added:
+		out += fmt.Sprintf("Added %s to .gitignore: milestone files travel on their refs and stay out of git.\n", board.MilestonesIgnoreLine)
+	}
+	if tracked {
+		out += "warning: " + trackedMilestonesMessage + "\n"
 	}
 	return out
 }

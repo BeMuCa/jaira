@@ -130,15 +130,35 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 	return ms, saveAll(root, rec, append([]*Milestone{ms}, succ...))
 }
 
-// lockAndMigrate takes the milestone lock and, under it, moves any file
+// catchUpper is a Recorder that can bring the files on this disk up to the
+// refs this tree already has, without the network; refsync's Syncer is one.
+type catchUpper interface {
+	CatchUpMilestones(root string) error
+}
+
+// lockAndMigrate takes the milestone lock and, under it, first brings every
+// milestone file up to its ref (CatchUpMilestones), then moves any file
 // written before IDs existed to its ID name (Migrate), so a write never meets
 // the old format and no caller can forget to. A ref that could not be queued
 // for a moved file is not a reason to stop: the move happened, and only that
 // milestone's own next write queues it.
+//
+// The catch-up comes first because the file is what the write starts from.
+// A file another worktree or a teammate has moved past on the ref — a copy
+// left in an old worktree, say — would otherwise be written back over the
+// ref with a lease that matches, and every ticket added since would be gone
+// without a word (KWQCYZ). A catch-up that fails stops the write for the same
+// reason.
 func lockAndMigrate(root string, lock Locker, rec Recorder) (func(), error) {
 	unlock, err := lock.Lock(LockName)
 	if err != nil {
 		return nil, err
+	}
+	if c, ok := rec.(catchUpper); ok {
+		if err := c.CatchUpMilestones(root); err != nil {
+			unlock()
+			return nil, err
+		}
 	}
 	if _, err := Migrate(root, rec); err != nil {
 		var re *RecordError

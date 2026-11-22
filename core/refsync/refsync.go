@@ -437,6 +437,51 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 	return wrote, filed, renamed, conflicts, nil
 }
 
+// CatchUpMilestones brings every milestone file on this disk that is behind
+// its ref up to the ref, without a fetch. Every milestone write runs it under
+// the milestone lock before it reads the file (milestone.Edit, Rename,
+// Create), so a file older than its ref is never the state a write starts
+// from. The refs are shared by every worktree of the clone and the files are
+// not, which is how one worktree's copy falls behind without that worktree
+// ever fetching (KWQCYZ).
+//
+// Behind means the file holds a state the ref has carried before and has
+// moved on from — the same test a ticket's file gets (hadBefore). A file that
+// differs from its ref in any other way was edited by hand and is what the
+// write is about to send, so it stays; so does one with a write still queued
+// here. Only files named after their ID are looked at: an old-format file is
+// Migrate's, and a ref without a file on this disk is the fetch's to write.
+func (y *Syncer) CatchUpMilestones(root string) error {
+	if y == nil || y.Usable() != nil {
+		return nil
+	}
+	for _, d := range milestoneFiles(root) {
+		if !d.IDNamed || y.pendingMilestone(d.ID) {
+			continue
+		}
+		file, content, _, err := y.Repo.ReadMilestone(d.ID)
+		if err != nil {
+			continue // no ref for it yet
+		}
+		path := filepath.Join(milestone.Dir(root), d.File)
+		have, err := os.ReadFile(path)
+		if err != nil || bytes.Equal(have, content) || !y.Repo.MilestoneHad(d.ID, have) {
+			continue
+		}
+		dst := filepath.Join(milestone.Dir(root), file)
+		if err := ticket.WriteAtomic(dst, content); err != nil {
+			return err
+		}
+		// Renamed on the ref since: the old name is the same milestone.
+		if dst != path {
+			if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // pendingMilestone reports whether a write of this milestone is queued, under
 // its ref key, its ID or its old name.
 func (y *Syncer) pendingMilestone(keys ...string) bool {
