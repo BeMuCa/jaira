@@ -40,7 +40,8 @@ file in this checkout, so no branch carries an archive file for it. Everybody
 sees it after their next fetch, and it leaves every board. A ticket with a
 file here is archived here, as before.
 
-'jaira restore' brings a rejected ticket back and takes the rejection off it.`,
+'jaira restore' brings a rejected ticket back and takes the rejection off it;
+for one rejected on its ref, 'jaira pull' does, and says so.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			why = strings.Join(strings.Fields(why), " ")
@@ -130,8 +131,9 @@ file here is archived here, as before.
 // filed away — rejected or archived — is named as such, not as unknown.
 func loadForReject(s *ticket.Store, arg string) (*ticket.Ticket, error) {
 	t, err := s.Load(arg)
+	var fetchErr error
 	if errors.Is(err, ticket.ErrNotFound) && refs.Usable() == nil {
-		if ferr := refs.Repo.Fetch(); ferr == nil {
+		if fetchErr = refs.Repo.Fetch(); fetchErr == nil {
 			t, err = s.Load(arg)
 		}
 	}
@@ -148,6 +150,12 @@ func loadForReject(s *ticket.Store, arg string) (*ticket.Ticket, error) {
 		return nil, &codedError{code: ExitValidation, reason: "filed_away",
 			message: fmt.Sprintf("%s is already filed away (%s); 'jaira restore' brings it back first",
 				ticket.Handle(filed.ID), filepath.Base(filed.Path))}
+	}
+	if fetchErr != nil {
+		// Not here, and the remote that might know it could not be asked:
+		// "no such ticket" would be a guess.
+		return nil, &codedError{code: ExitError, reason: "no_remote",
+			message: fmt.Sprintf("%v here, and the remote could not be asked: %v\n  nothing was written; try again when the remote is reachable", err, fetchErr)}
 	}
 	return nil, &codedError{code: ExitNotFound, reason: "not_found",
 		message: fmt.Sprintf("%v — not on the board, not on a ref, not filed away", err)}
@@ -168,6 +176,9 @@ func rejectOnRef(cmd *cobra.Command, t *ticket.Ticket, kind, why, duplicateOf st
 	switch {
 	case errors.Is(err, refsync.ErrAlreadyRejected):
 		return alreadyRejected(got)
+	case errors.Is(err, refsync.ErrTaken):
+		return &codedError{code: ExitValidation, reason: "taken",
+			message: fmt.Sprintf("%s is being worked: %v — nothing was written\n  they hand it back with 'jaira release %s', or it is rejected where its file is", h, err, h)}
 	case errors.Is(err, gitref.ErrRaceLost):
 		return &codedError{code: ExitValidation, reason: "race",
 			message: fmt.Sprintf("%s changed on the remote while it was being rejected; nothing was written — run the same command again", h)}

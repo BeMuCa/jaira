@@ -803,16 +803,28 @@ func unreject(path string) error {
 		// refusing to restore it at all.
 		return nil
 	}
+	changed, err := Unreject(d)
+	if err != nil || !changed {
+		return err
+	}
+	return WriteAtomic(path, d.Bytes())
+}
+
+// Unreject takes the rejection off a ticket document — every rejected-* field,
+// and the related link a duplicate rejection added — and reports whether there
+// was one. Restore uses it on a file, and a pull of a ticket rejected on its
+// ref uses it on the ref's bytes, so the two take off exactly the same thing.
+func Unreject(d *Doc) (bool, error) {
 	changed := false
 	orig, _, _ := d.Scalar(FieldRejectedDuplicateOf)
 	if linked, _, _ := d.Scalar(FieldRejectedLinked); orig != "" && linked == "true" {
 		related, err := d.List(FieldRelated)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if i := slices.Index(related, orig); i >= 0 {
 			if err := d.SetList(FieldRelated, slices.Delete(related, i, i+1)); err != nil {
-				return err
+				return false, err
 			}
 			changed = true
 		}
@@ -820,15 +832,12 @@ func unreject(path string) error {
 	for _, key := range RejectedFields {
 		if d.Has(key) {
 			if err := d.Remove(key); err != nil {
-				return err
+				return false, err
 			}
 			changed = true
 		}
 	}
-	if !changed {
-		return nil
-	}
-	return WriteAtomic(path, d.Bytes())
+	return changed, nil
 }
 
 // SessionsDir is where this working tree's session state lives, outside the repo.

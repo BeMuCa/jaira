@@ -1318,6 +1318,11 @@ type Pulled struct {
 	// --steal. A silent steal would leave the other person's board saying the
 	// ticket is theirs, with nothing anywhere saying why it stopped being.
 	TakenFrom string `json:"taken-from,omitempty"`
+
+	// Unrejected is the rejection the ref carried, taken off by this pull: a
+	// ticket rejected on its ref has no archive file for 'jaira restore', and
+	// pulling it is saying it is wanted after all — out loud, never silently.
+	Unrejected *ticket.Rejection `json:"unrejected,omitempty"`
 }
 
 // ErrUnsent means the file here holds a write that has not reached the remote,
@@ -1434,6 +1439,17 @@ func (y *Syncer) Pull(id string, steal bool) (*Pulled, error) {
 			return nil, err
 		}
 	}
+	var unrejected *ticket.Rejection
+	if was, derr := ticket.Decode(d, ""); derr == nil && was.Rejected.Kind != "" {
+		r := was.Rejected
+		unrejected = &r
+		if _, err := ticket.Unreject(d); err != nil {
+			return nil, err
+		}
+		if err := ticket.AppendNote(d, fmt.Sprintf("%s pulled this ticket back; the rejection by %s (%s: %s) is taken off", y.Actor, r.By, r.Kind, r.Why), time.Now(), y.Actor); err != nil {
+			return nil, err
+		}
+	}
 	if err := d.SetScalar(ticket.FieldAssignee, y.Actor); err != nil {
 		return nil, err
 	}
@@ -1467,7 +1483,7 @@ func (y *Syncer) Pull(id string, steal bool) (*Pulled, error) {
 	if err := ticket.WriteAtomic(path, taken); err != nil {
 		return nil, err
 	}
-	return &Pulled{ID: id, Title: title, Path: path, TakenFrom: stolenFrom}, nil
+	return &Pulled{ID: id, Title: title, Path: path, TakenFrom: stolenFrom, Unrejected: unrejected}, nil
 }
 
 // Released reports what a release did.
@@ -1593,6 +1609,13 @@ func (y *Syncer) Reject(id, kind, why, duplicateOf string, now time.Time) (*tick
 	}
 	if t.Rejected.Kind != "" {
 		return t, fmt.Errorf("%s: %w (%s by %s)", ticket.Handle(id), ErrAlreadyRejected, t.Rejected.Kind, t.Rejected.By)
+	}
+	// Somebody pulled it and works it in their checkout: a rejection on the
+	// ref would leave their file behind it, a live card carrying a no. Refused
+	// as Pull and Release refuse it; they hand it back, or the person rejects
+	// it where the file is.
+	if h := strings.TrimSpace(t.Assignee); h != "" && !y.isMe(h) {
+		return t, fmt.Errorf("%w: %s has it", ErrTaken, h)
 	}
 	if err := ticket.StampRejection(t, kind, why, y.Actor, duplicateOf, now); err != nil {
 		return nil, err

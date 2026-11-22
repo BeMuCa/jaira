@@ -241,6 +241,27 @@ func TestRejectOnTheRefRefusals(t *testing.T) {
 			code: ExitError, reason: "no_remote", says: "nothing was written",
 		},
 		{
+			name: "remote unreachable, ticket not known here",
+			setup: func(t *testing.T, clone, h, id string) string {
+				gitRun(t, clone, "remote", "set-url", "origin", filepath.Join(t.TempDir(), "gone.git"))
+				return "QQQQQQ"
+			},
+			code: ExitError, reason: "no_remote", says: "could not be asked",
+		},
+		{
+			name: "pulled and worked by somebody else",
+			setup: func(t *testing.T, clone, h, id string) string {
+				other := secondClone(t, clone)
+				t.Setenv("JAIRA_USER", "grace")
+				if out, err := runCLI(t, other, "pull", h); err != nil {
+					t.Fatalf("grace pulls: %v\n%s", err, out)
+				}
+				t.Setenv("JAIRA_USER", "ada")
+				return h
+			},
+			code: ExitValidation, reason: "taken", says: "jaira release",
+		},
+		{
 			name: "ref moved while rejecting",
 			setup: func(t *testing.T, clone, h, id string) string {
 				installRaceHook(t, clone, id)
@@ -272,11 +293,46 @@ func TestRejectOnTheRefRefusals(t *testing.T) {
 			if after := filesUnder(t, clone); strings.Join(after, ",") != strings.Join(before, ",") {
 				t.Errorf("a refused reject changed the checkout: %v -> %v", before, after)
 			}
-			if c.name == "ref moved while rejecting" {
+			if c.name == "ref moved while rejecting" || c.name == "pulled and worked by somebody else" {
 				if r := remoteTicket(t, clone, id).Rejected; r.Kind != "" {
 					t.Errorf("the lost race still wrote the rejection: %+v", r)
 				}
 			}
 		})
+	}
+}
+
+// A ticket rejected on its ref has no archive file for 'jaira restore'.
+// Pulling it is the way back, and it takes the rejection off — saying so in
+// the output and in a note — rather than bringing back a live card that still
+// carries a no.
+func TestPullingATicketRejectedOnItsRefTakesTheRejectionOff(t *testing.T) {
+	t.Setenv("JAIRA_USER", "ada")
+	clone := cloneWithRemotes(t, "origin")
+	h := ticketIn(t, clone, "wanted after all")
+	id := onlyRefID(t, clone)
+	if out, err := runCLI(t, clone, "reject", h, "--why", "too early", "--duplicate-of", h+"x", "--force"); err == nil {
+		t.Fatalf("a bad --duplicate-of was accepted:\n%s", out)
+	}
+	if out, err := runCLI(t, clone, "reject", h, "--why", "too early", "--force"); err != nil {
+		t.Fatalf("reject: %v\n%s", err, out)
+	}
+	out, err := runCLI(t, clone, "pull", h)
+	if err != nil {
+		t.Fatalf("pull: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "rejection is taken off") || !strings.Contains(out, "too early") {
+		t.Errorf("pull did not say it took the rejection off:\n%s", out)
+	}
+	if r := remoteTicket(t, clone, id); r.Rejected.Kind != "" || !strings.Contains(r.Body, "too early") {
+		t.Errorf("the ref still carries the rejection, or no note says it went: %+v", r.Rejected)
+	}
+	s, err := ticket.At(clone)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tk, err := s.Load(h)
+	if err != nil || tk.ReadOnly || tk.Rejected.Kind != "" {
+		t.Errorf("the pulled file: %v readOnly=%v rejected=%+v", err, tk != nil && tk.ReadOnly, tk)
 	}
 }

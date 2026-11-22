@@ -51,6 +51,12 @@ no ref to read, so there is nothing to take over.`,
 				return fail(ExitError, "no_remote",
 					"this board does not carry tickets on refs: %v", err)
 			}
+			// A handle is resolved against the local refs, and a ticket created
+			// in another clone since the last fetch is not among them yet —
+			// the id would go on as the bare handle and find no ref.
+			if _, lerr := s.Load(args[0]); errors.Is(lerr, ticket.ErrNotFound) {
+				_ = refs.Repo.Fetch()
+			}
 			id := resolveID(s, args[0])
 			got, pullErr := refs.Pull(id, steal)
 			err = pullErr
@@ -91,6 +97,10 @@ no ref to read, so there is nothing to take over.`,
 				fmt.Fprintf(cmd.OutOrStdout(), "%s taken over from %s — a note on the ticket says so\n",
 					ticket.Handle(got.ID), got.TakenFrom)
 				fmt.Fprintf(cmd.OutOrStdout(), "  tell them: their board still shows it as theirs until they run 'jaira fetch'\n")
+			}
+			if r := got.Unrejected; r != nil {
+				fmt.Fprintf(cmd.OutOrStdout(), "%s was rejected by %s (%s: %s) — the rejection is taken off, a note on the ticket says so\n",
+					ticket.Handle(got.ID), r.By, r.Kind, r.Why)
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s is yours: %s\n", ticket.Handle(got.ID), got.Title)
 			fmt.Fprintf(cmd.OutOrStdout(), "  %s\n", got.Path)
