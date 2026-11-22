@@ -78,7 +78,7 @@ func (e *ExistsError) Error() string { return fmt.Sprintf("milestone %q already 
 // the ref, and the other would lie there unseen.
 type TwinFilesError struct {
 	ID    string
-	Files []string // the base names, sorted
+	Files []string // the base names, sorted (os.ReadDir's order)
 }
 
 func (e *TwinFilesError) Error() string {
@@ -117,7 +117,6 @@ func checkTwinFiles(root string) error {
 	}
 	for _, id := range order {
 		if files := byID[id]; len(files) > 1 {
-			slices.Sort(files)
 			return &TwinFilesError{ID: id, Files: files}
 		}
 	}
