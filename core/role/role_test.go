@@ -908,6 +908,84 @@ esac
 	}
 }
 
+// Herdr App's agent list shows a terminal by its hc name alone: without one
+// every tab reads 'Claude Code' (MHCEN8). herdr-hc.sh names it <role>-<id>
+// from the label, in what hc accepts (1-32 of a-z 0-9 - _); a name a live
+// terminal holds gets -2, -3 ... and at the end no name, never no tab.
+func TestHerdrHcNamesTheTabAfterItsLabel(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	path := jairaPath(t)
+	dir := t.TempDir()
+	if _, err := install(dir, false, true, false); err != nil {
+		t.Fatal(err)
+	}
+	script := filepath.Join(dir, "jaira-dispatcher", "scripts", "herdr-hc.sh")
+	long := strings.Repeat("x", 40)
+	for _, c := range []struct {
+		name, label, taken string
+		want               []string // the --name of every hc run, in order; "" for none
+		fail               bool
+	}{
+		{"worker", "8TT890/worker", "", []string{"worker-8tt890"}, false},
+		{"pr", "WATJDQ/pr", "", []string{"pr-watjdq"}, false},
+		{"review", "AB12CD/review", "", []string{"review-ab12cd"}, false},
+		// tr works on bytes: the two of ü are two dashes.
+		{"odd characters", "AB12CD/Crit ique.ü", "", []string{"crit-ique----ab12cd"}, false},
+		{"no slash", "Explain", "", []string{"explain"}, false},
+		{"too long", "AB12CD/" + long, "", []string{long[:32]}, false},
+		{"no label", "", "", []string{""}, false},
+		{"taken once", "AB12CD/worker", "worker-ab12cd", []string{"worker-ab12cd", "worker-ab12cd-2"}, false},
+		{"taken twice", "AB12CD/worker", "worker-ab12cd worker-ab12cd-2", []string{"worker-ab12cd", "worker-ab12cd-2", "worker-ab12cd-3"}, false},
+		{"long and taken", "AB12CD/" + long, long[:32], []string{long[:32], long[:30] + "-2"}, false},
+		{"all taken", "AB12CD/worker", "*", []string{"worker-ab12cd", "worker-ab12cd-2", "worker-ab12cd-3", "worker-ab12cd-4",
+			"worker-ab12cd-5", "worker-ab12cd-6", "worker-ab12cd-7", "worker-ab12cd-8", "worker-ab12cd-9", ""}, false},
+		{"other refusal", "AB12CD/worker", "!", []string{"worker-ab12cd"}, true},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			bin := t.TempDir()
+			calls := filepath.Join(t.TempDir(), "calls")
+			// taken: names a live terminal holds; * every name; ! a refusal
+			// that is not about the name. Like hc, refusals go to stderr.
+			hc := `#!/usr/bin/env bash
+taken='` + c.taken + `'
+if [ "$1" = run ]; then
+  n=""; while [ $# -gt 0 ]; do [ "$1" = --name ] && n="$2"; shift; done
+  printf '%s\n' "$n" >> "` + calls + `"
+  if [ "$taken" = '!' ]; then echo '{"error":{"kind":"bad_cwd"}}' >&2; exit 1; fi
+  if [ -n "$n" ] && { [ "$taken" = '*' ] || [[ " $taken " == *" $n "* ]]; }; then
+    echo '{"error":{"kind":"name_taken"}}' >&2; exit 1
+  fi
+  echo '{"address":"t9","state":"live"}'
+fi
+`
+			if err := os.WriteFile(filepath.Join(bin, "hc"), []byte(hc), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			args := []string{script, "tab", "create", "--cwd", t.TempDir()}
+			if c.label != "" {
+				args = append(args, "--label", c.label)
+			}
+			cmd := exec.Command(bash, args...)
+			cmd.Env = append(os.Environ(), "HC_TERMINAL_ID=", "HC_BIN=", "PATH="+bin+string(os.PathListSeparator)+path)
+			out, err := cmd.Output()
+			if c.fail != (err != nil) {
+				t.Fatalf("herdr-hc.sh tab create: err %v, want failure %v\n%s", err, c.fail, out)
+			}
+			if !c.fail && !strings.Contains(string(out), `"pane_id":"t9"`) {
+				t.Errorf("no tab came back: %s", out)
+			}
+			b, _ := os.ReadFile(calls)
+			got := strings.Split(strings.TrimSuffix(string(b), "\n"), "\n")
+			if !slices.Equal(got, c.want) {
+				t.Errorf("hc run --name: got %q, want %q", got, c.want)
+			}
+		})
+	}
+}
+
 // A herdr.exe is the Herdr of WSL and of native Windows alike, so spawn.sh
 // tells the two apart by the machine it runs on (issue #79): in WSL the tab
 // crosses back with wsl.exe --cd; in Git Bash it starts claude where it is,
