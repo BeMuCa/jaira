@@ -46,7 +46,7 @@ func TestApplyMoveAllowsOwnerToMoveOwnTicket(t *testing.T) {
 		}
 	}
 
-	m.applyMove()
+	m.applyMove("")
 
 	if m.isErr {
 		t.Fatalf("owner's own move was refused: %s", m.message)
@@ -94,7 +94,7 @@ func TestApplyMoveRefusesNonOwner(t *testing.T) {
 		}
 	}
 
-	m.applyMove()
+	m.applyMove("")
 
 	if !m.isErr {
 		t.Fatal("expected the move to be refused for a non-owner")

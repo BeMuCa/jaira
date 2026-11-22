@@ -24,13 +24,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-18T11:08:36Z
-updated-at: 2026-11-22T18:54:57Z
+updated-at: 2026-11-22T18:56:15Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-910660
 claimed-at: 2026-11-22T18:49:11Z
 outcome-what: "Die Doska schickt ein Ticket aus signoff/human mit m in eine fruehere Lane zurueck und fragt dabei, was offen ist; die Antwort landet als Notiz im selben Schreibvorgang (move.Request.Note). Fusszeile nennt 'm send back'. Die human-Lane-Prosa sagt nicht mehr 'never out'."
 outcome-why: "Der Gate erlaubt den Rueckweg schon seit Q484YS, aber ohne Begruendung ging der Grund verloren (fe5a979), und der signoff-Schirm nannte den Weg nicht."
 outcome-resolves: "Mensch muss nicht mehr --force oder Folgeticket nehmen, um Nacharbeit auf demselben Ticket anzustossen."
+review-summary: "internal/tui/model.go: sendBackWhy ist ein Modellfeld, das nur zwischen Prompt und applyMove lebt (setzen, aufrufen, leeren) - applyMove(why string) als Parameter nehmen und das Feld streichen"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Aus einer Menschen-Lane kann ein Mensch nur vorwaerts oder zur Seite, nicht zurueck
@@ -64,3 +69,4 @@ outcome-resolves: "Mensch muss nicht mehr --force oder Folgeticket nehmen, um Na
 - **2026-11-22 18:50 · Alexander Sacharov** — decision: DoD 1-3 sind seit Q484YS (8cea1b42e, 37208bf84) in master: gate.go:423 lehnt nur 'to > from' ab, ohne Interactive. Hier bleibt fuer sie nur ein Test-Check, kein Code.
 - **2026-11-22 18:50 · Alexander Sacharov** — decision: DoD 4 nur in der Doska. Der move-Dialog 'm' fragt nach einer Begruendung, wenn ein Mensch ein Ticket aus einer requires-human-exit-Lane in eine fruehere Lane schickt; leer laesst den Prompt offen (wie reject). Die Notiz lautet 'sent back to <lane>: <text>'. Die CLI bekommt keine Pflicht: Agenten schreiben heute note+move, und eine neue Pflicht wuerde bestehende Aufrufe aendern. Keine eigene Taste: 'b' ist in der Detailansicht schon belegt (blocked-Kette), und 'm' kann es bereits.
 - **2026-11-22 18:50 · Alexander Sacharov** — decision: DoD 5 Release-Zeile in core/release/notes/BQGM6X.md statt core/release/NOTES.md - NOTES.md ist seit AR97K9 geschlossene Geschichte.
+- **2026-11-22 18:55 · Alexander Sacharov** — critique: applyMove bekommt den Grund als Parameter statt ueber das Uebergangsfeld m.sendBackWhy; sonst nichts - sendsBackFromPerson dupliziert move.isPersons nur teilweise (ohne !Agentic) und bleibt, weil isPersons unexportiert ist und ein agentischer Lauf hier nie gefragt werden soll.

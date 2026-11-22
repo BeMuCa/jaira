@@ -226,7 +226,7 @@ func TestGateRefusalIsSurfacedInTheUI(t *testing.T) {
 			m.moveTarget = i
 		}
 	}
-	m.applyMove()
+	m.applyMove("")
 
 	if m.mode != modeMessage || !m.isErr {
 		t.Fatalf("expected a refusal message, got mode=%v isErr=%v", m.mode, m.isErr)

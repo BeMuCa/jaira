@@ -179,10 +179,6 @@ type Model struct {
 	// typed: on the board the cursor may move under a reload, and the
 	// reason must land on the ticket it was typed for.
 	rejecting *ticket.Ticket
-	// sendBackWhy is the reason a person typed for sending work back out of
-	// a person's lane; applyMove writes it as a note in the same write as
-	// the move. Set only between that prompt and the move it belongs to.
-	sendBackWhy string
 
 	// copied marks that the id was just put on the clipboard. OSC52 gives no
 	// feedback of its own, so the pane has to say the copy happened — it is
@@ -1381,10 +1377,9 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		switch s {
 		case "enter":
 			if why := strings.TrimSpace(m.input); why != "" {
-				m.input, m.sendBackWhy = "", why
+				m.input = ""
 				m.mode = m.returnTo
-				m.applyMove()
-				m.sendBackWhy = ""
+				m.applyMove(why)
 			}
 		case "esc":
 			m.input = ""
@@ -1401,7 +1396,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case modeMove:
 		switch s {
 		case "enter":
-			m.applyMove()
+			m.applyMove("")
 		case "esc", "q":
 			m.mode = m.returnTo
 		case "j", "down", "l", "right":
@@ -2058,7 +2053,9 @@ func (m *Model) gateEnv() gate.Env {
 }
 
 // applyMove runs the same gate checks and the same core mutation the CLI uses.
-func (m *Model) applyMove() {
+// why is what a person typed for a send-back out of their own lane; empty
+// until the prompt has asked for it.
+func (m *Model) applyMove(why string) {
 	t := m.selected()
 	if t == nil || m.moveTarget >= len(m.lanes.Lanes) {
 		m.mode = m.returnTo
@@ -2078,12 +2075,12 @@ func (m *Model) applyMove() {
 	// An empty reason keeps the prompt open, as reject's does.
 	note := ""
 	if m.sendsBackFromPerson(full.Status, target.ID) {
-		if m.sendBackWhy == "" {
+		if why == "" {
 			m.input = ""
 			m.mode = modeSendBack
 			return
 		}
-		note = fmt.Sprintf("sent back to %s from %s: %s", target.ID, full.Status, m.sendBackWhy)
+		note = fmt.Sprintf("sent back to %s from %s: %s", target.ID, full.Status, why)
 	}
 	// Moving an unassigned ticket claims it — the same rule the CLI's move
 	// applies. Set before the gate check so the promotion gate's assignee
