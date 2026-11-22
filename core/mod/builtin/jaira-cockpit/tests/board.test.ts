@@ -2098,10 +2098,10 @@ describe('give back', () => {
     await startSession($)
     await giveBack($, w)
     expect(spawned(w)).toEqual([])
-    expect(lastNote(w)).toContain("feat/0gmyqb and fix-login all hold MG677R's newest commit and none is its own")
-    expect(w.submitted[0]).toContain('worker none: feat/0gmyqb and fix-login all hold')
+    expect(lastNote(w)).toContain("feat/0gmyqb and fix-login could each be MG677R's branch and none is its worktree's")
+    expect(w.submitted[0]).toContain('worker none: feat/0gmyqb and fix-login could each be')
     // The band says why, not only the note.
-    expect(w.toasts.at(-1)).toContain("MG677R: feat/0gmyqb and fix-login all hold MG677R's newest commit")
+    expect(w.toasts.at(-1)).toContain("MG677R: feat/0gmyqb and fix-login could each be MG677R's branch")
   })
 
   test('a branch whose worktree was removed is checked out again', async ($, on) => {

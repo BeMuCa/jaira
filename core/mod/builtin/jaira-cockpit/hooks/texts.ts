@@ -53,7 +53,9 @@ export const t = {
   toSessionAccepted: (id: string, from: string, to: string, next: string) =>
     `jaira-cockpit: ${id}: accepted, ${from} -> ${to} (Person, Cockpit)${next ? `; ${inLine(next, 200)}` : ''}`,
   acceptedNote: (from: string, to: string) => `accepted by the person, ${from} -> ${to}`,
-  branchAmbiguous: (id: string, branches: string[]) => `${branches.join(' and ')} all hold ${id}'s newest commit and none is its own: no branch picked for it - start its worker or pull request on the right one by hand`,
+  // Two named after the ticket, or several holding its newest commit: both
+  // are 'could each be its branch', and the line says only that.
+  branchAmbiguous: (id: string, branches: string[]) => `${branches.join(' and ')} could each be ${id}'s branch and none is its worktree's: no branch picked for it - start its worker or pull request on the right one by hand`,
   acceptNoteLost: (id: string, why: string) => `${id} accepted; the note saying so was not written: ${oneLine(why).slice(0, 120)}`,
   toSessionGivenBack: (id: string, from: string, who: 'old' | 'new' | 'none', reason: string, worker: string) =>
     `jaira-cockpit: ${id} given back: ${inLine(reason, 120)}, worker ${who === 'none' ? worker || "none (the ticket's note says why)" : `${who === 'old' ? 'that carried it' : 'new'} ${worker}`} (Person, Cockpit; ${from} -> in-progress)`,

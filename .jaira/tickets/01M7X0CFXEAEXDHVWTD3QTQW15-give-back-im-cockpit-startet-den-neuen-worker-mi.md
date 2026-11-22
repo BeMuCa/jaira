@@ -24,25 +24,21 @@ related:
   - 01M5MNWDKYJGC78B3EKMX2TGXG
 commits: []
 created-at: 2026-11-20T17:34:35Z
-updated-at: 2026-11-22T20:45:39Z
+updated-at: 2026-11-22T20:48:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2387063
 claimed-at: 2026-11-22T20:23:39Z
 outcome-what: "Give back im Cockpit: neuer Worker berichtet an die parent session des Tickets (sonst an die Cockpit-Session, sonst eigener Tab), startet auf dem Branch mit dem neuesten Commit der ID (vorhandener Worktree oder spawn.sh --branch), ein arbeitender Worker bekommt die Entscheidung statt ersetzt zu werden; Accept/Give back/Decide schicken '<ID>: ... (Person, Cockpit)' in die Session, Accept auch als Note. spawn.sh: --branch, vorhandener <prefix>/<slug> wird wieder ausgecheckt, Setup-Fehler loescht nur selbst angelegte Branches, Prompt mit parent nennt SendMessage statt AskUserQuestion."
 outcome-why: "Ein Teamlead eines anderen Projekts sah am 20.11. Worker, die per AskUserQuestion fragten, in leeren feat/<id>-Worktrees starteten und dreifach liefen."
 outcome-resolves: QTQW15 DoD 1-6
-review-summary: "Give back im Cockpit startet den neuen Worker jetzt mit Eltern-Session (neueste 'parent session:'-Note, sonst die Cockpit-Session, sonst --no-parent; ein von spawn.sh mit Exit 2 abgelehnter Parent wird uebersprungen) und der Startzeile '--parent X - every question goes to X by SendMessage, never by AskUserQuestion'. Der Branch kommt aus carrierFor (board.ts): eigener Worktree, sonst <prefix>/<slug>, sonst genau ein Branch, der den neuesten eigenen Commit (Scope exakt (<ID>)) haelt; mehrere -> kein Worker, das Band nennt sie. Accept nutzt dieselbe Suche, nimmt bei Mehrdeutigkeit wie frueher den ersten. Ein arbeitender Worker wird nie ersetzt: die Entscheidung wird getippt oder, ohne Pane-Record, nur benannt; ein zweiter Druck bleibt an movedBefore haengen. Accept/Give back/Decide schicken eine Zeile '<ID>: ... (Person, Cockpit)' in die Session und schreiben eine Note ans Ticket. spawn.sh: --branch <b> fuer bestehende Branches, ein vorhandener <prefix>/<slug> wird wieder ausgecheckt, ein Setup-Fehler loescht nur selbst angelegte Branches, und ein flock auf .git/jaira/spawning/<ID>-<LANE> plus mkdir des Worktree-Ordners stoppt einen zweiten gleichzeitigen Spawn vor dem Tab."
-round: 10
-back-from: signoff
-back-by: person
+review-summary: "none"
+round: 11
+back-from: testing
+back-by: lane
 back-count: 1
-review-gaps: |-
-  note: carrierBranch nimmt bei zwei <prefix>/<slug>-Branches (feat/qtqw15 und fix/qtqw15) still den ersten - genau das Raten, das DoD 9 fuer Holder verbietet; fix: auch dort ambiguous zurueckgeben
-  note: holdersOf (board.ts:45ff) wiederholt den Filter von carrierBranch (board.ts:675); carrierBranch koennte holdersOf(...)[0] sein
-  note: commitNaming faellt ohne eigenen (<ID>)-Commit auf Listen-Scopes wie fix(0GMYQB,QTQW15) zurueck; DoD 8 sagt "zaehlen nur", der Kommentar begruendet die Ausnahme - gewinnt aber nie gegen einen eigenen Commit
-  note: bekannte Grenze (DoD 6): ein Teamlead in einer anderen Session sieht die Entscheidung nur als Ticket-Note
-test-verdict: "pass: round 8 delta - mod 392/392, go test core/role green; DoD 9 by carrierFor table (9 + 3 ambiguous) and the Give back test that starts no worker and names both branches in note, line and band; DoD 1-8 proofs re-pointed"
-hunt-verdict: "pass: bughunt done at 34237f1c9 - 0 change, 0 pre-existing"
+review-gaps: "round 9: removed carrierBranch (no caller left once holdersOf filters every listing); nothing else"
+test-verdict: "pass: round 9 delta - mod 393/393, go test core/role green; DoD 8 (no list fallback) and DoD 9 (two <prefix>/<slug> -> ambiguous) by their tests; DoD 1-7 proofs unchanged"
+hunt-verdict: "fail: bughunt done at f79b49087 - 1 change, not a blocker: the band's text said 'all hold the newest commit' also for two <prefix>/<slug> branches; reworded in the same round"
 review-verdict: "accept: alle 9 DoD-Punkte im Diff erfuellt und getestet (Cockpit 392/392 via claude plugin test, go test ./core/role gruen inkl. zwei gleichzeitige Spawns); nur Notes, kein Blocker"
 review-round: 9
 review-verdict-gaps: |-
@@ -148,3 +144,7 @@ question: ""
 - **2026-11-22 20:20 · Alexander Sacharov** — bughunt: done at 34237f1c9 - 0 findings, follow-up hunt since 0c6e069ab (diff only, no new files: carrierFor order own worktree > <prefix>/<slug> > one holder, ambiguous in Give back and first-listed in Accept, never-branch from origin default, place.stop toast, slugFor removed against spawn.sh's place check, tests, release note, shipped hashes - claude plugin test 392 pass, go test core/shipped core/role ok); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/sessions.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/QTQW15.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256
 - **2026-11-22 20:41 · Alexander Sacharov** — given back by Alex (22.11.), alle Review-Notizen in dieser Runde schliessen: (1) carrierBranch bei zwei <prefix>/<slug>-Branches (feat/x und fix/x) -> ambiguous, kein Raten, Band nennt beide (Test); (2) carrierBranch = holdersOf(...)[0], Filter nur einmal; (3) Listen-Scopes fix(A,B) zählen nicht als eigene Commits - nur (<ID>), Kommentar/DoD 8 passend; (4) DoD 6-Grenze (Teamlead in anderer Session) im Release-Note-Text nennen.
 - **2026-11-22 20:45 · Alexander Sacharov** — in-progress (Runde 9, alle 4 Review-Notes nach Alex): (1) zwei <prefix>/<slug>-Branches -> ambiguous, Test; (2) holdersOf ist der eine Filter, carrierBranch hatte keinen Aufrufer mehr und ist geloescht; (3) commitNaming ohne Listen-Rueckfall - nur (<ID>) zaehlt, wie DoD 8 sagt; Accepts frueherer Test 'Ticket nur in gemeinsamen Commits' erwartet jetzt keinen Branch und keinen PR; (4) Release-Note nennt die Grenze 'Teamlead in anderer Session nur ueber Notes'. 393/393, core/role gruen.
+- **2026-11-22 20:45 · Alexander Sacharov** — critique (Runde 9): nur die vier Antworten auf die Review-Notes gelesen. Nichts Neues.
+- **2026-11-22 20:47 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/texts.ts:56 (reached from hooks/board.ts:586 via register.tsx:1419) - class: the ambiguity band has one text for two different causes, and the new cause (several <prefix>/<slug> branches) is described with the other's reason; example: branches feat/qtqw15 and fix/qtqw15 with no worktree -> carrierFor returns {ambiguous:[feat/qtqw15, fix/qtqw15]} and Give back's band reads 'feat/qtqw15 and fix/qtqw15 all hold QTQW15's newest commit and none is its own', though both are named after the ticket and neither need hold any commit; the person is told the wrong reason for the stop (no wrong worker starts); edge, not a blocker; read
+- **2026-11-22 20:47 · Alexander Sacharov** — bughunt: done at f79b49087 - 1 finding (1 change, 0 pre-existing), follow-up hunt since 34237f1c9 (diff only, no new files: carrierFor refuses two <prefix>/<slug> branches, commitNaming counts only (<ID>) scopes, carrierBranch removed - no caller left outside testdata, release note, shipped hash); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/sessions.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/QTQW15.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-22 20:48 · Alexander Sacharov** — in-progress (Runde 9b): branchAmbiguous sagt jetzt 'could each be <ID>'s branch and none is its worktree's' - wahr fuer beide Gruende (zwei slug-Branches, mehrere Holder); Fund des Hunts auf f79b49087. 393/393.
