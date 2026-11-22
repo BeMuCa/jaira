@@ -54,8 +54,10 @@ func TestMaxRoundsRefusesOnlyALanesOwnRunPastTheLimit(t *testing.T) {
 	}
 }
 
-// The refusal names the lane a person answers in, so the agent knows where to
-// take the ticket instead of guessing or reaching for --force.
+// The refusal names both ways the decision goes: to the teamlead through the
+// question field, the ticket staying in its lane, and — with no teamlead — to
+// the lane a person answers in. Either way the agent knows where to take it
+// instead of guessing or reaching for --force.
 func TestMaxRoundsRefusalNamesThePersonsLane(t *testing.T) {
 	tk := ticketWith("")
 	tk.Status = "critique"
@@ -65,7 +67,7 @@ func TestMaxRoundsRefusalNamesThePersonsLane(t *testing.T) {
 	if v == nil {
 		t.Fatal("not refused")
 	}
-	for _, want := range []string{`"human"`, "--question", "3 times"} {
+	for _, want := range []string{`"human"`, "--question", "3 times", "the teamlead decides", "parent session", "leave it here", "question=", "back-count=0", "--force does not"} {
 		if !strings.Contains(v.Message, want) {
 			t.Errorf("message lacks %s: %s", want, v.Message)
 		}

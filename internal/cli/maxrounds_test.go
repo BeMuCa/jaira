@@ -91,3 +91,31 @@ func TestForLaneWithoutMaxRoundsCarriesNoRounds(t *testing.T) {
 		t.Errorf("in-progress hands on max_rounds %v", got["max_rounds"])
 	}
 }
+
+// The teamlead's decision after three rounds, where the third return already
+// sits in in-progress: 'jaira set <id> back-count=0' beside its decision note
+// gives the lane its rounds again, so the next send-back goes through instead
+// of being refused once more.
+func TestMaxRoundsBackCountResetIsTheTeamleadsDecision(t *testing.T) {
+	dir, h := newLoopTicket(t, false)
+	for i := 0; i < 3; i++ {
+		if out, err := runCLI(t, dir, "move", h, "--to", "testing", "--force"); err != nil {
+			t.Fatalf("to testing: %v\n%s", err, out)
+		}
+		if out, err := runCLI(t, dir, "move", h, "--to", "in-progress"); err != nil {
+			t.Fatalf("send-back %d refused: %v\n%s", i+1, err, out)
+		}
+	}
+	if out, err := runCLI(t, dir, "set", h, "back-count=0"); err != nil {
+		t.Fatalf("set back-count=0: %v\n%s", err, out)
+	}
+	if out, err := runCLI(t, dir, "move", h, "--to", "testing", "--force"); err != nil {
+		t.Fatalf("to testing: %v\n%s", err, out)
+	}
+	if got := roundsLeft(t, dir, h); got != float64(3) {
+		t.Errorf("rounds_left %v after the reset, want 3", got)
+	}
+	if out, err := runCLI(t, dir, "move", h, "--to", "in-progress"); err != nil {
+		t.Fatalf("the send-back after the teamlead's reset was refused: %v\n%s", err, out)
+	}
+}
