@@ -137,3 +137,59 @@ func TestMoveDialogCannotAcceptOutOfSignoff(t *testing.T) {
 		t.Errorf("the refusal does not say why: %q", m.message)
 	}
 }
+
+// The prompt belongs to the ticket it was opened on. A ticket that left the
+// lane while the reason was typed is not moved on that reason — the board
+// reloads every two seconds, and the cursor is no witness to which ticket
+// the person meant.
+func TestSendBackDoesNotMoveATicketThatMovedMeanwhile(t *testing.T) {
+	m, tk := signoffModel(t)
+	pickLane(t, m, "in-progress")
+	typeInto(m, "DoD 2 fehlt")
+
+	// Another session moves it on while the person types.
+	full, err := m.store.Load(tk.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.store.Mutate(full.ID, func(x *ticket.Ticket) error {
+		return x.Doc().SetScalar(ticket.FieldStatus, "review")
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.reload(); err != nil {
+		t.Fatal(err)
+	}
+	m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+
+	got, err := m.store.Load(tk.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Status != "review" {
+		t.Errorf("a ticket that moved meanwhile was sent back anyway, to %q", got.Status)
+	}
+	if !strings.Contains(m.message, "DoD 2 fehlt") {
+		t.Errorf("the typed reason was dropped silently: %q", m.message)
+	}
+}
+
+// A message raised while the reason is typed returns to the prompt, the
+// reason still in it, not to the board.
+func TestMessageOverTheSendBackPromptReturnsToIt(t *testing.T) {
+	m, _ := signoffModel(t)
+	pickLane(t, m, "in-progress")
+	typeInto(m, "halb")
+	m.notify("fetch failed", true)
+	m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	if m.mode != modeSendBack {
+		t.Fatalf("dismissing the message left mode %v, want the prompt", m.mode)
+	}
+	if m.input != "halb" {
+		t.Errorf("the typed reason is %q after the message, want it kept", m.input)
+	}
+	m.Update(tea.KeyPressMsg{Code: tea.KeyEsc})
+	if m.mode != modeDetail {
+		t.Errorf("esc from the prompt left mode %v, want the ticket open", m.mode)
+	}
+}

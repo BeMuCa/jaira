@@ -177,7 +177,7 @@ func (m *Model) render() string {
 			return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), m.rejectPrompt()+" · esc cancel")
 		}
 	case modeSendBack:
-		if m.returnTo == modeDetail && m.detail != nil {
+		if m.sendingBack != nil && m.sendingBack.back == modeDetail && m.detail != nil {
 			return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), m.sendBackPrompt()+" · esc cancel")
 		}
 	case modeDropBoard:

@@ -56,7 +56,7 @@ func TestApplyMoveClaimsTheUnassignedTicket(t *testing.T) {
 			m.moveTarget = i
 		}
 	}
-	m.applyMove("")
+	m.applyMove()
 
 	got, err := s.Load(tk.ID)
 	if err != nil {
