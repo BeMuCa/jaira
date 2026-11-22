@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -174,14 +175,29 @@ func unfileMilestone(s *ticket.Store, src, dst string) (string, error) {
 		return "", nil
 	}
 	name, id, _ := milestone.FileIdentity(strings.TrimSuffix(filepath.Base(dst), ".md"))
+	// The catch-up inside migrateHeld may bring the restored file up to its
+	// ref or remove it as the old name of a renamed milestone before a twin
+	// refuses, so the refusal puts back what the restore took, not whatever
+	// lies at dst by then.
+	restored, err := os.ReadFile(dst)
+	if err != nil {
+		return "", err
+	}
 	moved, err := migrateHeld(s)
 	reportMigrated(moved)
 	var twin *milestone.TwinFilesError
 	if errors.As(err, &twin) {
 		// The restored file goes back to the logbook whether or not it is
-		// one of the two.
-		if back := os.Rename(dst, src); back != nil {
+		// one of the two. The board keeps what the catch-up made of it, as
+		// it does for every other milestone write that refuses here; only
+		// an untouched copy goes.
+		if back := ticket.WriteAtomic(src, restored); back != nil {
 			return "", errors.Join(err, back)
+		}
+		if now, rerr := os.ReadFile(dst); rerr == nil && bytes.Equal(now, restored) {
+			if back := os.Remove(dst); back != nil {
+				return "", errors.Join(err, back)
+			}
 		}
 		return "", fmt.Errorf("%w; %s stays in %s", err, filepath.Base(src), filepath.Dir(src))
 	}

@@ -1255,3 +1255,48 @@ func TestRestoreClearsAStaleCopyBesideARenamedMilestone(t *testing.T) {
 		t.Errorf("q4 is not back on the board: %v", err)
 	}
 }
+
+// A refused restore puts back the bytes it took from the logbook, although
+// the catch-up removed the restored file as the old name of a renamed
+// milestone before the twin refused.
+func TestARefusedRestoreKeepsTheLogbookCopyTheCatchUpRemoved(t *testing.T) {
+	ada, _ := twoBoards(t)
+	if out, err := runAndSend(t, ada, "milestone", "create", "a1"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, _ := milestone.Load(ada, "a1")
+	stale, err := os.ReadFile(ms.Path(ada))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runAndSend(t, ada, "milestone", "rename", "a1", "z9"); err != nil {
+		t.Fatalf("rename: %v\n%s", err, out)
+	}
+	z9, _ := milestone.Load(ada, "z9")
+	cur, err := os.ReadFile(z9.Path(ada))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(milestone.Dir(ada), "hand-"+ms.ID+".md"), append(cur, "\n<!-- by hand -->\n"...), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	logDir := filepath.Join(ada, ".jaira", "logbook", "me-2026-01-01", "milestones")
+	if err := os.MkdirAll(logDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	logged := filepath.Join(logDir, ms.FileName())
+	if err := os.WriteFile(logged, stale, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = runCLI(t, ada, "restore", ms.FileName())
+	if code, reason := classify(err); code != ExitValidation || reason != "milestone_twin_files" {
+		t.Fatalf("restore beside a twin: exit %d (%s), want 3: %v", code, reason, err)
+	}
+	if b, err := os.ReadFile(logged); err != nil || string(b) != string(stale) {
+		t.Errorf("the logbook copy is not what the restore took: %v\n%s", err, b)
+	}
+	if _, err := os.Stat(ms.Path(ada)); !os.IsNotExist(err) {
+		t.Errorf("%s is on the board: %v", ms.FileName(), err)
+	}
+}
