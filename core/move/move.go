@@ -8,8 +8,10 @@
 package move
 
 import (
+	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/lane"
@@ -39,6 +41,10 @@ type Request struct {
 	// or a parking lane is judged on what the move brings along.
 	Question string
 	Reason   string
+	// Note is appended to the ticket's progress notes in the same write as
+	// the move, so a person's send-back and the reason for it land together
+	// or not at all. Empty writes none.
+	Note string
 	// Stage is applied and PERSISTED before the gate runs — the CLI stages
 	// outcome, question and commits this way, and a refused move keeps them:
 	// requiring two commands to satisfy one move would be a poor contract for
@@ -72,6 +78,11 @@ type Result struct {
 	Filed     bool
 	Holds     int
 	SettleErr error
+	// DoDUnticked is the size of a definition of done not one item of which
+	// is ticked, when the move left the implementing lane forward; 0 when
+	// there is nothing to warn about. The move lands regardless — the caller
+	// says it out loud. See untickedDoD.
+	DoDUnticked int
 }
 
 // Moved, when set, is called after every move that wrote: the CLI's, the
@@ -146,13 +157,18 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 		if err := t.Doc().SetScalar(ticket.FieldStatus, req.To); err != nil {
 			return err
 		}
+		if note := strings.TrimSpace(req.Note); note != "" {
+			if err := ticket.AppendNote(t.Doc(), note, time.Now(), req.Actor); err != nil {
+				return err
+			}
+		}
 		return ticket.SetReady(t.Doc(), gate.Ready(t))
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	res := &Result{Ticket: t, Claimed: claiming}
+	res := &Result{Ticket: t, Claimed: claiming, DoDUnticked: untickedDoD(env.Lanes, t, from, req.To)}
 	if req.Force && len(vs) > 0 {
 		res.Overrode = vs
 	}
@@ -164,6 +180,35 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 		Moved(s, t, from, env.Lanes)
 	}
 	return res, nil
+}
+
+// untickedDoD returns the number of definition-of-done items when a move out
+// of the implementing lane goes on with none of them ticked, and 0 otherwise.
+//
+// The terminal lane's gate reads the definition of done, not the plan, and an
+// agent once carried a ticket through eight lanes ticking only the plan: the
+// nine refusals arrived at once, at signoff, when finding out cost the most.
+// The gate stays as strict as it is; this only moves the news to the step
+// where the work was supposed to tick them.
+//
+// The implementing lane is the one whose output names outcome-what. Only a
+// move forward counts — a send-back or a parked ticket has not left the work
+// behind it. Ticked means settled: a superseded item satisfies the gate too.
+func untickedDoD(lanes *lane.Set, t *ticket.Ticket, from, to string) int {
+	l, ok := lanes.Get(from)
+	if !ok || !slices.Contains(l.OutputProduces, ticket.FieldOutcomeWhat) || len(t.DoDItems) == 0 {
+		return 0
+	}
+	dst, ok := lanes.Get(to)
+	if !ok || dst.RequiresBlockedReason || lanes.Index(to) <= lanes.Index(from) {
+		return 0
+	}
+	for _, it := range t.DoDItems {
+		if it.Settled() {
+			return 0
+		}
+	}
+	return len(t.DoDItems)
 }
 
 // recordBack writes who sent the ticket back: the lane it leaves, whether a
