@@ -104,6 +104,26 @@ describe('session.receive', () => {
       want: SHORT('55CS2M · review → in-progress · sent back, wants review -> signoff later · gates red'),
     },
     {
+      name: 'a needs-you line above the status line is kept',
+      text: `needs you: accept at https://claude.ai/artifact/x1\n${LINE}`,
+      want: SHORT('55CS2M · in-progress → signoff · approve with reservations · feat/55cs2m · commits a1b2c3d..e4f5a6b (3) · gates ok · notes 1 · needs you: accept at https://claude.ai/artifact/x1'),
+    },
+    {
+      name: 'a needs-you line on the line the frame opens on is kept',
+      text: `Another Claude session sent a message:\n<agent-message from="w">needs you: accept at https://claude.ai/artifact/x1\njaira: 55CS2M testing -> human · notes: 2 · verdict: sent back</agent-message>`,
+      want: SHORT('55CS2M · testing → human · sent back · notes 2 · needs you: accept at https://claude.ai/artifact/x1'),
+    },
+    {
+      name: 'an ask that starts with "no" or "nothing" is still an ask',
+      text: `needs you: nothing to decide, accept at https://claude.ai/artifact/x1\n${LINE}`,
+      want: SHORT('55CS2M · in-progress → signoff · approve with reservations · feat/55cs2m · commits a1b2c3d..e4f5a6b (3) · gates ok · notes 1 · needs you: nothing to decide, accept at https://claude.ai/artifact/x1'),
+    },
+    {
+      name: 'an empty needs-you line does not swallow the status line below it',
+      text: `needs you:\n${LINE}`,
+      want: SHORT('55CS2M · in-progress → signoff · approve with reservations · feat/55cs2m · commits a1b2c3d..e4f5a6b (3) · gates ok · notes 1'),
+    },
+    {
       name: 'a closing frame tag on the same line is not part of the verdict',
       text: `<result>\nDone.\njaira: 55CS2M review -> signoff · verdict: approve</result>\n</task-notification>`,
       want: SHORT('55CS2M · review → signoff · approve'),
