@@ -30,6 +30,7 @@ import (
 	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/move"
+	"github.com/BeMuCa/jaira/core/pr"
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/session"
@@ -196,6 +197,14 @@ type Model struct {
 	// card on screen asks the gate whether it is blocked, and rebuilding
 	// this for each of them would list the logbook once per card.
 	index *link.Index
+
+	// prCheck answers blocked-by pr#<n> from the pull request cache, read
+	// once per reload like index. prCacheFile is where the cache of the
+	// repository prCacheRoot lives: a board switch changes m.store, and the
+	// path follows the store rather than the model.
+	prCheck     *pr.Checker
+	prCacheFile string
+	prCacheRoot string
 
 	// layer is the open milestone layer, nil when it is closed; see layer.go.
 	layer *layerView
@@ -472,6 +481,7 @@ func (m *Model) reload() error {
 	// The relation index is built from the tickets this reload is about to
 	// read, so it goes with them rather than outliving them.
 	m.index = nil
+	m.prCheck = nil
 	// A reload is exactly the moment the git state behind a derived commit
 	// list may have changed — a teammate's commit naming the handle arrives,
 	// the board refreshes, and a stale memo would keep the sign-off screen
@@ -1680,7 +1690,18 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			// always "and what is that one waiting on" — so the link is walkable.
 			// Repeated presses follow the chain; esc returns to the board.
 			if m.detail != nil && len(m.detail.BlockedBy) > 0 {
-				if full, err := m.store.Load(m.detail.BlockedBy[0]); err != nil {
+				// The first ticket it waits on; a pull request is no ticket
+				// to open, so one that waits only on pull requests says so.
+				dep := ""
+				for _, d := range m.detail.BlockedBy {
+					if _, isPR, _ := ticket.ParsePRRef(d); !isPR {
+						dep = d
+						break
+					}
+				}
+				if dep == "" {
+					m.notify("waits for "+strings.Join(m.detail.BlockedBy, ", ")+" — a pull request, not a ticket", false)
+				} else if full, err := m.store.Load(dep); err != nil {
 					m.notify(err.Error(), true)
 				} else {
 					m.detail = full
@@ -2058,6 +2079,9 @@ func (m *Model) gateEnv() gate.Env {
 		// and was filed away clears the dependency in the CLI and went on
 		// blocking here.
 		Satisfied: m.linkIndex().Satisfied,
+		// The board reads what list and next last learned about a pull
+		// request and never asks the forge itself: it has to stay instant.
+		PR: m.prWait,
 		DeriveCommits: func(t *ticket.Ticket) []string {
 			shas, err := repo.CommitsForTicket(t.Path, t.ID)
 			if err != nil {
@@ -2070,6 +2094,25 @@ func (m *Model) gateEnv() gate.Env {
 			return gate.HuntReport(repo.HuntCheck(t))
 		},
 	}
+}
+
+// prWait answers a blocked-by pr#<n> from the shared cache list and next
+// fill, never from the forge. The checker lives until the next reload, so
+// a render reads the cache file at most once, and a long-running board sees
+// what a later command wrote.
+func (m *Model) prWait(n int) gate.PRWait {
+	if m.prCacheRoot != m.store.Root {
+		m.prCacheRoot, m.prCacheFile, m.prCheck = m.store.Root, "", nil
+	}
+	if m.prCheck == nil {
+		if m.prCacheFile == "" {
+			// RepoStateDir asks git: once per repository, not per reload.
+			m.prCacheFile = filepath.Join(m.store.RepoStateDir(), pr.CacheFile)
+		}
+		m.prCheck = &pr.Checker{File: m.prCacheFile, Offline: true}
+	}
+	a := m.prCheck.Ask(n)
+	return gate.PRWait{Merged: a.Merged(), Why: a.Why()}
 }
 
 // applyMove moves the selected ticket to the lane the picker points at.

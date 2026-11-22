@@ -112,20 +112,9 @@ type Query struct {
 
 // Read asks the forge of the repository in q.Dir for its open pull requests.
 func Read(run Run, look func(string) (string, error), q Query) (*Status, error) {
-	forge, origin, err := forgeOf(run, q.Dir)
+	forge, origin, call, err := connect(run, look, q.Dir)
 	if err != nil {
 		return nil, err
-	}
-	tool := map[string]string{"github": "gh", "gitlab": "glab"}[forge]
-	if _, err := look(tool); err != nil {
-		return nil, fmt.Errorf("%w: %s is not installed", ErrNoTool, tool)
-	}
-	call := func(args ...string) ([]byte, error) {
-		out, err := run(q.Dir, tool, args...)
-		if err != nil {
-			return nil, classify(tool, err)
-		}
-		return out, nil
 	}
 	read := readGitLab
 	if forge == "github" {
@@ -138,6 +127,27 @@ func Read(run Run, look func(string) (string, error), q Query) (*Status, error) 
 		}
 	}
 	return st, err
+}
+
+// connect settles the forge of the repository in dir and returns a call to
+// its tool, gh or glab, whose failures come back classified.
+func connect(run Run, look func(string) (string, error), dir string) (forge, origin string, call func(...string) ([]byte, error), err error) {
+	forge, origin, err = forgeOf(run, dir)
+	if err != nil {
+		return "", "", nil, err
+	}
+	tool := map[string]string{"github": "gh", "gitlab": "glab"}[forge]
+	if _, err := look(tool); err != nil {
+		return "", "", nil, fmt.Errorf("%w: %s is not installed", ErrNoTool, tool)
+	}
+	call = func(args ...string) ([]byte, error) {
+		out, err := run(dir, tool, args...)
+		if err != nil {
+			return nil, classify(tool, err)
+		}
+		return out, nil
+	}
+	return forge, origin, call, nil
 }
 
 // forgeOf decides the forge as the cockpit's forgeOf does: git config

@@ -372,6 +372,10 @@ func loadBoardEnv(s *ticket.Store, board string) (gate.Env, []*ticket.Ticket, er
 			}
 			return shas
 		},
+		// Asks the forge only for a ticket whose blocked-by names a pull
+		// request, once per number and process, and not at all while the
+		// shared cache holds a fresh answer.
+		PR: prWaiter(s),
 		// Asks git only for a move into a lane a person releases.
 		Hunt: func(t *ticket.Ticket) gate.HuntReport {
 			return gate.HuntReport(repo.HuntCheck(t))

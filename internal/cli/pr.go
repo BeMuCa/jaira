@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/pr"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -235,5 +237,21 @@ func watchPR(w io.Writer, q pr.Query, st *pr.Status, every time.Duration) error 
 		if pr.Over(cur) {
 			return nil
 		}
+	}
+}
+
+// prWaiter answers blocked-by pr#<n> for the gates: merged clears it, every
+// other answer — open, closed without merge, no gh or glab, not signed in,
+// no forge — keeps the ticket waiting and says why. Nothing is set up until
+// a ticket names a pull request: RepoStateDir asks git, and a board without
+// one must not pay for that on every command.
+func prWaiter(s *ticket.Store) func(int) gate.PRWait {
+	var c *pr.Checker
+	return func(n int) gate.PRWait {
+		if c == nil {
+			c = &pr.Checker{Dir: s.Root, File: filepath.Join(s.RepoStateDir(), pr.CacheFile), Run: prRun, Look: prLook}
+		}
+		a := c.Ask(n)
+		return gate.PRWait{Merged: a.Merged(), Why: a.Why()}
 	}
 }

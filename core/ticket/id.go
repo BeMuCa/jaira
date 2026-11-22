@@ -96,8 +96,11 @@ func NormalizeIDPrefix(p string) string { return strings.ToUpper(strings.TrimSpa
 // leading ten characters encode only the millisecond timestamp: tickets created
 // in the same burst share them entirely. The trailing characters are the random
 // component, so a tail is distinctive where a head is not.
+//
+// A pull request in blocked-by (pr#12) is its own short reference and comes
+// back whole: its tail would be a bare number.
 func Handle(id string) string {
-	if len(id) <= handleLen {
+	if _, isPR, _ := ParsePRRef(id); isPR || len(id) <= handleLen {
 		return id
 	}
 	return id[len(id)-handleLen:]
