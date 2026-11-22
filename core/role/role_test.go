@@ -1212,7 +1212,7 @@ func TestSpawnTakesUpTheBranchTheWorkRidesOn(t *testing.T) {
 			}
 			// The second either lost the claim (exit 1, no tab) or came after
 			// the first had made it and reused it, as a respawn does.
-			if failed == 1 && !strings.Contains(all, "another spawn.sh (pid ") && !strings.Contains(all, "is being made by another spawn.sh") {
+			if failed == 1 && !strings.Contains(all, "another spawn.sh is starting AB12CD/review") && !strings.Contains(all, "is being made by another spawn.sh") {
 				t.Errorf("the losing spawn does not say why:\n%s", all)
 			}
 			if got := strings.Count(string(tabs), "tab"); got != 2-failed {
@@ -1258,7 +1258,7 @@ func TestSpawnTakesUpTheBranchTheWorkRidesOn(t *testing.T) {
 		}
 		out, err := run(root, bin)
 		var exit *exec.ExitError
-		if !errors.As(err, &exit) || exit.ExitCode() != 1 || !strings.Contains(out, "another spawn.sh (pid ") {
+		if !errors.As(err, &exit) || exit.ExitCode() != 1 || !strings.Contains(out, "another spawn.sh is starting AB12CD/review right now") {
 			t.Errorf("the second spawn went on beside the first: %v\n%s", err, out)
 		}
 		if err := os.WriteFile(gate, nil, 0o644); err != nil {
@@ -1270,15 +1270,16 @@ func TestSpawnTakesUpTheBranchTheWorkRidesOn(t *testing.T) {
 		if tabs, _ := os.ReadFile(filepath.Join(bin, "tabs")); strings.Count(string(tabs), "tab") != 1 {
 			t.Errorf("%d tabs, want the first spawn's alone", strings.Count(string(tabs), "tab"))
 		}
-		if _, err := os.Stat(claim); err == nil {
-			t.Error("the first spawn.sh left its claim behind")
-		}
-		// A claim whose spawn.sh died is taken over: no pid answers kill -0.
-		if err := os.WriteFile(claim, []byte("999999999\n"), 0o644); err != nil {
-			t.Fatal(err)
-		}
-		if out, err := run(root, bin); err != nil {
-			t.Errorf("a respawn after the first, past a dead claim: %v\n%s", err, out)
+		// The claim is a lock, not the file: the kernel let go of it when the
+		// first exited, so a respawn goes through, whatever the file holds —
+		// a pid reused after a restart, or nothing at all.
+		for _, left := range []string{"1\n", ""} {
+			if err := os.WriteFile(claim, []byte(left), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if out, err := run(root, bin); err != nil {
+				t.Errorf("a respawn after the first, past a claim file holding %q: %v\n%s", left, err, out)
+			}
 		}
 	})
 

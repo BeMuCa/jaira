@@ -191,30 +191,36 @@ fi
 # first still runs — a teamlead and the cockpit at once, a press repeated —
 # would find the first one's worktree folder standing, take it for a finished
 # worktree, and open a second tab beside the first (QTQW15, seen with CRASZS).
-# The claim is a file made with noclobber, which only one of two can create,
-# holding the pid of the spawn.sh that made it; it goes when that one exits,
-# and one whose spawn.sh died (kill -0 fails) is taken over. A file still
-# empty was made a moment ago and counts as held. Once the first is done its
-# claim is gone: a later spawn for the same ticket is a respawn, as before.
-# Kept in the git common directory beside the pane records, machine-local;
-# a directory outside any repository has nowhere to keep it and takes none.
-claim=""
+# The claim is flock -n on a file per ticket and lane, held through fd 8 for
+# as long as this spawn.sh runs, as the offset lock below is held through fd
+# 9: the kernel lets go of it when this shell exits or dies, so nothing is
+# ever left to clean up, and no pid has to be trusted. Every command that
+# could outlive this script gets 8>&-, or it would hold the claim on. Once
+# the first is done a later spawn for the same ticket is a respawn, as
+# before. Kept in the git common directory beside the pane records; a
+# directory outside any repository has nowhere to keep it and takes none,
+# and neither flock nor perl means no claim, said once.
 if common="$(git -C "$root" rev-parse --git-common-dir 2>/dev/null)" \
   && common="$(cd "$root" && cd "$common" && pwd)"; then
   mkdir -p "$common/jaira/spawning"
   claim="$common/jaira/spawning/$(printf '%s' "$ticket-$lane" | tr '[:lower:]' '[:upper:]' | tr -c 'A-Za-z0-9_.-' '_')"
-  refuse_claim() {
-    echo "another spawn.sh${1:+ (pid $1)} is starting $ticket/$lane right now:" \
-         "no second one. If none runs, remove $claim" >&2
+  if ! { exec 8>>"$claim"; } 2>/dev/null; then
+    echo "cannot open the claim $claim: is $common writable?" >&2
     exit 1
-  }
-  if ! ( set -C; printf '%s\n' "$$" > "$claim" ) 2>/dev/null; then
-    held="$(cat "$claim" 2>/dev/null || true)"
-    if [ -z "$held" ] || kill -0 "$held" 2>/dev/null; then refuse_claim "$held"; fi
-    rm -f "$claim"
-    ( set -C; printf '%s\n' "$$" > "$claim" ) 2>/dev/null || refuse_claim ""
   fi
-  trap 'rm -f "$claim"' EXIT
+  rc=0
+  if command -v flock >/dev/null 2>&1; then
+    flock -n 8 || rc=$?
+  elif command -v perl >/dev/null 2>&1; then
+    perl -MFcntl=:flock -e 'open(my $f, ">>&=", 8) or exit 2; flock($f, LOCK_EX | LOCK_NB) or exit 1' || rc=$?
+  else
+    echo "neither flock nor perl here: a second spawn.sh for $ticket/$lane" \
+         "started at the same moment is not stopped" >&2
+  fi
+  if [ "$rc" != 0 ]; then
+    echo "another spawn.sh is starting $ticket/$lane right now: no second one" >&2
+    exit 1
+  fi
 fi
 
 # --branch names the branch the ticket's work rides on. A worktree standing at
@@ -348,9 +354,9 @@ if [ ! -d "$wt" ]; then
   # offset lock held through an inherited fd 9.
   rc=0
   if [ -n "$made_branch" ]; then
-    git -C "$root" worktree add "$wt" -b "$branch" >&2 9>&- || rc=$?
+    git -C "$root" worktree add "$wt" -b "$branch" >&2 8>&- 9>&- || rc=$?
   else
-    git -C "$root" worktree add "$wt" "$branch" >&2 9>&- || rc=$?
+    git -C "$root" worktree add "$wt" "$branch" >&2 8>&- 9>&- || rc=$?
   fi
   if [ "$rc" != 0 ]; then
     rm -rf "$wt"
@@ -369,7 +375,7 @@ if [ ! -d "$wt" ]; then
     # opens — a worktree left standing would skip the setup on the next try,
     # since only a missing directory is set up.
     rc=0
-    "$setup" "$wt" "$slug" "$off" "$root" >&2 || rc=$?
+    "$setup" "$wt" "$slug" "$off" "$root" >&2 8>&- || rc=$?
     if [ "$rc" != 0 ]; then
       git -C "$root" worktree remove --force "$wt" >&2 || true
       [ -z "$made_branch" ] || git -C "$root" branch -D "$branch" >&2 || true
@@ -437,7 +443,7 @@ if [ -n "${HERDR_WORKSPACE_ID:-}" ]; then ws=(--workspace "$HERDR_WORKSPACE_ID")
 # JSON is read with 'jaira json get', never python3: on Windows python3 is
 # missing or the Store's stub, which prints "Python" and exits 49 (issue #79),
 # and jq is not everywhere either. jaira is on every machine that has the roles.
-pane="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$cwd" --label "$ticket/$lane" --no-focus \
+pane="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$cwd" --label "$ticket/$lane" --no-focus 8>&- \
   | jaira json get result.root_pane.pane_id)"
 
 # Which tab belongs to which ticket, for reap.sh: it closes them once the
@@ -524,7 +530,7 @@ case "$on" in
   *)       start="cd '$cwd' && $claude" ;;
 esac
 
-"$herdr" pane run "$pane" "$start" >/dev/null
+"$herdr" pane run "$pane" "$start" >/dev/null 8>&-
 
 # The state hook reports idle a few seconds after startup.
 for _ in $(seq 20); do
