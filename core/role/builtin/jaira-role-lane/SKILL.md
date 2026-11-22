@@ -346,3 +346,17 @@ lane having moved.
 - When you are done, report in three lines: what changed, what the next lane is,
   what is still open. A teamlead reads your pane, so the last thing on screen
   should be that summary and not a wall of diff.
+- Then one line more, always the last line of the report, in exactly the
+  format `jaira-worker` describes under "Report" — the jaira-cockpit shortens
+  a report to this line alone and shows only the ticket id when it is missing:
+
+  ```
+  jaira: <ID> <from> -> <to> · branch: <branch> · commits: <first>..<last> (<n>) · gates: ok|red|none · notes: <n> · verdict: <text>
+  ```
+
+  `<from>` is your lane, `<to>` the lane the ticket sits in when you stop —
+  the same lane when you stopped on a question. `gates` is what you ran
+  before a push, `none` where you pushed nothing; `verdict` is the outcome
+  your lane produced (`review-verdict`, `test-verdict`, the critique's
+  summary in a few words). A value you do not have is `-`, never a missing
+  key. The critique beside the work writes no such line: it moved nothing.

@@ -29,6 +29,7 @@ const REPORT = [
   'review-verdict="approve with reservations: the cache key ignores the branch"',
   'open question: should the cache survive a rebase?',
   '... forty more lines of findings ...',
+  'jaira: MG677R review -> signoff · verdict: approve with reservations: the cache key ignores the branch',
   '</result>',
   '</task-notification>',
 ].join('\n')
@@ -45,22 +46,35 @@ describe('session.receive', () => {
     expect(shown.text).toContain('forty more lines of findings')
   })
 
-  test("a worker's three-line report through SendMessage", async ($, on) => {
-    session(on)
-    const worker = [
-      'T8QS1Y: noise filter mod under core/mod/builtin/jaira-cockpit, 6 tests green.',
-      'Ticket T8QS1Y sits in signoff.',
-      'Open: nothing; a person accepts it.',
-    ].join('\n')
-    const { text } = await $.session.receive({ origin: { kind: 'peer-send-message' }, text: worker })
-    expect(text).toBe('[shortened by jaira-cockpit] T8QS1Y · → signoff — full report: /cockpit report T8QS1Y')
-  })
+  // Without the status line nothing is read for a lane or a verdict: the free
+  // text names lanes and verdict words for every reason but the outcome, and
+  // a ticket alone beats a wrong lane or verdict beside it. An open question
+  // is still shown: it is what waits for a person, not an outcome.
+  const guessCases: Array<{ name: string; text: string; question?: string }> = [
+    { name: "a worker's three-line report", text: 'T8QS1Y: noise filter mod, 6 tests green.\nTicket T8QS1Y sits in signoff.\nOpen: nothing; a person accepts it.' },
+    { name: 'reject as part of a question', text: 'T8QS1Y: moved to human with --question "reject? reason: duplicate of K7P2QX"', question: 'reject? reason: duplicate of K7P2QX' },
+    { name: 'a negated verdict word', text: 'T8QS1Y: critique done, nothing rejected, nichts zurueckgegeben.' },
+    { name: 'a lane named as the plan, not the outcome', text: 'T8QS1Y: go. Carry it through the lanes, all the way to signoff.' },
+    { name: 'a verdict with its reservation', text: 'Ticket T8QS1Y reviewed: approve mit Vorbehalt, moved to signoff.' },
+    { name: 'an arrow between lanes', text: 'T8QS1Y: in-progress -> critique, sent back.' },
+    { name: 'a review-verdict key', text: 'Ticket T8QS1Y: review -> signoff, review-verdict="request changes"' },
+    { name: 'a verdict key that is not the status line', text: 'T8QS1Y verdict: reject\nUrteil: zurückgegeben' },
+    { name: 'a status line quoted inside a sentence', text: 'T8QS1Y: the format is "jaira: T8QS1Y review -> signoff · verdict: reject"' },
+  ]
+  for (const c of guessCases) {
+    test(`no status line, only the ticket: ${c.name}`, async ($, on) => {
+      session(on)
+      const { text } = await $.session.receive({ origin: { kind: 'peer-send-message' }, text: c.text })
+      const question = c.question === undefined ? '' : ` · question: ${c.question}`
+      expect(text).toBe(`[shortened by jaira-cockpit] T8QS1Y${question} — full report: /cockpit report T8QS1Y`)
+    })
+  }
 
-  test('a verdict keeps its reservation', async ($, on) => {
+  test('the status line keeps a verdict with its reservation', async ($, on) => {
     session(on)
-    const review = 'Ticket MG677R reviewed: approve mit Vorbehalt, moved to signoff.'
+    const review = 'Ticket MG677R reviewed: rejected nothing.\njaira: MG677R review -> signoff · verdict: approve mit Vorbehalt'
     const { text } = await $.session.receive({ origin: NOTIFICATION, text: review })
-    expect(text).toBe('[shortened by jaira-cockpit] MG677R · → signoff · approve mit vorbehalt — full report: /cockpit report MG677R')
+    expect(text).toBe('[shortened by jaira-cockpit] MG677R · review → signoff · approve mit Vorbehalt — full report: /cockpit report MG677R')
   })
 
   // The fixed status line a worker or dispatcher ends its report with: read
@@ -215,7 +229,7 @@ describe('session.receive', () => {
     expect((await $.session.receive({ origin: NOTIFICATION, text: go })).text).toBe(go)
     const none = 'MG677R: in-progress -> critique. go test ./...: 44 passed, 0 failed.'
     expect((await $.session.receive({ origin: NOTIFICATION, text: none })).text).toBe(
-      '[shortened by jaira-cockpit] MG677R · in-progress → critique — full report: /cockpit report MG677R',
+      '[shortened by jaira-cockpit] MG677R — full report: /cockpit report MG677R',
     )
   })
 
@@ -270,7 +284,7 @@ describe('prompt.submit', () => {
     // Live on 2.1.296: the subagent's message arrives at prompt.submit alone,
     // and the engine stores the row with the text it was handed, under its own
     // lead-in, whatever prompt.submit answered.
-    const message = '<agent-message from="a7c1b865445b600d6">\nTicket MG677R: review -> signoff, review-verdict="approve mit Vorbehalt"\n</agent-message>'
+    const message = '<agent-message from="a7c1b865445b600d6">\nTicket MG677R reviewed.\njaira: MG677R review -> signoff · verdict: approve mit Vorbehalt\n</agent-message>'
     const line = '[shortened by jaira-cockpit] MG677R · review → signoff · approve mit Vorbehalt — full report: /cockpit report MG677R'
     expect((await $.prompt.submit({ text: message, origin: { kind: 'peer' }, wait: false })).text).toBe(line)
     await $.session.append({
@@ -287,7 +301,7 @@ describe('prompt.submit', () => {
   test('a shortened message is rewritten on the delivery door too, and an attachment row is left alone', async ($, on) => {
     session(on)
     const rows = mock.session(on)
-    const message = '<agent-message from="a2">\nTicket MG677R: review -> signoff, review-verdict="approve"\n</agent-message>'
+    const message = '<agent-message from="a2">\njaira: MG677R review -> signoff · verdict: approve\n</agent-message>'
     const line = '[shortened by jaira-cockpit] MG677R · review → signoff · approve — full report: /cockpit report MG677R'
     await $.prompt.submit({ text: message, origin: { kind: 'peer' }, wait: false })
     // Since 2.1.318 the engine's security default passes a person's plugin

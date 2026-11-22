@@ -201,6 +201,7 @@ c9fe158f4d7ffa94a53befda8bff48b7ce6238a3beedc1f50c39f9e605b0b2ce  core/mod/built
 9753d6e9ae46e3a7842dbee8d8432089278a6a94e672fe37495723b09736ed5e  core/mod/builtin/jaira-cockpit/hooks/digest.ts
 9c6ec3afe1802259fb0653ea6b32ccde479d5a8c3facc8db7df818d878311fed  core/mod/builtin/jaira-cockpit/hooks/digest.ts
 a77808c752707aa85ae47ead56198fe447c533d908e1e65e1251896e0ec50d3b  core/mod/builtin/jaira-cockpit/hooks/digest.ts
+af1640aa108cea7a211dfe9d9d8f0274199cdb49bc726a03407b3117b4148614  core/mod/builtin/jaira-cockpit/hooks/digest.ts
 ba01663c8342dcd0fc0815cb3cb77b836f97d72e31408519367c4aadd0a88e66  core/mod/builtin/jaira-cockpit/hooks/digest.ts
 bf261d6dd9bbe2172afef34fa84896a3824b0ebb999256be6a58c44a7fe09a8f  core/mod/builtin/jaira-cockpit/hooks/digest.ts
 ca24d8292cad01dc2400e71425966e673bbca658e87ab5e0eaecd233161f8f95  core/mod/builtin/jaira-cockpit/hooks/digest.ts
@@ -728,6 +729,7 @@ cea19a2aec991b52fd7e4bcba9d50d7b13a887f6d0fd509ed2dbadeb5f4f1cd4  core/role/buil
 63a4a4ce2163472c1a37c18de7d76bf3bf1378f6935e1e63cdf8833ec60e05ee  core/role/builtin/jaira-role-lane/SKILL.md
 688dbeabaa82372bd1451116253f60b8f21fa46ffd6025368cf0fb8ded908c9b  core/role/builtin/jaira-role-lane/SKILL.md
 721daad0a23ae02653fc68375fc92e0b77949a281ee909f16648ab11111ef338  core/role/builtin/jaira-role-lane/SKILL.md
+84ae2cfc48e196e890503a89f2edbf35d772488d17a2dad0ef2c315dcfe12199  core/role/builtin/jaira-role-lane/SKILL.md
 876b08be22bbaac1e1a9eecc877c1beb4771fc1638fcd4911a401205701f78bc  core/role/builtin/jaira-role-lane/SKILL.md
 8def834a5b9901ad365ecee536fd648bd23096768868375f028c6bd6bcf2f485  core/role/builtin/jaira-role-lane/SKILL.md
 8e330783fa13731cc6e5990f52456aaf227507dd4a0866444c3a3e49ca09f62d  core/role/builtin/jaira-role-lane/SKILL.md

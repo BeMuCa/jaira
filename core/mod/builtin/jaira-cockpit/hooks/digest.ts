@@ -4,13 +4,6 @@
 
 import { filterWords as words } from './texts.ts'
 
-// The lanes jaira ships. A board may rename or add lanes; an arrow between
-// two lowercase words (`review -> signoff`) is read whatever the names are.
-const LANES = [
-  'backlog', 'brainstorm', 'todo', 'pre-process', 'in-progress', 'critique',
-  'optimize', 'testing', 'human', 'review', 'signoff', 'done', 'blocked',
-]
-
 // A handle is the last six characters of a ticket's ULID, Crockford base32
 // (no I, L, O, U). Six capital letters alone are too often an ordinary word
 // (STATUS, PASSED), so a handle without a digit counts only where jaira's
@@ -55,33 +48,6 @@ export function isFailure(text: string): boolean {
   const status = STATUS.exec(text)
   if (status && status[1]!.toLowerCase() !== 'completed') return true
   return FAILURE.test(text) || GO_FAIL.test(text)
-}
-
-const ARROW = /\b([a-z][a-z-]*)\s*(?:->|→|=>)\s*([a-z][a-z-]*)\b/
-const INTO = new RegExp(
-  `\\b(?:to|into|in|nach|in die lane|sits in|steht in|liegt in)\\s+\`?(${LANES.join('|')})\\b`,
-  'i',
-)
-
-// The lane change, "from → to", or the lane the ticket ended in alone.
-export function laneOf(text: string): string | undefined {
-  for (const line of text.split('\n')) {
-    const m = ARROW.exec(line)
-    if (m && (LANES.includes(m[1]!) || LANES.includes(m[2]!))) return `${m[1]} → ${m[2]}`
-  }
-  const m = INTO.exec(text)
-  return m ? `→ ${m[1]!.toLowerCase()}` : undefined
-}
-
-const VERDICT_LINE = /(?:review-verdict\s*=\s*|\b(?:verdict|urteil)\s*[:=]\s*)["“]?([^"\n”]+)/i
-const VERDICT_WORD =
-  /\b(approve[sd]?(?: with (?:reservations?|caveats?)| mit vorbehalt)?|request(?:s|ed)? changes|changes requested|reject(?:ed)?|sent back|zur(?:ü|ue)ckgegeben|mit vorbehalt)\b/i
-
-export function verdictOf(text: string): string | undefined {
-  const line = VERDICT_LINE.exec(text)
-  if (line) return clip(line[1]!.trim(), 60)
-  const word = VERDICT_WORD.exec(text)
-  return word ? word[1]!.toLowerCase() : undefined
 }
 
 // A question ends at a quote, the line's end, or a "·" — the separator of a
@@ -174,8 +140,10 @@ export function statusLineOf(text: string): StatusLine | undefined {
 
 // The line the chat shows instead of the report, or undefined when the
 // report must be passed on whole: no ticket recognisable, or a failure.
-// A report that ends with a status line is read from that line alone; one
-// without it is guessed at as before.
+// A report that ends with a status line is read from that line alone. One
+// without it shows the ticket and nothing else: a lane or a verdict picked
+// out of free text ("reject? reason: …", "nothing rejected", "all the way to
+// signoff") was wrong often enough that an id alone is the better line.
 export function digest(text: string): { ticket: string; line: string } | undefined {
   if (isFailure(text)) return undefined
   const status = statusLineOf(text)
@@ -191,7 +159,7 @@ export function digest(text: string): { ticket: string; line: string } | undefin
         status.gates === undefined ? undefined : `${words.gates} ${status.gates}`,
         status.notes === undefined ? undefined : `${words.notes} ${status.notes}`,
       ].map(p => (p === undefined ? undefined : clip(p, 60)))
-    : [ticket, laneOf(text), verdictOf(text)]
+    : [ticket]
   // A question inside the status line's verdict is shown twice, once there
   // and once here: a known limit, chosen over a dedupe that lost questions.
   const question = questionOf(text)
