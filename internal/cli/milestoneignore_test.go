@@ -176,13 +176,20 @@ func TestLogbookReadsAStaleFileOnlyAfterItCaughtUp(t *testing.T) {
 	}
 }
 
+// blockOutboxEntry makes the outbox unable to queue milestone id: a folder
+// lies where its entry file goes. Not a read-only folder: Windows ignores the
+// read-only bit on folders, and root ignores it everywhere.
+func blockOutboxEntry(t *testing.T, dir, id string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Join(stateDirOf(t, dir), "outbox", "milestone-ids", id+".json"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // A filing whose mark cannot be queued for the ref is no filing: every other
 // clone would keep the milestone and a fetch here would write it back. It
 // fails, and the milestone stays on the board unmarked.
 func TestLogbookFailsWhenTheMarkCannotBeQueued(t *testing.T) {
-	if os.Geteuid() == 0 {
-		t.Skip("root writes into a read-only directory")
-	}
 	ada, _ := twoBoards(t)
 	if out, err := runAndSend(t, ada, "milestone", "create", "q4"); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
@@ -191,14 +198,7 @@ func TestLogbookFailsWhenTheMarkCannotBeQueued(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	box := filepath.Join(stateDirOf(t, ada), "outbox")
-	if err := os.MkdirAll(filepath.Join(box, "milestone-ids"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chmod(filepath.Join(box, "milestone-ids"), 0o500); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chmod(filepath.Join(box, "milestone-ids"), 0o755) })
+	blockOutboxEntry(t, ada, ms.ID)
 
 	out, err := runAndSend(t, ada, "logbook", "q4")
 	if code := exitCode(err); code != ExitError {
@@ -214,9 +214,6 @@ func TestLogbookFailsWhenTheMarkCannotBeQueued(t *testing.T) {
 // back into the logbook, marked, as logbook takes its mark back off: the
 // milestone is never on no board and in no logbook.
 func TestRestoreGoesBackToTheLogbookWhenTheRefCannotBeQueued(t *testing.T) {
-	if os.Geteuid() == 0 {
-		t.Skip("root writes into a read-only directory")
-	}
 	ada, _ := twoBoards(t)
 	if out, err := runAndSend(t, ada, "milestone", "create", "q4"); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)
@@ -232,14 +229,7 @@ func TestRestoreGoesBackToTheLogbookWhenTheRefCannotBeQueued(t *testing.T) {
 	if len(logged) != 1 {
 		t.Fatalf("logbook copy: %v", logged)
 	}
-	ids := filepath.Join(stateDirOf(t, ada), "outbox", "milestone-ids")
-	if err := os.MkdirAll(ids, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chmod(ids, 0o500); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chmod(ids, 0o755) })
+	blockOutboxEntry(t, ada, ms.ID)
 
 	out, err := runAndSend(t, ada, "restore", ms.FileName())
 	if code := exitCode(err); code != ExitError {

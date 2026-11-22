@@ -333,8 +333,12 @@ func TestARenameInCaseOnlyKeepsTheFileOnBothSides(t *testing.T) {
 	if _, err := ada.syncer.Flush(); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := milestone.Load(ada.store.Root, ms.ID); err != nil {
+	mine, err := milestone.Load(ada.store.Root, ms.ID)
+	if err != nil {
 		t.Fatalf("the rename removed the milestone it renamed: %v (files: %s)", err, diskFiles(t, ada))
+	}
+	if mine.Name != "Q4" {
+		t.Fatalf("ada's milestone is called %q after the rename, want Q4 (files: %s)", mine.Name, diskFiles(t, ada))
 	}
 	fetchAt(t, grace)
 	got, err := milestone.Load(grace.store.Root, ms.ID)

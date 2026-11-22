@@ -379,8 +379,15 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 					continue
 				}
 				// The ref's file under a name that differs only in case is
-				// that same file where case is ignored: not another one.
+				// that same file where case is ignored: not another one, but
+				// the spelling on disk is still the old name's.
 				if milestone.SameFile(filepath.Join(milestone.Dir(root), other.File), path) {
+					if err := milestone.MatchCase(filepath.Join(milestone.Dir(root), other.File), path); err != nil {
+						return err
+					}
+					if other.Name != ref.Name {
+						renamed[other.Name] = ref.Name
+					}
 					continue
 				}
 				if err := os.Remove(filepath.Join(milestone.Dir(root), other.File)); err != nil && !os.IsNotExist(err) {
@@ -499,6 +506,11 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 		}
 		if err := ticket.WriteAtomic(dst, content); err != nil {
 			return err
+		}
+		if dst != path && !renamed {
+			if err := milestone.MatchCase(path, dst); err != nil {
+				return err
+			}
 		}
 		// Renamed on the ref since: the old name is the same milestone.
 		if renamed {

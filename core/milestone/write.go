@@ -227,12 +227,31 @@ func Rename(root string, lock Locker, rec Recorder, from, to string) (*Milestone
 	// A rename in case only, on a file system that ignores case (Windows,
 	// macOS, /mnt/c under WSL), saved the new name over the old file: the
 	// two names are one file, and removing the old one would remove it.
-	if !SameFile(renamed.Path(root), ms.Path(root)) {
-		if rmErr := os.Remove(ms.Path(root)); rmErr != nil {
-			return renamed, rmErr
+	if SameFile(renamed.Path(root), ms.Path(root)) {
+		if caseErr := MatchCase(ms.Path(root), renamed.Path(root)); caseErr != nil {
+			return renamed, caseErr
 		}
+	} else if rmErr := os.Remove(ms.Path(root)); rmErr != nil {
+		return renamed, rmErr
 	}
 	return renamed, err
+}
+
+// MatchCase gives the file have names the spelling want, where the two are
+// one file because the file system ignores case. Writing to want does not
+// do it: macOS and Windows keep the name the file already had, and a
+// milestone's name is read from its file name. Two renames through a name of
+// its own do. Nothing happens where have and want are two files or the same
+// string.
+func MatchCase(have, want string) error {
+	if have == want || !SameFile(have, want) {
+		return nil
+	}
+	tmp := want + ".case"
+	if err := os.Rename(have, tmp); err != nil {
+		return err
+	}
+	return os.Rename(tmp, want)
 }
 
 // SameFile reports whether a and b name one file on disk — two names that
