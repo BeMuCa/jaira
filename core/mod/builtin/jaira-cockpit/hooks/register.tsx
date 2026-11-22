@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { ElementTable, EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
-  branchesFor, carrierFor, commitNaming, slugFor, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
+  branchesFor, carrierFor, holdersOf, type Carrier, commitNaming, slugFor, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf,
   createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, languageOf, nextChoice, NOTE_MARK, rephrasedOf, rephrasePrompt, standOf,
@@ -746,7 +746,9 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   // branch's own word for itself.
   const land = base !== undefined && await landsWithoutPullRequest($, b.repo, base)
   if (typeof asked === 'string' && !land) return { step: stepAfterAccept(0, [], undefined), hint: t.prUnchecked(asked) }
-  const branch = (await ticketBranch($, b, id, porcelain, base))?.branch
+  const carrier = await ticketBranch($, b, id, porcelain, base)
+  if (carrier !== undefined && 'ambiguous' in carrier) return { step: 'none', hint: t.branchAmbiguous(id, carrier.ambiguous) }
+  const branch = carrier?.branch
   if (branch === undefined || base === undefined || branch === found.base) return { step: 'none', hint: '' }
   // One subject per commit ahead: the count and the tickets in one walk.
   const subjects = await run($, ['git', 'log', '--format=%s', `${base}..${branch}`], b.repo)
@@ -1362,6 +1364,9 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   // whatever worker it has.
   if (script === undefined) return handedTo('none', `${why}; no spawn.sh found (jaira roles install), old tab left open`)
   const place = await workPlace($, board, id)
+  // No branch it can tell for the ticket's own: nothing is started, the old
+  // tab stays, and the person hears which branches it is between.
+  if (place.stop) return handedTo('none', `${why}; ${place.why}, old tab left open`, `none: ${place.why}`)
   if (tab !== undefined) await run($, [bin, 'tab', 'close', tab.tab_id], dir)
   // In its own tab, on the branch the ticket's commits ride on, reporting to
   // the ticket's teamlead.
@@ -1375,29 +1380,32 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
 // it: the worktree of the branch its commits ride on, a new worktree on that
 // branch where it has none, and only where the ticket has no branch at all a
 // new <prefix>/<slug> as before. why goes onto the ticket's note.
-type Place = { args: string[]; slug: string; root: string; branch?: string; why: string }
+type Place = { args: string[]; slug: string; root: string; branch?: string; why: string; stop?: true }
 
 // The branch a ticket's work rides on, for Accept's pull request and Give
 // back's new worker alike, as carrierFor (board.ts) settles it from git:
 // the newest commit naming the ticket that is not in base yet, the ticket's
 // own worktree, a <prefix>/<slug> left without one. undefined: none.
-async function ticketBranch($: EngineInterface, b: { dir: string; repo: string }, id: string, porcelain: string, base: string | undefined): Promise<ReturnType<typeof carrierFor>> {
+async function ticketBranch($: EngineInterface, b: { dir: string; repo: string }, id: string, porcelain: string, base: string | undefined): Promise<Carrier | undefined> {
   const found = branchesFor(porcelain, id)
   let holders: string | undefined
-  const past: Record<string, number> = {}
   if (base !== undefined) {
     const log = await run($, ['git', 'log', '--branches', '--not', base, '--format=%H %s'], b.repo)
     const sha = log?.exitCode === 0 ? commitNaming(log.stdout, id) : undefined
     const held = sha ? await run($, ['git', 'branch', '--contains', sha, '--format=%(refname:short)'], b.repo) : undefined
     if (held?.exitCode === 0) holders = held.stdout
-    // More than one holds it: how far past the commit each one's tip is, so a
-    // branch stacked on top of the ticket's never wins (carrierFor).
-    const listed = (holders ?? '').split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('('))
-    if (sha && listed.length > 1) {
-      for (const branch of listed) {
-        const counted = await run($, ['git', 'rev-list', '--count', `${sha}..${branch}`], b.repo)
-        const n = counted?.exitCode === 0 ? Number.parseInt(counted.stdout.trim(), 10) : Number.NaN
-        if (Number.isFinite(n)) past[branch] = n
+  }
+  // Several hold it: which tips lie under which, so a branch built on the
+  // ticket's never wins over it (carrierFor).
+  const under: Record<string, string[]> = {}
+  const many = holders === undefined ? [] : holdersOf(holders, found.base ?? base ?? '')
+  if (many.length > 1 && !(found.ticket !== undefined && many.includes(found.ticket)) && !many.some(m => m.endsWith(`/${id.toLowerCase()}`))) {
+    for (const a of many) {
+      under[a] = []
+      for (const o of many) {
+        if (o === a) continue
+        const r = await run($, ['git', 'merge-base', '--is-ancestor', a, o], b.repo)
+        if (r?.exitCode === 0) under[a]!.push(o)
       }
     }
   }
@@ -1412,7 +1420,7 @@ async function ticketBranch($: EngineInterface, b: { dir: string; repo: string }
     base: found.base ?? base ?? '',
     ...(holders !== undefined ? { holders } : {}),
     ...(slugBranches !== undefined ? { slugBranches } : {}),
-    past,
+    under,
   })
 }
 
@@ -1422,6 +1430,7 @@ async function workPlace($: EngineInterface, b: { dir: string; repo: string }, i
   const porcelain = trees?.exitCode === 0 ? trees.stdout : ''
   const carrier = await ticketBranch($, b, id, porcelain, (await originDefault($, b.repo)) ?? branchesFor(porcelain, id).base)
   if (carrier === undefined) return { args: [], slug, root: b.repo, why: 'no branch carries the ticket yet, a new one is made' }
+  if ('ambiguous' in carrier) return { args: [], slug, root: b.repo, why: t.branchAmbiguous(id, carrier.ambiguous), stop: true }
   const how = carrier.by === 'commit' ? 'holds the newest commit naming the ticket' : carrier.by === 'worktree' ? "is the ticket's worktree's" : 'is named after the ticket'
   const wt = worktreeOfBranch(porcelain, carrier.branch)
   if (wt !== undefined) return { args: ['--no-worktree'], slug, root: wt, branch: carrier.branch, why: `branch ${carrier.branch} ${how}, worktree ${wt}` }

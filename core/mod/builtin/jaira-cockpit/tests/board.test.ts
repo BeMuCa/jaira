@@ -125,8 +125,6 @@ type World = {
   cleanFails?: string
   // Parents spawn.sh refuses as no session listening there (exit 2).
   deadParents?: string[]
-  // `git rev-list --count <commit>..<branch>`, by branch.
-  past?: Record<string, number>
 }
 
 const LANES = {
@@ -287,10 +285,6 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
       return { value: { exitCode: 2, stdout: '', stderr: `--parent ${p}: no session listens there. Leave --parent out`, isStdoutTruncated: false, isStderrTruncated: false } }
     }
     if (args[0] === SPAWN) return ok('w1:p42\n')
-    if (cmd === 'git' && args[0] === 'rev-list' && args[1] === '--count') {
-      const n = w.past?.[args[2]!.split('..')[1]!]
-      return n === undefined ? refuse('fatal: bad revision') : ok(`${n}\n`)
-    }
     if (cmd === 'jaira' && ['move', 'note', 'set', 'dod'].includes(args[0]!) && args[1] === 'MG677R' && w.disk[here] === 'ref-only') return refuse('jaira: MG677R: ticket: on its ref and not on your disk; pull it first')
     if (cmd === 'jaira' && ['move', 'note', 'set', 'dod'].includes(args[0]!) && args[1] === 'MG677R' && w.disk[here] === 'behind') return refuse('jaira: MG677R: the file here is older than its ref (stale_file); jaira pull MG677R')
     const on = args.includes('--board') ? w.boards[args[args.indexOf('--board') + 1] ?? ''] : undefined
@@ -1688,6 +1682,7 @@ describe('after Accept', () => {
     // A wip holding the same commit has fewer parts and is no reason to leave
     // it; a main checkout detached mid-rebase lists first and is no branch.
     w.holders = ['(HEAD detached at abc123)', 'master', 'feat/mg677r', 'wip']
+    w.contains['@/repo'] = ['feat/mg677r']
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await ui.press({ key: 'accept-ZZ99ZZ' })
@@ -2099,11 +2094,25 @@ describe('give back', () => {
     w.worktrees = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-0gmyqb\nHEAD 4\nbranch refs/heads/feat/0gmyqb\n\nworktree /.worktrees/repo-fix-login\nHEAD 3\nbranch refs/heads/fix-login\n'
     w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }]
     w.holders = ['feat/0gmyqb', 'fix-login']
-    w.past = { 'feat/0gmyqb': 2, 'fix-login': 0 }
+    w.contains['@/repo'] = ['fix-login']
     await startSession($)
     await giveBack($, w)
-    expect(ran(w, 'git', 'rev-list', '--count').map(r => r[3])).toEqual(['c2..feat/0gmyqb', 'c2..fix-login'])
     expect(spawned(w)[0]?.at(-1)).toBe('/.worktrees/repo-fix-login')
+  })
+
+  test('several branches hold the commit and none is the ticket\'s own: nothing is started, the teamlead hears which', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.worktrees = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-0gmyqb\nHEAD 4\nbranch refs/heads/feat/0gmyqb\n\nworktree /.worktrees/repo-fix-login\nHEAD 3\nbranch refs/heads/fix-login\n'
+    w.branchCommits = [{ sha: 'c2', subject: 'fix(MG677R): the key' }]
+    w.holders = ['feat/0gmyqb', 'fix-login']
+    // No tip lies under the other: master was merged into fix-login after
+    // feat/0gmyqb was stacked on it.
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'git', 'merge-base', '--is-ancestor').map(r => r.slice(3, 5))).toEqual([['feat/0gmyqb', 'fix-login'], ['fix-login', 'feat/0gmyqb']])
+    expect(spawned(w)).toEqual([])
+    expect(lastNote(w)).toContain("feat/0gmyqb and fix-login all hold MG677R's newest commit and none is its own")
+    expect(w.submitted[0]).toContain('worker none: feat/0gmyqb and fix-login all hold')
   })
 
   test('a branch whose worktree was removed is checked out again, beside the place an empty feat/<id> holds', async ($, on) => {
@@ -2213,11 +2222,25 @@ describe('the branch a ticket rides on', () => {
     ['no commit, no worktree, its branch left behind', { slug: 'qtqw15', base: 'master', slugBranches: 'review/feat/qtqw15\nfeat/qtqw15\n' }, 'feat/qtqw15'],
     ['nothing at all', { slug: 'qtqw15', base: 'master', holders: '', slugBranches: '' }, undefined],
     ['only the base holds it', { slug: 'qtqw15', base: 'master', holders: 'master\n' }, undefined],
-    ['its branch of another name, a stacked one listed first, no worktree', { slug: 'qtqw15', base: 'master', holders: 'feat/0gmyqb\nfix-login\n', past: { 'feat/0gmyqb': 3, 'fix-login': 0 } }, 'fix-login'],
-    ['its branch of another name, a stacked one listed last, no worktree', { slug: 'qtqw15', base: 'master', holders: 'fix-login\nzz-stack\n', past: { 'zz-stack': 2, 'fix-login': 1 } }, 'fix-login'],
-    ['a distance git could not give counts as furthest', { slug: 'qtqw15', base: 'master', holders: 'a-stack\nfix-login\n', past: { 'fix-login': 0 } }, 'fix-login'],
+    ['one branch of another name holds it', { slug: 'qtqw15', base: 'master', holders: 'fix-login\n' }, 'fix-login'],
+    ['one branch and its review wrapper', { slug: 'qtqw15', base: 'master', holders: 'review/fix-login\nfix-login\n' }, 'fix-login'],
+    ['a branch stacked on its branch, listed first', { slug: 'qtqw15', base: 'master', holders: 'feat/0gmyqb\nfix-login\n', under: { 'fix-login': ['feat/0gmyqb'] } }, 'fix-login'],
+    ['a wip on its branch, listed last', { slug: 'qtqw15', base: 'master', holders: 'fix-login\nwip\n', under: { 'fix-login': ['wip'] } }, 'fix-login'],
+    ['two equal tips: git\'s order', { slug: 'qtqw15', base: 'master', holders: 'fix-login\nwip\n', under: { 'fix-login': ['wip'], wip: ['fix-login'] } }, 'fix-login'],
+    ['three, one under both others', { slug: 'qtqw15', base: 'master', holders: 'a\nb\nfix-login\n', under: { 'fix-login': ['a', 'b'], a: ['b'] } }, 'fix-login'],
   ]
-  for (const [name, input, want] of cases) test(name, () => expect(carrierFor(input)?.branch).toBe(want))
+  for (const [name, input, want] of cases) test(name, () => {
+    const got = carrierFor(input)
+    expect(got !== undefined && 'branch' in got ? got.branch : undefined).toBe(want)
+  })
+  // Several hold it and none is the ticket's own: a stacked branch and the
+  // one the work rode on look alike to git, so nothing is picked.
+  for (const holders of ['feat/0gmyqb\nfix-login\n', 'fix-login\nfeat/0gmyqb\n', 'fix-login\nreview/fix-login\nzz-stack\n']) {
+    test(`several, none its own: ${holders.trim().replaceAll('\n', ', ')}`, () => {
+      const got = carrierFor({ slug: 'qtqw15', base: 'master', holders })
+      expect(got !== undefined && 'ambiguous' in got ? [...got.ambiguous].sort() : undefined).toEqual(holders.trim().split('\n').filter(b => !b.startsWith('review/')).sort())
+    })
+  }
 })
 
 // Only the ticket's own commits say where its work rides: the scope is the

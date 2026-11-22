@@ -563,29 +563,40 @@ export function worktreeOfBranch(porcelain: string, branch: string): string | un
   return worktreesOf(porcelain).find(w => w.branch === branch)?.path
 }
 
-// Which branch a new worker for a ticket takes up, from what git says: the
-// branch holding the newest commit that names the ticket — and of several
-// that hold it, the ticket's own: its worktree's branch, else one named
-// <prefix>/<slug>, so a branch stacked on top of it never wins, worktree or
-// not — else the ticket's own worktree's branch, else a <prefix>/<slug> left
-// behind without a worktree. undefined: no branch of the ticket's at all,
-// and spawn.sh makes <prefix>/<slug>. holders is `git branch --contains
-// <that commit>`, slugBranches `git branch --list '*/<slug>'`, both as
-// --format=%(refname:short) lists them.
-// Where neither of those holds it, the branch whose tip is fewest commits
-// past it: a branch stacked on top has the ticket's commit and more besides,
-// so it never wins over the one the work rode on, whatever git's alphabetical
-// order (review, QTQW15). past maps a holder to `git rev-list --count
-// <commit>..<holder>`; a holder it does not name counts as furthest.
-export function carrierFor(input: { slug: string; own?: string; base: string; holders?: string; slugBranches?: string; past?: Readonly<Record<string, number>> }): { branch: string; by: 'commit' | 'worktree' | 'name' } | undefined {
-  const { slug, own, base, holders, slugBranches, past = {} } = input
+// Which branch a ticket's work rides on, from what git says: the branch
+// holding the newest commit that is the ticket's own — and of several that
+// hold it, the ticket's own: its worktree's branch, else one named
+// <prefix>/<slug> — else the ticket's own worktree's branch, else a
+// <prefix>/<slug> left behind without a worktree. undefined: no branch of the
+// ticket's at all, and spawn.sh makes <prefix>/<slug>. holders is `git branch
+// --contains <that commit>`, slugBranches `git branch --list '*/<slug>'`,
+// both as --format=%(refname:short) lists them.
+// Several branches holding the commit, none of them the ticket's own: the
+// one whose tip every other one's tip has in its history — a wip or a branch
+// stacked on top of it is built on it — and of tips that are equal, the first
+// git lists. Where no tip lies under all the others — master merged into the
+// branch the work rode on after another was stacked on it — neither git's
+// order nor the distance to a tip tells them apart (review and bughunt,
+// QTQW15), and a wrong guess starts a worker in another ticket's worktree:
+// ambiguous names them, and the person picks. under maps a branch to the
+// others whose history holds its tip, from `git merge-base --is-ancestor`.
+export type Carrier = { branch: string; by: 'commit' | 'worktree' | 'name' } | { ambiguous: string[] }
+
+export function holdersOf(holders: string, base: string): string[] {
+  const listed = holders.split('\n').map(l => l.trim()).filter(b => b && b !== base && !b.startsWith('('))
+  // Herdr's review/<branch> only wraps another one listed: never a carrier.
+  return listed.filter(b => !listed.some(o => b.endsWith(`/${o}`)))
+}
+
+export function carrierFor(input: { slug: string; own?: string; base: string; holders?: string; slugBranches?: string; under?: Readonly<Record<string, readonly string[]>> }): Carrier | undefined {
+  const { slug, own, base, holders, slugBranches, under = {} } = input
   if (holders !== undefined && holders.trim() !== '') {
-    const listed = holders.split('\n').map(l => l.trim()).filter(Boolean)
-    const named = listed.filter(b => b.endsWith(`/${slug}`) && b !== base)
-    const far = (b: string) => past[b] ?? Number.MAX_SAFE_INTEGER
-    const nearest = [...listed].sort((a, b) => far(a) - far(b)).join('\n')
-    const branch = own !== undefined && listed.includes(own) ? own : carrierBranch(named.join('\n'), base) ?? carrierBranch(nearest, base)
+    const branches = holdersOf(holders, base)
+    const named = branches.filter(b => b.endsWith(`/${slug}`))
+    const lowest = branches.find(b => branches.every(o => o === b || (under[b] ?? []).includes(o)))
+    const branch = own !== undefined && branches.includes(own) ? own : named[0] ?? lowest
     if (branch !== undefined) return { branch, by: 'commit' }
+    if (branches.length > 1) return { ambiguous: branches }
   }
   if (own !== undefined && own !== base) return { branch: own, by: 'worktree' }
   const named = slugBranches === undefined ? undefined : carrierBranch(slugBranches, base)
