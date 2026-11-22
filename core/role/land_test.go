@@ -31,7 +31,7 @@ func TestLandMergesOnlyWhereTheBoardLetsIt(t *testing.T) {
 		genFails  bool   // the generator exits 1
 		ahead     bool   // somebody else pushed to origin's branch
 		ghRefuses bool   // gh pr merge fails
-		narrow    bool   // the worktree is a single-branch clone: no origin/<branch> ref
+		narrow    bool   // origin's fetch refspec covers neither master nor the branch
 		wantExit  int
 		wantOut   string
 		wantMerge bool
@@ -49,8 +49,8 @@ func TestLandMergesOnlyWhereTheBoardLetsIt(t *testing.T) {
 		{name: "generator fails", land: "agent", status: "done", genFails: true, wantExit: 1, wantOut: "regenerating gen.txt failed"},
 		{name: "origin's branch is ahead", land: "agent", status: "done", ahead: true, wantExit: 2, wantOut: "git pull origin"},
 		{name: "gh refuses the merge", land: "agent", status: "done", ghRefuses: true, wantExit: 1, wantOut: "gh pr merge 7 --repo o/r --merge", wantPush: true},
-		{name: "single-branch clone", land: "agent", status: "done", narrow: true, wantExit: 0, wantOut: "merged", wantMerge: true, wantPush: true},
-		{name: "single-branch clone, origin ahead", land: "agent", status: "done", narrow: true, ahead: true, wantExit: 2, wantOut: "git pull origin"},
+		{name: "narrow fetch refspec", land: "agent", status: "done", narrow: true, wantExit: 0, wantOut: "merged", wantMerge: true, wantPush: true},
+		{name: "narrow fetch refspec, origin ahead", land: "agent", status: "done", narrow: true, ahead: true, wantExit: 2, wantOut: "git pull origin"},
 		{name: "uncommitted change", land: "agent", status: "done", dirty: true, wantExit: 2, wantOut: "uncommitted"},
 	}
 	for _, c := range cases {
@@ -212,11 +212,14 @@ func (r *landRig) ticket(t *testing.T, status string) string {
 	if err := os.MkdirAll(r.boardDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	args := []string{"clone", "-q", r.origin, r.boardDir}
+	r.git(t, r.tmp, "clone", "-q", r.origin, r.boardDir)
 	if r.narrow {
-		args = append(args, "--single-branch")
+		// A fetch refspec that covers neither the base nor the ticket's
+		// branch, as a single-branch clone of some other branch has: plain
+		// fetches then write no refs/remotes/origin/... for either.
+		r.git(t, r.boardDir, "config", "remote.origin.fetch", "+refs/heads/elsewhere:refs/remotes/origin/elsewhere")
+		r.git(t, r.boardDir, "update-ref", "-d", "refs/remotes/origin/master")
 	}
-	r.git(t, r.tmp, args...)
 	s, err := ticket.At(r.boardDir)
 	if err != nil {
 		t.Fatal(err)

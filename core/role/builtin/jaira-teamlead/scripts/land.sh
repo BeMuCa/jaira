@@ -86,20 +86,21 @@ for r in $(git remote); do
   if grep -qiE "$pat" <<<"$(git remote get-url "$r" 2>/dev/null || true)"; then remote="$r"; break; fi
 done
 [ -n "$remote" ] || die 2 "no remote here points at $repo — git remote add upstream <its url>"
+# Every fetch names its destination: a single-branch clone or a narrow
+# fetch refspec writes no refs/remotes/<remote>/<branch> by itself, and the
+# merge, pr-gate and the push check below all read those refs.
+fetchref() { git fetch -q "$1" "+refs/heads/$2:refs/remotes/$1/$2" 2>/dev/null; }
+
 # origin's copy of the branch first: a push somebody made there would make
 # ours fail non-fast-forward after the merge, with nothing said about why.
-# FETCH_HEAD, not refs/remotes/origin/<branch>: a single-branch clone or a
-# narrow fetch refspec never writes that ref.
-# Kept as a commit: the base's fetch below overwrites FETCH_HEAD.
 origintip=""
-if git fetch -q origin "$branch" 2>/dev/null; then
-  origintip="$(git rev-parse FETCH_HEAD)"
+if fetchref origin "$branch"; then
+  origintip="$(git rev-parse "refs/remotes/origin/$branch")"
   git merge-base --is-ancestor "$origintip" HEAD ||
     die 2 "origin's $branch has commits this worktree lacks — git pull origin $branch, then run again; nothing merged or pushed"
 fi
-git fetch -q "$remote" "$basebranch"
+fetchref "$remote" "$basebranch" || die 2 "git fetch $remote $basebranch failed"
 base="$remote/$basebranch"
-git rev-parse -q --verify "refs/remotes/$base" >/dev/null || die 2 "$base was not fetched"
 
 # Generated files, as the base names them: "<path>: <command>".
 genpath=(); gencmd=()
