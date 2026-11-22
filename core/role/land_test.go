@@ -28,6 +28,7 @@ func TestLandMergesOnlyWhereTheBoardLetsIt(t *testing.T) {
 		noRegen   bool   // the base has no .jaira/land-regenerate
 		upToDate  bool   // master does not move: nothing to merge or push
 		deleteGen bool   // master deletes the generated file the branch changed
+		genFails  bool   // the generator exits 1
 		wantExit  int
 		wantOut   string
 		wantMerge bool
@@ -42,11 +43,15 @@ func TestLandMergesOnlyWhereTheBoardLetsIt(t *testing.T) {
 		{name: "no generated files", land: "agent", status: "done", noRegen: true, wantExit: 0, wantOut: "merged", wantMerge: true, wantPush: true},
 		{name: "branch already holds the base", land: "agent", status: "done", upToDate: true, wantExit: 0, wantOut: "merged", wantMerge: true, wantPush: true},
 		{name: "base deleted the generated file", land: "agent", status: "done", deleteGen: true, wantExit: 1, wantOut: "gen.txt"},
+		{name: "generator fails", land: "agent", status: "done", genFails: true, wantExit: 1, wantOut: "regenerating gen.txt failed"},
 		{name: "uncommitted change", land: "agent", status: "done", dirty: true, wantExit: 2, wantOut: "uncommitted"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			r := newLandRig(t, c.land, !c.noRegen)
+			if c.genFails {
+				r.regenerate(t, "gen.txt: exit 1")
+			}
 			h := r.ticket(t, c.status)
 			wt := r.clone(t, h)
 			r.write(t, filepath.Join(wt, "gen.txt"), "branch\n")
@@ -102,7 +107,7 @@ func TestLandMergesOnlyWhereTheBoardLetsIt(t *testing.T) {
 					t.Errorf("last commit on the branch = %q", got)
 				}
 			}
-			if c.conflict || c.deleteGen {
+			if c.conflict || c.deleteGen || c.genFails {
 				if st := r.git(t, wt, "status", "--porcelain", "--untracked-files=no"); st != "" {
 					t.Errorf("a stopped merge left the worktree dirty:\n%s", st)
 				}
@@ -236,6 +241,16 @@ func (r *landRig) advanceMaster(t *testing.T, conflict, gen bool) {
 	r.write(t, filepath.Join(seed, "third.txt"), "new on master\n")
 	r.git(t, seed, "add", "-A")
 	r.git(t, seed, "commit", "-qm", "chore: master moves on")
+	r.git(t, seed, "push", "-q", "origin", "master")
+}
+
+// regenerate replaces .jaira/land-regenerate on master.
+func (r *landRig) regenerate(t *testing.T, body string) {
+	t.Helper()
+	seed := filepath.Join(r.tmp, "seed")
+	r.write(t, filepath.Join(seed, ".jaira", "land-regenerate"), body+"\n")
+	r.git(t, seed, "add", "-f", ".jaira/land-regenerate")
+	r.git(t, seed, "commit", "-qm", "chore: generator")
 	r.git(t, seed, "push", "-q", "origin", "master")
 }
 
