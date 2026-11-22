@@ -203,10 +203,9 @@ just invented a synonym: check `jaira tags` and use the existing name.
 
 ## Milestones: read the list before you start one
 
-A milestone is the set of tickets that belong to one round of work, kept on its
-own ref, `refs/jaira/milestones/<ID>`, one ticket id per line — no file in the
-working tree, nothing to commit. The six characters are its ID: it stays when
-the name changes.
+A milestone is the set of tickets that belong to one round of work, kept in its
+own hand-editable file, `.jaira/milestones/<name>-<ID>.md`, one ticket id per line.
+The six characters after the last dash are its ID: it stays when the name changes.
 
 **Before you create one, run `jaira milestone ls`.**
 

@@ -9,10 +9,33 @@ import (
 	"time"
 )
 
+type fakeLock struct{ held, taken int }
+
+func (f *fakeLock) Lock(string) (func(), error) {
+	f.held++
+	f.taken++
+	return func() { f.held-- }, nil
+}
+
+type fakeRec struct {
+	have  map[string]bool // IDs that already have a ref
+	names []string
+	last  []byte
+	err   error
+}
+
+func (r *fakeRec) HasMilestoneRef(id string) bool { return r.have[id] }
+
+func (r *fakeRec) RecordMilestone(name, file string, content []byte) error {
+	r.names = append(r.names, name)
+	r.last = content
+	return r.err
+}
+
 func TestCreateSavesRecordsAndHoldsTheLockOnlyWhileBuilding(t *testing.T) {
 	root := t.TempDir()
-	lk, rec := &fakeLock{}, &fakeRec{dir: Dir(root)}
-	ms, err := Create(lk, rec, func(existing []*Milestone) (*Milestone, error) {
+	lk, rec := &fakeLock{}, &fakeRec{}
+	ms, err := Create(root, lk, rec, func(existing []*Milestone) (*Milestone, error) {
 		if lk.held != 1 {
 			t.Error("build must run under the lock")
 		}
@@ -24,8 +47,8 @@ func TestCreateSavesRecordsAndHoldsTheLockOnlyWhileBuilding(t *testing.T) {
 	if lk.held != 0 || lk.taken != 1 {
 		t.Errorf("lock held=%d taken=%d", lk.held, lk.taken)
 	}
-	if ms.FileName() != "a-"+ms.ID+".md" || ms.Ref() != RefPrefix+ms.ID {
-		t.Errorf("not recorded as a-%s.md on its ref: %s %s", ms.ID, ms.FileName(), ms.Ref())
+	if _, err := os.Stat(ms.Path(root)); err != nil || filepath.Base(ms.Path(root)) != "a-"+ms.ID+".md" {
+		t.Errorf("not saved as a-%s.md: %v", ms.ID, err)
 	}
 	if len(rec.names) != 1 || string(rec.last) != string(ms.Bytes()) {
 		t.Errorf("recorded %v", rec.names)
@@ -34,9 +57,9 @@ func TestCreateSavesRecordsAndHoldsTheLockOnlyWhileBuilding(t *testing.T) {
 
 func TestCreateRefusalWritesNothing(t *testing.T) {
 	root := t.TempDir()
-	rec := &fakeRec{dir: Dir(root)}
+	rec := &fakeRec{}
 	boom := errors.New("no")
-	_, err := Create(&fakeLock{}, rec, func([]*Milestone) (*Milestone, error) { return nil, boom })
+	_, err := Create(root, &fakeLock{}, rec, func([]*Milestone) (*Milestone, error) { return nil, boom })
 	if !errors.Is(err, boom) || len(rec.names) != 0 {
 		t.Errorf("err=%v recorded=%v", err, rec.names)
 	}
@@ -48,9 +71,9 @@ func TestCreateRefusalWritesNothing(t *testing.T) {
 func TestEditWritesOnlyWhenTheBytesChanged(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "a", "---\ncolor: 45\n---\n- "+idA+"\n")
-	rec := &fakeRec{dir: Dir(root)}
+	rec := &fakeRec{}
 
-	ms, err := Edit(&fakeLock{}, rec, "a", func(m *Milestone) error { m.Add(idA); return nil })
+	ms, err := Edit(root, &fakeLock{}, rec, "a", func(m *Milestone) error { m.Add(idA); return nil })
 	if err != nil || len(rec.names) != 0 {
 		t.Fatalf("no-op edit: err=%v recorded=%v", err, rec.names)
 	}
@@ -58,11 +81,11 @@ func TestEditWritesOnlyWhenTheBytesChanged(t *testing.T) {
 		t.Error("milestone not returned")
 	}
 
-	ms, err = Edit(&fakeLock{}, rec, "a", func(m *Milestone) error { m.SetGoal("g"); return nil })
+	ms, err = Edit(root, &fakeLock{}, rec, "a", func(m *Milestone) error { m.SetGoal("g"); return nil })
 	if err != nil || len(rec.names) != 1 {
 		t.Fatalf("edit: err=%v recorded=%v", err, rec.names)
 	}
-	got, _ := Load(refsAt(root), "a")
+	got, _ := Load(root, "a")
 	if got.Goal != "g" || ms.Goal != "g" {
 		t.Error("edit not saved")
 	}
@@ -70,13 +93,13 @@ func TestEditWritesOnlyWhenTheBytesChanged(t *testing.T) {
 
 func TestEditPassesAMissingFileAndAFnRefusalThrough(t *testing.T) {
 	root := t.TempDir()
-	if _, err := Edit(&fakeLock{}, &fakeRec{dir: Dir(root)}, "zz", func(*Milestone) error { return nil }); !errors.Is(err, os.ErrNotExist) {
+	if _, err := Edit(root, &fakeLock{}, &fakeRec{}, "zz", func(*Milestone) error { return nil }); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("missing: %v", err)
 	}
 	write(t, root, "a", "---\ncolor: 45\n---\n")
 	boom := errors.New("refused")
-	rec := &fakeRec{dir: Dir(root)}
-	_, err := Edit(&fakeLock{}, rec, "a", func(m *Milestone) error { m.SetGoal("x"); return boom })
+	rec := &fakeRec{}
+	_, err := Edit(root, &fakeLock{}, rec, "a", func(m *Milestone) error { m.SetGoal("x"); return boom })
 	if !errors.Is(err, boom) || len(rec.names) != 0 {
 		t.Errorf("err=%v recorded=%v", err, rec.names)
 	}
@@ -86,39 +109,36 @@ func TestEditPassesAMissingFileAndAFnRefusalThrough(t *testing.T) {
 	}
 }
 
-// The ref is a milestone's only copy, so a ref that cannot be written is a
-// write that did not happen, and the caller is told so.
-func TestARefThatCannotBeWrittenFailsTheWrite(t *testing.T) {
+// A recorder that fails must not undo a save that happened: the caller gets
+// the milestone and a RecordError it may downgrade to a warning.
+func TestRecordFailureIsReportedBesideTheSavedMilestone(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "a", "---\ncolor: 45\n---\n")
-	boom := errors.New("queue full")
-	rec := &fakeRec{dir: Dir(root), err: boom}
-	if _, err := Edit(&fakeLock{}, rec, "a", func(m *Milestone) error { m.SetGoal("g"); return nil }); !errors.Is(err, boom) {
-		t.Fatalf("err=%v", err)
+	rec := &fakeRec{err: errors.New("queue full")}
+	ms, err := Edit(root, &fakeLock{}, rec, "a", func(m *Milestone) error { m.SetGoal("g"); return nil })
+	var re *RecordError
+	if !errors.As(err, &re) || ms == nil {
+		t.Fatalf("err=%v ms=%v", err, ms)
 	}
-	if got, _ := Load(refsAt(root), "a"); got.Goal == "g" {
-		t.Error("a write that failed is visible")
+	if got, _ := Load(root, "a"); got.Goal != "g" {
+		t.Error("save was lost")
 	}
 }
 
-// Writing a filed milestone would put the change on its ref for every clone.
-// Edit refuses it before fn runs, so no caller has to remember to; EditFiled,
-// which filing and restoring use, may.
+// A filed milestone's file can still lie here — a fetch of somebody else's
+// filing leaves it — and writing it would put the change on its ref for every
+// clone. Edit refuses it before fn runs, so no caller has to remember to.
 func TestEditRefusesAFiledMilestone(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "a", "---\ncolor: 45\nstatus: filed\n---\n")
-	rec := &fakeRec{dir: Dir(root)}
-	_, err := Edit(&fakeLock{}, rec, "a", func(*Milestone) error {
+	rec := &fakeRec{}
+	_, err := Edit(root, &fakeLock{}, rec, "a", func(*Milestone) error {
 		t.Error("fn ran on a filed milestone")
 		return nil
 	})
 	var fe *FiledError
 	if !errors.As(err, &fe) || fe.Name != "a" || len(rec.names) != 0 {
 		t.Errorf("err=%v recorded=%v", err, rec.names)
-	}
-	ms, err := EditFiled(&fakeLock{}, rec, "a", func(m *Milestone) error { m.SetStatus(""); return nil })
-	if err != nil || ms.Filed() || len(rec.names) != 1 {
-		t.Errorf("EditFiled: err=%v filed=%v recorded=%v", err, ms.Filed(), rec.names)
 	}
 }
 
@@ -131,17 +151,17 @@ func TestEditTakingAMilestoneOutClosesTheChain(t *testing.T) {
 	write(t, root, "b", "---\ncolor: 46\nafter: [a]\n---\n- "+idA+"\n")
 	write(t, root, "c", "---\ncolor: 47\nafter: [b, x]\n---\n")
 	write(t, root, "d", "---\ncolor: 48\nafter: [a]\n---\n")
-	lk, rec := &fakeLock{}, &fakeRec{dir: Dir(root)}
-	if _, err := Edit(lk, rec, "b", func(m *Milestone) error { m.Unplace(); return nil }); err != nil {
+	lk, rec := &fakeLock{}, &fakeRec{}
+	if _, err := Edit(root, lk, rec, "b", func(m *Milestone) error { m.Unplace(); return nil }); err != nil {
 		t.Fatal(err)
 	}
 	if lk.taken != 1 {
 		t.Errorf("the removal and the re-attach must share one lock, taken %d times", lk.taken)
 	}
-	if b, _ := Load(refsAt(root), "b"); b.Placed || !b.Has(idA) {
+	if b, _ := Load(root, "b"); b.Placed || !b.Has(idA) {
 		t.Errorf("b must leave the layer and keep its ticket, placed %v", b.Placed)
 	}
-	if c, _ := Load(refsAt(root), "c"); strings.Join(c.After, ",") != LegacyID("a")+",x" {
+	if c, _ := Load(root, "c"); strings.Join(c.After, ",") != LegacyID("a")+",x" {
 		t.Errorf("c must now come after a (by ID), got %v", c.After)
 	}
 	if strings.Join(rec.names, ",") != LegacyID("b")+","+LegacyID("c") {
@@ -156,8 +176,8 @@ func TestRenameChangesOnlyTheFileNameOnTheSameRef(t *testing.T) {
 	writeFile(t, root, "a-AAAAAA.md", "---\ncolor: 45\ngoal: g\nafter: []\n---\n\n# a\n\n- "+idA+"\n")
 	succ := "---\ncolor: 46\nafter: [x, AAAAAA]\n---\n"
 	writeFile(t, root, "b-BBBBBB.md", succ)
-	lk, rec := &fakeLock{}, &fakeRec{dir: Dir(root)}
-	ms, err := Rename(lk, rec, "a", "z")
+	lk, rec := &fakeLock{}, &fakeRec{}
+	ms, err := Rename(root, lk, rec, "a", "z")
 	if err != nil || ms.Name != "z" || ms.ID != "AAAAAA" {
 		t.Fatalf("rename: %v %+v", err, ms)
 	}
@@ -167,7 +187,7 @@ func TestRenameChangesOnlyTheFileNameOnTheSameRef(t *testing.T) {
 	if got := dirNames(t, root); got != "b-BBBBBB.md,z-AAAAAA.md" {
 		t.Errorf("directory %s", got)
 	}
-	z, err := Load(refsAt(root), "AAAAAA")
+	z, err := Load(root, "AAAAAA")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,23 +213,23 @@ func TestRenameRefusals(t *testing.T) {
 	writeFile(t, root, "a-AAAAAA.md", "---\ncolor: 45\n---\n")
 	writeFile(t, root, "b-BBBBBB.md", "---\ncolor: 46\n---\n")
 	writeFile(t, root, "f-FFFFFF.md", "---\ncolor: 47\nstatus: filed\n---\n")
-	rec := &fakeRec{dir: Dir(root)}
+	rec := &fakeRec{}
 
 	var ee *ExistsError
-	if _, err := Rename(&fakeLock{}, rec, "a", "b"); !errors.As(err, &ee) || ee.Name != "b" || ee.ID != "BBBBBB" {
+	if _, err := Rename(root, &fakeLock{}, rec, "a", "b"); !errors.As(err, &ee) || ee.Name != "b" || ee.File != "b-BBBBBB.md" {
 		t.Errorf("onto a milestone on the board: %v", err)
 	}
 	var fe *FiledError
-	if _, err := Rename(&fakeLock{}, rec, "f", "n"); !errors.As(err, &fe) || fe.Name != "f" || fe.ID != "FFFFFF" {
+	if _, err := Rename(root, &fakeLock{}, rec, "f", "n"); !errors.As(err, &fe) || fe.Name != "f" || fe.File != "f-FFFFFF.md" {
 		t.Errorf("a filed milestone is not renamed: %v", err)
 	}
-	if _, err := Rename(&fakeLock{}, rec, "a", "a"); err != nil || len(rec.names) != 0 {
+	if _, err := Rename(root, &fakeLock{}, rec, "a", "a"); err != nil || len(rec.names) != 0 {
 		t.Fatalf("a rename to the same name writes nothing: err=%v recorded=%v", err, rec.names)
 	}
-	if _, err := Rename(&fakeLock{}, rec, "nothing", "n"); !errors.Is(err, os.ErrNotExist) {
+	if _, err := Rename(root, &fakeLock{}, rec, "nothing", "n"); !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("an unknown milestone: %v", err)
 	}
-	if _, err := Rename(&fakeLock{}, rec, "a", "f"); err != nil {
+	if _, err := Rename(root, &fakeLock{}, rec, "a", "f"); err != nil {
 		t.Errorf("a filed milestone held its name: %v", err)
 	}
 	if got := dirNames(t, root); got != "b-BBBBBB.md,f-AAAAAA.md,f-FFFFFF.md" {
@@ -223,10 +243,10 @@ func TestRenameOfOneOfTwoSameNamedMilestones(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "dup-AAAAAA.md", "---\ncolor: 45\n---\n")
 	writeFile(t, root, "dup-BBBBBB.md", "---\ncolor: 46\n---\n")
-	if _, err := Rename(&fakeLock{}, &fakeRec{dir: Dir(root)}, "dup", "z"); err == nil {
+	if _, err := Rename(root, &fakeLock{}, &fakeRec{}, "dup", "z"); err == nil {
 		t.Fatal("an ambiguous name was renamed")
 	}
-	if _, err := Rename(&fakeLock{}, &fakeRec{dir: Dir(root)}, "BBBBBB", "z"); err != nil {
+	if _, err := Rename(root, &fakeLock{}, &fakeRec{}, "BBBBBB", "z"); err != nil {
 		t.Fatal(err)
 	}
 	if got := dirNames(t, root); got != "dup-AAAAAA.md,z-BBBBBB.md" {
@@ -234,15 +254,33 @@ func TestRenameOfOneOfTwoSameNamedMilestones(t *testing.T) {
 	}
 }
 
-// A new milestone is rolled a fresh ID when the one it drew is taken, filed
-// milestones and refs counting.
-func TestCreateAvoidsTakenIDs(t *testing.T) {
+// A write on a board that still has files from before IDs moves them all
+// first, under the lock; a new milestone is rolled a fresh ID when the one it
+// drew is taken, filed milestones and refs counting.
+func TestWritesMigrateFirstAndCreateAvoidsTakenIDs(t *testing.T) {
 	root := t.TempDir()
+	writeOld(t, root, "q4", "---\ncolor: 45\n---\n")
+	rec := &fakeRec{}
+	ms, err := Create(root, &fakeLock{}, rec, func([]*Milestone) (*Milestone, error) {
+		return New("q5", 46, time.Now()), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := dirNames(t, root); got != "q4-"+LegacyID("q4")+".md,q5-"+ms.ID+".md" {
+		t.Errorf("directory %s", got)
+	}
+	if strings.Join(rec.names, ",") != LegacyID("q4")+","+ms.ID {
+		t.Errorf("recorded %v", rec.names)
+	}
 	taken := New("t", 45, time.Now())
-	rec := &fakeRec{dir: Dir(root), have: map[string]bool{taken.ID: true}}
-	got, err := Create(&fakeLock{}, rec, func([]*Milestone) (*Milestone, error) { return taken, nil })
-	if err != nil || got.ID == "" || rec.have[got.ID] {
+	rec = &fakeRec{have: map[string]bool{taken.ID: true}}
+	got, err := Create(root, &fakeLock{}, rec, func([]*Milestone) (*Milestone, error) { return taken, nil })
+	if err != nil || got.ID == "" || got.ID == rec.names[0] && rec.have[got.ID] {
 		t.Errorf("a ref's ID was reused: %v %v", got, err)
+	}
+	if rec.have[got.ID] {
+		t.Errorf("ID %s has a ref already", got.ID)
 	}
 }
 
@@ -253,15 +291,15 @@ func TestEditSpellsHandWrittenNamesAsIDs(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "a-K3F9QZ.md", "---\ncolor: 45\nafter: []\n---\n")
 	write(t, root, "b", "---\ncolor: 46\nafter: [a,ghost]\n---\n")
-	lk, rec := &fakeLock{}, &fakeRec{dir: Dir(root)}
-	if _, err := Edit(lk, rec, "b", func(m *Milestone) error { m.Add(idA); return nil }); err != nil {
+	lk, rec := &fakeLock{}, &fakeRec{}
+	if _, err := Edit(root, lk, rec, "b", func(m *Milestone) error { m.Add(idA); return nil }); err != nil {
 		t.Fatal(err)
 	}
-	if b, _ := Load(refsAt(root), "b"); strings.Join(b.After, ",") != "K3F9QZ,ghost" {
+	if b, _ := Load(root, "b"); strings.Join(b.After, ",") != "K3F9QZ,ghost" {
 		t.Errorf("after = %v, want [K3F9QZ ghost]", b.After)
 	}
 	before, _ := os.ReadFile(testPath(root, "b"))
-	if _, err := Edit(lk, rec, "b", func(m *Milestone) error { m.Add(idB); return nil }); err != nil {
+	if _, err := Edit(root, lk, rec, "b", func(m *Milestone) error { m.Add(idB); return nil }); err != nil {
 		t.Fatal(err)
 	}
 	if got, _ := os.ReadFile(testPath(root, "b")); strings.Count(string(got), "after:") != 1 || !strings.Contains(string(got), "after: [K3F9QZ, ghost]") || len(got) <= len(before) {

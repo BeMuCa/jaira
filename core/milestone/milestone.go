@@ -1,39 +1,32 @@
 // Package milestone holds the groups a board plans in: which tickets belong
-// together for this round of work, kept on a ref of their own,
-// refs/jaira/milestones/<ID>, and nowhere else.
+// together for this round of work, kept in one file per group under
+// .jaira/milestones/.
 //
-// The grouping lives in its own document rather than as a field on each ticket
+// The grouping lives in its own file rather than as a field on each ticket
 // because of what happens at the end of a round. Work that did not finish has
 // to appear in the next group, and a per-ticket marker means touching every
 // ticket one at a time — and tickets travel on their own refs, so that is one
 // pull, one edit and one release each. Twenty of those is the reason nobody
-// does it. A milestone is edited instead: the lines that are not finished move
-// into the next milestone in one edit.
-//
-// There is no working file. A milestone used to be a file under
-// .jaira/milestones/ as well as a ref, and the file was a second truth: a stale
-// copy merged in from a branch or committed by mistake overwrote the ref, and
-// files went back and forth through commits. Now the ref is read directly, and
-// an edit that has not reached the remote yet is read back out of the outbox,
-// which is the only copy of it — both behind the Refs interface, so nothing in
-// here talks to git. A file still lying under .jaira/milestones/ from an older
-// build is taken onto its ref once and deleted (Import).
+// does it. A file is copied instead: the lines that are not finished move into
+// the next milestone's file in one edit.
 //
 // A milestone that has been filed into the logbook carries `status: filed` in
-// its frontmatter, and that line is what keeps it off the board. The ref stays,
-// so every clone reads the filing on its next fetch and a restore has
-// something to take back. No line means the milestone is on the board. A filed
-// milestone does not hold its name: the ID is what tells two milestones apart,
-// so a new one may take the name and a restore beside it is a visible double,
-// not a loss.
+// its frontmatter, and that line is what keeps it off the board. It is written
+// onto the ref too, on purpose: a ref taken down would tell no other clone
+// anything, while a ref saying "filed" is read by every clone that fetches — it
+// is not written back to a clone that never had it. No line means the milestone
+// is on the board, which is the state every file written before this existed is
+// in. A filed milestone does not hold its name: the ID is what tells two
+// milestones apart, so a new one may take the name and a restore beside it is a
+// visible double, not a loss.
 //
-// The document the ref carries is read and written the way a ticket file is —
-// frontmatter for the facts about the milestone, one line per member below it —
-// and the lines are kept verbatim across a write. A comment, a blank line, a
-// hand-chosen order and a line jaira cannot parse all survive Add and Remove,
-// because those edit one line and leave the rest alone. Its name is
-// <name>-<ID>.md inside the ref's tree: the name lives in the file name, never
-// in the frontmatter, so there is one truth for it.
+// The file is read and written the way a ticket file is — frontmatter for the
+// facts about the milestone, one line per member below it — and the lines are
+// kept verbatim across a write. A comment, a blank line, a hand-chosen order
+// and a line jaira cannot parse all survive Add and Remove, because those edit
+// one line and leave the rest alone. The format is the API: it must stay
+// hand-editable and readable in a diff, and one line per member is the
+// smallest thing git can merge.
 package milestone
 
 import (
@@ -41,6 +34,7 @@ import (
 	"fmt"
 	"io/fs"
 	"math/rand/v2"
+	"os"
 	"path/filepath"
 	"slices"
 	"sort"
@@ -52,39 +46,13 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// Subdir is where a board kept its milestone files, under .jaira, before they
-// lived on refs only. It is the name core/ticket files a milestone under
-// inside an old logbook folder too, and is taken from there so the two cannot
-// drift apart.
+// Subdir is where a board keeps its milestones, under .jaira. It is the name
+// core/ticket files a milestone under inside a logbook folder too, and is
+// taken from there so the two cannot drift apart.
 const Subdir = ticket.MilestonesSubdir
 
-// Dir is the directory an older build kept a board's milestone files in. Only
-// Import reads it, to take what lies there onto the refs.
+// Dir is the milestone directory of a board rooted at root.
 func Dir(root string) string { return filepath.Join(root, ticket.DirName, Subdir) }
-
-// RefPrefix is the namespace a milestone's ref lives in, as gitref names it.
-const RefPrefix = "refs/jaira/milestones/"
-
-// File is one milestone as the refs hold it: the file name it is carried
-// under, <name>-<ID>.md, and the document.
-type File struct {
-	Name    string
-	Content []byte
-}
-
-// Refs is where milestones live; refsync's Syncer is one. MilestoneFiles lists
-// every milestone — an unsent write where there is one, else the local ref —
-// and RecordMilestone writes one: queued for the remote, and on a board
-// without one put on the local ref straight away. A board that is not in a git
-// repository at all has no milestones: MilestoneFiles lists none and
-// RecordMilestone refuses.
-type Refs interface {
-	MilestoneFiles() ([]File, error)
-	RecordMilestone(key, file string, content []byte) error
-	// HasMilestoneRef reports whether the milestone with this ID already has
-	// its ref in this tree.
-	HasMilestoneRef(id string) bool
-}
 
 // Palette is the set of colours a new milestone can be given. It is the tag
 // palette: the two marks sit on opposite edges of a card and are never
@@ -118,13 +86,13 @@ type Milestone struct {
 	After     []string // predecessor IDs (a name only for a hand-written line), first one decides the swimlane
 	Placed    bool     // an `after:` line exists; `after: []` is a swimlane top
 
-	file    string   // the file name its ref carries it under, .md included; empty for a milestone never written
+	file    string   // the file name it was read under, .md included; empty for a milestone never written
 	lines   []string // the whole file, frontmatter included
 	members []string // ticket ids, in file order
 }
 
-// FileName is the name its ref carries this milestone under: the name it was
-// read under, or <name>-<ID>.md for one never written.
+// FileName is the file this milestone lives in under the milestone directory:
+// the name it was read under, or <name>-<ID>.md for one never written.
 func (m *Milestone) FileName() string {
 	if m.file != "" {
 		return m.file
@@ -132,9 +100,8 @@ func (m *Milestone) FileName() string {
 	return m.Name + "-" + m.ID + ".md"
 }
 
-// Ref is the ref this milestone lives on, which is what a message points a
-// person at: 'git show <ref>:<file>' reads it.
-func (m *Milestone) Ref() string { return RefPrefix + m.ID }
+// Path is the file this milestone lives in.
+func (m *Milestone) Path(root string) string { return filepath.Join(Dir(root), m.FileName()) }
 
 // Members lists the ticket ids this milestone holds, in the order the file
 // gives them. File order is the order the card's marks are painted in, so it
@@ -193,7 +160,7 @@ func (m *Milestone) Remove(id string) bool {
 }
 
 // New builds a milestone that has never been written, with the colour the
-// caller picked. It is on no ref until Create records it.
+// caller picked. It is not on disk until Save.
 func New(name string, colour int, now time.Time) *Milestone {
 	m := &Milestone{Name: name, ID: NewID(), Colour: colour, CreatedAt: now}
 	m.lines = []string{
@@ -205,7 +172,7 @@ func New(name string, colour int, now time.Time) *Milestone {
 		"# " + name,
 		"",
 		"<!-- One ticket id per line. Move the unfinished ones into the next",
-		"     milestone when this one is done. -->",
+		"     milestone's file when this one is done. -->",
 		"",
 	}
 	return m
@@ -227,13 +194,15 @@ func (e *AmbiguousError) Error() string {
 // Load reads one milestone, filed ones included, by whatever the caller has:
 // its ID (any case), its <name>-<ID> file name, or a name. A name that two
 // milestones carry is an *AmbiguousError, and a name on the board is preferred
-// over the same name on a milestone that is filed. Nothing found reports
+// over the same name on a file that is filed. Nothing found reports
 // os.ErrNotExist, so a caller can tell "no such milestone" from "unreadable".
 //
-// The name and the ID come from the file name the ref carries — the
-// frontmatter does not carry either, so there is one truth for each.
-func Load(refs Refs, key string) (*Milestone, error) {
-	all, err := scan(refs)
+// The name and the ID come from the file name — the frontmatter does not carry
+// either. The file is hand-editable by design, and a name written inside it
+// would be a second truth: edit that line and the next Save files the
+// milestone under a different name, leaving the old file behind.
+func Load(root, key string) (*Milestone, error) {
+	all, err := scan(root)
 	if err != nil {
 		return nil, err
 	}
@@ -316,8 +285,11 @@ func ResolveRefs(all []*Milestone, id string, tokens []string) ([]string, error)
 	return out, nil
 }
 
-// FromBytes reads a milestone out of the bytes a ref carries, under the file
-// name the ref carries them as.
+// FromBytes reads a milestone out of bytes that are not on this disk — what a
+// ref carries — under the file name the ref carries them as. The ref is the
+// only place a milestone filed on another machine can be read from, and the
+// caller has to be able to ask its status without first writing it to the
+// board, which is the very thing a filed milestone must not do.
 func FromBytes(file string, content []byte) *Milestone {
 	m := parse(string(content))
 	base := strings.TrimSuffix(file, ".md")
@@ -326,21 +298,38 @@ func FromBytes(file string, content []byte) *Milestone {
 	return m
 }
 
-// scan reads every milestone the refs hold, filed ones included, sorted by
-// name and then ID. Two that carry one ID are one milestone, and the first is
-// the one that counts.
-func scan(refs Refs) ([]*Milestone, error) {
-	if refs == nil {
+// scan reads every milestone file under the board, filed ones included,
+// sorted by name and then ID. A file written before IDs existed is read as
+// <name>.md with the ID LegacyID gives it, without being touched: reading
+// never writes. Two files that carry one ID — a rename merged by git — are one
+// milestone, and the first by file name is the one that counts until a fetch
+// lets the ref decide.
+//
+// A file that cannot be read is skipped rather than failing the read: the
+// board is glanced at constantly, and one malformed file must not be able to
+// stop it from opening.
+func scan(root string) ([]*Milestone, error) {
+	if root == "" {
 		return nil, nil
 	}
-	files, err := refs.MilestoneFiles()
+	entries, err := os.ReadDir(Dir(root))
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	var out []*Milestone
 	seen := map[string]bool{}
-	for _, f := range files {
-		m := FromBytes(f.Name, f.Content)
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		b, err := os.ReadFile(filepath.Join(Dir(root), e.Name()))
+		if err != nil {
+			continue
+		}
+		m := FromBytes(e.Name(), b)
 		if seen[m.ID] {
 			continue
 		}
@@ -356,36 +345,25 @@ func scan(refs Refs) ([]*Milestone, error) {
 	return out, nil
 }
 
-// LoadAll reads every milestone that is ON the board, sorted by name. No
-// milestones is not an error: it is the state every board starts in.
+// LoadAll reads every milestone that is ON the board, sorted by name. An
+// absent directory is not an error: it means the board has planned no
+// milestones yet, which is the state every board starts in.
 //
 // A filed milestone is not on the board and is left out here, which is what
-// makes `status: filed` the line that decides it. Load reads a filed
-// milestone, which is how a restore gets at it.
-func LoadAll(refs Refs) ([]*Milestone, error) {
-	all, err := scan(refs)
+// makes `status: filed` the line that decides it rather than where the file
+// happens to lie. Both states put a file under .jaira/milestones/: filing it
+// moves it into the logbook, but a fetch writes the marked file back the way
+// it writes every other one, and a filing that got as far as marking the file
+// and no further has left it lying here too. One read of the line answers all
+// three. Load reads a filed milestone, which is how a restore gets at it.
+func LoadAll(root string) ([]*Milestone, error) {
+	all, err := scan(root)
 	if err != nil {
 		return nil, err
 	}
 	out := all[:0]
 	for _, m := range all {
 		if !m.Filed() {
-			out = append(out, m)
-		}
-	}
-	return out, nil
-}
-
-// LoadFiled reads every milestone that has been filed, sorted by name: what
-// the logbook listing names, since a filed milestone lies nowhere on disk.
-func LoadFiled(refs Refs) ([]*Milestone, error) {
-	all, err := scan(refs)
-	if err != nil {
-		return nil, err
-	}
-	var out []*Milestone
-	for _, m := range all {
-		if m.Filed() {
 			out = append(out, m)
 		}
 	}
@@ -472,7 +450,8 @@ const StatusFiled = "filed"
 
 // Filed reports whether this milestone has been put into the logbook. A filed
 // milestone is off the board: 'jaira milestone ls' does not name it, no card
-// carries its colour.
+// carries its colour, and a fetch that finds its ref leaves the ref alone
+// rather than writing the file back to disk.
 func (m *Milestone) Filed() bool { return m.Status == StatusFiled }
 
 // RenamedTo is the value of the `renamed-to:` line a rename of the name-keyed
@@ -637,8 +616,11 @@ func (m *Milestone) frontEnd() (int, bool) {
 	return 0, false
 }
 
-// Bytes renders the milestone as the document it is: every line as it was
-// read or edited, newline-terminated. It is what the ref carries.
+// Bytes renders the milestone as the file it is: every line as it was read or
+// edited, newline-terminated. It is what Save writes, and it is what the ref
+// carries — the caller that queues the ref already holds the milestone, so it
+// spells the content from here rather than reading back the file Save just
+// wrote.
 func (m *Milestone) Bytes() []byte {
 	var b strings.Builder
 	for _, l := range m.lines {
@@ -646,6 +628,17 @@ func (m *Milestone) Bytes() []byte {
 		b.WriteByte('\n')
 	}
 	return []byte(b.String())
+}
+
+// Save writes the milestone back through ticket.WriteAtomic, so a reader never
+// sees a half-written file and a crash leaves the previous one intact.
+// Atomicity is not exclusion: two writers still have to be serialised by the
+// caller.
+func (m *Milestone) Save(root string) error {
+	if err := os.MkdirAll(Dir(root), 0o755); err != nil {
+		return err
+	}
+	return ticket.WriteAtomic(m.Path(root), m.Bytes())
 }
 
 // AssignColour picks a colour for a new milestone: a random one none of the

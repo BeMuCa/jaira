@@ -605,7 +605,7 @@ repository on a shared drive without any of them knowing what jaira is.
 | write a ticket to its ref | `hash-object -w`, `mktree`, `commit-tree` — a commit whose tree holds `<id>.md`, with the SHA you read as its parent |
 | send it | `push --force-with-lease=<ref>:<the SHA you read>` — refused if anybody wrote since |
 | see what exists | `ls-remote origin 'refs/jaira/*'` — the whole board, tickets and milestones, in one round trip |
-| collect it | `fetch --prune origin '+refs/jaira/*:refs/jaira/*'` — both namespaces in one refspec, or you get cards whose milestone nobody has |
+| collect it | `fetch --prune origin '+refs/jaira/*:refs/jaira/*'` — both namespaces in one refspec, or you get cards whose milestone file nobody has |
 | read a ticket without a checkout | `show refs/jaira/tickets/<id>:<id>.md` |
 | read a milestone without a checkout | `ls-tree --name-only refs/jaira/milestones/<ID>`, then `show refs/jaira/milestones/<ID>:<name>-<ID>.md` |
 | a ticket's history | `log refs/jaira/tickets/<id>` — every move it ever made |
@@ -1030,7 +1030,7 @@ jaira logbook <milestone>  file a milestone once every ticket in it is finished
 jaira logbook              list what left the board in the last logbook-days (--since)
 jaira archive <id>         take a ticket that is not being worked off the board
 jaira reject <id> --why .. say why a ticket will not be done, and archive it (a person's call)
-jaira restore <file|ms>    put an archived or logged ticket, or a filed milestone, back
+jaira restore <file>       put an archived or logged ticket, or a filed milestone, back
 jaira delete <id>          remove a ticket's file for good (type the handle back)
 jaira move <id> --to ...   move lanes, applying the gates
 jaira next                 the next actionable ticket

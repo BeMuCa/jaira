@@ -40,8 +40,8 @@ func TestMilestoneArrivesWithoutASharedBranch(t *testing.T) {
 	if sha == "" {
 		t.Error("read gave no lease to write back against")
 	}
-	if refs, err := grace.ReadMilestones(nil); err != nil || len(refs) != 1 || refs["round-one"].File != "round-one.md" {
-		t.Errorf("ReadMilestones() = %v, %v; want round-one", refs, err)
+	if names, err := grace.ListMilestones(); err != nil || len(names) != 1 || names[0] != "round-one" {
+		t.Errorf("ListMilestones() = %v, %v; want [round-one]", names, err)
 	}
 }
 
@@ -68,12 +68,12 @@ func TestTheTwoNamespacesStayApart(t *testing.T) {
 	if len(ids) != 1 || ids[0] != "01TEST" {
 		t.Errorf("List() = %v, want only the ticket", ids)
 	}
-	refs, err := ada.ReadMilestones(nil)
+	names, err := ada.ListMilestones()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := refs["01TEST"]; len(refs) != 1 || !ok {
-		t.Errorf("ReadMilestones() = %v, want only the milestone", refs)
+	if len(names) != 1 || names[0] != "01TEST" {
+		t.Errorf("ListMilestones() = %v, want only the milestone", names)
 	}
 	// And the two refs carry different bytes, which is the actual claim: one
 	// flat namespace would have made the second write overwrite the first.
@@ -186,55 +186,5 @@ func TestMigrationIsItsOwnCommitAndIsFoundFromAnotherClone(t *testing.T) {
 	}
 	if _, _, err := ada.ReadMigration("FRESH1"); !errors.Is(err, gitref.ErrNoRef) {
 		t.Errorf("a milestone created with its ID has no migration commit: %v", err)
-	}
-}
-
-// The board reads every milestone on every refresh, in three git calls rather
-// than three per ref, and a commit it has read before is not read again.
-func TestReadMilestonesReadsEveryRefAtOnce(t *testing.T) {
-	ada, _ := twoClones(t)
-	for _, k := range []string{"AAAAAA", "BBBBBB"} {
-		if _, err := ada.WriteMilestone(k, "m-"+k+".md", []byte(milestoneFile+k+"\n"), ""); err != nil {
-			t.Fatal(err)
-		}
-	}
-	got, err := ada.ReadMilestones(nil)
-	if err != nil || len(got) != 2 {
-		t.Fatalf("ReadMilestones = %v, %v", got, err)
-	}
-	if r := got["BBBBBB"]; r.File != "m-BBBBBB.md" || string(r.Content) != milestoneFile+"BBBBBB\n" || r.SHA == "" {
-		t.Errorf("BBBBBB = %+v", r)
-	}
-	cached := map[string]gitref.MilestoneRef{got["AAAAAA"].SHA: {File: "cached.md", SHA: got["AAAAAA"].SHA}}
-	again, err := ada.ReadMilestones(cached)
-	if err != nil || again["AAAAAA"].File != "cached.md" || again["BBBBBB"].File != "m-BBBBBB.md" {
-		t.Errorf("a known commit was read again: %+v, %v", again, err)
-	}
-}
-
-// Without a remote a milestone lives on its local ref: written under the same
-// compare-and-swap a push makes, and refused when the ref has moved.
-func TestWriteMilestoneLocalNeedsNoRemote(t *testing.T) {
-	dir := t.TempDir()
-	git(t, dir, "init", "-q")
-	r := &gitref.Repo{Dir: dir, Remote: "origin", AuthorName: "ada"}
-	if err := r.Usable(); err == nil {
-		t.Fatal("the test needs a repository without a remote")
-	}
-	if err := r.InRepo(); err != nil {
-		t.Fatalf("InRepo: %v", err)
-	}
-	first, err := r.WriteMilestoneLocal("AAAAAA", "m-AAAAAA.md", []byte("one\n"), "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := r.WriteMilestoneLocal("AAAAAA", "m-AAAAAA.md", []byte("two\n"), ""); err == nil {
-		t.Error("a write that expects no ref replaced one")
-	}
-	if _, err := r.WriteMilestoneLocal("AAAAAA", "m-AAAAAA.md", []byte("two\n"), first); err != nil {
-		t.Fatal(err)
-	}
-	if _, got, _, err := r.ReadMilestone("AAAAAA"); err != nil || string(got) != "two\n" {
-		t.Errorf("read %q, %v", got, err)
 	}
 }

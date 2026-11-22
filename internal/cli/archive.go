@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -106,31 +105,30 @@ should never have existed. It asks for the handle typed back first.`,
 
 func newRestoreCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "restore <file|milestone>",
+		Use:   "restore <file>",
 		Short: "Put an archived ticket, or a filed milestone, back on the board",
 		Long: `Moves a file out of .jaira/archive/ or .jaira/logbook/ and back onto the board,
 named by its filename.
 
-A milestone filed with 'jaira logbook <name>' comes back by its name, its ID or
-<name>-<ID>: the "filed" line comes off its ref, and with it every clone shows
-it again after its next fetch. A milestone file an older build filed into the
-logbook is named by its file name, as before; it goes back onto its ref, and
-the file is deleted.`,
+A milestone filed with 'jaira logbook <name>' comes back the same way, with its
+ticket list and its colour as they were. The "filed" line comes off the file —
+that line, not where the file lies, is what keeps a milestone off the board —
+and the unmarked file goes back on its ref in the same breath, because until
+that happens every other clone goes on hiding it. If either half fails the
+restore fails with it rather than reporting a milestone nobody can see.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
 			if err != nil {
 				return err
 			}
-			if done, err := restoreMilestone(cmd, s, args[0]); done || err != nil {
-				return err
-			}
-			// The milestone lock covers the whole restore: a milestone file
-			// an older build filed comes back through .jaira/milestones/ and
-			// onto its ref, and which of the two this is only becomes clear
-			// once the file has moved. Ordering a ticket restore behind a
-			// milestone write costs nothing.
-			refs.FetchRefs()
+			// The milestone lock covers the whole restore, not just the
+			// unfiling: s.Restore moves the file into .jaira/milestones/
+			// itself, and a concurrent 'jaira milestone add' read-modify-
+			// writes that same file. A ticket restore takes the lock too —
+			// which of the two this is only becomes clear once the file has
+			// moved, and ordering a ticket restore behind a milestone write
+			// costs nothing.
 			unlock, err := s.Lock(milestoneLockName)
 			if err != nil {
 				return err
@@ -154,80 +152,45 @@ the file is deleted.`,
 	}
 }
 
-// restoreMilestone takes the "filed" line off the milestone arg names, by its
-// name, its ID or <name>-<ID>. done is false when arg names no milestone on
-// the refs, and the caller goes on to restore a file.
-func restoreMilestone(cmd *cobra.Command, s *ticket.Store, arg string) (done bool, err error) {
-	if strings.HasSuffix(arg, ".md") {
-		return false, nil
-	}
-	if _, _, err := milestone.NormalizeName(arg); err != nil {
-		return false, nil
-	}
-	importMilestones(s)
-	var amb *milestone.AmbiguousError
-	var onBoard bool
-	ms, err := milestone.EditFiled(s, refs, strings.TrimSpace(arg), func(ms *milestone.Milestone) error {
-		if !ms.Filed() {
-			onBoard = true
-			return nil
-		}
-		ms.SetStatus("")
-		return nil
-	})
-	switch {
-	case errors.Is(err, os.ErrNotExist):
-		return false, nil
-	case errors.As(err, &amb):
-		return true, refuseAmbiguous(amb)
-	case err != nil:
-		return true, err
-	case onBoard:
-		return true, fail(ExitValidation, "milestone_on_board",
-			"milestone %q is on the board, not filed — a filed one of the same name is restored by its <name>-<ID>, which 'jaira logbook' printed when it filed it", ms.Name)
-	}
-	if g.jsonOut {
-		return true, emit(cmd.OutOrStdout(), map[string]any{"restored": true, "milestone": ms.Name, "id": ms.ID, "ref": ms.Ref()})
-	}
-	fmt.Fprintf(cmd.OutOrStdout(), "Restored milestone %s to the board (%s).\n", milestoneLabel(ms), ms.Ref())
-	return true, nil
-}
-
-// unfileMilestone puts a milestone file an older build filed into the logbook,
-// just moved back to .jaira/milestones/, onto its ref and takes the "filed"
-// line off it there, reporting the milestone's name if that is what was
-// restored. The caller holds milestoneLockName.
+// unfileMilestone takes the "filed" line back off a milestone that has just
+// been restored and puts the unmarked file on its ref again, reporting the
+// milestone's name if that is what was restored.
 //
-// A failure fails the restore rather than being swallowed: reporting success
-// would put a milestone nobody can see on a board and call it restored.
+// Both halves are needed. Without the line removed the milestone is not on the
+// board at all — the line is what LoadAll reads; without the ref rewritten the
+// ref still says "filed", so every other clone keeps hiding it from the person
+// who just asked for it back.
+//
+// A failure here fails the restore rather than being swallowed: the file has
+// been moved back by then, so reporting success would put a milestone nobody
+// can see on a board and call it restored.
+//
+// The caller holds milestoneLockName. It is not taken here because the move
+// that puts the file in place happens before this runs and belongs under the
+// same lock.
 func unfileMilestone(s *ticket.Store, dst string) (string, error) {
 	if filepath.Base(filepath.Dir(dst)) != ticket.MilestonesSubdir {
 		return "", nil
 	}
 	name, id, _ := milestone.FileIdentity(strings.TrimSuffix(filepath.Base(dst), ".md"))
-	res, err := refs.ImportMilestones(s.Root)
-	reportImported(res.Moved, res.Waiting)
-	reportConflicts(res.Conflicts)
+	moved, err := migrateHeld(s)
+	reportMigrated(moved)
 	if err != nil {
-		return name, fmt.Errorf("%s was moved back to %s but could not be put on its ref, so it is still filed: %w",
+		return "", err
+	}
+	ms, err := milestone.Load(s.Root, id)
+	if err != nil {
+		return "", fmt.Errorf("%s was moved back to %s but could not be read, so it is still filed: %w",
 			filepath.Base(dst), milestone.Dir(s.Root), err)
-	}
-	if len(res.Waiting) > 0 {
-		return name, fail(ExitError, "milestone_waiting",
-			"%s was moved back to %s, but this clone could not reach the remote to tell it from a teammate's milestone — 'jaira fetch' takes it onto its ref, then 'jaira restore %s-%s' unfiles it",
-			filepath.Base(dst), milestone.Dir(s.Root), name, id)
-	}
-	ms, err := milestone.Load(refs, id)
-	if err != nil {
-		return name, fmt.Errorf("%s was put on its ref but could not be read back, so it is still filed: %w", filepath.Base(dst), err)
 	}
 	if ms.Filed() {
 		ms.SetStatus("")
-		if err := refs.RecordMilestone(ms.ID, ms.FileName(), ms.Bytes()); err != nil {
-			return name, fmt.Errorf("the %q line could not be taken off %s, so it stays off the board: %w",
-				milestone.StatusFiled, ms.Ref(), err)
+		if err := ms.Save(s.Root); err != nil {
+			return name, fmt.Errorf("%s was moved back to %s but the %q line could not be taken off it, so it stays off the board: %w",
+				filepath.Base(dst), milestone.Dir(s.Root), milestone.StatusFiled, err)
 		}
 	}
+	recordMilestone(ms)
 	return name, nil
 }
 

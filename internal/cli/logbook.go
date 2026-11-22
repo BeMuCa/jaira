@@ -57,11 +57,12 @@ is the moment every commit is finally known, so it is stamped here rather
 than left to whoever remembers to run 'jaira set'. 'jaira restore <file>'
 brings a logged ticket back, the same as an archived one.
 
-Naming a milestone instead of a ticket files the milestone: its ref is
-marked with the status "filed", and nothing else is written — no file lands
-in the logbook. 'jaira milestone ls' stops naming it, no card carries its
-colour and the board's M filter forgets it, in every clone after its next
-fetch. 'jaira restore <name>' brings it back. The name is free again: a new
+Naming a milestone instead of a ticket files the milestone: its file moves
+into .jaira/logbook/<initials>-<yyyymmdd>/milestones/, 'jaira milestone ls'
+stops naming it, no card carries its colour and the board's M filter forgets
+it. Its ref stays up carrying the status "filed": that line is what keeps a
+milestone off a board, so a clone that already has the file has it marked on
+the next fetch and stops showing the group. The name is free again: a new
 milestone of that name gets its own ID, and a restore keeps both. Only a
 milestone you name by hand — --all sweeps the terminal lane and never takes
 a group with it. A milestone is filed only
@@ -226,21 +227,8 @@ func listLogbook(s *ticket.Store, w io.Writer, days int, window string, now time
 			shown = append(shown, n)
 		}
 	}
-	// A filed milestone lies nowhere on disk: its ref says "filed", and the
-	// listing names it from there, with what brings it back.
-	importMilestones(s)
-	var filedMS []string
-	if ms, err := milestone.LoadFiled(refs); err == nil {
-		for _, m := range ms {
-			filedMS = append(filedMS, m.Name+"-"+m.ID)
-		}
-	}
 	if g.jsonOut {
-		return emit(w, map[string]any{"logbook": shown, "count": len(shown), "hidden": hidden, "since": cutoff,
-			"milestones_filed": strOrEmpty(filedMS)})
-	}
-	if len(filedMS) > 0 {
-		defer fmt.Fprintf(w, "\nFiled milestones (bring one back with 'jaira restore <name>-<ID>'): %s\n", strings.Join(filedMS, ", "))
+		return emit(w, map[string]any{"logbook": shown, "count": len(shown), "hidden": hidden, "since": cutoff})
 	}
 	if len(names) == 0 {
 		fmt.Fprintf(w, "The logbook is empty.\n")
@@ -279,10 +267,13 @@ func logbookOut(s *ticket.Store, idArg string, w io.Writer) error {
 			return refuseAmbiguous(amb)
 		case errors.Is(nerr, os.ErrNotExist):
 			name, _, _ := milestone.NormalizeName(idArg)
-			// An older build filed it into this tree's logbook as a file and
-			// this clone has no ref for it: milestone.Load answers with the
-			// same ErrNotExist a name nobody ever used answers with, so
-			// without this the reader is told the name is not a ticket.
+			// The file has left the board, which is exactly what filing does
+			// to it: this tree filed it, or this clone only ever saw the
+			// marked ref. milestone.Load answers with the same ErrNotExist a
+			// name nobody ever used answers with, so without this the reader
+			// is told the name is not a ticket — in the two states where
+			// create and add/rm refuse it by name. This is the door's only
+			// route past the ms.Filed() check below, which needs an ms.
 			if err := refuseIfFiled(s, name, ", and only a milestone that is on the board can be filed"); err != nil {
 				return err
 			}
@@ -342,14 +333,16 @@ func milestoneNamed(s *ticket.Store, arg string) (*milestone.Milestone, error) {
 	if _, _, err := milestone.NormalizeName(arg); err != nil {
 		return nil, err
 	}
-	importMilestones(s)
-	return milestone.Load(refs, strings.TrimSpace(arg))
+	return milestone.Load(s.Root, strings.TrimSpace(arg))
 }
 
-// logbookMilestone files a milestone: its ref marked "filed", and nothing
-// else. The ref is the milestone's only copy, so it stays: a ref that says
-// "filed" is read by every clone that fetches and takes the group off their
-// boards, and 'jaira restore' has something to take back.
+// logbookMilestone files a milestone: off the board, into the logbook, with
+// its ref left standing and marked.
+//
+// The ref is the part worth reading twice. Taking it down would be the obvious
+// move and is the wrong one: nothing would tell the other clones, while a ref
+// that says "filed" is read by every clone — it stops the file coming back and
+// marks the one they already have.
 func logbookMilestone(s *ticket.Store, key, name string, w io.Writer) error {
 	env, _, err := loadEnv(s)
 	if err != nil {
@@ -360,55 +353,88 @@ func logbookMilestone(s *ticket.Store, key, name string, w io.Writer) error {
 		return fail(ExitValidation, "not_terminal",
 			"no terminal lane is installed, so there is nowhere for milestone %q to be logged from", name)
 	}
-	var refusal error
-	ms, err := milestone.EditFiled(s, refs, key, func(ms *milestone.Milestone) error {
-		// Already filed: filing it a second time would change nothing on its
-		// ref and tell the reader nothing true.
-		if ms.Filed() {
-			refusal = refuseFiled(ms.Name, ms.ID,
-				"filing it again would change nothing")
-			return refusal
-		}
-		// The same gate a ticket passes, asked of a group: a milestone with
-		// unfinished work in it is a plan somebody is still working, and
-		// filing it takes the plan off the board while the work stays on it.
-		var open []string
-		for _, id := range ms.Members() {
-			t, err := s.Load(id)
-			if err != nil {
-				// Already off the board — filed or archived — which is as
-				// finished as this can ask for.
-				continue
-			}
-			if t.Status != term.ID {
-				open = append(open, fmt.Sprintf("%s (%s)", ticket.Handle(id), t.Status))
-			}
-		}
-		if len(open) > 0 {
-			refusal = fail(ExitValidation, "milestone_unfinished",
-				"milestone %q still holds work that has not reached %q: %s — finish or take those out with 'jaira milestone rm %s <id>' first",
-				name, term.ID, strings.Join(open, ", "), name)
-			return refusal
-		}
-		ms.SetStatus(milestone.StatusFiled)
-		return nil
-	})
-	if refusal != nil {
-		return refusal
+
+	unlock, err := s.Lock(milestoneLockName)
+	if err != nil {
+		return err
 	}
+	defer unlock()
+
+	moved, err := migrateHeld(s)
+	reportMigrated(moved)
+	if err != nil {
+		return err
+	}
+	ms, err := milestone.Load(s.Root, key)
+	if err != nil {
+		return err
+	}
+	// A file that already says filed is one a fetch wrote back here, or one a
+	// filing marked and got no further with. Either way it is off the board
+	// already, and filing it a second time would only stamp today's folder on
+	// somebody else's record of it.
+	//
+	// This check is the route where the marked file is lying here, and only
+	// that one: it took a fetch of somebody else's filing to put it here, so
+	// this tree's logbook holds nothing and 'jaira restore' here would only
+	// answer that the file is not in the archive. The copy that can come back
+	// is in the tree that filed it — which is what refuseFiledOnDisk says, so
+	// this door tells the reader what the other two tell them.
+	//
+	// The routes where the file is NOT here are answered above, before
+	// milestone.Load is even asked for an ms: this check cannot see them.
+	if ms.Filed() {
+		return refuseFiledOnDisk(s.Root, ms.Name, ms.FileName(),
+			"there is no copy of it here to bring back, so filing it again would only stamp today's folder on somebody else's record of it")
+	}
+	// The same gate a ticket passes, asked of a group: a milestone with
+	// unfinished work in it is a plan somebody is still working, and filing it
+	// takes the plan off the board while the work stays on it.
+	var open []string
+	for _, id := range ms.Members() {
+		t, err := s.Load(id)
+		if err != nil {
+			// Already off the board — filed or archived — which is as finished
+			// as this can ask for.
+			continue
+		}
+		if t.Status != term.ID {
+			open = append(open, fmt.Sprintf("%s (%s)", ticket.Handle(id), t.Status))
+		}
+	}
+	if len(open) > 0 {
+		return fail(ExitValidation, "milestone_unfinished",
+			"milestone %q still holds work that has not reached %q: %s — finish or take those out with 'jaira milestone rm %s <id>' first",
+			name, term.ID, strings.Join(open, ", "), name)
+	}
+
+	// Mark, then put the marked file on the ref, then move it: recordMilestone
+	// reads the file from the board, so writing has to come before moving.
+	// Nothing rides on it beyond that — the marked line is what takes the
+	// milestone off the board, so a move that fails here leaves a file that is
+	// already invisible to the board and already filed on its ref.
+	ms.SetStatus(milestone.StatusFiled)
+	if err := ms.Save(s.Root); err != nil {
+		return err
+	}
+	recordMilestone(ms)
+
+	folder := logbookFolder()
+	dst, err := s.LogbookMilestone(ms.FileName(), folder)
 	if err != nil {
 		return err
 	}
 
 	if g.jsonOut {
 		return emit(w, map[string]any{
-			"logged": true, "milestone": name, "id": ms.ID, "ref": ms.Ref(),
+			"logged": true, "milestone": name, "path": dst, "file": filepath.Base(dst),
 			"count": len(ms.Members()),
 		})
 	}
 	fmt.Fprintf(w, "Logged milestone %s (%d ticket(s)).\n", name, len(ms.Members()))
-	fmt.Fprintf(w, "Its ref %s is marked %q, so every clone keeps it off the board — 'jaira restore %s-%s' brings it back.\n",
-		ms.Ref(), milestone.StatusFiled, ms.Name, ms.ID)
+	fmt.Fprintf(w, "Moved to %s — restore it with 'jaira restore %s'.\n",
+		filepath.Join(ticket.DirName, ticket.LogbookSubdir, folder, ticket.MilestonesSubdir), filepath.Base(dst))
+	fmt.Fprintf(w, "Its ref stays up marked %q, so every clone keeps it off the board until you do.\n", milestone.StatusFiled)
 	return nil
 }
 

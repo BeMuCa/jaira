@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -103,11 +104,15 @@ func fetchRefs(y *refsync.Syncer) tea.Cmd {
 		// a board that needed a command beside it to show a teammate's
 		// milestones would not be showing the team's plan.
 		ms, err := y.FetchMilestones(y.Store)
+		var re *milestone.RecordError
+		if errors.As(err, &re) {
+			err = nil // written here, only the queueing failed: best effort, as in the CLI
+		}
 		return refFetchedMsg{arrivals: arrivals, milestones: ms, merged: merged, err: err}
 	}
 }
 
-// announceMilestones says what a fetch did to the milestones, as one line on
+// announceMilestones says what a fetch did to milestone files, as one line on
 // the board like arrivals. Names, not counts: a round of work you are in has
 // changed, and that is a name.
 func (m *Model) announceMilestones(f refsync.MilestonesFetched, merged []string) {
@@ -122,10 +127,13 @@ func (m *Model) announceMilestones(f refsync.MilestonesFetched, merged []string)
 		parts = append(parts, "milestones filed elsewhere: "+strings.Join(f.Filed, ", "))
 	}
 	if len(f.Moved) > 0 {
-		parts = append(parts, fmt.Sprintf("moved %d old milestone file(s) or ref(s) onto ID refs", len(f.Moved)))
+		parts = append(parts, fmt.Sprintf("moved %d milestone file(s) to ID names", len(f.Moved)))
+	}
+	if len(f.Published) > 0 {
+		parts = append(parts, "milestones sent to the remote for the first time: "+strings.Join(f.Published, ", "))
 	}
 	if len(f.Conflicts) > 0 {
-		parts = append(parts, fmt.Sprintf("%d milestone field(s) were changed on both sides, the ref's value kept", len(f.Conflicts)))
+		parts = append(parts, fmt.Sprintf("%d milestone edit(s) of an older build clashed with yours, yours kept", len(f.Conflicts)))
 	}
 	if len(parts) > 0 {
 		m.flash(strings.Join(parts, "; "))

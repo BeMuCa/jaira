@@ -122,11 +122,8 @@ func TestTheBoardFetchBringsInMilestones(t *testing.T) {
 	}
 	m.Update(msg)
 
-	if got, err := milestone.Load(bobSync, ms.ID); err != nil || got.Name != "backend" {
-		t.Errorf("the milestone did not arrive: %v", err)
-	}
-	if _, err := os.Stat(milestone.Dir(bobStore.Root)); !os.IsNotExist(err) {
-		t.Errorf("the milestone was written to disk: %v", err)
+	if _, err := os.Stat(filepath.Join(milestone.Dir(bobStore.Root), ms.FileName())); err != nil {
+		t.Errorf("the milestone did not arrive on disk: %v", err)
 	}
 	if line := m.flashLine(); !strings.Contains(line, "milestones updated: backend") {
 		t.Errorf("status line is %q", line)
@@ -191,8 +188,8 @@ func TestARejectedMilestoneFlushKeepsTheLocalEdit(t *testing.T) {
 	}
 	m.Update(fetchRefs(bobSync)())
 
-	// bob edits the goal in the board: queued for the ref.
-	if _, err := milestone.Edit(bobStore, bobSync, "backend", func(ms *milestone.Milestone) error {
+	// bob edits the goal in the board: written to the file, queued.
+	if _, err := milestone.Edit(bobStore.Root, bobStore, bobSync, "backend", func(ms *milestone.Milestone) error {
 		ms.SetGoal("bob's goal")
 		return nil
 	}); err != nil {
@@ -215,7 +212,7 @@ func TestARejectedMilestoneFlushKeepsTheLocalEdit(t *testing.T) {
 	}
 	m.Update(msg)
 
-	got, err := milestone.Load(bobSync, "backend")
+	got, err := milestone.Load(bobStore.Root, "backend")
 	if err != nil {
 		t.Fatal(err)
 	}

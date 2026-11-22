@@ -86,8 +86,10 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			if !quiet {
 				announceArrivals(arrivals)
 			}
-			// Milestones ride the same fetch: their refs are what the board
-			// reads, so what is news is which of them changed.
+			// Milestones ride the same fetch and are written straight to
+			// disk: a milestone has no lane and no editor here, the file IS
+			// the interface, so a group that stayed on a ref would be a group
+			// nobody can open.
 			ms, err := fetchMilestones(s)
 			if err != nil {
 				return err
@@ -96,7 +98,7 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			departed := refs.Departed()
 			stranded := strandedHere()
 			var twins []milestone.Twin
-			if all, err := milestone.LoadAll(refs); err == nil {
+			if all, err := milestone.LoadAll(s.Root); err == nil {
 				twins = milestone.Twins(all)
 			}
 			if g.jsonOut {
@@ -106,7 +108,7 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 					"milestones_filed":     strOrEmpty(ms.Filed),
 					"milestones_renamed":   ms.Renamed,
 					"milestones_migrated":  strOrEmpty(ms.Moved),
-					"milestones_waiting":   strOrEmpty(ms.Waiting),
+					"milestones_published": strOrEmpty(ms.Published),
 					"milestones_conflicts": conflictsOrEmpty(ms.Conflicts),
 					"milestones_twins":     twinsJSON(twins),
 				})
@@ -115,7 +117,7 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 			printFiledMilestones(cmd.OutOrStdout(), ms.Filed)
 			printRenamedMilestones(cmd.OutOrStdout(), ms.Renamed)
 			printMigratedMilestones(cmd.OutOrStdout(), ms.Moved)
-			printWaitingMilestones(cmd.OutOrStdout(), ms.Waiting)
+			printPublishedMilestones(cmd.OutOrStdout(), ms.Published)
 			printMilestoneConflicts(cmd.OutOrStdout(), ms.Conflicts)
 			printTwins(twins)
 			printArrivals(cmd.OutOrStdout(), arrivals)
@@ -128,17 +130,22 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 	return cmd
 }
 
-// fetchMilestones reports what this fetch did to the milestones, moves old
-// name refs to their IDs and takes milestone files an older build left on disk
-// onto their refs, under the same lock every other milestone writer takes
-// (refs.FetchMilestones). maybeFetch spawns a detached 'jaira fetch --json'
-// after every command, so this runs beside whatever is typed next.
+// fetchMilestones writes the milestone files this fetch brought, under the
+// same lock every other milestone writer takes. Fetch is the only read path
+// that is also a writer — Incoming() reports arriving tickets and writes no
+// ticket file, milestones are the one thing a fetch puts on disk — and it is
+// not an operator in a second terminal: maybeFetch spawns a detached 'jaira
+// fetch --json' after every command, so this runs beside whatever is typed
+// next. Unlocked it overwrites the Load→mutate→Save of a concurrent 'jaira
+// milestone add', or lands a filed file between that add's Load and its Save,
+// and the add silently un-files a milestone somebody else closed.
 //
 // Only this call is inside the lock: refs.Incoming() has already made the
 // network round trip by the time we get here, and holding a store lock across
 // one would block every milestone write for the length of a fetch.
 func fetchMilestones(s *ticket.Store) (refsync.MilestonesFetched, error) {
-	return refs.FetchMilestones(s)
+	res, err := refs.FetchMilestones(s)
+	return res, warnIfRecordOnly(err)
 }
 
 // conflictsOrEmpty keeps the JSON key an array when there is nothing to tell.
@@ -149,40 +156,37 @@ func conflictsOrEmpty(c []milestone.Conflict) []milestone.Conflict {
 	return c
 }
 
-// printMilestoneConflicts says which fields two sides of a milestone both
-// changed. The other side's value is in the milestone as a comment too.
+// printMilestoneConflicts says which edits an older build made that clashed
+// with this side's and were not taken. The value is in the milestone file too.
 func printMilestoneConflicts(w io.Writer, conflicts []milestone.Conflict) {
 	if len(conflicts) == 0 {
 		return
 	}
-	fmt.Fprintf(w, "\nMilestone fields changed on both sides (the ref's value kept, the other written into the milestone as a comment):\n")
+	fmt.Fprintf(w, "\nEdits an older build made to a milestone that clash with yours (yours kept, theirs written into the file as a comment):\n")
 	for _, c := range conflicts {
 		fmt.Fprintf(w, "  %s\n", c)
 	}
 }
 
-// printMigratedMilestones says what was moved onto an ID ref — a file an older
-// build left on disk, deleted once its ref has it, or an old name ref: a write
-// nobody asked for by name, so it is told. A moved file is queued for the
-// remote, not yet sent.
+// printMigratedMilestones says that old milestone files were moved to their ID
+// names: the move is a write nobody asked for by name, so it is told.
 func printMigratedMilestones(w io.Writer, moved []string) {
 	if len(moved) == 0 {
 		return
 	}
-	fmt.Fprintf(w, "\nMilestones live on refs now; moved and queued for the remote: %s\n", strings.Join(moved, ", "))
+	fmt.Fprintf(w, "\nMoved %d milestone file(s) to ID names: %s\n", len(moved), strings.Join(moved, ", "))
 }
 
-// printWaitingMilestones names the milestone files left on disk because this
-// fetch did not reach the remote: until one does, a file cannot be told from a
-// teammate's milestone this clone has not fetched yet.
-func printWaitingMilestones(w io.Writer, files []string) {
-	if len(files) == 0 {
+// printPublishedMilestones says which milestones were on this disk only and
+// now go to their ref: until this fetch nobody else could see them.
+func printPublishedMilestones(w io.Writer, names []string) {
+	if len(names) == 0 {
 		return
 	}
-	fmt.Fprintf(w, "\nMilestone files left under .jaira/milestones/ until a fetch reaches the remote: %s\n", strings.Join(files, ", "))
+	fmt.Fprintf(w, "\nMilestones that were on this disk only, now sent to the remote: %s\n", strings.Join(names, ", "))
 }
 
-// printMilestones says which milestones this fetch changed. Named
+// printMilestones says which milestone files this fetch put on disk. Named
 // rather than counted: the reason to care is that a round of work you are in
 // has changed, and that is a name, not a number.
 func printMilestones(w io.Writer, names []string) {

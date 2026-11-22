@@ -159,10 +159,10 @@ than trimmed down. Colors live once per board in `.jaira/tags`, one
 
 ## Before creating a milestone
 
-A milestone is the set of tickets that belong to one round of work, kept on
-its own ref, `refs/jaira/milestones/<ID>`, one ticket id per line — there is
-no file in the working tree to commit. The six characters are the ID, which
-stays when the name changes. Read the list before starting one:
+A milestone is the set of tickets that belong to one round of work, kept in
+`.jaira/milestones/<name>-<ID>.md`, one ticket id per line; the six characters
+after the last dash are the ID, which stays when the name changes. Read the list
+before starting one:
 
 ```bash
 jaira milestone ls --json                # id, name, color, ticket count, goal, place on the roadmap

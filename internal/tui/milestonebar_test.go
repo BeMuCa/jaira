@@ -17,7 +17,7 @@ func mkMilestone(t *testing.T, m *Model, name string, colour int, ids ...string)
 	for _, id := range ids {
 		ms.Add(id)
 	}
-	if err := m.refSync.RecordMilestone(ms.ID, ms.FileName(), ms.Bytes()); err != nil {
+	if err := ms.Save(m.store.Root); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -347,7 +347,7 @@ func mkMilestoneWithID(t *testing.T, m *Model, name, id string, colour int, ids 
 	for _, tid := range ids {
 		ms.Add(tid)
 	}
-	if err := m.refSync.RecordMilestone(ms.ID, ms.FileName(), ms.Bytes()); err != nil {
+	if err := ms.Save(m.store.Root); err != nil {
 		t.Fatal(err)
 	}
 }
