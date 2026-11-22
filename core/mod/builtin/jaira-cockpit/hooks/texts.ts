@@ -1,5 +1,8 @@
 // Every text the cockpit shows a person, in English whatever language the
 // person speaks with Claude: one set of words, the same on every machine.
+// The review notes are the one exception: they come from the ticket, and the
+// Verdict and Give back panes show them in the "language" the person set in
+// their own settings.json (register.tsx rephrase).
 
 import { type LightReason, oneLine } from './board.ts'
 
