@@ -1,7 +1,7 @@
 ---
 id: 01M292DSCW0CDNBSVJ6377B4GA
 title: "Der erste Schritt aus der Implementierung warnt, wenn kein DoD-Punkt abgehakt ist"
-status: backlog
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -23,15 +23,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-11T20:26:57Z
-updated-at: 2026-09-11T20:27:08Z
+updated-at: 2026-11-22T18:53:04Z
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-926893
+claimed-at: 2026-11-22T18:49:16Z
+outcome-what: "A move out of the implementing lane (the lane producing outcome-what), forward and not into a parking lane, with no DoD item settled, prints a warning on stderr; the move lands. Detection in core/move (Result.DoDUnticked), print in internal/cli/flow.go."
+outcome-why: An agent ticked only the plan through eight lanes and met nine refusals at signoff; the news belongs at the step that should tick the items.
+outcome-resolves: "DoD 1: warning on 0 ticked, none with one ticked, stderr also under --json, move lands; covered by core/move and internal/cli tests."
 ---
 
 # Der erste Schritt aus der Implementierung warnt, wenn kein DoD-Punkt abgehakt ist
 
 ## Definition of Done
 
-- [ ] Ein Zug aus der implementierenden Lane heraus schreibt eine Warnung, wenn kein Punkt der Definition of Done abgehakt ist; der Zug selbst geht durch; in --json steht sie nicht auf stdout zwischen den Daten; ein Test deckt beide Faelle ab (kein Punkt abgehakt: Warnung; mindestens einer: keine)
+- [x] Ein Zug aus der implementierenden Lane heraus schreibt eine Warnung, wenn kein Punkt der Definition of Done abgehakt ist; der Zug selbst geht durch; in --json steht sie nicht auf stdout zwischen den Daten; ein Test deckt beide Faelle ab (kein Punkt abgehakt: Warnung; mindestens einer: keine)
+  proof: core/move/move.go untickedDoD; internal/cli/flow.go warning on stderr; tests TestMoveReportsUntickedDoDOutOfImplementing, TestMoveOutOfImplementingWarnsOnUntickedDoD
 
 ## Options
 
@@ -43,4 +49,5 @@ updated-by: Alexander Sacharov
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-22 18:49 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/25712.sock
+- **2026-11-22 18:50 · Alexander Sacharov** — decision: no open design question. DoD fixes the place: a move OUT of the implementing lane, i.e. the lane whose output-produces names outcome-what (in-progress on the shipped board), forward only (later lane index) and not into a parking lane (requires-blocked-reason, e.g. blocked) and not back. Detected in core/move (one place for every caller, field Result.DoDUnticked), printed by the CLI on stderr in both text and --json mode. 'Ticked' = settled (done or superseded): an all-superseded list passes the gate, so warning there would be false. A ticket with no checklist items gets no warning - nothing to tick, the gate says that itself. TUI prints nothing: the warning is for agents, who use the CLI.
