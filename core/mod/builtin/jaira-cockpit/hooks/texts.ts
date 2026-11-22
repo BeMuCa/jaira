@@ -1,7 +1,10 @@
 // Every text the cockpit shows a person, in English whatever language the
 // person speaks with Claude: one set of words, the same on every machine.
+// The review notes are the one exception: they come from the ticket, and the
+// Verdict and Give back panes show them in the "language" the person set in
+// their own settings.json (register.tsx rephrase).
 
-import { oneLine } from './board.ts'
+import { type LightReason, oneLine } from './board.ts'
 
 // A text a person typed, as part of one line: whitespace collapsed (board.ts
 // oneLine), cut at max characters with an ellipsis. Counted in code points:
@@ -78,6 +81,7 @@ export const t = {
   landNeedsHerdr: (branch: string) => `${branch} lands on the default branch from a Herdr tab of its own (HERDR_ENV=1 or Herdr App, and spawn.sh from jaira roles install).`,
   prNeedsHerdr: (branch: string) => `${branch} needs a pull request, which opens in a Herdr tab of its own (HERDR_ENV=1 or Herdr App, and spawn.sh from jaira roles install).`,
   noteOn: (id: string) => `Note on ${id}`,
+  copyNotRemoved: (id: string, path: string, why: string) => `${id}: the copy pulled into the main checkout is still there and hides its ref (${oneLine(why)}); remove it: git clean -fqx -- '${path.replaceAll("'", `'\\''`)}'`,
   noteLost: (id: string, why: string, note: string) => `${id} went back to in-progress, but the note with your reason was not written: ${why}\nAdd it by hand: jaira note ${id} '${note.replaceAll("'", `'\\''`)}'`,
   tooOld: (installed: string, needed: string) => `jaira ${installed} is too old for this cockpit: it needs ${needed} or later. Give back will be refused until you update jaira.`,
   released: (latest: string, installed: string) => `jaira ${latest} is released (this is ${installed})`,
@@ -111,6 +115,31 @@ export const t = {
   // The Verdict pane: what the ticket is for, then the review whole.
   goal: 'Goal:',
   verdictHeading: 'Verdict:',
+  // The light on top of the Verdict pane: its colour, the reason it names
+  // first, and how many more there are.
+  light: { green: 'green', yellow: 'yellow', red: 'red' } as Record<'green' | 'yellow' | 'red', string>,
+  lightAccept: 'accept',
+  lightMore: (n: number) => ` (+${n} more)`,
+  lightReason: (r: LightReason): string => {
+    const s = (n: number) => (n === 1 ? '' : 's')
+    switch (r.kind) {
+      case 'refused': return 'the review gives it back'
+      case 'blockers': return `${r.n} blocker${s(r.n)} in the review`
+      case 'staleHunt': return 'bughunt not on HEAD'
+      case 'noHunt': return 'no bughunt yet'
+      case 'dodOpen': return `${r.n} DoD item${s(r.n)} open`
+      case 'dodIncomplete': return 'DoD not complete'
+      case 'notReviewed': return t.noVerdict
+      case 'freeVerdict': return "the verdict uses none of the lane's words"
+      case 'reservation': return 'the review has a reservation'
+      case 'oldReview': return t.reviewedIn(r.round)
+      case 'notesUnknown': return 'review notes not kept'
+      case 'notes': return `${r.n} review note${s(r.n)} to weigh`
+      case 'byAPerson': return `${r.n} 'seen by a person' item${s(r.n)} open`
+      case 'question': return 'an open question'
+      case 'huntUnknown': return 'bughunt unknown'
+    }
+  },
   notesHeading: 'Review notes:',
   noVerdict: 'not reviewed yet',
   notesNotKept: 'The notes of that review were not kept: a later lane rewrote them.',
@@ -188,6 +217,7 @@ export const filterWords = {
   // own words.
   marker: '[shortened by jaira-cockpit]',
   question: 'question',
+  needsYou: 'needs you',
   fullReport: 'full report',
   // The fields of a worker's status line, as the digest names them.
   commits: 'commits',

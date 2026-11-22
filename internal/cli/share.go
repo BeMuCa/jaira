@@ -68,8 +68,12 @@ You still have to commit. jaira does not commit on your behalf.`,
 				if err != nil {
 					return err
 				}
+				milestonesRemoved, err := board.RemoveMilestonesIgnore(s.Root)
+				if err != nil {
+					return err
+				}
 				if g.jsonOut {
-					return emit(w, map[string]any{"shared": false, "changed": changed, "lanes_ignore_removed": lanesRemoved})
+					return emit(w, map[string]any{"shared": false, "changed": changed, "lanes_ignore_removed": lanesRemoved, "milestones_ignore_removed": milestonesRemoved})
 				}
 				fmt.Fprintf(w, "The board is private again.\n")
 				if changed {
@@ -89,6 +93,13 @@ You still have to commit. jaira does not commit on your behalf.`,
 			// while the board is still excluded, not halfway with the exclude
 			// gone and .jaira/lanes/ showing as untracked.
 			lanesIgnored, err := board.AddLanesIgnore(s.Root)
+			if err != nil {
+				if board.Ignored(s.Root) {
+					return fmt.Errorf("the board stays private: %w", err)
+				}
+				return err
+			}
+			milestonesIgnored, err := board.AddMilestonesIgnore(s.Root, false)
 			if err != nil {
 				if board.Ignored(s.Root) {
 					return fmt.Errorf("the board stays private: %w", err)
@@ -119,6 +130,7 @@ You still have to commit. jaira does not commit on your behalf.`,
 			if g.jsonOut {
 				return emit(w, map[string]any{
 					"shared": true, "unignored": unignored, "lanes_ignored": lanesIgnored,
+					"milestones_ignored":    milestonesIgnored,
 					"gitattributes_written": attrs, "merge_driver_installed": installed,
 					"still_ignored": stillIgnored, "ignore_unknown": unknown,
 				})
@@ -135,6 +147,7 @@ You still have to commit. jaira does not commit on your behalf.`,
 				fmt.Fprintf(w, "Stopped ignoring .jaira/.\n")
 			}
 			fmt.Fprintf(w, "This project's lane files stay private: %s is still ignored.\n", board.LanesIgnoreLine)
+			fmt.Fprintf(w, "Milestone files stay out of git: %s is ignored, they travel on their refs.\n", board.MilestonesIgnoreLine)
 			if attrs {
 				fmt.Fprintf(w, "Wrote .jaira/.gitattributes so git merges tickets field by field.\n")
 			}

@@ -42,6 +42,12 @@ type RecordError struct {
 func (e *RecordError) Error() string { return fmt.Sprintf("milestone %q: %v", e.Name, e.Err) }
 func (e *RecordError) Unwrap() error { return e.Err }
 
+// Warning is how a command or the board tells the person: the milestone is
+// written here, and reaches nobody until its ref write is queued.
+func (e *RecordError) Warning() string {
+	return fmt.Sprintf("milestone %q was written here but could not be queued for the remote: %v", e.Name, e.Err)
+}
+
 // FiledError is Edit's refusal of a milestone whose file still lies here but
 // is marked filed — what a fetch of somebody else's filing leaves behind.
 // Writing it would put the change on its ref for every clone that fetches.
@@ -130,15 +136,35 @@ func Edit(root string, lock Locker, rec Recorder, name string, fn func(*Mileston
 	return ms, saveAll(root, rec, append([]*Milestone{ms}, succ...))
 }
 
-// lockAndMigrate takes the milestone lock and, under it, moves any file
+// catchUpper is a Recorder that can bring the files on this disk up to the
+// refs this tree already has, without the network; refsync's Syncer is one.
+type catchUpper interface {
+	CatchUpMilestones(root string) error
+}
+
+// lockAndMigrate takes the milestone lock and, under it, first brings every
+// milestone file up to its ref (CatchUpMilestones), then moves any file
 // written before IDs existed to its ID name (Migrate), so a write never meets
 // the old format and no caller can forget to. A ref that could not be queued
 // for a moved file is not a reason to stop: the move happened, and only that
 // milestone's own next write queues it.
+//
+// The catch-up comes first because the file is what the write starts from.
+// A file another worktree or a teammate has moved past on the ref — a copy
+// left in an old worktree, say — would otherwise be written back over the
+// ref with a lease that matches, and every ticket added since would be gone
+// without a word (KWQCYZ). A catch-up that fails stops the write for the same
+// reason.
 func lockAndMigrate(root string, lock Locker, rec Recorder) (func(), error) {
 	unlock, err := lock.Lock(LockName)
 	if err != nil {
 		return nil, err
+	}
+	if c, ok := rec.(catchUpper); ok {
+		if err := c.CatchUpMilestones(root); err != nil {
+			unlock()
+			return nil, err
+		}
 	}
 	if _, err := Migrate(root, rec); err != nil {
 		var re *RecordError
@@ -198,10 +224,45 @@ func Rename(root string, lock Locker, rec Recorder, from, to string) (*Milestone
 	if _, recordOnly := err.(*RecordError); err != nil && !recordOnly {
 		return renamed, err
 	}
-	if rmErr := os.Remove(ms.Path(root)); rmErr != nil {
+	// A rename in case only, on a file system that ignores case (Windows,
+	// macOS, /mnt/c under WSL), saved the new name over the old file: the
+	// two names are one file, and removing the old one would remove it.
+	if SameFile(renamed.Path(root), ms.Path(root)) {
+		if caseErr := MatchCase(ms.Path(root), renamed.Path(root)); caseErr != nil {
+			return renamed, caseErr
+		}
+	} else if rmErr := os.Remove(ms.Path(root)); rmErr != nil {
 		return renamed, rmErr
 	}
 	return renamed, err
+}
+
+// MatchCase gives the file have names the spelling want, where the two are
+// one file because the file system ignores case. Writing to want does not
+// do it: macOS and Windows keep the name the file already had, and a
+// milestone's name is read from its file name. Two renames through a name of
+// its own do. Nothing happens where have and want are two files or the same
+// string.
+func MatchCase(have, want string) error {
+	if have == want || !SameFile(have, want) {
+		return nil
+	}
+	tmp := want + ".case"
+	if err := os.Rename(have, tmp); err != nil {
+		return err
+	}
+	return os.Rename(tmp, want)
+}
+
+// SameFile reports whether a and b name one file on disk — two names that
+// differ only in case do where the file system ignores it.
+func SameFile(a, b string) bool {
+	ia, err := os.Stat(a)
+	if err != nil {
+		return false
+	}
+	ib, err := os.Stat(b)
+	return err == nil && os.SameFile(ia, ib)
 }
 
 // CheckFree asks the milestone directory whether a name can be given out: a

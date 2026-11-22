@@ -320,8 +320,9 @@ goes onto the ticket, and then you stop:
 2. `jaira set <id> question="<the question in one line>"` — this is what the
    dispatcher's wait notices. Leave the ticket in your lane; do not `jaira
    move` it, and do not move it into `human` either.
-3. Report the same numbered list as the last thing in your pane, and stop. Do
-   not pick an option yourself because nobody answered.
+3. Report the same numbered list as the last thing in your pane, with only
+   the status line (see "Boundaries") below it, and stop. Do not pick an
+   option yourself because nobody answered.
 
 The answer comes back as a `jaira note` on the ticket, and the lane runs again
 in a fresh worker that reads it there.
@@ -329,9 +330,10 @@ in a fresh worker that reads it there.
 A question about your role — which of the two critiques you are, see above —
 is not one of these: only the dispatcher knows that answer, and the person does
 not. You have no line to the dispatcher, though — nothing tells you its name.
-So write it as the last line in your pane, set no `question` field and no note,
-and stop. The dispatcher reads your pane when its wait comes back without the
-lane having moved.
+So write it as the last line in your pane, with only the status line (see
+"Boundaries") below it, set no `question` field and no note, and stop. The
+dispatcher reads your pane when its wait comes back without the lane having
+moved.
 
 ## Boundaries
 
@@ -346,3 +348,18 @@ lane having moved.
 - When you are done, report in three lines: what changed, what the next lane is,
   what is still open. A teamlead reads your pane, so the last thing on screen
   should be that summary and not a wall of diff.
+- Then one line more, always the last line of the report, in exactly the
+  format `jaira-worker` describes under "Report" — the jaira-cockpit shortens
+  a report to this line alone and shows only the ticket id when it is missing:
+
+  ```
+  jaira: <ID> <from> -> <to> · branch: <branch> · commits: <first>..<last> (<n>) · gates: ok|red|none · notes: <n> · verdict: <text>
+  ```
+
+  `<from>` is your lane, `<to>` the lane the ticket sits in when you stop —
+  the same lane when you stopped on a question. `gates` is what you ran
+  before a push, `none` where you pushed nothing; `verdict` is the outcome
+  your lane produced (`review-verdict`, `test-verdict`, the critique's
+  summary in a few words). A value you do not have is `-`, never a missing
+  key. It comes after everything else, a question's list included. The
+  critique beside the work writes no such line: it moved nothing.

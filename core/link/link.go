@@ -45,6 +45,11 @@ const (
 	PlaceLogbook Place = "logbook"
 	// PlaceArchive means it was taken off the board into .jaira/archive/.
 	PlaceArchive Place = "archive"
+	// PlaceRejected means it was rejected and is off every board, but not
+	// filed here: rejected on its ref, or a file here carrying a rejection.
+	// It is told apart from PlaceRef because the way back from a ref,
+	// 'jaira pull', takes a rejection off — advice nobody may get by default.
+	PlaceRejected Place = "rejected"
 	// PlaceUnknown means the id resolves to nothing here at all.
 	PlaceUnknown Place = "unknown"
 )
@@ -158,6 +163,14 @@ func Build(s *ticket.Store, lanes *lane.Set, board []*ticket.Ticket) *Index {
 		ix.board[t.ID] = t
 	}
 	if s != nil {
+		// Rejected and off the board, but there: a link to one is a link to
+		// a ticket that exists, not to nothing. Read off the board's last
+		// listing, which the caller just made to hand us board.
+		for _, t := range s.RejectedOffBoard() {
+			if _, listed := ix.board[t.ID]; !listed {
+				ix.board[t.ID] = t
+			}
+		}
 		for id, path := range s.FiledAwayIDs() {
 			t, listed := ix.board[id]
 			switch {
@@ -256,7 +269,10 @@ func (ix *Index) place(id string) (Ref, bool) {
 	}
 	if t, ok := ix.board[id]; ok {
 		place := PlaceBoard
-		if t.ReadOnly {
+		switch {
+		case t.Rejected.Kind != "":
+			place = PlaceRejected
+		case t.ReadOnly:
 			place = PlaceRef
 		}
 		return Ref{
@@ -496,6 +512,8 @@ func (r Ref) Whereabouts() string {
 		return "on the board · " + r.Lane
 	case PlaceRef:
 		return "on its ref · jaira pull " + ticket.Handle(r.ID)
+	case PlaceRejected:
+		return "rejected · off the board"
 	case PlaceLogbook:
 		return "logbook · done"
 	case PlaceArchive:

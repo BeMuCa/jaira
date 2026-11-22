@@ -1127,6 +1127,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case refTickMsg:
 		return m, tea.Batch(fetchRefs(m.refSync), refTick())
 
+	case refRejectedMsg:
+		m.refRejected(msg)
+		return m, nil
 	case refFetchedMsg:
 		if msg.err != nil {
 			// A remote that cannot be reached is the normal state the outbox
@@ -1135,8 +1138,22 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.notify(msg.err.Error(), true)
 			return m, nil
 		}
+		before := m.flashAt
 		m.announceMilestones(msg.milestones, msg.merged)
 		m.announceArrivals(msg.arrivals)
+		if re := msg.warn; re != nil {
+			// The same words as 'jaira fetch': without them the board retries
+			// every few minutes in silence while the person believes the
+			// milestone reaches their teammates. On the status line beside the
+			// fetch's other news, not as a message: this arrives in the
+			// background, and a message would take the keys of whatever the
+			// person is typing.
+			news := re.Warning()
+			if m.flashAt != before {
+				news = m.flashMsg + "; " + news // this fetch's own news first
+			}
+			m.flash(news)
+		}
 		_ = m.reload()
 		return m, nil
 
@@ -1341,7 +1358,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case modeReject:
 		switch s {
 		case "enter":
-			m.confirmReject()
+			return m, m.confirmReject()
 		case "esc":
 			m.input, m.rejecting = "", nil
 			m.mode = m.returnTo
@@ -2339,12 +2356,18 @@ func (m *Model) startReject(t *ticket.Ticket) {
 
 // confirmReject rejects the ticket with the typed reason. An empty reason
 // leaves the prompt open: rejecting without one is archiving, and x does that.
-func (m *Model) confirmReject() {
+//
+// A card with no file here is rejected on its ref, which needs the network,
+// so that runs as a command and refRejected reports it.
+func (m *Model) confirmReject() tea.Cmd {
 	t, why := m.rejecting, strings.TrimSpace(m.input)
 	if why == "" {
-		return
+		return nil
 	}
 	m.input, m.rejecting = "", nil
+	if t.ReadOnly {
+		return m.rejectOnRef(t, why)
+	}
 	// Stamped before the ticket leaves the board, as 'jaira reject' does:
 	// a rejected ticket's commits are the record of what was tried.
 	// Best-effort, like there — finding none must not stop the rejection.
@@ -2353,16 +2376,57 @@ func (m *Model) confirmReject() {
 	if err != nil {
 		m.mode = m.returnTo
 		m.notify(err.Error(), true)
-		return
+		return nil
 	}
 	m.mode = modeBoard
 	m.detail = nil
 	if err := m.reload(); err != nil {
 		m.notify(err.Error(), true)
-		return
+		return nil
 	}
 	m.notify(fmt.Sprintf("Rejected %s: %s\n\nIt is in the archive with its reason — bring it back with:\n\n  jaira restore %s",
 		ticket.Handle(t.ID), why, filepath.Base(dst)), false)
+	return nil
+}
+
+// refRejectedMsg is the outcome of rejecting a card on its ref.
+type refRejectedMsg struct {
+	t      *ticket.Ticket
+	why    string
+	heldBy string
+	err    error
+}
+
+// rejectOnRef rejects a card that has no file here on its ref, as 'jaira
+// reject' does: no archive file in this checkout's branch, and everybody sees
+// it after their next fetch. It fetches and pushes, so it runs off the update
+// loop.
+func (m *Model) rejectOnRef(t *ticket.Ticket, why string) tea.Cmd {
+	y := m.refSync
+	m.mode = modeBoard
+	m.detail = nil
+	m.notify(fmt.Sprintf("Rejecting %s on its ref …", ticket.Handle(t.ID)), false)
+	return func() tea.Msg {
+		_, heldBy, err := y.Reject(t.ID, ticket.RejectWontfix, why, "", time.Now())
+		return refRejectedMsg{t: t, why: why, heldBy: heldBy, err: err}
+	}
+}
+
+func (m *Model) refRejected(msg refRejectedMsg) {
+	h := ticket.Handle(msg.t.ID)
+	if msg.err != nil {
+		m.notify(fmt.Sprintf("%s was not rejected: %v\n\nNothing was written.", h, msg.err), true)
+		return
+	}
+	if err := m.reload(); err != nil {
+		m.notify(err.Error(), true)
+		return
+	}
+	text := fmt.Sprintf("Rejected %s: %s\n\nWritten to its ref, not to a file here — everybody sees it after their next fetch.", h, msg.why)
+	if msg.heldBy != "" {
+		text += "\n\n" + refsync.HeldByWarning(h, msg.heldBy)
+	}
+	m.notify(text, false)
 }
 
 // nextBoard shows the repository's next board, in the order today's board

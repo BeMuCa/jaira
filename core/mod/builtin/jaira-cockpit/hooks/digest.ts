@@ -4,13 +4,6 @@
 
 import { filterWords as words } from './texts.ts'
 
-// The lanes jaira ships. A board may rename or add lanes; an arrow between
-// two lowercase words (`review -> signoff`) is read whatever the names are.
-const LANES = [
-  'backlog', 'brainstorm', 'todo', 'pre-process', 'in-progress', 'critique',
-  'optimize', 'testing', 'human', 'review', 'signoff', 'done', 'blocked',
-]
-
 // A handle is the last six characters of a ticket's ULID, Crockford base32
 // (no I, L, O, U). Six capital letters alone are too often an ordinary word
 // (STATUS, PASSED), so a handle without a digit counts only where jaira's
@@ -57,33 +50,6 @@ export function isFailure(text: string): boolean {
   return FAILURE.test(text) || GO_FAIL.test(text)
 }
 
-const ARROW = /\b([a-z][a-z-]*)\s*(?:->|→|=>)\s*([a-z][a-z-]*)\b/
-const INTO = new RegExp(
-  `\\b(?:to|into|in|nach|in die lane|sits in|steht in|liegt in)\\s+\`?(${LANES.join('|')})\\b`,
-  'i',
-)
-
-// The lane change, "from → to", or the lane the ticket ended in alone.
-export function laneOf(text: string): string | undefined {
-  for (const line of text.split('\n')) {
-    const m = ARROW.exec(line)
-    if (m && (LANES.includes(m[1]!) || LANES.includes(m[2]!))) return `${m[1]} → ${m[2]}`
-  }
-  const m = INTO.exec(text)
-  return m ? `→ ${m[1]!.toLowerCase()}` : undefined
-}
-
-const VERDICT_LINE = /(?:review-verdict\s*=\s*|\b(?:verdict|urteil)\s*[:=]\s*)["“]?([^"\n”]+)/i
-const VERDICT_WORD =
-  /\b(approve[sd]?(?: with (?:reservations?|caveats?)| mit vorbehalt)?|request(?:s|ed)? changes|changes requested|reject(?:ed)?|sent back|zur(?:ü|ue)ckgegeben|mit vorbehalt)\b/i
-
-export function verdictOf(text: string): string | undefined {
-  const line = VERDICT_LINE.exec(text)
-  if (line) return clip(line[1]!.trim(), 60)
-  const word = VERDICT_WORD.exec(text)
-  return word ? word[1]!.toLowerCase() : undefined
-}
-
 // A question ends at a quote, the line's end, or a "·" — the separator of a
 // status line, whose next field is not part of the question.
 const QUESTION = /(?:--question\s+["“]|\b(?:open question|offene frage|question|frage)\s*[:=]\s*["“]?)([^"\n”·]+)/i
@@ -115,8 +81,11 @@ export type StatusLine = {
 }
 
 const FIELDS = ['branch', 'commits', 'gates', 'notes'] as const
+// A lane id is what core/lane accepts: lowercase letters, digits and hyphens
+// (qa2, 2-review). A narrower pattern drops the whole line on such a board.
+const LANE = '[a-z0-9][a-z0-9-]*'
 const STATUS_HEAD = new RegExp(
-  `^\\s*jaira:\\s+(${HANDLE})\\s+([a-z][a-z-]*)\\s*(?:->|→)\\s*([a-z][a-z-]*)\\s*(?:·\\s*(.*))?$`,
+  `^\\s*jaira:\\s+(${HANDLE})\\s+(${LANE})\\s*(?:->|→)\\s*(${LANE})\\s*(?:·\\s*(.*))?$`,
   'i',
 )
 // The engine's frame around a message — <result>, <agent-message from="…">
@@ -124,6 +93,26 @@ const STATUS_HEAD = new RegExp(
 // on either side. They are not part of it.
 const FRAME_OPEN = /^(?:\s*<[a-z][a-z-]*(?:\s[^>]*)?>)+/i
 const FRAME_CLOSE = /(?:<\/[a-z][a-z-]*>\s*)+$/i
+
+// The one line above the status line that says what waits for a person
+// (see the Report section of jaira-worker): "needs you: <what>". It is all a
+// report carries besides the status line, so a digest that dropped it would
+// drop the only thing the teamlead has to act on. Read like the status line:
+// the last such line, frame tags around it stripped — in a two-line report
+// it is the first line, the one the engine's frame opens on. Only an empty
+// value is no ask: the worker writes no line when nothing waits, and a word
+// list would also drop a real ask that starts "no answer from CI…".
+const NEEDS_YOU = /^[ \t]*needs you:[ \t]*(.*?)[ \t]*$/i
+
+export function needsYouOf(text: string): string | undefined {
+  const lines = text.split(/\r?\n/)
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const m = NEEDS_YOU.exec(lines[i]!.replace(FRAME_OPEN, '').replace(FRAME_CLOSE, ''))
+    if (!m) continue
+    return m[1] === '' ? undefined : clip(m[1]!, 140)
+  }
+  return undefined
+}
 
 // The last such line in the report, or undefined when there is none: a
 // report quoting an earlier one still ends with its own. A key that is
@@ -154,8 +143,10 @@ export function statusLineOf(text: string): StatusLine | undefined {
 
 // The line the chat shows instead of the report, or undefined when the
 // report must be passed on whole: no ticket recognisable, or a failure.
-// A report that ends with a status line is read from that line alone; one
-// without it is guessed at as before.
+// A report that ends with a status line is read from that line alone. One
+// without it shows the ticket and nothing else: a lane or a verdict picked
+// out of free text ("reject? reason: …", "nothing rejected", "all the way to
+// signoff") was wrong often enough that an id alone is the better line.
 export function digest(text: string): { ticket: string; line: string } | undefined {
   if (isFailure(text)) return undefined
   const status = statusLineOf(text)
@@ -171,11 +162,13 @@ export function digest(text: string): { ticket: string; line: string } | undefin
         status.gates === undefined ? undefined : `${words.gates} ${status.gates}`,
         status.notes === undefined ? undefined : `${words.notes} ${status.notes}`,
       ].map(p => (p === undefined ? undefined : clip(p, 60)))
-    : [ticket, laneOf(text), verdictOf(text)]
+    : [ticket]
   // A question inside the status line's verdict is shown twice, once there
   // and once here: a known limit, chosen over a dedupe that lost questions.
   const question = questionOf(text)
   if (question !== undefined) parts.push(`${words.question}: ${question}`)
+  const needs = needsYouOf(text)
+  if (needs !== undefined) parts.push(`${words.needsYou}: ${needs}`)
   const line = parts.filter(p => p !== undefined).join(' · ')
   return { ticket, line: `${words.marker} ${line} — ${words.fullReport}: /cockpit report ${ticket}` }
 }

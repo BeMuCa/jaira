@@ -423,17 +423,30 @@ func withoutVersion(s string) string {
 // with note, and whether s has such a block at all. One definition, used by the
 // writer and by the drift check, so the two can never disagree about what
 // "already current" means.
+//
+// A file with CRLF line endings — a Windows checkout with core.autocrlf — gets
+// the block in CRLF too. Built in LF, it never equals what is on disk, so the
+// drift check would call the file out of date straight after 'jaira update',
+// and the update would leave the file with mixed endings.
 func managedBlock(s, note string) (string, bool) {
 	start := strings.Index(s, jairaMarkerStart)
 	end := strings.Index(s, jairaMarkerEnd)
 	if start < 0 || end <= start {
 		return "", false
 	}
-	newBlock := jairaMarkerStart + "\n" + note + "\n" + jairaMarkerEnd
+	// The file's own lines decide, not the block: a CRLF file whose block an
+	// older build wrote in LF would otherwise keep it in LF for good.
+	outside := s[:start] + s[end+len(jairaMarkerEnd):]
+	if strings.TrimSpace(outside) == "" {
+		outside = s // nothing but the block: it is the file
+	}
+	nl := lineEnding(outside)
+	note = strings.ReplaceAll(note, "\n", nl)
+	newBlock := jairaMarkerStart + nl + note + nl + jairaMarkerEnd
 	if localRel := strings.Index(s[start:end], jairaMarkerLocal); localRel >= 0 {
 		localIdx := start + localRel
-		preserved := strings.TrimRight(s[localIdx+len(jairaMarkerLocal):end], "\n")
-		newBlock = jairaMarkerStart + "\n" + note + "\n\n" + jairaMarkerLocal + preserved + "\n" + jairaMarkerEnd
+		preserved := strings.TrimRight(s[localIdx+len(jairaMarkerLocal):end], "\r\n")
+		newBlock = jairaMarkerStart + nl + note + nl + nl + jairaMarkerLocal + preserved + nl + jairaMarkerEnd
 	}
 	return s[:start] + newBlock + s[end+len(jairaMarkerEnd):], true
 }
@@ -720,9 +733,12 @@ func announceInAgentFile(root, name string, lanes []LaneFact, dry bool) (path st
 	sep := "\n"
 	if !strings.HasSuffix(s, "\n") {
 		sep = "\n\n"
-	} else if !strings.HasSuffix(s, "\n\n") {
-		sep = "\n"
 	}
+	// In the file's own line endings, as managedBlock rewrites it, or the
+	// block just appended reads as drifted at once.
+	nl := lineEnding(s)
+	sep = strings.ReplaceAll(sep, "\n", nl)
+	block = strings.ReplaceAll(block, "\n", nl)
 	if !dry {
 		if err := os.WriteFile(path, []byte(s+sep+block), 0o644); err != nil {
 			return path, "", err

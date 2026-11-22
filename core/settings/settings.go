@@ -122,6 +122,17 @@ type Settings struct {
 	// costs is the team's choice. Read it through ChatModelFor.
 	ChatModel string `json:"chat-model,omitempty"`
 
+	// Language is the language the cockpit shows a ticket's review notes in,
+	// in the Verdict and Give back panes: a cheap model rewrites them short
+	// and plain in it, for this person only. The ticket keeps its own words.
+	// A language name as a person writes it (Русский, Deutsch, English); it
+	// goes to the model as it stands. Empty means the notes as the ticket has
+	// them, and no model is asked. It lives here and never on the board,
+	// because two people on one board read different languages. A value that
+	// is no string is read as none rather than failing the whole file: a
+	// typo here must not cost the remote and the hook beside it.
+	Language Language `json:"language,omitempty"`
+
 	// Python is the command a role runs its Python scripts with — the
 	// acceptance page, the logbook summary. A command, not a path, so
 	// "uv run python" works as well as "py -3": on Windows python3 is often
@@ -150,6 +161,23 @@ func (s Settings) PythonCommand() (cmd, source string) {
 // ChatModelChoices are the values the settings screen steps through, the
 // empty account default first. Anything else is written by hand.
 var ChatModelChoices = []string{"", "sonnet", "haiku", "opus"}
+
+// Language is the language setting: a string, and anything else read as "".
+type Language string
+
+// UnmarshalJSON takes a JSON string and reads every other value as none.
+func (l *Language) UnmarshalJSON(b []byte) error {
+	var v string
+	if json.Unmarshal(b, &v) != nil {
+		v = ""
+	}
+	*l = Language(strings.TrimSpace(v))
+	return nil
+}
+
+// LanguageChoices are the values the settings screen steps through, none
+// first. Anything else is written by hand.
+var LanguageChoices = []string{"", "Deutsch", "English", "Русский"}
 
 // chatModelFile is the board's own chat model under .jaira: one line, the
 // model, shared with everybody who works the board. Its own file, like
@@ -462,7 +490,88 @@ func Load() Settings {
 	return s
 }
 
-// Save writes the settings, creating ~/.jaira if it is not there yet.
+// Update changes the settings file with change and returns what it now holds.
+// It is the write path for a person's choice made on a screen: it reads the
+// file again right before writing, so nothing set meanwhile is written back
+// from an older copy; it refuses to write over a file it cannot read whole —
+// Load's defaults written back would wipe the remote, the hook and
+// everything else — and says where the file is; and keys this build does not
+// know, written by a newer jaira or by hand, stay in the file as they were.
+// Two writers - two settings screens open at once - take turns under the lock
+// file the ticket store's own locks are made of, and the file is replaced
+// whole (ticket.WriteAtomic), so neither ever reads it half written.
+func Update(change func(*Settings)) (Settings, error) {
+	path := Path()
+	if path == "" {
+		return Settings{}, nil
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return Settings{}, err
+	}
+	unlock, err := ticket.LockFile(path + ".lock")
+	if err != nil {
+		return Settings{}, err
+	}
+	defer unlock()
+	raw := map[string]json.RawMessage{}
+	var s Settings
+	b, err := os.ReadFile(path)
+	switch {
+	case os.IsNotExist(err):
+	case err != nil:
+		return Settings{}, err
+	case strings.TrimSpace(string(b)) != "":
+		err := json.Unmarshal(b, &raw)
+		if err == nil {
+			err = json.Unmarshal(b, &s)
+		}
+		if err != nil {
+			return Settings{}, fmt.Errorf("%s does not parse (%v): fix it by hand, nothing was written", path, err)
+		}
+	}
+	before, err := known(s)
+	if err != nil {
+		return Settings{}, err
+	}
+	change(&s)
+	after, err := known(s)
+	if err != nil {
+		return Settings{}, err
+	}
+	// The fields this build knows are written as the struct now has them —
+	// one emptied by change is gone, as omitempty leaves it out; the rest of
+	// the file is kept. encoding/json read them whatever their case, so a
+	// hand-written "Language" goes with "language".
+	for k := range raw {
+		for b := range before {
+			if strings.EqualFold(k, b) {
+				delete(raw, k)
+			}
+		}
+	}
+	for k, v := range after {
+		raw[k] = v
+	}
+	out, err := json.MarshalIndent(raw, "", "  ")
+	if err != nil {
+		return Settings{}, err
+	}
+	return s, ticket.WriteAtomic(path, append(out, '\n'))
+}
+
+// known is s as the keys and values its JSON form carries.
+func known(s Settings) (map[string]json.RawMessage, error) {
+	b, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+	m := map[string]json.RawMessage{}
+	return m, json.Unmarshal(b, &m)
+}
+
+// Save writes the settings whole, creating ~/.jaira if it is not there yet.
+// A choice made on a screen goes through Update instead, which keeps what
+// this struct does not know and never writes over a file it cannot read.
 func Save(s Settings) error {
 	path := Path()
 	if path == "" {
@@ -475,7 +584,7 @@ func Save(s Settings) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(b, '\n'), 0o644)
+	return ticket.WriteAtomic(path, append(b, '\n'))
 }
 
 // RemoteFor returns the remote this board's ticket refs travel on.
