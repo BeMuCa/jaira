@@ -121,6 +121,8 @@ type World = {
   disk: Record<string, 'ref-only' | 'behind'>
   // The ticket `disk` speaks of; MG677R where unset.
   diskId?: string
+  // What spawn.sh fails with; undefined: it opens its tab.
+  spawnFails?: string
   // What `jaira pull` refuses with; undefined: it pulls.
   pullFails?: string
   // What `git clean` refuses with; undefined: it removes the file.
@@ -274,6 +276,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     const [cmd, ...args] = e.argv
     const here = `@${e.init?.cwd ?? ''}`
     const refuse = (stderr: string) => ({ value: { exitCode: 1, stdout: '', stderr, isStdoutTruncated: false, isStderrTruncated: false } })
+    if (cmd === 'bash' && args[0] === SPAWN && w.spawnFails !== undefined) return refuse(w.spawnFails)
     if (cmd === 'jaira' && args[0] === 'pull') {
       if (w.pullFails !== undefined) return refuse(w.pullFails)
       delete w.disk[here]
@@ -4311,11 +4314,13 @@ describe('the language and the rephrased answer, read alone', () => {
 
 // DF46B9: Explain and Discuss open a chat that writes its note onto the
 // ticket, which a file on the ref alone or older than the ref refuses. They
-// pull it first through the same ticketHere as Accept (76ERHH); a copy pulled
-// into the main checkout stays while the chat runs and goes once it is done.
+// pull it first through the same ticketHere as Accept (76ERHH). A copy pulled
+// into the main checkout is the chat's to remove, as its last step: the
+// cockpit removes it only when no chat started, and names it a minute after
+// the chat is done if it is still there.
 describe('Explain and Discuss on a ticket not on the disk the chat writes from', () => {
   const MAIN = '@/repo'
-  const COPY = (id: string) => ['git', 'clean', '-fqx', '--', `/repo/.jaira/tickets/01${id}-cache-key.md`, MAIN]
+  const PATH = (id: string) => `/repo/.jaira/tickets/01${id}-cache-key.md`
   const ALONE = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n'
   const KINDS = [
     { kind: 'explain', id: 'MG677R', title: 'Explain MG677R failed' },
@@ -4325,6 +4330,8 @@ describe('Explain and Discuss on a ticket not on the disk the chat writes from',
     w.worktrees = ALONE
     w.diskId = id
     w.disk[MAIN] = state
+    // The file jaira pull writes there.
+    w.files.set(PATH(id), '')
   }
   // The chat has done its part: its note on the ticket (1_000_000 ms is
   // 00:16 UTC, the minute it was opened), its tab no longer working.
@@ -4332,30 +4339,59 @@ describe('Explain and Discuss on a ticket not on the disk the chat writes from',
     w.bodies[id] = `## Progress\n\n- **1970-01-01 00:16 · Alex** — ${kind === 'explain' ? 'explain' : 'decision'}: done\n`
     w.tabs = [{ tab_id: 'w1:t4', label: `${id}/${kind}`, agent_status: 'idle' }]
   }
+  const copyLine = (w: World, id: string) => w.toasts.filter(x => x.startsWith(`${id}: the chat ended and left the copy`))
 
   for (const { kind, id } of KINDS) {
-    for (const state of ['ref-only', 'behind'] as const) {
-      test(`${kind}, no worktree, file ${state}: pulled before the chat opens${state === 'ref-only' ? ', the copy taken away once the chat is done' : ''}`, async ($, on) => {
-        const w = world(on, { herdr: true })
-        setUp(w, id, state)
-        w.tabs = [{ tab_id: 'w1:t4', label: `${id}/${kind}`, agent_status: 'working' }]
-        await startSession($)
-        await (await $.ui.mount(BAND)).press({ key: `${kind}-${id}` })
-        expect(ran(w, 'jaira', 'pull', id)).toEqual([['jaira', 'pull', id, MAIN]])
-        const spawned = w.ran.findIndex(r => r[0] === 'bash' && r[1] === SPAWN)
-        expect(spawned).toBeGreaterThan(w.ran.findIndex(r => r[1] === 'pull'))
-        expect(w.ran[spawned]!.at(-1)).toBe(MAIN)
-        expect(w.opened.filter(o => o.id === 'cockpit-message')).toEqual([])
-        // The chat still runs from that copy: it stays.
-        await w.clock.advance(60_000)
-        expect(ran(w, 'git', 'clean')).toEqual([])
-        finish(w, kind, id)
-        await w.clock.advance(60_000)
-        expect(ran(w, 'git', 'clean')).toEqual(state === 'ref-only' ? [COPY(id)] : [])
-        await w.clock.advance(60_000)
-        expect(ran(w, 'git', 'clean')).toHaveLength(state === 'ref-only' ? 1 : 0)
-      })
-    }
+    test(`${kind}, no worktree, file ref-only: pulled before the chat opens, which is handed the copy to remove itself`, async ($, on) => {
+      const w = world(on, { herdr: true })
+      setUp(w, id, 'ref-only')
+      w.tabs = [{ tab_id: 'w1:t4', label: `${id}/${kind}`, agent_status: 'working' }]
+      await startSession($)
+      await (await $.ui.mount(BAND)).press({ key: `${kind}-${id}` })
+      expect(ran(w, 'jaira', 'pull', id)).toEqual([['jaira', 'pull', id, MAIN]])
+      const spawned = w.ran.findIndex(r => r[0] === 'bash' && r[1] === SPAWN)
+      expect(spawned).toBeGreaterThan(w.ran.findIndex(r => r[1] === 'pull'))
+      const argv = w.ran[spawned]!
+      expect(argv.at(-1)).toBe(MAIN)
+      expect(argv[argv.indexOf('--copy') + 1]).toBe(PATH(id))
+      expect(argv.indexOf('--copy')).toBeLessThan(argv.indexOf(id.toLowerCase()))
+      expect(w.opened.filter(o => o.id === 'cockpit-message')).toEqual([])
+      // The cockpit never removes it under a chat.
+      finish(w, kind, id)
+      w.files.delete(PATH(id))
+      for (let i = 0; i < 4; i++) await w.clock.advance(60_000)
+      expect(ran(w, 'git', 'clean')).toEqual([])
+      expect(copyLine(w, id)).toEqual([])
+    })
+
+    test(`${kind}, no worktree, file behind: pulled before the chat opens, no copy to hand over`, async ($, on) => {
+      const w = world(on, { herdr: true })
+      setUp(w, id, 'behind')
+      await startSession($)
+      await (await $.ui.mount(BAND)).press({ key: `${kind}-${id}` })
+      expect(ran(w, 'jaira', 'pull', id)).toEqual([['jaira', 'pull', id, MAIN]])
+      expect(ran(w, 'bash', SPAWN)[0]).not.toContain('--copy')
+      finish(w, kind, id)
+      for (let i = 0; i < 4; i++) await w.clock.advance(60_000)
+      expect(copyLine(w, id)).toEqual([])
+    })
+
+    test(`${kind}: a copy the chat left behind is named beside the band a minute after the chat is done, once`, async ($, on) => {
+      const w = world(on, { herdr: true })
+      setUp(w, id, 'ref-only')
+      w.tabs = [{ tab_id: 'w1:t4', label: `${id}/${kind}`, agent_status: 'working' }]
+      await startSession($)
+      await (await $.ui.mount(BAND)).press({ key: `${kind}-${id}` })
+      await w.clock.advance(60_000)
+      finish(w, kind, id)
+      await w.clock.advance(60_000)
+      // Done this minute: the chat may still be writing its last line.
+      expect(copyLine(w, id)).toEqual([])
+      await w.clock.advance(60_000)
+      await w.clock.advance(60_000)
+      expect(copyLine(w, id)).toEqual([`${id}: the chat ended and left the copy pulled for it in the main checkout, which hides its ref; remove it: git clean -fqx -- '${PATH(id)}'`])
+      expect(ran(w, 'git', 'clean')).toEqual([])
+    })
 
     test(`${kind}: a refused pull stops the press with its reason, opens no chat and never steals`, async ($, on) => {
       const w = world(on, { herdr: true })
@@ -4373,18 +4409,30 @@ describe('Explain and Discuss on a ticket not on the disk the chat writes from',
     })
   }
 
-  test('without Herdr, Explain pulls, asks this session, and takes the copy away once the explanation is on the ticket', async ($, on) => {
+  for (const { kind, id } of KINDS) {
+    test(`without Herdr, ${kind} pulls and asks this session to remove the copy as its last step`, async ($, on) => {
+      const w = world(on)
+      setUp(w, id, 'ref-only')
+      await startSession($)
+      await (await $.ui.mount(BAND)).press({ key: `${kind}-${id}` })
+      expect(ran(w, 'jaira', 'pull', id)).toEqual([['jaira', 'pull', id, MAIN]])
+      expect(w.submitted).toHaveLength(1)
+      expect(w.submitted[0]).toEndWith(`As the very last step, once you write nothing more onto the ticket, decided or not: git clean -fqx -- '${PATH(id)}' - the copy of the ticket the cockpit pulled for this chat; left there, it hides the ticket's ref.`)
+      finish(w, kind, id)
+      w.files.delete(PATH(id))
+      for (let i = 0; i < 4; i++) await w.clock.advance(60_000)
+      expect(ran(w, 'git', 'clean')).toEqual([])
+      expect(copyLine(w, id)).toEqual([])
+    })
+  }
+
+  test('a ticket already on the disk: no copy is mentioned to the chat', async ($, on) => {
     const w = world(on)
-    setUp(w, 'MG677R', 'ref-only')
+    w.worktrees = ALONE
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
-    expect(ran(w, 'jaira', 'pull', 'MG677R')).toEqual([['jaira', 'pull', 'MG677R', MAIN]])
-    expect(w.submitted).toHaveLength(1)
-    await w.clock.advance(60_000)
-    expect(ran(w, 'git', 'clean')).toEqual([])
-    w.bodies.MG677R = '## Progress\n\n- **1970-01-01 00:16 · Alex** — explain: done\n'
-    await w.clock.advance(60_000)
-    expect(ran(w, 'git', 'clean')).toEqual([COPY('MG677R')])
+    expect(ran(w, 'jaira', 'pull')).toEqual([])
+    expect(w.submitted[0]).not.toContain('git clean')
   })
 
   test('a chat that cannot be opened takes the pulled copy away at once', async ($, on) => {
@@ -4393,6 +4441,19 @@ describe('Explain and Discuss on a ticket not on the disk the chat writes from',
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
     expect(w.opened.at(-1)?.title).toBe('Explain MG677R failed')
-    expect(ran(w, 'git', 'clean')).toEqual([COPY('MG677R')])
+    expect(ran(w, 'git', 'clean')).toEqual([['git', 'clean', '-fqx', '--', PATH('MG677R'), MAIN]])
+  })
+
+  test('a failed spawn.sh leaves the copy to a chat that may have started, and names it a minute on', async ($, on) => {
+    const w = world(on, { herdr: true })
+    setUp(w, 'MG677R', 'ref-only')
+    w.spawnFails = 'timed out waiting for claude'
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'explain-MG677R' })
+    expect(w.opened.at(-1)?.title).toBe('Explain MG677R failed')
+    expect(ran(w, 'git', 'clean')).toEqual([])
+    await w.clock.advance(60_000)
+    await w.clock.advance(60_000)
+    expect(copyLine(w, 'MG677R')).toHaveLength(1)
   })
 })

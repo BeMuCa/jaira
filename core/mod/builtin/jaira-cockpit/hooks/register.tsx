@@ -132,10 +132,12 @@ let turn = 0
 let personSaid: string | undefined
 let threads: Thread[] = []
 // The Explain and Discuss chats this session opened, by their tab's label
-// (`<id>/explain`), with when: the tab goes once the chat has done its part,
-// and with it, by leave, the copy pulled into the main checkout for the chat
-// (ticketHere) — it stays while the chat runs, which writes its note there.
-const chats = new Map<string, { since: number; leave: () => Promise<void> }>()
+// (`<id>/explain`), with when: the tab goes once the chat has done its part.
+// copy is the ticket file pulled into the main checkout for the chat
+// (ticketHere), which the chat removes itself as its last step; a minute
+// after the chat is done (doneAt) the band names it if it is still there.
+const chats = new Map<string, { since: number; copy?: string; doneAt?: number }>()
+const COPY_CHECK_MS = 60_000
 // The Workers tab's frames, running while it is open and shown, and the
 // board the Overview was opened on.
 let frames: { cancel: () => void } | undefined
@@ -413,8 +415,15 @@ async function refreshBoard($: EngineInterface): Promise<void> {
   // only once its agent stopped working: a Discuss chat notes the decision
   // first and then still moves the ticket and tells this session.
   const open = tabs
-  for (const [label, { since, leave }] of chats) {
+  const now = await $.clock.now()
+  for (const [label, { since, copy, doneAt }] of chats) {
     const [id = '', kind] = label.split('/')
+    if (doneAt !== undefined) {
+      if (now - doneAt < COPY_CHECK_MS) continue
+      chats.delete(label)
+      if (copy !== undefined && await $.fs.exists(copy).catch(() => false)) await say($, t.copyLeft(id, copy))
+      continue
+    }
     const tab = open.find(x => x.label === label)
     if (tab?.agent_status === 'working') continue
     const from = since - (since % 60_000)
@@ -424,8 +433,10 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     const w = [...view.waiting, ...view.theirs].find(x => x.id === id)
     const done = fresh !== undefined || (kind === 'discuss' && (w === undefined || w.question === ''))
     if (!done) continue
-    chats.delete(label)
-    await leave()
+    // The chat removes its copy itself; whether it did is looked at a
+    // minute later, when even a chat without a tab has written its last line.
+    if (copy === undefined) chats.delete(label)
+    else chats.set(label, { since, copy, doneAt: now })
     if (kind === 'discuss' && fresh !== undefined) await update($, decidedAtom, d => ({ ...d, [id]: fresh.text }))
     if (tab !== undefined) await run($, [bin!, 'tab', 'close', tab.tab_id], board.dir)
   }
@@ -547,7 +558,8 @@ async function ownTree($: EngineInterface, b: { dir: string; repo: string }, id:
 // the ticket in a lane it left long ago. Every write already sits on the ref,
 // or whole in the outbox, so nothing goes with it. A refused pull (somebody
 // else holds the ticket, no remote) stops the press: it never steals.
-type Here = { ok: true; dir: string; leave: () => Promise<void> } | { ok: false; why: string }
+// copy names the file pulled into the main checkout, the one leave() removes.
+type Here = { ok: true; dir: string; copy?: string; leave: () => Promise<void> } | { ok: false; why: string }
 
 async function ticketHere($: EngineInterface, b: { dir: string; repo: string }, id: string): Promise<Here> {
   const own = await ownTree($, b, id)
@@ -567,6 +579,7 @@ async function ticketHere($: EngineInterface, b: { dir: string; repo: string }, 
   return {
     ok: true,
     dir,
+    copy: path,
     leave: async () => {
       const r = await run($, ['git', 'clean', '-fqx', '--', path], dir)
       // A line beside the band, never the message pane: that already holds
@@ -937,15 +950,16 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
   if (!here.ok) return fail($, what, here.why)
   const { dir } = here
   const label = `${id}/${kind}`
-  // A copy pulled into the main checkout goes once the chat has done its
-  // part (refreshBoard), not when the press ends; a press that opens no chat
-  // takes it away at once. A second press on a chat still open finds the
-  // ticket pulled: the first press's leave is the one that counts.
-  const opened = async () => chats.set(label, { since: await $.clock.now(), leave: chats.get(label)?.leave ?? here.leave })
+  // A copy pulled into the main checkout is the chat's to remove, as its last
+  // step: only the chat knows when it wrote its last line. A press that opens
+  // no chat removes it at once. A second press on a chat still open finds
+  // the ticket pulled already: the first press's copy is the one to check.
+  const { copy } = here
+  const opened = async () => chats.set(label, { since: await $.clock.now(), copy: chats.get(label)?.copy ?? copy })
   if ((await herdr($)) === undefined) {
     await opened()
     await say($, kind === 'explain' ? t.explainAsked(id) : t.discussHere(id))
-    void $.prompt.submit({ text: kind === 'explain' ? t.explainBySubagent(id, dir) : t.discussInThisChat(id, dir) })
+    void $.prompt.submit({ text: kind === 'explain' ? t.explainBySubagent(id, dir, copy) : t.discussInThisChat(id, dir, copy) })
     return 'hold'
   }
   const script = await spawnScript($)
@@ -957,9 +971,13 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
   // is the address SendMessage takes.
   const socket = kind === 'discuss' ? await $.env.get('CLAUDE_CODE_MESSAGING_SOCKET') : undefined
   const parent = socket ? ['--parent', `uds:${socket}`] : []
-  const r = await run($, [...script, '--no-worktree', ...parent, id.toLowerCase(), id, kind, dir], dir, 120_000)
+  const removes = copy === undefined ? [] : ['--copy', copy]
+  const r = await run($, [...script, '--no-worktree', ...parent, ...removes, id.toLowerCase(), id, kind, dir], dir, 120_000)
   if (r?.exitCode !== 0) {
-    await here.leave()
+    // spawn.sh may have failed after its tab came up (a timeout): the chat
+    // may run and remove the copy itself, so it is not taken from under it;
+    // a minute on, the band names it if it is still there.
+    if (copy !== undefined && !chats.has(label)) chats.set(label, { since: await $.clock.now(), copy, doneAt: await $.clock.now() })
     return fail($, what, (r?.stderr || r?.stdout || 'spawn.sh did not run').trim())
   }
   await opened()
