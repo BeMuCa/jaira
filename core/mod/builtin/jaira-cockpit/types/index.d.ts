@@ -51,6 +51,9 @@ declare module 'claude-code' {
       answering: string | null
       // The ticket the Verdict pane shows: its goal, verdict and every note.
       verdictTicket: string | null
+      // The review notes of each ticket in the person's language, original
+      // text to the text shown; a note without an entry is shown as written.
+      rephrased: Record<string, Record<string, string>>
       // The newest bug hunt of each ticket the band shows, as jaira's brief
       // says it stands: ok, fail, unknown or skipped.
       hunts: Record<string, 'ok' | 'fail' | 'unknown' | 'skipped'>

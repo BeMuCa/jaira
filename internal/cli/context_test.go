@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -46,6 +47,14 @@ func TestLanesAndForLaneReportContext(t *testing.T) {
 	}
 	if r := byID["review"]; r["human_exit"] != false {
 		t.Errorf("review in lanes --json: human_exit=%v, want false", r["human_exit"])
+	}
+	// The cockpit's verdict light reads which way a verdict goes off these
+	// words; a lane that declares none carries no key.
+	if v, _ := byID["review"]["verdicts"].(map[string]any); fmt.Sprint(v["accept"]) != "[accept]" || fmt.Sprint(v["send_back"]) != "[send-back]" {
+		t.Errorf("review in lanes --json: verdicts=%v, want accept [accept], send_back [send-back]", byID["review"]["verdicts"])
+	}
+	if _, ok := byID["in-progress"]["verdicts"]; ok {
+		t.Errorf("in-progress in lanes --json carries verdicts it does not declare: %v", byID["in-progress"]["verdicts"])
 	}
 
 	table, err := runLanes(t, dir)

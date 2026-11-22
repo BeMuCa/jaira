@@ -279,6 +279,19 @@ guarantee is gone and nobody can see that it is.
    the fresh lane gets a **new** agent next time, never the one from before.
    A `note:` line in its `review-gaps` is not work for you: it stays a line,
    and no ticket is created from it — the person decides that at acceptance.
+5. It sent the work back with `note: fix-now:` lines and no blocker: close
+   exactly those, before the ticket ever reaches signoff, and no other note.
+   Each closes in a few lines; one that would need a new rule, flag or
+   branch is not fix-now — leave it, and say so in a note, rather than grow
+   the change (edges that keep growing ask for a smaller design, not a
+   bigger fix). When the whole fix stays under 50 changed lines and touches
+   no lock and no parser, run the round lean: `jaira set <id>
+   stop-after-fix=true` and note that you set it; critique and optimize then
+   go in one pass, testing runs only what changed, and the new review agent
+   reads only the delta since `review: done at <commit>` — all three lanes'
+   prompts say how. Should that review send the work back with a blocker,
+   clear the flag again (`jaira set <id> stop-after-fix=`) if you set it:
+   the next round is no longer small.
 
 It runs in your directory, not a worktree of its own: what it judges includes
 your uncommitted work, and while it runs you write nothing.
@@ -462,7 +475,7 @@ jaira: <ID> <from> -> <to> · branch: <branch> · commits: <first>..<last> (<n>)
 
 Keys and their order are fixed; an empty value is `-`, never a missing key.
 The cockpit shortens the report to this line and keeps the rest for
-`/cockpit report <ID>`; a report without it is guessed at, field by field.
+`/cockpit report <ID>`; a report without it shows only the ticket id.
 
 Started with `--parent`, the short report — the status line, and the
 `needs you:` line where there is one — goes to the parent with `SendMessage`.
