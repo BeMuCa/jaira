@@ -53,6 +53,17 @@ export const t = {
   failed: (what: string) => `${what} failed`,
   afterAccept: (id: string) => `Next step after ${id}`,
   staysDone: (id: string) => `${id} stays in done; start the next step by hand.`,
+  // A pull request handed to the teamlead to follow (CRASZS): once each.
+  followPr: (n: number, tickets: string[]) =>
+    `jaira-cockpit: pull request #${n} for ${tickets.join(', ')} is open - follow it: run 'jaira pr --watch --number ${n}' under a Monitor (one line per change, it ends when the pull request is merged or closed)`,
+  // .jaira/pr-when says signoff: Accept opens the pull request first, and
+  // done waits for its review round.
+  prOpensInSignoff: (id: string, branch: string) => `${id} stays in signoff: opening the pull request for ${branch} in a Herdr tab; press Accept again once its review round is settled`,
+  toSessionPrInSignoff: (id: string, branch: string) =>
+    `jaira-cockpit: the person pressed Accept on ${id}; this board opens the pull request in signoff, so the pr lane is opening it for ${branch} and ${id} stays in signoff until the review round is settled`,
+  prWaitsSignoff: (branch: string, pending: string[]) => `the pull request for ${branch} waits: ${pending.join(', ')} not in signoff yet`,
+  notSettled: (branch: string, unsettled: string[]) => `the review round of ${branch} is not settled:\n${unsettled.map(u => `- ${u}`).join('\n')}`,
+  staysInLane: (id: string, lane: string) => `${id} stays in ${lane}; nothing was moved.`,
   prStarted: (id: string, branch: string) => `${id}: opening the pull request for ${branch} in a Herdr tab`,
   acceptedNoPr: (id: string, hint: string) => `${id} accepted; ${hint}`,
   prWaits: (branch: string, pending: string[]) => `no pull request for ${branch} yet: ${pending.join(', ')} not in done`,

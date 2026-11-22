@@ -21,7 +21,7 @@ related:
   - 01M7WX040JC9Z202EH852EF48S
 commits: []
 created-at: 2026-11-20T16:34:31Z
-updated-at: 2026-11-22T16:24:49Z
+updated-at: 2026-11-22T16:33:32Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3910889
 claimed-at: 2026-11-22T14:48:02Z
@@ -33,14 +33,18 @@ claimed-at: 2026-11-22T14:48:02Z
 
 - [x] Ein Befehl oder eine Cockpit-Ansicht zeigt je Ticket mit PR: offene/beantwortete Kommentare, CI-Stand, ob ein Review aussteht
   proof: jaira pr / --all / --json: internal/cli/pr.go printPRs + core/pr/watch.go Summary (threads waiting/answered/resolved, CI, review pending); live: jaira pr --number 91 -> 1 answered thread
-- [ ] Kommt ein neuer Kommentar oder wird CI rot, erfaehrt es die Session des Teamleads ohne Nachfragen
+- [x] Kommt ein neuer Kommentar oder wird CI rot, erfaehrt es die Session des Teamleads ohne Nachfragen
+  proof: jaira pr --watch (internal/cli/pr.go watchPR, core/pr/watch.go Changes: new comment/review, CI red) under Monitor, started on the cockpit's followPr line; tests internal/cli/pr_test.go TestPRWatchReportsEachChangeOnceAndEnds, core/pr/pr_test.go TestChanges
 - [x] 'jaira pr [--json]' zeigt den Stand des PR der Branch (neue Kommentare/Threads, CI, Reviews) über gh und glab (Test) - Alex 22.11.
   proof: internal/cli/pr.go newPRCmd; core/pr/github.go readGitHub, core/pr/gitlab.go readGitLab; tests core/pr/pr_test.go TestReadInputClasses+TestReadGitLab, internal/cli/pr_test.go TestPRShowsTheCheckedOutBranch
-- [ ] Kein Dauer-Polling im Cockpit: wird ein PR geöffnet (Cockpit-Accept oder Agent), schreibt das Cockpit eine Zeile 'PR #N für <ID> offen – begleiten' in die Teamlead-Session; der Teamlead startet selbst eine Beobachtung über 'jaira pr' (eine Zeile je Änderung, endet bei merged/closed). Nach Accept bekommt der Teamlead ebenfalls eine Zeile (Test) - Alex 22.11.
-- [ ] Cockpit-Accept öffnet bei pr-when=signoff den PR schon in signoff und wartet vor done auf 'settled' (JG3REW-Rest, Test) - Alex 22.11.
+- [x] Kein Dauer-Polling im Cockpit: wird ein PR geöffnet (Cockpit-Accept oder Agent), schreibt das Cockpit eine Zeile 'PR #N für <ID> offen – begleiten' in die Teamlead-Session; der Teamlead startet selbst eine Beobachtung über 'jaira pr' (eine Zeile je Änderung, endet bei merged/closed). Nach Accept bekommt der Teamlead ebenfalls eine Zeile (Test) - Alex 22.11.
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx startPrLane->followPullRequest/lookForPullRequest (60 s, 20 looks), shorten()+followLine (report with PR URL), toSessionAccepted unchanged; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts 'following a pull request (CRASZS)', core/mod/builtin/jaira-cockpit/tests/cockpit.test.ts 'a report naming a pull request it opened...'
+- [x] Cockpit-Accept öffnet bei pr-when=signoff den PR schon in signoff und wartet vor done auf 'settled' (JG3REW-Rest, Test) - Alex 22.11.
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx heldInSignoff (called first in accept); tests core/mod/builtin/jaira-cockpit/tests/board.test.ts '.jaira/pr-when says signoff' (no PR -> pr lane, stays; not settled -> pane; settled/merged -> done; pending ticket; forge unchecked)
 - [x] Eingabeklassen fuer 'jaira pr': kein PR, kein gh/glab, nicht angemeldet, Fork, Branch mit Sonderzeichen, mehrere PRs, leere/kaputte Antwort, Fehler auf halbem Weg - jede mit eigenem Ausgang (Test)
   proof: core/pr/pr_test.go TestReadInputClasses (no PR, no tool, gh exit 4, no origin, foreign host, fork, branch with spaces/$(), several, empty, broken JSON, graphql error, 502 half way), TestReadGitLab (discussions fail half way, 401); internal/cli/pr_test.go TestPRExitCodes
-- [ ] Kein Doppeltmelden: derselbe Stand meldet nichts erneut, auch nach Neustart der Session; ein neuer PR ist Ausgangsstand, keine Meldung (Test)
+- [x] Kein Doppeltmelden: derselbe Stand meldet nichts erneut, auch nach Neustart der Session; ein neuer PR ist Ausgangsstand, keine Meldung (Test)
+  proof: watch: first read is the baseline (internal/cli/pr.go watchPR 'watching' line), Changes compares with the previous read only (core/pr/pr_test.go TestChanges 'same activity read again'); cockpit: store key pr-followed:<project>:<n> (board.test.ts 'handed over before ... also by a later session', cockpit.test.ts 'once')
 
 ## Options
 
@@ -54,9 +58,9 @@ claimed-at: 2026-11-22T14:48:02Z
 - [x] core/pr: Forge aus jaira.forge/origin, Ziel-Repo (Fork->Parent), offene PRs ueber gh api graphql bzw. glab api lesen und in ein Modell giessen (Threads offen/beantwortet/erledigt, fremde Kommentare + letzter, CI, Reviews ausstehend/Aenderung verlangt, Tickets, settled)
 - [x] internal/cli: 'jaira pr [<branch>] [--all] [--json] [--watch [--every d]]' - Text und JSON; --watch: Ausgangsstand ohne Meldung, dann eine Zeile je Aenderung (fremder Kommentar/Review, CI rot/gruen, settled), Ende bei merged/closed; Exit 3 bei fehlendem gh/glab oder Login; Release-Note
 - [x] Tests Go: Tabellentest ueber Fake-gh/glab (kein PR, mehrere, Fork, CI-Zustaende, leere Antwort, kaputtes JSON, Fehler halb im Lauf)
-- [ ] Cockpit: kein Dauer-Polling. Nach Accept, das die pr-Lane startete: begrenzte Nachschau (je 60 s, hoechstens 20 Mal) per 'jaira pr <branch> --json', sobald der PR da ist einmal 'PR #N fuer <ID> offen - begleiten: jaira pr --watch <branch>' per prompt.submit; ein Agentenbericht mit PR-URL bekommt dieselbe Zeile; einmal je PR (Store)
-- [ ] Cockpit-Accept bei pr-when=signoff: kein PR -> pr-Lane starten, Ticket bleibt in signoff; PR offen und nicht settled -> Liste, bleibt; settled -> done
-- [ ] Gates lokal: go vet, go test (cli/pr), claude plugin test, shipped-manifest falls Rollen beruehrt
+- [x] Cockpit: kein Dauer-Polling. Nach Accept, das die pr-Lane startete: begrenzte Nachschau (je 60 s, hoechstens 20 Mal) per 'jaira pr <branch> --json', sobald der PR da ist einmal 'PR #N fuer <ID> offen - begleiten: jaira pr --watch <branch>' per prompt.submit; ein Agentenbericht mit PR-URL bekommt dieselbe Zeile; einmal je PR (Store)
+- [x] Cockpit-Accept bei pr-when=signoff: kein PR -> pr-Lane starten, Ticket bleibt in signoff; PR offen und nicht settled -> Liste, bleibt; settled -> done
+- [x] Gates lokal: go vet, go test (cli/pr), claude plugin test, shipped-manifest falls Rollen beruehrt
 
 ## Progress
 - **2026-11-20 16:49 · Alexander Sacharov** — Interim-Regeln (Alex 20.11.2026, gelten ab sofort bis TW5FE2 ausgeliefert ist):
@@ -83,3 +87,4 @@ Selbst entschieden (widersprechen moeglich): Ausloeser = neuer Kommentar/Thread,
 - **2026-11-22 16:15 · Alexander Sacharov** — decision (Alex 22.11.): F1=1 Befehl 'jaira pr [--json]' im Binary (gh/glab), Cockpit liest ihn; F2=1 Cockpit fragt alle 5 min ab und schreibt je Änderung eine Zeile per prompt.submit in die Session; F3=1 die zwei JG3REW-Punkte als DoD in diesem Ticket.
 - **2026-11-22 16:18 · Alexander Sacharov** — decision (Alex 22.11., ersetzt F2=1): kein 5-min-Polling im Cockpit. Signal nur wenn nötig: Cockpit meldet 'PR offen – begleiten' bzw. 'angenommen' einmal in die Teamlead-Session; das Beobachten startet der Teamlead selbst (Monitor über 'jaira pr', endet bei merged/closed). DoD 4 umformuliert.
 - **2026-11-22 16:19 · Alexander Sacharov** — Plan nach F2-Wechsel: Benachrichtigung des Cockpits nach Accept braucht eine begrenzte Nachschau, weil die pr-Lane (spawn.sh pr) ohne --parent laeuft - ihr Bericht erreicht die Teamlead-Session nicht. Nicht gewaehlt: spawn.sh/jaira-role-pr um --parent erweitern (Rollentext + shipped-Manifest, groesser).
+- **2026-11-22 16:24 · Alexander Sacharov** — jaira pr steht (696778fc8). Gelernt: GitHub-GraphQL pullRequests nimmt headRefName als Filter, also ein Aufruf fuer Branch und --all; GitLab braucht je MR vier Aufrufe (MR fuer head_pipeline - die Liste hat es nicht -, discussions, reviewers, commits). 'offen/beantwortet' = ungeloester Thread, letzter Kommentar fremd vs. eigener (viewer). Watch meldet nur gegen den vorigen Lauf; Ausgangsstand = erste Zeile 'watching', keine Meldung -> DoD 7 fuer den Watch. Rest: Cockpit (Plan 4, 5).

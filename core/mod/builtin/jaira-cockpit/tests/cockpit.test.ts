@@ -56,6 +56,23 @@ describe('session.receive', () => {
     expect(text).toBe('[shortened by jaira-cockpit] T8QS1Y · → signoff — full report: /cockpit report T8QS1Y')
   })
 
+  // CRASZS: a report naming the pull request an agent opened hands it to this
+  // session to follow — once per pull request, whatever arrives later.
+  test('a report naming a pull request it opened adds the line to follow it, once', async ($, on) => {
+    session(on)
+    const report = [
+      'T8QS1Y: pushed feat/t8qs1y and opened https://github.com/upstream/repo/pull/42 for review.',
+      'Ticket T8QS1Y sits in done.',
+    ].join('\n')
+    const follow = "jaira-cockpit: pull request #42 for T8QS1Y is open - follow it: run 'jaira pr --watch --number 42' under a Monitor (one line per change, it ends when the pull request is merged or closed)"
+    const first = await $.session.receive({ origin: { kind: 'peer-send-message' }, text: report })
+    expect(first.text).toBe(`[shortened by jaira-cockpit] T8QS1Y · → done — full report: /cockpit report T8QS1Y\n${follow}`)
+    const again = await $.session.receive({ origin: { kind: 'peer-send-message' }, text: report.replace('pushed', 'answered comments on') })
+    expect(again.text).not.toContain('follow it')
+    const gitlab = await $.session.receive({ origin: { kind: 'peer-send-message' }, text: 'T8QS1Y: opened https://gitlab.example.com/g/r/-/merge_requests/7 — ticket T8QS1Y in done.' })
+    expect(gitlab.text).toContain("'jaira pr --watch --number 7'")
+  })
+
   test('a verdict keeps its reservation', async ($, on) => {
     session(on)
     const review = 'Ticket MG677R reviewed: approve mit Vorbehalt, moved to signoff.'

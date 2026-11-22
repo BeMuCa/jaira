@@ -107,6 +107,11 @@ type World = {
   createFails?: boolean
   // Another session's move came first: jaira answers this one 'already in'.
   movedFirst?: boolean
+  // .jaira/pr-when as `jaira roles list --json` reports it; done unless set.
+  prWhen?: string
+  // What each `jaira pr <branch> --json` answers, in turn, the last one
+  // repeating; '!' + text fails with exit 3. { prs: [] } when empty.
+  prReads: string[]
 }
 
 const LANES = {
@@ -171,6 +176,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     hunts: {},
     contains: {},
     submitted: [],
+    prReads: [],
     opened: [],
     closed: [],
     clock: mock.clock(on, { now: 1_000_000 }),
@@ -253,6 +259,11 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     const ok = (stdout = '') => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const [cmd, ...args] = e.argv
     const on = args.includes('--board') ? w.boards[args[args.indexOf('--board') + 1] ?? ''] : undefined
+    if (cmd === 'jaira' && args[0] === 'roles' && args[1] === 'list') return ok(JSON.stringify({ pr_when: w.prWhen ?? 'done' }))
+    if (cmd === 'jaira' && args[0] === 'pr') {
+      const a = (w.prReads.length > 1 ? w.prReads.shift() : w.prReads[0]) ?? JSON.stringify({ prs: [] })
+      return a.startsWith('!') ? { value: { exitCode: 3, stdout: '', stderr: a.slice(1), isStdoutTruncated: false, isStderrTruncated: false } } : ok(a)
+    }
     if (cmd === 'jaira' && args[0] === 'boards') return ok(JSON.stringify({ boards: ['default', ...Object.keys(w.boards)].map(name => ({ name })) }))
     if (cmd === 'jaira' && args.includes('--board') && (on === undefined || (args[0] === 'lanes' && on.lanes === undefined))) return failed('jaira: unknown flag: --board')
     if (cmd === 'jaira' && args[0] === 'lanes' && on !== undefined) return ok(JSON.stringify({ lanes: on.lanes }))
@@ -3814,5 +3825,129 @@ describe('the workers tab', () => {
     before = reads()
     await w.clock.advance(20_000)
     expect(reads()).toBe(before)
+  })
+})
+
+describe('following a pull request (CRASZS)', () => {
+  const press = async ($: Test$) => {
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+  }
+  const open = (n: number, extra: Record<string, unknown> = {}) =>
+    JSON.stringify({ prs: [{ number: n, state: 'open', tickets: ['MG677R'], settled: true, unsettled: [], ...extra }] })
+  const prReads = (w: World) => ran(w, 'jaira', 'pr')
+  const follow = (n: number) =>
+    `jaira-cockpit: pull request #${n} for MG677R is open - follow it: run 'jaira pr --watch --number ${n}' under a Monitor (one line per change, it ends when the pull request is merged or closed)`
+
+  test('the pr lane Accept started: the pull request is looked for each minute and handed to this session once it is there, once', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.prReads = [JSON.stringify({ prs: [] }), open(12)]
+    await press($)
+    // Nothing is asked at the press itself: the lane has only just started.
+    expect(prReads(w)).toEqual([])
+    await w.clock.advance(60_000)
+    expect(prReads(w)).toEqual([['jaira', 'pr', 'feat/mg677r', '--json', '@/repo']])
+    expect(w.submitted.filter(x => x.includes('pull request #'))).toEqual([])
+    await w.clock.advance(60_000)
+    expect(w.submitted.filter(x => x.includes('pull request #'))).toEqual([follow(12)])
+    await w.clock.advance(10 * 60_000)
+    expect(prReads(w)).toHaveLength(2)
+  })
+
+  test('a pull request that never appears is looked for twenty times, then no more', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    await press($)
+    for (let i = 0; i < 40; i++) await w.clock.advance(60_000)
+    expect(prReads(w)).toHaveLength(20)
+    expect(w.submitted.filter(x => x.includes('pull request #'))).toEqual([])
+  })
+
+  test('jaira pr refusing (no gh, no sign-in) ends the looking at once', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.prReads = ['!jaira: pr: not signed in']
+    await press($)
+    for (let i = 0; i < 5; i++) await w.clock.advance(60_000)
+    expect(prReads(w)).toHaveLength(1)
+  })
+
+  test('a pull request handed over before is not handed over again, also by a later session', async ($, on) => {
+    const w = world(on, { herdr: true, store: { 'pr-followed:/repo:12': true } })
+    w.ahead = 3
+    w.prReads = [open(12)]
+    await press($)
+    await w.clock.advance(60_000)
+    expect(prReads(w)).toHaveLength(1)
+    expect(w.submitted.filter(x => x.includes('pull request #'))).toEqual([])
+  })
+
+  describe('.jaira/pr-when says signoff', () => {
+    const paneText = async ($: Test$) => {
+      const pane = await $.ui.mount(MESSAGE('Accept MG677R failed'))
+      return (await pane.findAll({ type: 'Text' })).map(x => x.text).join('\n')
+    }
+    const moved = (w: World) => ran(w, 'jaira', 'move').filter(r => r.includes('--force'))
+
+    test('no pull request yet: Accept opens it through the pr lane and the ticket stays in signoff', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 3
+      await press($)
+      expect(moved(w)).toEqual([])
+      expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', 'mg677r', 'MG677R', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
+      expect(w.toasts.at(-1)).toContain('MG677R stays in signoff: opening the pull request for feat/mg677r')
+      expect(w.submitted).toEqual(['jaira-cockpit: the person pressed Accept on MG677R; this board opens the pull request in signoff, so the pr lane is opening it for feat/mg677r and MG677R stays in signoff until the review round is settled'])
+    })
+
+    test('a pull request open and not settled: nothing moves, and the pane says what is in the way', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 3
+      w.prs = [{ number: 12 }]
+      w.prReads = [open(12, { settled: false, unsettled: ['2 open threads', 'review pending: copilot'] })]
+      await press($)
+      expect(moved(w)).toEqual([])
+      expect(ran(w, 'bash', SPAWN)).toEqual([])
+      const text = await paneText($)
+      expect(text).toContain('#12: 2 open threads')
+      expect(text).toContain('#12: review pending: copilot')
+      expect(text).toContain('MG677R stays in signoff; nothing was moved.')
+    })
+
+    for (const [name, read] of [['settled', open(12)], ['merged meanwhile', JSON.stringify({ prs: [] })]] as const) {
+      test(`a pull request ${name}: Accept moves the ticket to done as everywhere`, async ($, on) => {
+        const w = world(on, { herdr: true })
+        w.prWhen = 'signoff'
+        w.ahead = 3
+        w.prs = [{ number: 12 }]
+        w.prReads = [read]
+        await press($)
+        expect(moved(w)).toHaveLength(1)
+      })
+    }
+
+    test('another ticket on the branch not in signoff yet: nothing opens and nothing moves', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 2
+      w.subjects = ['feat(MG677R): cache key', 'fix(AB12CD): other']
+      w.tickets = [SIGNOFF, { ...SIGNOFF, handle: 'AB12CD', status: 'critique' }]
+      await press($)
+      expect(moved(w)).toEqual([])
+      expect(ran(w, 'bash', SPAWN)).toEqual([])
+      expect(await paneText($)).toContain('the pull request for feat/mg677r waits: AB12CD not in signoff yet')
+    })
+
+    test('a forge that cannot be asked holds the ticket too, and says why', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 3
+      w.prs = null
+      await press($)
+      expect(moved(w)).toEqual([])
+      expect(await paneText($)).toContain('pull requests not checked')
+    })
   })
 })
