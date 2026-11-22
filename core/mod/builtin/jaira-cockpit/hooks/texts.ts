@@ -96,10 +96,17 @@ export const t = {
     who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
   // The one line Accept and Give back hand this session, the teamlead's,
   // after a move that went through: what happened, and what already runs.
+  // Each says who decided — '(Person, Cockpit)' — and leads with the
+  // ticket, so a teamlead stops listing it as open the moment it arrives.
   toSessionAccepted: (id: string, from: string, to: string, next: string) =>
-    `jaira-cockpit: the person accepted ${id} in the cockpit (${from} -> ${to})${next ? `; ${inLine(next, 200)}` : ''}`,
-  toSessionGivenBack: (id: string, from: string, who: 'old' | 'new' | 'none', reason: string) =>
-    `jaira-cockpit: the person gave ${id} back in the cockpit (${from} -> in-progress), ${who === 'old' ? 'handed to the worker that carried it' : who === 'new' ? 'a new worker started' : "no worker started (the ticket's note says why)"}: ${inLine(reason, 120)}`,
+    `jaira-cockpit: ${id}: accepted, ${from} -> ${to} (Person, Cockpit)${next ? `; ${inLine(next, 200)}` : ''}`,
+  acceptedNote: (from: string, to: string) => `accepted by the person, ${from} -> ${to}`,
+  // Two named after the ticket, or several holding its newest commit: both
+  // are 'could each be its branch', and the line says only that.
+  branchAmbiguous: (id: string, branches: string[]) => `${branches.join(' and ')} could each be ${id}'s branch and none is its worktree's: no branch picked for it - start its worker or pull request on the right one by hand`,
+  acceptNoteLost: (id: string, why: string) => `${id} accepted; the note saying so was not written: ${oneLine(why).slice(0, 120)}`,
+  toSessionGivenBack: (id: string, from: string, who: 'old' | 'new' | 'none', reason: string, worker: string) =>
+    `jaira-cockpit: ${id} given back: ${inLine(reason, 120)}, worker ${who === 'none' ? worker || "none (the ticket's note says why)" : `${who === 'old' ? 'that carried it' : 'new'} ${worker}`} (Person, Cockpit; ${from} -> in-progress)`,
   afterAcceptFailed: (id: string) => `the next step after ${id} failed, see the cockpit`,
   failed: (what: string) => `${what} failed`,
   afterAccept: (id: string) => `Next step after ${id}`,
@@ -201,7 +208,7 @@ export const t = {
   actionGiveBack: '[give back]',
   actionAccept: '[accept]',
   decisionFor: (id: string, text: string) =>
-    `Decision on ${id} in the cockpit's explanation pane, noted on the ticket and not acted on: ${text}`,
+    `jaira-cockpit: ${id}: ${text} (Person, Cockpit) - decided in the explanation pane, noted on the ticket, not acted on`,
   answerOn: (id: string) => `Answer on ${id}`,
   readDecision: 'Read decision',
   decisionOf: (id: string) => `Decision on ${id}`,
