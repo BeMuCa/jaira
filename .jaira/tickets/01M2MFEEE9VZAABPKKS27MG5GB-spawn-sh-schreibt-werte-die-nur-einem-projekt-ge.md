@@ -1,7 +1,7 @@
 ---
 id: 01M2MFEEE9VZAABPKKS27MG5GB
 title: "spawn.sh schreibt Werte, die nur einem Projekt gehoeren"
-status: critique
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -25,13 +25,21 @@ related:
   - 01M7WWYKK8CMJSM2S45WJDDCEZ
 commits: []
 created-at: 2026-09-16T06:46:09Z
-updated-at: 2026-11-22T11:15:04Z
+updated-at: 2026-11-22T11:20:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-33230
 claimed-at: 2026-11-22T11:08:10Z
 outcome-what: "spawn.sh no longer copies .env or writes port names; without .jaira/worktree-setup it makes the worktree only, hands out no offset, and tells a repo with a .env how to get the old behaviour from the shipped worktree-setup.example; roles install --help says an edited file is frozen"
 outcome-why: "Port names like HTTP_PORT belonged to one project; repos forked spawn.sh to add theirs, and an edited spawn.sh never gets jaira's fixes again"
 outcome-resolves: "spawn.sh schreibt Werte, die nur einem Projekt gehoeren - DoD 1-7"
+review-summary: none
+review-gaps: "nothing removed: the gitDir test helper already replaced the inline rev-parse; the .env offset scan in spawn.sh is still reached by worktrees made before jaira-offset; no helper or branch orphaned"
+test-verdict: "fail: bughunt change findings fixed in this round (stale SKILL.md text, incomplete stderr hint); suite was green"
+hunt-verdict: "fail: bughunt done at 0aa673209, 2 change (both small, closed in the next round per interim rule 5), 0 pre-existing"
+round: 2
+back-from: testing
+back-by: lane
+back-count: 1
 ---
 
 # spawn.sh schreibt Werte, die nur einem Projekt gehoeren
@@ -41,13 +49,13 @@ outcome-resolves: "spawn.sh schreibt Werte, die nur einem Projekt gehoeren - DoD
 - [x] spawn.sh ruft ein Einrichtungsskript des Repositorys auf und uebergibt ihm worktree-Pfad, Slug, Port-Versatz und Repository-Wurzel
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:284 (since 167HY8); TestSpawnLetsTheRepositorySetUpItsWorktree/setup checks the four args
 - [x] Ohne dieses Skript legt spawn.sh den worktree an und richtet sonst nichts ein
-  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:206,304; TestSpawnLetsTheRepositorySetUpItsWorktree (no-setup loop: no .env, no jaira-offset, no lock)
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:206,305; TestSpawnLetsTheRepositorySetUpItsWorktree (no-setup loop: no .env, no jaira-offset, no lock)
 - [x] Weder .env-Kopie noch HTTP_PORT oder DB_PORT_HOST stehen noch in spawn.sh; die Dokumentation zeigt ein Beispielskript, das beides macht
   proof: grep HTTP_PORT|DB_PORT_HOST|cp .env in core/role/builtin/jaira-dispatcher/scripts/spawn.sh = 0; example core/role/builtin/jaira-dispatcher/scripts/worktree-setup.example, named in spawn.sh --help
 - [x] Die Hilfe von 'roles install' sagt, dass eine bearbeitete Datei nicht nur unveraendert bleibt, sondern auch keine Verbesserungen mehr bekommt
   proof: internal/cli/roles.go:410-414
 - [x] Ein Board, das bisher ohne Einrichtungsskript lief, bekommt beim naechsten Arbeiter eine verstaendliche Meldung statt einer stillen Verhaltensaenderung
-  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:304-307 stderr line with install -m 755 line; TestSpawnLetsTheRepositorySetUpItsWorktree checks it is said with .env and not without
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:305-309 stderr line with install -m 755 line and 'remove this one and spawn again'; TestSpawnLetsTheRepositorySetUpItsWorktree checks it is said with .env and not without
 - [x] worktree-setup.example reproduces the old .env byte for byte (copy, '# worker stack' line, COMPOSE_PROJECT_NAME, HTTP_PORT, DB_PORT_HOST, DB_PORT_TEST_HOST); the offset tests use it as their setup, in a repository whose path holds a space
   proof: TestSpawnGivesEveryWorktreeItsOwnOffset byte compare of repo-8r8vts/.env; newOffsetRepo installs the example, base path 'with space'
 - [x] no setup: no port offset, no offset lock, no .env in the worktree; with a .env in the root one stderr line says so and names the cp line - a test for both repos (with and without .env)
@@ -100,3 +108,8 @@ Nicht projektspezifisch und daher in spawn.sh gehoerend, nicht in den Hook: --no
 - **2026-11-22 11:08 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/25712.sock
 - **2026-11-22 11:09 · Alexander Sacharov** — decisions (worker, no open question for the person): (1) DoD 1 already holds since 167HY8 (spawn.sh:182-237 calls .jaira/worktree-setup with the four args); this ticket removes the .env fallback only. (2) Without a setup no port offset is handed out at all - no setup means no stack. (3) DoD 5: a new worktree without setup in a repository that has a .env gets one stderr line naming the change and the cp line for the example; a repo without .env gets silence (nothing changed for it). (4) The example ships beside spawn.sh as scripts/worktree-setup.example (installed by roles install, so the message can name a path that exists on the user's disk) and reproduces the old behaviour byte for byte; the offset tests run with it as their setup, which proves it. (5) The offset scan still reads '# worker stack: offset=' from the .env of worktrees made before offsets were written down - compatibility for standing worktrees, not a project value.
 - **2026-11-22 11:15 · Alexander Sacharov** — in-progress: shipped.sha256 regenerated after 'git add' of the new example (shipped-history.sh reads tracked files only - untracked it is silently left out). .gitattributes needed '*.example text eol=lf' or internal/wintrap fails. Kept the 'skipped ... (edited here; --force to replace)' output line unchanged: the cockpit and updateauto_test parse it; DoD 4 asks for the help only.
+- **2026-11-22 11:15 · Alexander Sacharov** — critique (worker, own diff read as diff): considered and let stand - the stderr line repeats for every new worktree of a repo with a .env and no setup, also one that wants no setup; DoD 5 asks for it and an empty executable .jaira/worktree-setup silences it. The .env offset scan in spawn.sh stays: worktrees from before jaira-offset still hold theirs that way, and the example keeps writing the line.
+- **2026-11-22 11:18 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-dispatcher/SKILL.md:441-444 - class: agent-facing text still describing the .env/port behaviour this change removed from spawn.sh; example: the dispatcher prompt says 'scripts/spawn.sh names the stack after the repository plus the worktree slug, and offsets the ports by the slug', but without .jaira/worktree-setup spawn.sh now writes no .env and hands out no offset, so a dispatcher believes two parallel workers get distinct stacks when they get none; blame: 49ad70e57 (old lines, made false by 0aa673209); ran: grep -rn 'port offset|.env' core/role/builtin --include=*.md (only this place)
+- **2026-11-22 11:18 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:304-308 - class: the 'no longer copies .env' hint fixes only future worktrees, not the one it is printed for: setup runs only for a missing directory (spawn.sh:178), so the named worktree stays without .env, jaira-offset and jaira-setup (no teardown from reap.sh either) until it is removed by hand; the hint does not say so; example: spawn ab12cd in a repo with a .env and no setup -> hint; install -m 755 worktree-setup.example .jaira/worktree-setup as told; spawn ab12cd again -> worktree still has no .env and no jaira-* record; ran: scratch repo + installed roles, two spawn.sh runs, ls of worktree and its git dir (empty)
+- **2026-11-22 11:18 · Alexander Sacharov** — bughunt: done at 0aa673209 - 2 findings (2 change, 0 blockers, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: .gitattributes .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/optimize.md .jaira/lanes/pre-process.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/release/notes/7MG5GB.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-dispatcher/scripts/worktree-setup.example core/role/role_test.go core/shipped/shipped.sha256 internal/cli/roles.go
+- **2026-11-22 11:19 · Alexander Sacharov** — testing: both bughunt change notes taken in a quick round instead of left as notes (interim rule 5): SKILL.md 'One worktree per ticket' now says the stack/ports come from .jaira/worktree-setup; the stderr hint says the standing worktree is not set up later - remove it and spawn again

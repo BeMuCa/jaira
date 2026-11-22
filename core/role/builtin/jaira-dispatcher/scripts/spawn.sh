@@ -301,10 +301,12 @@ if [ ! -d "$wt" ]; then
   # Up to jaira 0.6.1 spawn.sh copied the .env and appended ports named after
   # one project. A repository that relied on that would now get a worker
   # without them in silence: say so, once per worktree, and how to get it back.
+  # A setup runs only for a worktree spawn.sh makes, so this one stays as it is.
   elif [ -f "$root/.env" ]; then
     echo "spawn.sh no longer copies .env into a worktree: $wt has none." \
          "To get it back as before, install -m 755" \
-         "\"$(cd "$(dirname "$0")" && pwd)/worktree-setup.example\" \"$setup\" and adapt it" >&2
+         "\"$(cd "$(dirname "$0")" && pwd)/worktree-setup.example\" \"$setup\" and adapt it;" \
+         "a setup runs only for a new worktree, so remove this one and spawn again" >&2
   fi
 fi
 
