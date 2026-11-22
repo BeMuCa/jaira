@@ -1261,11 +1261,7 @@ async function explainNote($: EngineInterface, id: string, title: string, text: 
     said = result.isAnswered ? reasonOf(result.text) : undefined
   } catch {}
   await put(said ?? t.noReason)
-  if (said === undefined) return
-  await $.store.delete(key)
-  await $.store.set(key, { ...kept, [keyOfNote]: said })
-  const keys = (await $.store.keys()).filter(k => k.startsWith(REASON_PREFIX))
-  for (const old of keys.slice(0, Math.max(0, keys.length - REPHRASED_TICKETS))) await $.store.delete(old)
+  if (said !== undefined) await storeNewest($, REASON_PREFIX, key, { ...kept, [keyOfNote]: said })
 }
 
 // Execute: what the person chose, carried out as executionOf says. The pane
@@ -1345,13 +1341,18 @@ async function rephrased($: EngineInterface, key: string, language: string, text
     return undefined
   }
   if (shown === undefined) return undefined
-  // Delete first so the key moves to the end of the store's insertion order,
-  // as keep() does; the tickets read longest ago drop out.
-  await $.store.delete(key)
-  await $.store.set(key, { language, source: [...texts], shown })
-  const keys = (await $.store.keys()).filter(k => k.startsWith(REPHRASED_PREFIX))
-  for (const old of keys.slice(0, Math.max(0, keys.length - REPHRASED_TICKETS))) await $.store.delete(old)
+  await storeNewest($, REPHRASED_PREFIX, key, { language, source: [...texts], shown })
   return shown
+}
+
+// A model's answer kept in the store under key: deleted first so the key
+// moves to the end of the store's insertion order, as keep() does, and the
+// tickets read longest ago under the same prefix drop out.
+async function storeNewest($: EngineInterface, prefix: string, key: string, value: unknown): Promise<void> {
+  await $.store.delete(key)
+  await $.store.set(key, value)
+  const keys = (await $.store.keys()).filter(k => k.startsWith(prefix))
+  for (const old of keys.slice(0, Math.max(0, keys.length - REPHRASED_TICKETS))) await $.store.delete(old)
 }
 
 // The review's notes, each with what it starts as: its class, or how it was

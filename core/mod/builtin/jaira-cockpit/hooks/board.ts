@@ -813,11 +813,6 @@ export function gapItems(gaps: string | undefined, explainText?: string, decided
   })
 }
 
-// One press on a row: fix now, then later, then accept, then fix now again.
-export function nextChoice(c: Choice): Choice {
-  return c === 'now' ? 'later' : c === 'later' ? 'accept' : 'now'
-}
-
 // The headings of the decision lines, in the words the ticket asked for.
 const HEADINGS: Record<Choice, string> = { now: 'beheben:', later: 'Folge-Ticket:', accept: 'angenommen:' }
 const EXTRA = 'dazu: '

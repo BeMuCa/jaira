@@ -1,7 +1,7 @@
 ---
 id: 01M82APG29CNTJ7KASCJ2V50Y5
 title: "Ein Knopf 'Abnahme' im Cockpit ersetzt Accept, Give back und Verdict: pro Notiz ok / beheben / Ticket wählen, dann ausführen"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,18 +22,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T19:11:01Z
-updated-at: 2026-11-22T20:50:33Z
+updated-at: 2026-11-22T20:53:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6414
 claimed-at: 2026-11-22T19:38:15Z
 outcome-what: "One Acceptance button per waiting ticket opens a pane (register.tsx ACCEPTANCE) with the light, the ticket's head and history, and each review note with ok/fix/ticket/?; Execute carries the choices out through executionOf (board.ts): give back, accept through the same gates, follow-ups. Accept, Give back, Explain and Verdict left the row; Verdict and Give back panes are gone."
 outcome-why: Alex read the same notes in three panes and decided in one while acting in another; one window that explains the ticket and does what is chosen in it replaces them (22.11.2026).
 outcome-resolves: "DoD 1-4, 6-12; 5 and 13 are a person's"
-review-summary: "core/mod/builtin/jaira-cockpit/hooks/register.tsx openPullRequest repeats the first half of pullTarget (git config jaira.forge, origin url, forgeOf, repo view, targetRepoOf); pull that half into one helper both call, so the forge lookup has one place"
+review-summary: "none"
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "removed nextChoice (board.ts), orphaned with the old Give back rows; removed Waiting.explainable and explainable() (band has no Explain button any more), the Verdict pane, its atom and seven texts nobody reads; folded the store-and-trim of rephrased() and explainNote into storeNewest (register.tsx); left codeDir beside refreshBoard's worktree loop (that loop reads one listing for many tickets); proofs now name symbols instead of line numbers"
 ---
 
 # Ein Knopf 'Abnahme' im Cockpit ersetzt Accept, Give back und Verdict: pro Notiz ok / beheben / Ticket wählen, dann ausführen
@@ -41,9 +42,9 @@ back-count: 1
 ## Definition of Done
 
 - [x] Ein Knopf 'Abnahme' pro Ticket in signoff ersetzt Accept, Give back und Verdict in der Zeile; das Fenster zeigt Ampel, DoD/Bughunt-Stand und jede Notiz mit Marker in der Sprache der Person (Test)
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1987 (Pane ACCEPTANCE); tests/board.test.ts 'Acceptance is the one coloured button of the row', 'the head says what the ticket is for', 'the head comes in the person's language'
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx on('ui.render', requestId: ACCEPTANCE) and the row's acceptance-<id> button; tests/board.test.ts 'Acceptance is the one coloured button of the row', 'the head says what the ticket is for', 'the head comes in the person's language'
 - [x] Pro Notiz drei Zustände ok / beheben / Ticket; 'Ausführen' macht: alle ok -> done über dieselben Gates wie Accept heute; eine 'beheben' -> Give back mit genau diesen Notizen; 'Ticket' -> jaira create mit follows, auch zusammen mit done oder Give back (Tabellentest über die Kombinationen)
-  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:986 executionOf; tests/board.test.ts 'the Acceptance pane, read alone > Execute: *' (17-row table), 'Give back writes exactly the notes to fix', 'a note that is no blocker ... decisions go onto the ticket once it is accepted'
+  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts executionOf; tests/board.test.ts 'the Acceptance pane, read alone > Execute: *' (17-row table), 'Give back writes exactly the notes to fix', 'a note that is no blocker ... decisions go onto the ticket once it is accepted'
 - [x] Ein Gate, das done verweigert (DoD offen, Bughunt fehlt, PR nicht settled), sagt es im Fenster und ändert nichts; Entscheidungen der Person gehen nicht verloren (Test)
   proof: tests/board.test.ts 'a gate refusing done is said in the Acceptance pane: nothing moves, nothing is written, the choices stay', 'a refusal is shown whole in the Acceptance pane'
 - [x] Release-Note core/release/notes/<ID>.md, shipped.sha256
@@ -54,13 +55,13 @@ back-count: 1
 - [x] Verlauf auf einen Blick aus jaira-Daten: Runden (round, Rückgaben je Lane, back-count/back-from), Commits und geänderte Dateien, DoD erledigt/superseded/gesamt, Bughunt auf HEAD, Review-Urteil, Zeit von created bis jetzt, PR-Stand wenn vorhanden (jaira pr), Release-Note-Zeile(n) - Alex 22.11.
   proof: tests/board.test.ts 'the head says what the ticket is for...': round/back/age, DoD with superseded, bughunt on HEAD, review, commits+files, pull request, release note; board.ts storyOf/commitsOf/releaseLines
 - [x] Pro Notiz ein Knopf 'erklären': ein kurzer Satz in Alltagssprache, warum sie wichtig ist oder nicht (ersetzt das heutige Explain, das nur bei Blocker/Vorbehalt erschien) - Alex 22.11.
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1243 explainNote; tests/board.test.ts 'Explain on one note asks the cheap model once for a sentence', 'a model that gives no sentence says so'
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx explainNote; tests/board.test.ts 'Explain on one note asks the cheap model once for a sentence', 'a model that gives no sentence says so'
 - [x] Ampel ist Pflicht: jede Notiz trägt ihren Marker 🔴/🟡/⚪/🔵, und die Gesamtampel oben folgt aus den Markern (ein 🔴 -> rot, sonst ein 🟡 -> gelb, sonst grün) zusammen mit den Gates; Explain-Knopf pro Notiz und für das ganze Ticket (Test) - Alex 22.11.
-  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:260 lightOf(classes); tests/board.test.ts 'a known limit or a note for another ticket colours nothing', 'Explain all opens the explaining chat from the pane'
+  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts lightOf(w, hunt, classes); tests/board.test.ts 'a known limit or a note for another ticket colours nothing', 'Explain all opens the explaining chat from the pane'
 - [x] Eine Erklärung (explain:-Notiz) aus einer früheren Runde gilt nach Give back nicht mehr: 'Read explanation' verschwindet, sobald das Ticket in eine neue Runde geht, und erscheint erst mit einer neuen Erklärung wieder (heute bleibt der Knopf stehen, gesehen bei T5QN9P 22.11.) (Test) - Alex 22.11.
-  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:399 GIVEN_BACK in explanationNotes; tests/board.test.ts 'Read explanation goes once the ticket was given back after it', 'an explanation a give-back came after is none'
+  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts GIVEN_BACK in explanationNotes; tests/board.test.ts 'Read explanation goes once the ticket was given back after it', 'an explanation a give-back came after is none'
 - [x] Fenster folgt dem Layout-Entwurf vom 22.11. (Option 1): Kopf mit Ampel, Block 'Ход', Notizen mit [ок][исправить][тикет][?], Fuß mit Итог + [Объяснить всё][Выполнить] - Alex 22.11.
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1987 pane drawn as the 22.11. sketch: light+head, History, notes with [ok][fix][ticket][?], summary line, Execute + Explain all
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx Pane ACCEPTANCE drawn as the 22.11. sketch: light+head, History, notes with [ok][fix][ticket][?], summary line, Execute + Explain all
 - [x] Edges: leere review-gaps (kein Review) -> Fenster zeigt nur Kopf/Verlauf, Ausführen = Accept; sehr viele Notizen scrollen; Notiz mit '-' am Anfang oder Klammern wird Folge-Ticket ohne Flag-Verwechslung (bestehendes --); zweiter Druck auf Ausführen während der erste läuft tut nichts (once); Ticket inzwischen woanders (stillIn) -> Fenster sagt es, nichts geschrieben (Test)
   proof: tests/board.test.ts 'decided meanwhile by someone else', 'very many notes are all rows', 'every value of the follow-up goes with =', 'a pressed row locks ... a second press does nothing', 'no notes: the pane asks what is missing'
 - [ ] seen by a person: das Fenster 'Приём' im Terminal - Kopf, Ход, Marker und Knöpfe stehen sauber, kein abgeschnittener Text
@@ -113,3 +114,4 @@ Zusatz: Bau startet erst nach Merge von QTQW15 (signoff), DF46B9 und T5QN9P (don
 - **2026-11-22 20:12 · Alexander Sacharov** — in-progress: board.ts hat executionOf/storyOf/releaseLines/commitsOf/reasonPrompt/reasonOf und die Rundenregel in explanationNotes, mit Tabellentest (403 grün). Entscheidung: die festen Wörter des Fensters bleiben englisch wie alle Cockpit-Texte (texts.ts: 'one set of words'); in der Sprache der Person sind Titel, Ziel, was/warum, Ampel-Grund und Notizen (ein rephrase-Aufruf), wie DoD 6 sie aufzählt. Der Knopf heißt 'Acceptance'. Pro Notiz vier Knöpfe [ok][fix][ticket][?] wie im Layout statt eines Umschalt-Knopfs. Execute ist ein eigener Knopf; das Feld meldet seinen Text über onInput (Engine-Input kennt change/submit), Enter im Feld führt ebenfalls aus.
 - **2026-11-22 20:40 · Alexander Sacharov** — in-progress: Fenster gebaut, alte Tests migriert (399 grün). Gefunden und behoben: (a) das Öffnen hielt die Zeilen-Sperre, bis git log/PR-Abfrage fertig waren - ein Execute in der Zeit ging verloren; jetzt füllt readStory die Historie nach dem Öffnen außerhalb der Sperre. (b) pullTarget macht git fetch - für die reine Anzeige zu schwer; openPullRequest fragt nur gh/glab (repo view + pr list), ohne fetch. (c) Enter im Feld nimmt nie an (ein Enter zu viel brächte das Ticket nach done) - nur der Knopf Execute; mit Text oder 'fix' führt Enter aus. (d) Kopf-Übersetzung ist ein eigener Modellaufruf (headPrompt, Store-Key <id>:head), damit die Notiz-Übersetzung unverändert bleibt. Tests: Hilfen acceptancePane/pressAccept/pressExplain/cycle in board.test.ts; quietly() filtert, was das Öffnen ausführt, aus w.ran.
 - **2026-11-22 20:49 · Alexander Sacharov** — critique: openPullRequest (register.tsx) kopiert die erste Hälfte von pullTarget (forge, origin, repo view, targetRepoOf) - in einen gemeinsamen Helfer forgeRepo ziehen. Bewusst stehen gelassen: Give back schließt das Fenster vor dem Move wie bisher (DoD 3 betrifft die done-Gates); der Release-Note-Pfad core/release/notes/<ID>.md ist jaira-spezifisch und fehlt in anderen Repos einfach (DoD 7 verlangt ihn); canType-Rückfall stammt aus dem bisherigen hasInput.
+- **2026-11-22 20:50 · Alexander Sacharov** — critique round 2: forgeRepo ist jetzt der eine Ort für forge+Ziel-Repo (pullTarget und openPullRequest), Fehlertexte unverändert; nichts weiter.
