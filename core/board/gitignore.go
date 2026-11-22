@@ -432,16 +432,23 @@ func locked(exclude string, fn func() error) error {
 // so git never reads it half written. A file that exists but cannot be read
 // is an error, never an empty file: writing "nothing + the entry" over it
 // would lose every line a person or git put there.
+// lineEnding is the line ending a file at hand is written in: CRLF where it
+// has any — a Windows checkout with core.autocrlf — so a line jaira adds does
+// not leave the file with mixed endings.
+func lineEnding(s string) string {
+	if strings.Contains(s, "\r\n") {
+		return "\r\n"
+	}
+	return "\n"
+}
+
 func appendEntry(path, comment, line string) error {
 	existing, err := os.ReadFile(path)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
 	body := string(existing)
-	nl := "\n"
-	if strings.Contains(body, "\r\n") {
-		nl = "\r\n"
-	}
+	nl := lineEnding(body)
 	if body != "" && !strings.HasSuffix(body, "\n") {
 		body += nl
 	}

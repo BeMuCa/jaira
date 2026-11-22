@@ -434,11 +434,8 @@ func managedBlock(s, note string) (string, bool) {
 	if start < 0 || end <= start {
 		return "", false
 	}
-	nl := "\n"
-	if strings.Contains(s, "\r\n") {
-		nl = "\r\n"
-		note = strings.ReplaceAll(note, "\n", nl)
-	}
+	nl := lineEnding(s)
+	note = strings.ReplaceAll(note, "\n", nl)
 	newBlock := jairaMarkerStart + nl + note + nl + jairaMarkerEnd
 	if localRel := strings.Index(s[start:end], jairaMarkerLocal); localRel >= 0 {
 		localIdx := start + localRel
@@ -731,12 +728,11 @@ func announceInAgentFile(root, name string, lanes []LaneFact, dry bool) (path st
 	if !strings.HasSuffix(s, "\n") {
 		sep = "\n\n"
 	}
-	if strings.Contains(s, "\r\n") {
-		// In the file's own line endings, as managedBlock rewrites it, or the
-		// block just appended reads as drifted at once.
-		sep = strings.ReplaceAll(sep, "\n", "\r\n")
-		block = strings.ReplaceAll(block, "\n", "\r\n")
-	}
+	// In the file's own line endings, as managedBlock rewrites it, or the
+	// block just appended reads as drifted at once.
+	nl := lineEnding(s)
+	sep = strings.ReplaceAll(sep, "\n", nl)
+	block = strings.ReplaceAll(block, "\n", nl)
 	if !dry {
 		if err := os.WriteFile(path, []byte(s+sep+block), 0o644); err != nil {
 			return path, "", err
