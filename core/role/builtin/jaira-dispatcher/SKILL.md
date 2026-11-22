@@ -493,8 +493,14 @@ Stop and report the moment any of these is true:
   the person sees it once, in signoff
 - a worker is sitting at an approval dialog. Read its output, report what it is
   asking, and never answer for the human
-- **the same lane sent work back three times.** Stop there and hand it to the
-  person. This one is not yours to argue with: you may write down why you think
+- **the same lane sent work back three times.** Stop there and hand the
+  decision on — to the session that started you when you were started with
+  `--parent`, which is the teamlead and decides first; to the person only
+  without one, or when `SendMessage` cannot reach it. With a parent the ticket
+  stays in its lane with `jaira set <id> question="<...>"`, never in `human`:
+  the teamlead moves it there when it takes the question to the person.
+
+  This one is not yours to argue with: you may write down why you think
   the loop is healthy — findings shrinking, each one new, none re-raised — and
   you may not act on that reasoning and run a fourth round. A stop rule you can
   talk yourself past is not a rule, and the reasoning always sounds good from
@@ -503,10 +509,11 @@ Stop and report the moment any of these is true:
   Three rounds does not always mean the definition of done is wrong. The other
   cause is a loop that converges in size but never terminates, because each pass
   reads deeper than the last and deeper is always available. Both look identical
-  from here, and only the person can tell you which one you are in.
+  from here, and only someone outside the loop — the teamlead, or the person —
+  can tell you which one you are in.
 
-  So hand it over as a decision they can take in one word, not as a report they
-  have to take apart first. Three lines: the third round's findings, verbatim;
+  So hand it over as a decision they can take in one word, not as a report
+  they have to take apart first. Three lines: the third round's findings, verbatim;
   which of those two causes you believe it is and what makes you think so; and
   the one thing you would do about it. Then ask for yes or no as a choice — see
   "How you ask" above — and wait. You may

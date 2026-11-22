@@ -615,14 +615,16 @@ export function commitNaming(log: string, id: string): string | undefined {
   return undefined
 }
 
-// Which of those are not in the terminal lane yet, off `jaira list --json`.
-// A handle the board does not list is filed away in the logbook — past done
+// Which of those are not in the terminal lane yet — or, given several lanes,
+// in none of them (signoff up to done, where .jaira/pr-when says signoff) —
+// off `jaira list --json`. A handle the board does not list is filed away in the logbook — past done
 // — or no ticket of this board, and holds nothing up.
-export function pendingOf(listJson: string, named: readonly string[], terminal: string): string[] {
+export function pendingOf(listJson: string, named: readonly string[], arrived: string | readonly string[]): string[] {
   const tickets = parse<{ tickets?: { handle?: string; status?: string }[] }>(withoutWarnings(listJson))?.tickets ?? []
+  const lanes = typeof arrived === 'string' ? [arrived] : arrived
   return named.filter(id => {
     const status = tickets.find(t => t.handle === id)?.status
-    return status !== undefined && status !== terminal
+    return status !== undefined && !lanes.includes(status)
   })
 }
 
@@ -906,6 +908,59 @@ export function huntOf(briefJson: string): HuntState | undefined {
   if (brief.bughunt === null) return { state: 'fail', at: '' }
   const state = brief.bughunt?.state ?? ''
   return HUNTS.has(state) ? { state: state as Hunt, at: brief.bughunt?.at ?? '' } : undefined
+}
+
+// ── following a pull request (CRASZS) ────────────────────────────────────
+
+// The pull requests a report names by address — GitHub's /pull/<n>,
+// GitLab's /-/merge_requests/<n> — once each, in order. A bare "#12" is not
+// taken: an issue, a list item and a pull request all write it. Whose they
+// are, jaira pr says (followNamed).
+export function pullRequestsIn(text: string): { number: number; url: string }[] {
+  const out: { number: number; url: string }[] = []
+  for (const m of text.matchAll(/https?:\/\/[^\s)>\]]+?\/(?:pull|-\/merge_requests)\/(\d+)\b/g)) {
+    if (!out.some(x => sameAddress(x.url, m[0]))) out.push({ number: Number(m[1]), url: m[0] })
+  }
+  return out
+}
+
+// Whether two addresses of a pull request are the same one: scheme and case
+// aside.
+export function sameAddress(a: string, b: string): boolean {
+  const norm = (u: string) => u.toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '')
+  return norm(a) === norm(b)
+}
+
+// One pull request as `jaira pr --json` prints it, as far as the cockpit
+// reads it.
+export type PullRequest = { number: number; url: string; tickets: string[]; settled: boolean; unsettled: string[] }
+
+// The open pull requests `jaira pr --json` lists; undefined where the
+// answer is not that command's.
+export function pullRequestsOf(prJson: string): PullRequest[] | undefined {
+  const st = parse<{ prs?: (Partial<PullRequest> & { state?: string })[] }>(withoutWarnings(prJson))
+  if (!Array.isArray(st?.prs)) return undefined
+  return st.prs
+    .filter(p => typeof p.number === 'number' && (p.state ?? 'open') === 'open')
+    .map(p => ({ number: p.number!, url: p.url ?? '', tickets: p.tickets ?? [], settled: p.settled === true, unsettled: p.unsettled ?? [] }))
+}
+
+// When a board's pull request opens, from `jaira roles list --json`:
+// 'signoff' where .jaira/pr-when says so, 'done' otherwise and for a jaira
+// too old to say.
+export function prWhenOf(rolesJson: string): 'signoff' | 'done' {
+  return parse<{ pr_when?: string }>(withoutWarnings(rolesJson))?.pr_when === 'signoff' ? 'signoff' : 'done'
+}
+
+// The lanes from `from` up to `to`, both included, in the board's order off
+// `jaira lanes --json` — where a ticket has arrived once the pull request may
+// open in signoff. Empty where either lane is not on the board, or `to`
+// comes first.
+export function lanesBetween(lanesJson: string, from: string, to: string): string[] {
+  const ids = (parse<{ lanes?: { id?: string }[] }>(withoutWarnings(lanesJson))?.lanes ?? []).map(l => l.id ?? '')
+  const a = ids.indexOf(from)
+  const b = ids.indexOf(to)
+  return a < 0 || b < a ? [] : ids.slice(a, b + 1)
 }
 
 // ── review notes as a person reads them ─────────────────────────────────

@@ -702,3 +702,25 @@ func TestPRRoundSettledOnlyWhenNothingIsOpen(t *testing.T) {
 		t.Errorf("settled with an extra argument: exit %d, want 2\n%s", code, out)
 	}
 }
+
+// A pr lane the cockpit starts after Accept carries the cockpit's session as
+// --parent, and jaira-role-pr sends its stops and its report there; without
+// a reachable parent it stays in its own tab, as before (T5QN9P).
+func TestPRReportsToItsParent(t *testing.T) {
+	body, err := File("jaira-role-pr", "SKILL.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(body)
+	for _, want := range []string{
+		"[--parent <session>]",
+		"## Where your stops and your report go",
+		"send the same text to `<session>` with\n`SendMessage`",
+		"A parent `SendMessage` cannot reach is not replaced by another peer",
+		"**Without `--parent`** nothing changes",
+	} {
+		if !strings.Contains(text, want) {
+			t.Errorf("jaira-role-pr does not say %q", want)
+		}
+	}
+}

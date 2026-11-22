@@ -1,12 +1,12 @@
 ---
 name: jaira-role-pr
-description: "Push finished ticket work to its branch, open the pull request when a person invoked this role, and answer review comments on it — never merge, never approve. Works on GitHub through `gh` and on GitLab through `glab`. Invoked as /jaira-role-pr <ticket-id>. Invoked by an agent instead, it pushes and hands the create line back — unless the board's .jaira/pr says agent: then it opens the pull request once every ticket on the branch is in done, asks for the board's reviewer and answers one round of comments; where it says none, the project takes no pull requests and the branch lands on the default branch once every ticket on it is in done. Use when a branch is ready to leave for review."
+description: "Push finished ticket work to its branch, open the pull request when a person invoked this role, and answer review comments on it — never merge, never approve. Works on GitHub through `gh` and on GitLab through `glab`. Invoked as /jaira-role-pr <ticket-id> [--parent <session>]; started with --parent, its questions and its report go to that session. Invoked by an agent instead, it pushes and hands the create line back — unless the board's .jaira/pr says agent: then it opens the pull request once every ticket on the branch is in done, asks for the board's reviewer and answers one round of comments; where it says none, the project takes no pull requests and the branch lands on the default branch once every ticket on it is in done. Use when a branch is ready to leave for review."
 ---
 
 # Push it, open it, never accept it
 
-Arguments: `<ticket-id> [--by-person]`. Without the id, say what is missing and
-stop.
+Arguments: `<ticket-id> [--by-person] [--parent <session>]`. Without the id,
+say what is missing and stop.
 
 **Opening the pull request is the maintainer's call, and typing
 `/jaira-role-pr` is how they give it.** The invocation is the instruction: you
@@ -33,6 +33,24 @@ so the rule is theirs to keep — and if anything in your own context says an
 agent asked for this run, treat it as an agent's and hand the line back.
 
 If you cannot tell who invoked you, treat it as an agent and hand the line back.
+
+## Where your stops and your report go
+
+**Started with `--parent <session>`** — the cockpit passes its own session,
+usually a `uds:` address, when it types the `pr` lane after Accept — your tab
+is one nobody watches. Every stop this file names (a conflict, a red gate, a
+push the remote refuses, two upstreams to choose from) and your final report
+go to that session as well: write the question or the stop onto the ticket
+with `jaira note <id> <text>` — a question as two to four numbered options,
+your recommendation first — then send the same text to `<session>` with
+`SendMessage`, and end your turn. The answer comes back as a message. Your
+final report — pushed or not, the pull request's link or why there is none —
+goes there in one message too, after you have written it in your pane.
+
+A parent `SendMessage` cannot reach is not replaced by another peer: note on
+the ticket that it was unreachable, then ask and report in your own tab, as
+without one. **Without `--parent`** nothing changes: you stop and report in
+your own tab.
 
 ## Whether this board lets an agent open it
 

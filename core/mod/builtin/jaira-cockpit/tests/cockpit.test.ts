@@ -70,6 +70,48 @@ describe('session.receive', () => {
     })
   }
 
+  // CRASZS: a report naming the pull request an agent opened hands it to this
+  // session to follow — once per pull request, and only one of this
+  // repository's own, as jaira pr reads it (a fork's parent included).
+  test('a report naming a pull request it opened hands it over to follow, once, after the report', async ($, on) => {
+    mock.store(on)
+    on('session.receive', ($, e) => ({ text: e.text }))
+    const clock = mock.clock(on, { now: 0 })
+    const submitted: string[] = []
+    on('prompt.submit', ($, e) => {
+      if (e.origin.kind === 'plugin') submitted.push(e.text)
+      return { text: e.text, origin: e.origin }
+    })
+    on('session.repo', () => ({ value: { root: '/repo', remote: null, internal: false, name: null } }))
+    // What jaira pr --number <n> --json answers here: this repository's
+    // pull requests live on upstream/repo; #9 there has another address than
+    // other/lib's #9.
+    const prs: Record<string, string> = {
+      '42': 'https://github.com/upstream/repo/pull/42',
+      '43': 'https://github.com/upstream/repo/pull/43',
+      '9': 'https://github.com/upstream/repo/pull/9',
+    }
+    on('process.run', ($, e) => {
+      const n = e.argv[0] === 'jaira' && e.argv[1] === 'pr' ? e.argv[3]! : ''
+      const stdout = prs[n] ? JSON.stringify({ prs: [{ number: Number(n), url: prs[n], state: 'open', tickets: ['T8QS1Y'] }] }) : ''
+      return { value: { exitCode: prs[n] ? 0 : 1, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    })
+    const follow = (n: number) => `jaira-cockpit: pull request #${n} for T8QS1Y is open - follow it: run 'jaira pr --watch --number ${n}' under a Monitor (one line per change, it ends when the pull request is merged or closed)`
+    const report = 'T8QS1Y: pushed feat/t8qs1y and opened https://github.com/upstream/repo/pull/42 for review.\nTicket T8QS1Y sits in done.'
+    const first = await $.session.receive({ origin: { kind: 'peer-send-message' }, text: report })
+    // The report reaches the session at once, shortened as any other.
+    expect(first.text).toBe('[shortened by jaira-cockpit] T8QS1Y — full report: /cockpit report T8QS1Y')
+    await clock.settle()
+    expect(submitted).toEqual([follow(42)])
+    await $.session.receive({ origin: { kind: 'peer-send-message' }, text: report.replace('pushed', 'answered comments on') })
+    await clock.settle()
+    expect(submitted).toEqual([follow(42)])
+    // Another project's pull request quoted first is passed by.
+    await $.session.receive({ origin: { kind: 'peer-send-message' }, text: 'T8QS1Y: like https://github.com/other/lib/pull/9, opened https://github.com/upstream/repo/pull/43 — ticket T8QS1Y in done.' })
+    await clock.settle()
+    expect(submitted).toEqual([follow(42), follow(43)])
+  })
+
   test('the status line keeps a verdict with its reservation', async ($, on) => {
     session(on)
     const review = 'Ticket MG677R reviewed: rejected nothing.\njaira: MG677R review -> signoff · verdict: approve mit Vorbehalt'

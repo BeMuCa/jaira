@@ -4,7 +4,7 @@ import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
   branchesFor, carrierBranch, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
-  offeredRelease, upgradeCheckOf,
+  offeredRelease, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
   clipLines, commitsOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, headPrompt, rephrasedOf, rephrasePrompt, standOf, storyOf,
   type Action, type Agent, type GapItem, type Story, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
 } from './board.ts'
@@ -259,6 +259,8 @@ async function shorten($: EngineInterface, text: string, origin: string, agent?:
     session: await sessionId($),
     text: report,
   })
+  const named = pullRequestsIn(report)
+  if (named.length > 0) $.clock.after(0, () => void followNamed($, named, short.ticket))
   return text.replace(report, () => short.line)
 }
 
@@ -677,6 +679,9 @@ async function accepting($: EngineInterface, w: Waiting, to: string, dir: string
     await (onRefused !== undefined ? onRefused(refused) : fail($, `${t.accept} ${w.id}`, refused))
     return false
   }
+  // After the gates, never before: a ticket an open definition-of-done item
+  // still refuses opens no pull request either.
+  if (await heldInSignoff($, w)) return false
   const done = await jaira($, dir, ['move', w.id, '--to', to, '--force'])
   if (movedBefore(done, w.id, to)) {
     await movedFirst($, t.accept, w.id, to)
@@ -696,6 +701,67 @@ async function accepting($: EngineInterface, w: Waiting, to: string, dir: string
   } else await fail($, `${t.accept} ${w.id}`, done.why)
   await refreshBoard($)
   return done.ok
+}
+
+// On a board whose .jaira/pr-when says signoff (JG3REW) the pull request
+// opens while the ticket is in signoff, and done waits until its review round
+// is settled. So Accept there does one of three things before any move: no
+// pull request yet — it starts the pr lane and the ticket stays in signoff;
+// one open and not settled — it says what is in the way and moves nothing;
+// settled — it accepts as everywhere else. Another ticket on the branch not
+// in signoff yet, or a forge that cannot be asked, holds it too: done would
+// otherwise pass a review nobody could see. Known limit: a pull request
+// merged or closed while its branch is still ahead of the base (a squash
+// merge, an origin not fetched) is held as well — the forge still lists it,
+// jaira pr shows none open, and which it is a person tells: they move the
+// ticket by hand. Answers whether it held the ticket. A board saying done, a
+// .jaira/pr saying none, a board without a signoff lane before done, and a
+// board whose pr-when cannot be read are not touched.
+async function heldInSignoff($: EngineInterface, w: Waiting): Promise<boolean> {
+  if (!board || w.acceptTo === null) return false
+  const b = board
+  const hold = async (why: string) => {
+    await fail($, `${t.accept} ${w.id}`, `${why}\n${t.staysInLane(w.id, w.lane)}`)
+    return true
+  }
+  // A pr-when that cannot be read counts as done (decided 22.11.): Accept
+  // runs on every board, and a broken roles read must not stop every Accept
+  // everywhere for the few boards that say signoff.
+  const roles = await run($, ['jaira', 'roles', 'list', '--json'], b.dir, 30_000)
+  if (roles?.exitCode !== 0 || prWhenOf(roles.stdout) !== 'signoff') return false
+  const lanes = await run($, ['jaira', 'lanes', '--json'], b.dir)
+  if (lanes?.exitCode !== 0) return hold(`jaira lanes: ${output(lanes)}`)
+  const arrived = lanesBetween(lanes.stdout, 'signoff', w.acceptTo)
+  if (arrived.length === 0) return false
+  const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
+  const porcelain = trees?.exitCode === 0 ? trees.stdout : ''
+  const decided = await decideStep($, b, w.id, arrived, porcelain)
+  if (typeof decided === 'string') return hold(decided)
+  const { step, branch, hint, land, pending, has } = decided
+  if (land) return false
+  if (branch !== undefined && pending !== undefined && pending.length > 0) return hold(t.prWaitsSignoff(branch, pending))
+  if (step === 'pr' && branch !== undefined) {
+    // No lock against a second press while the lane still runs (CRASZS,
+    // decided 22.11.): gh and glab refuse a second pull request for one
+    // branch, so a double press costs a second agent's tokens at most.
+    const failed = await startPrLane($, b, w.id, branch, false, porcelain)
+    if (failed !== undefined) return hold(failed)
+    await say($, t.prOpensInSignoff(w.id, branch))
+    void $.prompt.submit({ text: t.toSessionPrInSignoff(w.id, branch) })
+    return true
+  }
+  if (has === true && branch !== undefined) {
+    const r = await run($, ['jaira', 'pr', branch, '--json'], b.repo, 60_000)
+    const open = r?.exitCode === 0 ? pullRequestsOf(r.stdout) : undefined
+    if (open === undefined) return hold(t.prUnchecked(`jaira pr: ${output(r)}`))
+    // The forge lists a pull request of this branch in some state or from
+    // some fork, and none is open from origin: merged, closed, or somebody
+    // else's of the same name. Whose round that is, a person tells.
+    if (open.length === 0) return hold(t.prElsewhere(branch))
+    const unsettled = open.flatMap(p => (p.settled ? [] : p.unsettled.map(u => `#${p.number}: ${u}`)))
+    return unsettled.length > 0 ? hold(t.notSettled(branch, unsettled)) : false
+  }
+  return hint ? hold(hint) : false
 }
 
 // What a command said when it failed, for the message pane: its error, else
@@ -756,9 +822,9 @@ async function pullTarget($: EngineInterface, repoDir: string): Promise<Target |
 // with its reason — no origin at all, a forge that does not answer (whether
 // origin is a fork cannot be told), a fork whose parent no remote points at.
 // The step is the same 'pr' and `land` says which of the two it is.
-type Decided = { step: StepAfterAccept; branch?: string; hint: string; land?: boolean }
+type Decided = { step: StepAfterAccept; branch?: string; hint: string; land?: boolean; pending?: string[]; has?: boolean }
 
-async function decideStep($: EngineInterface, b: { dir: string; repo: string }, id: string, terminal: string, porcelain: string): Promise<Decided | string> {
+async function decideStep($: EngineInterface, b: { dir: string; repo: string }, id: string, arrived: string | readonly string[], porcelain: string): Promise<Decided | string> {
   const found = branchesFor(porcelain, id)
   const asked = await pullTarget($, b.repo)
   // Under none a reason is held until there is something to land: a branch
@@ -794,8 +860,8 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   if (ahead === 0) return { step: 'none', branch, hint: '' }
   const list = await run($, ['jaira', 'list', '--json'], b.dir, 30_000)
   if (list?.exitCode !== 0) return `jaira list: ${withoutWarnings(list?.stderr ?? '') || 'did not run'}`
-  const pending = pendingOf(list.stdout, ticketsNamed(subjects.stdout), terminal)
-  if (pending.length > 0) return { step: stepAfterAccept(ahead, pending, false), branch, hint: land ? t.landWaits(branch, pending) : t.prWaits(branch, pending), land }
+  const pending = pendingOf(list.stdout, ticketsNamed(subjects.stdout), arrived)
+  if (pending.length > 0) return { step: stepAfterAccept(ahead, pending, false), branch, hint: land ? t.landWaits(branch, pending) : t.prWaits(branch, pending), land, pending }
   if (land && typeof asked === 'string') return t.cannotLand(asked)
   if (land && target === undefined) {
     const origin = await run($, ['git', 'remote', 'get-url', 'origin'], b.repo)
@@ -806,7 +872,7 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   const cmd = pullRequestsCommand(target.on, target.repo, branch)
   const listed = await run($, cmd, b.repo, 30_000)
   const has = listed?.exitCode === 0 ? hasPullRequest(listed.stdout) : undefined
-  return { step: stepAfterAccept(ahead, pending, has), branch, hint: has === undefined ? t.prUnchecked(`${cmd[0]}: ${output(listed)}`) : '' }
+  return { step: stepAfterAccept(ahead, pending, has), branch, hint: has === undefined ? t.prUnchecked(`${cmd[0]}: ${output(listed)}`) : '', has }
 }
 
 // What the press starts once the ticket is in done, without a further word
@@ -837,20 +903,87 @@ async function afterAccept($: EngineInterface, id: string, terminal: string): Pr
   const { step, branch, hint, land } = decided
   // No pull request to open: only why not, where there is a reason.
   if (step !== 'pr' || branch === undefined) return hint ? said(t.acceptedNoPr(id, hint)) : ''
+  const failed = await startPrLane($, b, id, branch, land === true, trees?.exitCode === 0 ? trees.stdout : '')
+  if (failed !== undefined) return stuck(failed)
+  return said(land ? t.landStarted(id, branch) : t.prStarted(id, branch))
+}
+
+// The pr lane of spawn.sh on the ticket's branch, in the worktree that
+// carries it — the role pushes from there — checked out again beside the
+// repository where it went after done. A pull request it opens is looked for
+// afterwards (followPullRequest), so the teamlead hears of it once. Answers
+// why it could not start, or undefined.
+async function startPrLane($: EngineInterface, b: { dir: string; repo: string }, id: string, branch: string, land: boolean, porcelain: string): Promise<string | undefined> {
   const bin = await herdr($)
   const script = await spawnScript($)
-  if (bin === undefined || script === undefined) return stuck(land ? t.landNeedsHerdr(branch) : t.prNeedsHerdr(branch))
-  // In the worktree that carries the branch — the role pushes from there —
-  // checked out again beside the repository where it went after done.
-  let wt = trees?.exitCode === 0 ? worktreeOfBranch(trees.stdout, branch) : undefined
+  if (bin === undefined || script === undefined) return land ? t.landNeedsHerdr(branch) : t.prNeedsHerdr(branch)
+  let wt = porcelain ? worktreeOfBranch(porcelain, branch) : undefined
   if (wt === undefined) {
     wt = newWorktreeFor(b.repo, branch)
     const added = await run($, ['git', 'worktree', 'add', wt, branch], b.repo, 60_000)
-    if (added?.exitCode !== 0) return stuck(`git worktree add ${wt} ${branch}: ${output(added)}`)
+    if (added?.exitCode !== 0) return `git worktree add ${wt} ${branch}: ${output(added)}`
   }
-  const r = await run($, [...script, '--no-worktree', id.toLowerCase(), id, 'pr', wt], wt, 120_000)
-  if (r?.exitCode !== 0) return stuck(`spawn.sh: ${output(r).slice(-160)}`)
-  return said(land ? t.landStarted(id, branch) : t.prStarted(id, branch))
+  const r = await run($, [...script, '--no-worktree', ...await parentArgs($), id.toLowerCase(), id, 'pr', wt], wt, 120_000)
+  if (r?.exitCode !== 0) return `spawn.sh: ${output(r).slice(-160)}`
+  if (!land) followPullRequest($, id, branch, b.repo, PR_LOOKS)
+  return undefined
+}
+
+// ── following a pull request (CRASZS) ────────────────────────────────────
+//
+// The cockpit polls no pull request: the teamlead follows one itself with
+// 'jaira pr --watch' under a Monitor. What the cockpit adds is the one line
+// that says a pull request is there to follow — once per pull request, kept
+// in the store so a restarted session does not say it again. It comes from
+// two places: a pull request the pr lane opens after Accept, looked for a
+// bounded number of times (the lane runs in a Herdr tab whose report never
+// reaches this session), and an agent's report that names one.
+const PR_LOOK_EVERY_MS = 60_000
+const PR_LOOKS = 20
+const FOLLOWED_PREFIX = 'pr-followed:'
+
+function followPullRequest($: EngineInterface, id: string, branch: string, repo: string, looks: number): void {
+  if (looks <= 0) return
+  $.clock.after(PR_LOOK_EVERY_MS, () => void lookForPullRequest($, id, branch, repo, looks - 1))
+}
+
+async function lookForPullRequest($: EngineInterface, id: string, branch: string, repo: string, looks: number): Promise<void> {
+  const r = await run($, ['jaira', 'pr', branch, '--json'], repo, 60_000)
+  // No forge, no gh, no sign-in (exit 3), a usage error (2): asking again
+  // changes nothing. A forge that failed (1) or a call that timed out may
+  // answer next minute.
+  if (r !== undefined && r.exitCode !== 0 && r.exitCode !== 1) return
+  const open = r?.exitCode === 0 ? pullRequestsOf(r.stdout)?.[0] : undefined
+  if (open === undefined) return followPullRequest($, id, branch, repo, looks)
+  const line = await followLine($, open.number, open.tickets.length > 0 ? open.tickets : [id])
+  if (line !== undefined) void $.prompt.submit({ text: line })
+}
+
+// The pull requests a report names by address, asked of jaira one by one:
+// the first that is this repository's own (jaira pr reads the forge origin
+// leads to, a fork's parent included), open, and whose address is the one
+// the report wrote is handed over. A report quoting another project's pull
+// request hands nothing over for it. After the report, not inside it: the
+// forge's answer must not hold up the report reaching this session.
+async function followNamed($: EngineInterface, named: { number: number; url: string }[], ticket: string): Promise<void> {
+  const dir = board?.repo ?? (await project($))
+  for (const { number, url } of named) {
+    const r = await run($, ['jaira', 'pr', '--number', String(number), '--json'], dir, 60_000)
+    const pr = r?.exitCode === 0 ? pullRequestsOf(r.stdout)?.[0] : undefined
+    if (pr === undefined || !sameAddress(pr.url, url)) continue
+    const line = await followLine($, number, pr.tickets.length > 0 ? pr.tickets : [ticket])
+    if (line !== undefined) void $.prompt.submit({ text: line })
+    return
+  }
+}
+
+// The line that hands a pull request to the teamlead, or undefined where
+// this project's pull request was handed over before.
+async function followLine($: EngineInterface, n: number, tickets: string[]): Promise<string | undefined> {
+  const key = `${FOLLOWED_PREFIX}${await project($)}:${n}`
+  if ((await $.store.get(key)) !== undefined) return undefined
+  await $.store.set(key, true)
+  return t.followPr(n, tickets)
 }
 
 // origin's default branch as a remote-tracking name: origin/HEAD where it
@@ -949,6 +1082,19 @@ async function herdr($: EngineInterface): Promise<string | undefined> {
   return script?.[1]?.replace(/spawn\.sh$/, 'herdr-hc.sh')
 }
 
+// The parent a tab this mod starts reports to: this session, by its
+// messaging socket — the address spawn.sh and SendMessage take, as a
+// teamlead's spawn.sh hands its workers. A question or a report then arrives
+// here instead of waiting in a tab nobody looks at (T5QN9P). No socket, or
+// one whose file is gone: no parent at all, and the tab asks in itself as
+// before — spawn.sh refuses a parent nobody listens on, and would start no
+// tab at all.
+async function parentArgs($: EngineInterface): Promise<string[]> {
+  const socket = await $.env.get('CLAUDE_CODE_MESSAGING_SOCKET')
+  const live = socket ? await $.fs.exists(socket).catch(() => false) : false
+  return live ? ['--parent', `uds:${socket}`] : ['--no-parent']
+}
+
 // Explain a review finding, or talk an open question through, in a Herdr tab
 // of its own: the teamlead's chat is not where that conversation belongs.
 // Without Herdr this session is asked instead: Explain by a subagent, which
@@ -985,10 +1131,8 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
     await here.leave()
     return fail($, what, t.noSpawn)
   }
-  // A Discuss chat sends its decision to this session: its messaging socket
-  // is the address SendMessage takes.
-  const socket = kind === 'discuss' ? await $.env.get('CLAUDE_CODE_MESSAGING_SOCKET') : undefined
-  const parent = socket ? ['--parent', `uds:${socket}`] : []
+  // A Discuss chat sends its decision to this session.
+  const parent = kind === 'discuss' ? await parentArgs($) : []
   const removes = copy === undefined ? [] : ['--copy', copy]
   // Registered before spawn.sh runs, which waits up to two minutes for
   // claude while the row unlocks after BUSY_MS: a second press in that time
@@ -1572,8 +1716,8 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   // whatever worker it has.
   if (script === undefined) return handedTo('none', `${why}; no spawn.sh found (jaira roles install), old tab left open`)
   if (tab !== undefined) await run($, [bin, 'tab', 'close', tab.tab_id], dir)
-  // In its own tab, like the one after Accept: not this chat's child.
-  const started = await run($, [...script, '--no-parent', id.toLowerCase(), id, 'worker', board.repo], board.repo, 120_000)
+  // In its own tab, like the one after Accept, reporting to this session.
+  const started = await run($, [...script, ...await parentArgs($), id.toLowerCase(), id, 'worker', board.repo], board.repo, 120_000)
   if (started?.exitCode === 0) return handedTo('new', why)
   await handedTo('none', `${why}; spawn.sh failed: ${(started?.stderr ?? '').trim().slice(-160)}`)
 }
