@@ -22,21 +22,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T19:11:01Z
-updated-at: 2026-11-22T21:03:02Z
+updated-at: 2026-11-22T21:08:08Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-6414
 claimed-at: 2026-11-22T19:38:15Z
-outcome-what: "Fixed the four bughunt findings: asksWhy only where the ticket can be accepted (executionOf), the release note's Enter line, explainNote asks again after a failure and after a language change, Explain all under its own lock."
-outcome-why: bughunt round 1 found them in the change
-outcome-resolves: "bughunt notes of round 1"
+outcome-what: "Explain all back under the row's one lock; Execute pressed while the row is busy says so (t.busyRow) and is drawn dim instead of being dropped."
+outcome-why: "bughunt round 2: a lock of its own let an Explain chat run beside a press that pulled and then removed the ticket copy"
+outcome-resolves: "bughunt note of round 2"
 review-summary: "none"
-round: 3
+round: 4
 back-from: testing
 back-by: lane
-back-count: 1
-review-gaps: "removed nextChoice (board.ts), orphaned with the old Give back rows; removed Waiting.explainable and explainable() (band has no Explain button any more), the Verdict pane, its atom and seven texts nobody reads; folded the store-and-trim of rephrased() and explainNote into storeNewest (register.tsx); left codeDir beside refreshBoard's worktree loop (that loop reads one listing for many tickets); proofs now name symbols instead of line numbers"
-test-verdict: "fail: suite green (plugin test 407/407 on 2.1.330 and on CI's 2.1.329, go vet, go test core/mod core/shipped core/release RC=0); bughunt found 4 change findings - see bughunt notes"
-hunt-verdict: "fail: 4 change findings (executionOf in a lane that does not end; release note on Enter; explainNote caches a failure and ignores language; Explain all holds the row lock Execute needs)"
+back-count: 2
+review-gaps: "none: round 3 fix diff adds no duplicate or dead code; earlier: removed nextChoice, Waiting.explainable, the Verdict pane and seven unused texts, folded store-and-trim into storeNewest"
+test-verdict: "fail: suite green (410/410 on 2.1.329, go test shipped/release RC=0); bughunt round 2 found one change finding: Explain all's own lock lets a chat run beside a press that pulled the ticket copy"
+hunt-verdict: "fail: 1 change finding - register.tsx Explain all lock <id>:chat races a press holding the row lock"
 ---
 
 # Ein Knopf 'Abnahme' im Cockpit ersetzt Accept, Give back und Verdict: pro Notiz ok / beheben / Ticket wählen, dann ausführen
@@ -123,3 +123,7 @@ Zusatz: Bau startet erst nach Merge von QTQW15 (signoff), DF46B9 und T5QN9P (don
 - **2026-11-22 21:00 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:2084-2085 with :895 (once) and :983 (openChat returns 'hold') - class: Explain all and Execute now sit side by side under the same row lock; Explain all without Herdr returns 'hold', which keeps the lock for BUSY_MS (20 s), and with Herdr spawn.sh holds it until it ends or 20 s pass; an Execute pressed in that time is dropped by once() without a word, and the pane's Execute is not drawn dim the way the band's button is, so the person sees nothing happen and the ticket stays. example: press Explain all, then Execute within 20 s -> no move, no message. read
 - **2026-11-22 21:00 · Alexander Sacharov** — bughunt: done at 592e88dc6 - 4 findings (4 change, 0 blocker, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/2V50Y5.md core/shipped/shipped.sha256
 - **2026-11-22 21:01 · Alexander Sacharov** — testing: zurück an in-progress für die 4 bughunt-Funde: (1) asksWhy nur, wo angenommen werden kann (acceptTo != null) - sonst ist Text 'was fehlt' und gibt zurück; (2) Release-Note: Enter nimmt nur mit Grund für einen behaltenen Blocker an; (3) explainNote: Fehler nicht als Antwort festhalten, beim Öffnen des Fensters die Sätze zurücksetzen, damit ein Sprachwechsel neu fragt; (4) Explain all unter eigener Sperre <id>:chat, damit Execute nicht 20 s verloren geht.
+- **2026-11-22 21:03 · Alexander Sacharov** — critique round 3 (fix diff 592e88dc6..087af7b44): die vier Fixes sitzen an der Stelle des Fehlers (executionOf, explainNote/openAcceptance, eigene Sperre für Explain all); nichts weiter.
+- **2026-11-22 21:05 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:2091 - class: Explain all now takes its own lock (`${w.id}:chat`), so openChat runs beside any press on the row's lock w.id that pulled the ticket's copy into the main checkout itself - Execute (accept at :664-672, giveBack at :1477-1482) and Discuss (:1932/:1973); the guard at :966-968 sees only chats that registered a copy, and ticketHere (:582-583) answers 'current' with no copy while that press holds it; example: ticket only on its ref, no own worktree - Execute pulls the copy and runs dry-run/move/follow-ups for seconds, Explain all pressed meanwhile finds the file current, opens its chat on the main checkout with no copy of its own, then accept's here.leave() runs git clean on that file and the chat's 'jaira note' meets a ticket on its ref and not on disk (refused). Same if Discuss and Explain all are pressed within the ticketHere window: two chats, each believing it owns or need not own the copy, the first to end removes it from under the other. Before 087af7b44 both buttons shared w.id and the second press did nothing. Not a blocker: narrow timing, the chat sees the refusal, the accept or give-back itself is unaffected; read (call path followed, not reproduced in the harness)
+- **2026-11-22 21:05 · Alexander Sacharov** — bughunt: done at 087af7b44 - 1 finding (1 change, 0 blocker, 0 pre-existing) in 6 modules, follow-up hunt (diff since 592e88dc6: board.ts executionOf, register.tsx explainNote/openAcceptance/Explain all lock, notes, tests); concurrency, error paths, input, permissions checked; claude plugin test: 410 pass; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/2V50Y5.md core/shipped/shipped.sha256
+- **2026-11-22 21:07 · Alexander Sacharov** — testing round 2 -> in-progress. decision (kleineres Design statt neuer Regel): die eigene Sperre für Explain all wieder entfernt - eine Sperre pro Ticket, zwei Schreiber auf einem Ticket nie gleichzeitig. Execute während einer laufenden Sperre wird jetzt gesagt (t.busyRow, Knopf gedimmt) statt still verworfen; das war der eigentliche Fund aus Runde 1.

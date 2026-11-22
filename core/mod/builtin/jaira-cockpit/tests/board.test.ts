@@ -4861,7 +4861,7 @@ describe('the Acceptance pane', () => {
     expect(await texts(again)).toContain('  Не хватает только теста.')
   })
 
-  test('Execute right after Explain all is carried out: the chat holds a lock of its own', async ($, on) => {
+  test('Execute while an Explain chat still opens is said, not dropped, and writes nothing', async ($, on) => {
     const w = world(on, { herdr: true })
     w.heldSpawn = []
     await startSession($)
@@ -4870,9 +4870,12 @@ describe('the Acceptance pane', () => {
     await w.clock.settle()
     expect(w.heldSpawn).toHaveLength(1)
     await pane.press({ key: 'execute-MG677R' })
-    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
+    expect(ran(w, 'jaira', 'move')).toEqual([])
+    expect(w.toasts.at(-1)).toBe('MG677R: an earlier press or an Explain chat is still at work on it - press Execute again once it is done')
     w.heldSpawn.shift()!()
     await w.clock.settle()
+    await pane.press({ key: 'execute-MG677R' })
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
   })
 
   test('a known limit or a note for another ticket colours nothing: the light follows the marks', async ($, on) => {

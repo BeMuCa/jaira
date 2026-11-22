@@ -84,9 +84,6 @@ const workersFrameAtom = atom({ plugin: 'jaira-cockpit', key: 'workersFrame' } a
 const PANE = 'cockpit-ticket'
 const MESSAGE = 'cockpit-message'
 const ACCEPTANCE = 'cockpit-acceptance'
-// Explain all's lock, beside the row's: a chat holds its press until it is
-// done, and Execute in the same pane must not wait on it.
-const CHAT = ':chat'
 const EXPLANATION = 'cockpit-explanation'
 // The Acceptance pane's light in the theme's colours.
 const LIGHT_COLOUR = { green: 'success', yellow: 'warning', red: 'error' } as const
@@ -2020,7 +2017,11 @@ export const register: Register = (on, options) => {
     const now = await $.clock.now()
     const choose = (n: number, choice: GapItem['choice']) =>
       void update($, choosingAtom, c => (c === null || c.id !== w.id ? c : { ...c, items: c.items.map((x, i) => (i === n ? { ...x, choice } : x)) }))
-    const go = () => void once($, w.id, async () => execute($, w, await read($, typedAtom), share, Input !== undefined))
+    // One lock for the row and its pane: a chat Explain all opened, or a
+    // press still running, holds it - one ticket is never written by two
+    // presses at once. A press on Execute meanwhile is said, not dropped.
+    const busy = (await read($, busyAtom))[w.id] !== undefined
+    const go = () => (busy ? void say($, t.busyRow(w.id)) : void once($, w.id, async () => execute($, w, await read($, typedAtom), share, Input !== undefined)))
     // A choice's button: the chosen one bold in its colour, the others dim.
     const CHOICES: [GapItem['choice'], string, 'success' | 'error' | 'suggestion'][] = [['accept', t.choiceOk, 'success'], ['now', t.choiceFix, 'error'], ['later', t.choiceTicket, 'suggestion']]
     const story_ = s?.story
@@ -2087,8 +2088,8 @@ export const register: Register = (on, options) => {
           )
           : null}
         <Box flexDirection="row">
-          <Button key={`execute-${w.id}`} label={t.execute} onPress={go} />
-          <Button key={`explain-all-${w.id}`} label={t.explainAll} onPress={() => void once($, `${w.id}${CHAT}`, () => openChat($, w.id, 'explain'))} />
+          <Button key={`execute-${w.id}`} label={t.execute} onPress={go}><Text bold dimColor={busy}>{t.execute}</Text></Button>
+          <Button key={`explain-all-${w.id}`} label={t.explainAll} onPress={() => void once($, w.id, () => openChat($, w.id, 'explain'))} />
         </Box>
       </Box>
     )

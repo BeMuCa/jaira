@@ -58,6 +58,7 @@ export const t = {
   noReason: 'no explanation came back',
   explainAll: 'Explain all',
   execute: 'Execute',
+  busyRow: (id: string) => `${id}: an earlier press or an Explain chat is still at work on it - press Execute again once it is done`,
   // What Execute will do, in the pane's last line before the button.
   summary: (step: 'giveBack' | 'accept' | 'needWhy' | 'notTerminal', fix: number, followUps: number, to: string) => {
     const tickets = followUps > 0 ? ` + ${followUps} follow-up ticket${followUps === 1 ? '' : 's'}` : ''
