@@ -28,7 +28,7 @@ where damage from a hand edit, a bad merge, or an agent writing something
 unexpected actually shows up — a ticket with an unparseable id, a lane that is
 not installed, a dependency on something that is not there, a file under
 .jaira/ whose name is not valid UTF-8 (macOS cannot check it out; the line
-carries the mv that renames it).
+quotes its exact name for a shell).
 
 Errors exit 3. Warnings — a backlog ticket that is not specified yet — exit 0,
 because capture is meant to be cheap. Use --strict to fail on those too.`,
@@ -162,16 +162,13 @@ func invalidNames(root string) []validate.Problem {
 		if err != nil || utf8.ValidString(d.Name()) {
 			return nil // an unreadable corner is not this check's business
 		}
-		fixed := filepath.Join(filepath.Dir(p), strings.ToValidUTF8(d.Name(), ""))
 		out = append(out, validate.Problem{
 			Code: "invalid_name", Severity: validate.SeverityError,
 			Path: strings.ToValidUTF8(p, "\uFFFD"),
-			// mv, not git mv: it works on a board not shared yet and on a
-			// file git does not track, and git still reads a committed one
-			// as renamed. Absolute paths, like every other Problem's, so the
-			// line runs from any directory.
-			Message: fmt.Sprintf("name is not valid UTF-8, macOS cannot check it out — rename it: mv %s %s",
-				shellQuote(p), shellQuote(fixed)),
+			// The exact name, not a rename command: every target jaira could
+			// propose may already exist (two broken names cleaning up to one,
+			// or the file the fixed slug writes), and mv would overwrite it.
+			Message: fmt.Sprintf("name is not valid UTF-8, macOS cannot check it out — give %s a valid name", shellQuote(p)),
 		})
 		return nil
 	})
@@ -179,8 +176,8 @@ func invalidNames(root string) []validate.Problem {
 }
 
 // shellQuote writes s as bash's $'...', which reads back the \xNN escapes
-// strconv.Quote writes for broken bytes; a plain "..." would pass them on
-// literally and the rename would name a file that does not exist.
+// strconv.Quote writes for broken bytes, so the name can be pasted into mv;
+// a plain "..." would pass them on literally.
 func shellQuote(s string) string {
 	q := strconv.Quote(s)
 	q = strings.ReplaceAll(q[1:len(q)-1], `\"`, `"`)

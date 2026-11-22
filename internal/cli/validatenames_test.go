@@ -10,9 +10,9 @@ import (
 )
 
 // TestValidateNamesFilesWithInvalidUTF8 plants the name an older jaira wrote —
-// a slug cut through "ü", leaving the lone byte \xc3 — and checks that
-// validate fails on it, offers a rename bash can run as printed, leaves the
-// file where it is, and passes once the rename ran.
+// a slug cut through "ü", leaving the lone byte \xc3 — beside the name the
+// fixed slug writes, and checks that validate fails on the broken one only,
+// quotes it so bash finds the very file, and touches nothing.
 func TestValidateNamesFilesWithInvalidUTF8(t *testing.T) {
 	if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 		t.Skip("this file system cannot hold a name that is not valid UTF-8")
@@ -23,38 +23,43 @@ func TestValidateNamesFilesWithInvalidUTF8(t *testing.T) {
 		t.Fatal(err)
 	}
 	bad := filepath.Join(logbook, "01ABC-ampel-gr\xc3.md")
-	if err := os.WriteFile(bad, []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
+	keep := filepath.Join(logbook, "01ABC-ampel-gr.md")
+	for _, f := range []string{bad, keep} {
+		if err := os.WriteFile(f, []byte(f), 0o644); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	out, err := runCLI(t, dir, "validate")
 	if exitCode(err) != ExitValidation {
 		t.Fatalf("validate exit = %d, want %d\n%s", exitCode(err), ExitValidation, out)
 	}
-	const marker = "macOS cannot check it out — rename it: mv "
+	if n := strings.Count(out, "not valid UTF-8"); n != 1 {
+		t.Fatalf("want exactly one invalid_name line, got %d:\n%s", n, out)
+	}
+	const marker = "macOS cannot check it out — give "
 	i := strings.Index(out, marker)
 	if i < 0 {
 		t.Fatalf("validate did not name the file:\n%s", out)
 	}
-	if _, err := os.Stat(bad); err != nil {
-		t.Fatalf("validate touched the file: %v", err)
+	for _, f := range []string{bad, keep} {
+		if b, err := os.ReadFile(f); err != nil || string(b) != f {
+			t.Fatalf("validate touched %q: %v", f, err)
+		}
 	}
 
-	// The printed rename, run by bash as printed from a directory other than
-	// the root, on a file git does not track, must hit the real file.
+	// The quoted name, read by bash from another directory, is the file.
 	if _, err := exec.LookPath("bash"); err != nil {
-		t.Skip("no bash to run the printed rename")
+		t.Skip("no bash to read the quoted name")
 	}
-	args, _, _ := strings.Cut(out[i+len(marker):], "\n")
-	sh := exec.Command("bash", "-c", "mv "+args)
-	sh.Dir = logbook
-	if b, err := sh.CombinedOutput(); err != nil {
-		t.Fatalf("the printed rename does not run: %v\n%s\n%s", err, args, b)
+	quoted, _, _ := strings.Cut(out[i+len(marker):], " a valid name")
+	sh := exec.Command("bash", "-c", `printf %s `+quoted)
+	sh.Dir = t.TempDir()
+	got, err := sh.Output()
+	if err != nil {
+		t.Fatalf("bash cannot read %s: %v", quoted, err)
 	}
-	if _, err := os.Stat(filepath.Join(logbook, "01ABC-ampel-gr.md")); err != nil {
-		t.Fatalf("rename did not produce the valid name: %v", err)
-	}
-	if out, err := runCLI(t, dir, "validate"); err != nil || strings.Contains(out, marker) {
-		t.Fatalf("validate after the rename: err=%v\n%s", err, out)
+	if string(got) != bad {
+		t.Fatalf("bash reads %s as %q, want %q", quoted, got, bad)
 	}
 }
