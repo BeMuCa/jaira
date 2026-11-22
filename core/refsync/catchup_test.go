@@ -311,47 +311,6 @@ func fetchAt(t *testing.T, s side) {
 	}
 }
 
-// A hand edit survives a fetch that did not move its ref: nothing newer
-// arrived, and the edit is this side's next write. A fetch that does move the
-// ref still wins over the file.
-func TestAFetchKeepsAHandEditWhileItsRefStandsStill(t *testing.T) {
-	ada, grace, _ := twoSides(t)
-	ms, err := milestone.Create(ada.store.Root, ada.store, ada.syncer, func([]*milestone.Milestone) (*milestone.Milestone, error) {
-		return milestone.New("q4", 45, time.Now()), nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := ada.syncer.Flush(); err != nil {
-		t.Fatal(err)
-	}
-	fetchAt(t, grace)
-	path := filepath.Join(milestone.Dir(grace.store.Root), ms.FileName())
-	b, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("grace has no file after the fetch: %v", err)
-	}
-	edited := string(b) + "- " + tkA + "\n"
-	if err := os.WriteFile(path, []byte(edited), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	fetchAt(t, grace)
-	if got, _ := os.ReadFile(path); string(got) != edited {
-		t.Fatalf("a fetch that moved nothing threw the hand edit away:\n%s", got)
-	}
-
-	addTo(t, ada, "q4", tkB)
-	fetchAt(t, grace)
-	got, err := milestone.Load(grace.store.Root, ms.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if want := []string{tkB}; !slices.Equal(got.Members(), want) {
-		t.Fatalf("after ada's write the file holds %v, want the ref's %v", got.Members(), want)
-	}
-}
-
 // A rename in case only keeps the milestone on disk on both sides — where the
 // file system ignores case the old and the new name are one file, and neither
 // the rename nor the teammate's fetch may remove it as the old one. Run with
@@ -387,10 +346,9 @@ func TestARenameInCaseOnlyKeepsTheFileOnBothSides(t *testing.T) {
 	}
 }
 
-// The record is what decides, not which fetch moved the ref: a teammate's
-// write that an earlier fetch already brought in (a flush, the board's
-// Incoming, another worktree) still beats a hand edit, so the next write here
-// does not put the edit over theirs.
+// A fetch lets the ref win over a hand edit, whichever fetch moved the ref
+// (a flush, the board's Incoming, another worktree): the next write here does
+// not put the edit over a teammate's write.
 func TestAHandEditLosesToARefMovedByAnEarlierFetch(t *testing.T) {
 	ada, grace, _ := twoSides(t)
 	ms, err := milestone.Create(ada.store.Root, ada.store, ada.syncer, func([]*milestone.Milestone) (*milestone.Milestone, error) {
@@ -423,71 +381,5 @@ func TestAHandEditLosesToARefMovedByAnEarlierFetch(t *testing.T) {
 	addTo(t, grace, "q4", tkC)
 	if got, want := refMembers(t, grace, ms.ID), []string{tkA, tkB, tkC}; !slices.Equal(got, want) {
 		t.Fatalf("ref holds %v, want %v: the hand edit was written over ada's add", got, want)
-	}
-}
-
-// The catch-up asks the same record as the fetch. A hand edit made in one
-// worktree while the main checkout moves the shared ref — no fetch anywhere —
-// is on a state the ref has left, and the next write there must not put it
-// back over the main checkout's add.
-func TestAHandEditInAnotherWorktreeLosesToTheSharedRef(t *testing.T) {
-	ada, _, _ := twoSides(t)
-	run(t, ada.dir, "git", "commit", "--quiet", "--allow-empty", "-m", "start")
-	ms, err := milestone.Create(ada.store.Root, ada.store, ada.syncer, func([]*milestone.Milestone) (*milestone.Milestone, error) {
-		return milestone.New("q4", 45, time.Now()), nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := ada.syncer.Flush(); err != nil {
-		t.Fatal(err)
-	}
-	addTo(t, ada, "q4", tkA)
-	old := worktreeOf(t, ada, "old")
-	fetchAt(t, old) // the file arrives there and agrees with the ref
-	path := filepath.Join(milestone.Dir(old.store.Root), ms.FileName())
-	b, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, append(b, []byte("<!-- by hand in old -->\n")...), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	addTo(t, ada, "q4", tkB)
-	addTo(t, old, "q4", tkC)
-	if got, want := refMembers(t, ada, ms.ID), []string{tkA, tkB, tkC}; !slices.Equal(got, want) {
-		t.Fatalf("ref holds %v, want %v: the old worktree's hand edit went over the main checkout's add", got, want)
-	}
-}
-
-// Without a record — an upgrade, another JAIRA_HOME, a deleted state
-// directory — a hand edit on the current tip is kept, not thrown away.
-func TestAHandEditIsKeptWhenThereIsNoRecord(t *testing.T) {
-	ada, _, _ := twoSides(t)
-	ms, err := milestone.Create(ada.store.Root, ada.store, ada.syncer, func([]*milestone.Milestone) (*milestone.Milestone, error) {
-		return milestone.New("q4", 45, time.Now()), nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := ada.syncer.Flush(); err != nil {
-		t.Fatal(err)
-	}
-	addTo(t, ada, "q4", tkA)
-	addTo(t, ada, "q4", tkB)
-	if err := os.Remove(filepath.Join(ada.store.StateDir(), "milestone-synced.json")); err != nil {
-		t.Fatalf("no record to remove: %v", err)
-	}
-	path := ms.Path(ada.store.Root)
-	b, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte(strings.Replace(string(b), "- "+tkA+"\n", "", 1)), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	addTo(t, ada, "q4", tkC)
-	if got, want := refMembers(t, ada, ms.ID), []string{tkB, tkC}; !slices.Equal(got, want) {
-		t.Fatalf("ref holds %v, want %v: the hand edit was thrown away", got, want)
 	}
 }

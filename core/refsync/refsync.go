@@ -80,11 +80,6 @@ type Syncer struct {
 	// hour ago says nothing about the milestones made since.
 	fetched atomic.Bool
 
-	// syncedMu orders the reads and writes of milestone-synced.json (see
-	// markSynced) within this process; across processes the milestone lock
-	// or the outbox order them.
-	syncedMu sync.Mutex
-
 	// extraMu guards extraCache: the decoded ticket of each ref-only ticket,
 	// with the commit hash it was decoded from. A hash is a content address, so
 	// an equal hash needs no read and no decode, and no safety net behind it.
@@ -270,12 +265,13 @@ func (y *Syncer) MigrationBase(id string) (milestone.Base, bool) {
 // editor in jaira the way a ticket has a lane: the file IS the interface, and
 // a group somebody planned is of no use as a ref nobody has checked out. The
 // ref is the newer state by construction — it is what the remote accepted —
-// so a local file that differs is overwritten; the files are never in git, so
-// what it held is gone. Two exceptions. A milestone with a write still queued
-// in the outbox: that file is newer than the ref and is left alone until the
-// write has been sent or rejected. And a file edited by hand — bytes the ref
-// never carried — whose ref this fetch did not move: nothing newer arrived for
-// it, and the next milestone write sends the edit.
+// so a local file that differs is overwritten. The files are never in git, so
+// a hand edit that no milestone command has sent yet is gone with it: a known
+// limit, kept because telling such an edit from a copy that fell behind needs
+// a record per worktree, and every form of it tried in 1MYFKE lost somebody's
+// write at another edge. The one exception is a milestone with a write still
+// queued in the outbox: that file is newer than the ref and is left alone
+// until the write has been sent or rejected.
 //
 // A milestone's ref is named after its ID and carries the file under its
 // current name, so a rename arrives as the same ref with another file name.
@@ -413,19 +409,7 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 			return removeOthers(false)
 		}
 		have, haveErr := os.ReadFile(path)
-		// A file that differs from a ref this fetch did not move, in a way
-		// the ref never carried, was edited by hand since: it is this
-		// side's next write, and the ref has nothing newer to give it. A
-		// ref that did move wins, as it always has — the file is now
-		// behind a teammate's write, and keeping it would put it back over
-		// theirs.
-		if haveErr == nil && milestone.IsID(key) && !bytes.Equal(have, content) && y.keepsHandEdit(key, have, sha, false) {
-			continue
-		}
 		if haveErr == nil && bytes.Equal(have, content) {
-			if milestone.IsID(key) {
-				y.markSynced(key, sha)
-			}
 			if err := removeOthers(true); err != nil {
 				return wrote, filed, renamed, conflicts, err
 			}
@@ -443,9 +427,6 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 		}
 		if err := ticket.WriteAtomic(path, content); err != nil {
 			return wrote, filed, renamed, conflicts, err
-		}
-		if milestone.IsID(key) {
-			y.markSynced(key, sha)
 		}
 		if err := removeOthers(true); err != nil {
 			return wrote, filed, renamed, conflicts, err
@@ -473,10 +454,12 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 // ever fetching (KWQCYZ).
 //
 // Behind means the file holds a state the ref has carried before and has
-// moved on from — the same test a ticket's file gets (hadBefore) — or an edit
-// made by hand on a state the ref has since moved on from (keepsHandEdit). A
-// hand edit on the tip the ref is still at is what the write is about to
-// send, so it stays; so does a file with a write still queued here. Only files named after their ID are looked at: an old-format file is
+// moved on from — the same test a ticket's file gets (hadBefore). A file that
+// differs from its ref in any other way was edited by hand and is what the
+// write is about to send, so it stays; so does one with a write still queued
+// here. Known limit: a hand edit made on a copy that had already fallen
+// behind is such a file too, and the write puts it over the newer ref —
+// 'jaira fetch' before editing a milestone file by hand avoids it. Only files named after their ID are looked at: an old-format file is
 // Migrate's, and a ref without a file on this disk is the fetch's to write.
 func (y *Syncer) CatchUpMilestones(root string) error {
 	if y == nil || y.Usable() != nil {
@@ -486,13 +469,13 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 		if !d.IDNamed || y.pendingMilestone(d.ID) {
 			continue
 		}
-		file, content, sha, err := y.Repo.ReadMilestone(d.ID)
+		file, content, _, err := y.Repo.ReadMilestone(d.ID)
 		if err != nil || milestone.FromBytes(file, content).ID != d.ID {
 			continue // no ref for it yet, or one that is not this milestone's
 		}
 		path := filepath.Join(milestone.Dir(root), d.File)
 		have, err := os.ReadFile(path)
-		if err != nil || bytes.Equal(have, content) || y.keepsHandEdit(d.ID, have, sha, true) {
+		if err != nil || bytes.Equal(have, content) || !y.Repo.MilestoneHad(d.ID, have) {
 			continue
 		}
 		dst := filepath.Join(milestone.Dir(root), file)
@@ -513,7 +496,6 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 		if err := ticket.WriteAtomic(dst, content); err != nil {
 			return err
 		}
-		y.markSynced(d.ID, sha)
 		// Renamed on the ref since: the old name is the same milestone.
 		if renamed {
 			if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
@@ -522,84 +504,6 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 		}
 	}
 	return nil
-}
-
-// keepsHandEdit is the one rule for a milestone file that differs from its
-// ref at sha, asked by a fetch and by the catch-up before every write: keep
-// it only when it is an edit made here — bytes the ref never carried — on the
-// state the ref is still at, the tip the file last agreed with. A file that
-// holds an earlier state of the ref fell behind; one edited on a state the
-// ref has moved on from would put that old state back over somebody's write.
-// Both get the ref.
-//
-// With no record — a worktree last written by an older build, another
-// JAIRA_HOME, a state directory deleted — each side does what it did before
-// the record existed: the catch-up before a write keeps the hand edit
-// (unknown is the one case where it might be the edit the write is for), and
-// a fetch lets the ref win, so a teammate's filing or edit still arrives. The
-// record is written on the first fetch that finds the file equal to its ref,
-// and on the first write sent from here.
-func (y *Syncer) keepsHandEdit(id string, have []byte, sha string, unknownKeeps bool) bool {
-	if y.Repo.MilestoneHad(id, have) {
-		return false
-	}
-	at := y.syncedAt(id)
-	if at == "" {
-		return unknownKeeps
-	}
-	return at == sha
-}
-
-// syncedPath is where this working tree records, per milestone ID, the tip of
-// the ref its file last agreed with: beside the outbox, because the files are
-// per working tree while the refs are shared by all of them.
-func (y *Syncer) syncedPath() string {
-	if y.Store == nil {
-		return ""
-	}
-	return filepath.Join(y.Store.StateDir(), "milestone-synced.json")
-}
-
-// syncedAt is the ref tip the milestone file with this ID last agreed with
-// here, "" when none was recorded.
-func (y *Syncer) syncedAt(id string) string {
-	y.syncedMu.Lock()
-	defer y.syncedMu.Unlock()
-	return y.loadSynced()[id]
-}
-
-func (y *Syncer) loadSynced() map[string]string {
-	m := map[string]string{}
-	if p := y.syncedPath(); p != "" {
-		if b, err := os.ReadFile(p); err == nil {
-			_ = json.Unmarshal(b, &m)
-		}
-	}
-	return m
-}
-
-// markSynced records that the file of milestone id agrees with its ref at
-// sha: a fetch found them equal or wrote the ref into the file, or a write of
-// the file was sent and became that tip. A file that differs from its ref
-// later, while the tip is still sha, was edited here since; a tip that moved
-// on came from somewhere else — another worktree, a teammate — whatever
-// fetch brought it. Best effort: without the record the ref wins, as before.
-func (y *Syncer) markSynced(id, sha string) {
-	p := y.syncedPath()
-	if p == "" || sha == "" {
-		return
-	}
-	y.syncedMu.Lock()
-	defer y.syncedMu.Unlock()
-	m := y.loadSynced()
-	if m[id] == sha {
-		return
-	}
-	m[id] = sha
-	if b, err := json.Marshal(m); err == nil {
-		_ = os.MkdirAll(filepath.Dir(p), 0o755)
-		_ = ticket.WriteAtomic(p, append(b, '\n'))
-	}
 }
 
 // pendingMilestone reports whether a write of this milestone is queued, under
@@ -939,16 +843,6 @@ func (y *Syncer) Flush() ([]Report, error) {
 			r = y.rebaseEpic(r)
 		}
 		rep := Report{Result: r}
-		// The tip is read after the whole queue went out, and another
-		// worktree may have moved the ref since: it is recorded only while
-		// it still carries what this one sent.
-		if r.Outcome == outbox.Sent && r.Kind == outbox.KindMilestone {
-			if e, ok := queued[r.ID]; ok {
-				if _, content, sha, err := y.Repo.ReadMilestone(r.ID); err == nil && string(content) == e.Content {
-					y.markSynced(r.ID, sha)
-				}
-			}
-		}
 		if r.Outcome == outbox.Rejected && r.Kind == outbox.KindMilestone {
 			if e, ok := queued[r.ID]; ok {
 				rep.Merged, rep.Conflicts = y.mergeRefused(e)

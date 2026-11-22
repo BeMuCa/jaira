@@ -3,6 +3,6 @@
 - ! If your repository has milestone files committed, `jaira update` and `jaira validate` now warn (`milestones_tracked`); take them out with `git rm -r --cached .jaira/milestones` and commit that.
 - A milestone command run in a worktree whose milestone file is older than its ref now starts from the ref, so an old copy no longer drops the tickets added since; a file you edited by hand is still what gets written.
 - A milestone you file with `jaira logbook` or bring back with `jaira restore` now fails with exit 1 when its ref cannot be queued, instead of reporting success while every other clone still sees the old state; the milestone stays where it was (on the board, or in the logbook).
-- Expect a line you typed into a milestone file by hand to survive `jaira fetch` and the board's background fetch as long as nobody changed that milestone meanwhile; the next milestone command sends it. If a teammate changed it, their version still wins.
+- Send a hand edit of a milestone file with a milestone command (`jaira milestone set`, `add`, `rm`) before the next `jaira fetch` or the board's background fetch: a fetch replaces a file with its ref, and the files are no longer in git to get the edit back.
 - Rename a milestone in case only (`q4` to `Q4`) on Windows, macOS or `/mnt/c` without it disappearing from your disk or your teammate's.
 - `jaira share --undo --json` now reports `milestones_ignore_removed`.
