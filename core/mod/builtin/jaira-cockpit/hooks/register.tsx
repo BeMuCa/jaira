@@ -245,7 +245,9 @@ async function shorten($: EngineInterface, text: string, origin: string, agent?:
     session: await sessionId($),
     text: report,
   })
-  const n = pullRequestIn(report)
+  // A remote is asked only where an address could name a pull request.
+  const remotes = /\/(?:pull|merge_requests)\/\d/.test(report) ? await run($, ['git', 'remote', '-v'], await project($)) : undefined
+  const n = remotes?.exitCode === 0 ? pullRequestIn(report, remotes.stdout) : undefined
   const follow = n === undefined ? undefined : await followLine($, n, [short.ticket])
   return text.replace(report, () => follow === undefined ? short.line : `${short.line}\n${follow}`)
 }
@@ -636,25 +638,39 @@ async function accept($: EngineInterface, w: Waiting, after?: (dir: string) => P
 async function heldInSignoff($: EngineInterface, w: Waiting): Promise<boolean> {
   if (!board || w.acceptTo === null) return false
   const b = board
-  const roles = await run($, ['jaira', 'roles', 'list', '--json'], b.dir, 30_000)
-  if (roles?.exitCode !== 0 || prWhenOf(roles.stdout) !== 'signoff') return false
-  const lanes = await run($, ['jaira', 'lanes', '--json'], b.dir)
-  const arrived = lanes?.exitCode === 0 ? lanesBetween(lanes.stdout, 'signoff', w.acceptTo) : []
-  if (arrived.length === 0) return false
-  const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
-  const porcelain = trees?.exitCode === 0 ? trees.stdout : ''
-  const decided = await decideStep($, b, w.id, arrived, porcelain)
   const hold = async (why: string) => {
     await fail($, `${t.accept} ${w.id}`, `${why}\n${t.staysInLane(w.id, w.lane)}`)
     return true
   }
+  // Unread is not "done": a board whose pr-when cannot be read might say
+  // signoff, and done would then pass its review round unseen.
+  const roles = await run($, ['jaira', 'roles', 'list', '--json'], b.dir, 30_000)
+  if (roles?.exitCode !== 0) return hold(`jaira roles list: ${output(roles)}`)
+  if (prWhenOf(roles.stdout) !== 'signoff') return false
+  const lanes = await run($, ['jaira', 'lanes', '--json'], b.dir)
+  if (lanes?.exitCode !== 0) return hold(`jaira lanes: ${output(lanes)}`)
+  const arrived = lanesBetween(lanes.stdout, 'signoff', w.acceptTo)
+  if (arrived.length === 0) return false
+  const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
+  const porcelain = trees?.exitCode === 0 ? trees.stdout : ''
+  const decided = await decideStep($, b, w.id, arrived, porcelain)
   if (typeof decided === 'string') return hold(decided)
   const { step, branch, hint, land, pending, has } = decided
   if (land) return false
   if (branch !== undefined && pending !== undefined && pending.length > 0) return hold(t.prWaitsSignoff(branch, pending))
   if (step === 'pr' && branch !== undefined) {
+    // A second press while the first one's pr lane still opens the pull
+    // request would start a second agent in the same worktree.
+    const key = `${OPENING_PREFIX}${await project($)}:${w.id}`
+    const now = await $.clock.now()
+    const since = (await $.store.get(key)) as number | undefined
+    if (since !== undefined && now - since < PR_LOOKS * PR_LOOK_EVERY_MS) {
+      await say($, t.prBeingOpened(w.id, branch))
+      return true
+    }
     const failed = await startPrLane($, b, w.id, branch, false, porcelain)
     if (failed !== undefined) return hold(failed)
+    await $.store.set(key, now)
     await say($, t.prOpensInSignoff(w.id, branch))
     void $.prompt.submit({ text: t.toSessionPrInSignoff(w.id, branch) })
     return true
@@ -837,6 +853,7 @@ async function startPrLane($: EngineInterface, b: { dir: string; repo: string },
 const PR_LOOK_EVERY_MS = 60_000
 const PR_LOOKS = 20
 const FOLLOWED_PREFIX = 'pr-followed:'
+const OPENING_PREFIX = 'pr-opening:'
 
 function followPullRequest($: EngineInterface, id: string, branch: string, repo: string, looks: number): void {
   if (looks <= 0) return
@@ -845,9 +862,11 @@ function followPullRequest($: EngineInterface, id: string, branch: string, repo:
 
 async function lookForPullRequest($: EngineInterface, id: string, branch: string, repo: string, looks: number): Promise<void> {
   const r = await run($, ['jaira', 'pr', branch, '--json'], repo, 60_000)
-  // No forge, no gh, no sign-in: asking again changes nothing.
-  if (r === undefined || r.exitCode !== 0) return
-  const open = pullRequestsOf(r.stdout)?.[0]
+  // No forge, no gh, no sign-in (exit 3), a usage error (2): asking again
+  // changes nothing. A forge that failed (1) or a call that timed out may
+  // answer next minute.
+  if (r !== undefined && r.exitCode !== 0 && r.exitCode !== 1) return
+  const open = r?.exitCode === 0 ? pullRequestsOf(r.stdout)?.[0] : undefined
   if (open === undefined) return followPullRequest($, id, branch, repo, looks)
   const line = await followLine($, open.number, open.tickets.length > 0 ? open.tickets : [id])
   if (line !== undefined) void $.prompt.submit({ text: line })

@@ -60,6 +60,17 @@ describe('session.receive', () => {
   // session to follow — once per pull request, whatever arrives later.
   test('a report naming a pull request it opened adds the line to follow it, once', async ($, on) => {
     session(on)
+    on('session.repo', () => ({ value: { root: '/repo', remote: null, internal: false, name: null } }))
+    // This repository's remotes: a fork of upstream/repo on GitHub, a mirror on GitLab.
+    on('process.run', ($, e) => ({
+      value: {
+        exitCode: 0,
+        stdout: e.argv.join(' ') === 'git remote -v'
+          ? 'origin\tgit@github.com:acme/repo.git (fetch)\nupstream\thttps://github.com/upstream/repo.git (fetch)\nmirror\thttps://gitlab.example.com/g/r.git (fetch)\n'
+          : '',
+        stderr: '', isStdoutTruncated: false, isStderrTruncated: false,
+      },
+    }))
     const report = [
       'T8QS1Y: pushed feat/t8qs1y and opened https://github.com/upstream/repo/pull/42 for review.',
       'Ticket T8QS1Y sits in done.',
@@ -71,6 +82,11 @@ describe('session.receive', () => {
     expect(again.text).not.toContain('follow it')
     const gitlab = await $.session.receive({ origin: { kind: 'peer-send-message' }, text: 'T8QS1Y: opened https://gitlab.example.com/g/r/-/merge_requests/7 — ticket T8QS1Y in done.' })
     expect(gitlab.text).toContain("'jaira pr --watch --number 7'")
+    // Another project's pull request, quoted first, names none of this one's;
+    // the store key of its number stays free.
+    const quoted = await $.session.receive({ origin: { kind: 'peer-send-message' }, text: 'T8QS1Y: like https://github.com/other/lib/pull/9, opened https://github.com/upstream/repo/pull/43 — ticket T8QS1Y in done.' })
+    expect(quoted.text).toContain("'jaira pr --watch --number 43'")
+    expect(quoted.text).not.toContain('number 9')
   })
 
   test('a verdict keeps its reservation', async ($, on) => {

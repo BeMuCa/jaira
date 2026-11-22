@@ -9,24 +9,44 @@ import (
 
 // One query for everything a pull request's stand needs: threads with their
 // newest comments, the conversation, reviews, requested reviewers, each
-// reviewer's latest verdict, the commit subjects (for the tickets) and the
-// head commit's check rollup. Bounded so a repository with many pull
-// requests stays inside GitHub's node limit: 50 pull requests, 100 threads of
-// 20 comments each.
-const prFields = `number title url state isDraft headRefName
- reviewRequests(first:20){nodes{requestedReviewer{__typename ... on User{login} ... on Bot{login} ... on Mannequin{login} ... on Team{slug}}}}
- latestOpinionatedReviews(first:20){nodes{state author{login}}}
+// reviewer's latest verdict, the commit subjects (for the tickets), the head
+// repository (to tell a fork's branch from the parent's of the same name) and
+// the head commit with its check rollup. Pull requests come 25 to a page and
+// threads 100 to a page, both read to the end (GitHub's node limit allows no
+// more in one query); what settled depends on and cannot be paged — more
+// than 100 reviewers requested or with a verdict — makes the pull request
+// unsettled rather than read short.
+const prFields = `number title url state isDraft headRefName headRepository{nameWithOwner}
+ reviewRequests(first:100){pageInfo{hasNextPage} nodes{requestedReviewer{__typename ... on User{login} ... on Bot{login} ... on Mannequin{login} ... on Team{slug}}}}
+ latestOpinionatedReviews(first:100){pageInfo{hasNextPage} nodes{state author{login}}}
  reviews(last:30){nodes{state submittedAt author{login}}}
  comments(last:50){nodes{createdAt author{login}}}
- reviewThreads(first:100){nodes{isResolved comments(last:20){nodes{createdAt author{login}}}}}
+ reviewThreads(first:100){pageInfo{hasNextPage endCursor} nodes{isResolved comments(last:20){nodes{createdAt author{login}}}}}
  subjects:commits(first:100){nodes{commit{messageHeadline}}}
- head:commits(last:1){nodes{commit{statusCheckRollup{state}}}}`
+ head:commits(last:1){nodes{commit{oid statusCheckRollup{state}}}}`
 
-const listQuery = `query($owner:String!,$name:String!,$head:String){viewer{login}
- repository(owner:$owner,name:$name){pullRequests(states:OPEN,headRefName:$head,first:50,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{` + prFields + `}}}}`
+const listQuery = `query($owner:String!,$name:String!,$head:String,$after:String){viewer{login}
+ repository(owner:$owner,name:$name){pullRequests(states:OPEN,headRefName:$head,first:25,after:$after,orderBy:{field:UPDATED_AT,direction:DESC}){pageInfo{hasNextPage endCursor} nodes{` + prFields + `}}}}`
 
 const oneQuery = `query($owner:String!,$name:String!,$number:Int!){viewer{login}
  repository(owner:$owner,name:$name){pullRequest(number:$number){` + prFields + `}}}`
+
+const threadsQuery = `query($owner:String!,$name:String!,$number:Int!,$after:String){
+ repository(owner:$owner,name:$name){pullRequest(number:$number){
+ reviewThreads(first:100,after:$after){pageInfo{hasNextPage endCursor} nodes{isResolved comments(last:20){nodes{createdAt author{login}}}}}}}}`
+
+type ghPage struct {
+	HasNextPage bool   `json:"hasNextPage"`
+	EndCursor   string `json:"endCursor"`
+}
+
+type ghThreads struct {
+	PageInfo ghPage `json:"pageInfo"`
+	Nodes    []struct {
+		IsResolved bool       `json:"isResolved"`
+		Comments   ghComments `json:"comments"`
+	} `json:"nodes"`
+}
 
 type ghLogin struct {
 	Login string `json:"login"`
@@ -39,8 +59,12 @@ type ghPR struct {
 	State          string `json:"state"`
 	IsDraft        bool   `json:"isDraft"`
 	HeadRefName    string `json:"headRefName"`
+	HeadRepository *struct {
+		NameWithOwner string `json:"nameWithOwner"`
+	} `json:"headRepository"`
 	ReviewRequests struct {
-		Nodes []struct {
+		PageInfo ghPage `json:"pageInfo"`
+		Nodes    []struct {
 			RequestedReviewer *struct {
 				Login string `json:"login"`
 				Slug  string `json:"slug"`
@@ -48,7 +72,8 @@ type ghPR struct {
 		} `json:"nodes"`
 	} `json:"reviewRequests"`
 	LatestOpinionatedReviews struct {
-		Nodes []struct {
+		PageInfo ghPage `json:"pageInfo"`
+		Nodes    []struct {
 			State  string   `json:"state"`
 			Author *ghLogin `json:"author"`
 		} `json:"nodes"`
@@ -61,13 +86,8 @@ type ghPR struct {
 		} `json:"nodes"`
 	} `json:"reviews"`
 	Comments      ghComments `json:"comments"`
-	ReviewThreads struct {
-		Nodes []struct {
-			IsResolved bool       `json:"isResolved"`
-			Comments   ghComments `json:"comments"`
-		} `json:"nodes"`
-	} `json:"reviewThreads"`
-	Subjects struct {
+	ReviewThreads ghThreads  `json:"reviewThreads"`
+	Subjects      struct {
 		Nodes []struct {
 			Commit struct {
 				MessageHeadline string `json:"messageHeadline"`
@@ -77,6 +97,7 @@ type ghPR struct {
 	Head struct {
 		Nodes []struct {
 			Commit struct {
+				OID               string `json:"oid"`
 				StatusCheckRollup *struct {
 					State string `json:"state"`
 				} `json:"statusCheckRollup"`
@@ -97,7 +118,8 @@ type ghAnswer struct {
 		Viewer     ghLogin `json:"viewer"`
 		Repository *struct {
 			PullRequests *struct {
-				Nodes []ghPR `json:"nodes"`
+				PageInfo ghPage `json:"pageInfo"`
+				Nodes    []ghPR `json:"nodes"`
 			} `json:"pullRequests"`
 			PullRequest *ghPR `json:"pullRequest"`
 		} `json:"repository"`
@@ -108,7 +130,7 @@ type ghAnswer struct {
 }
 
 func readGitHub(call func(...string) ([]byte, error), origin string, q Query) (*Status, error) {
-	repo, err := githubTarget(call, origin)
+	repo, own, err := githubTarget(call, origin)
 	if err != nil {
 		return nil, err
 	}
@@ -116,51 +138,95 @@ func readGitHub(call func(...string) ([]byte, error), origin string, q Query) (*
 	if !ok {
 		return nil, fmt.Errorf("gh repo view: %q is not owner/name", repo)
 	}
-	args := []string{"api", "graphql", "-f", "owner=" + owner, "-f", "name=" + name}
-	switch {
-	case q.Number > 0:
-		args = append(args, "-F", "number="+strconv.Itoa(q.Number), "-f", "query="+oneQuery)
-	case q.Branch != "":
-		args = append(args, "-f", "head="+q.Branch, "-f", "query="+listQuery)
-	default:
-		args = append(args, "-f", "query="+listQuery)
+	ask := func(extra ...string) (*ghAnswer, error) {
+		out, err := call(append([]string{"api", "graphql", "-f", "owner=" + owner, "-f", "name=" + name}, extra...)...)
+		if err != nil {
+			return nil, err
+		}
+		var a ghAnswer
+		if err := json.Unmarshal(out, &a); err != nil {
+			return nil, fmt.Errorf("gh api graphql: unreadable answer: %v", err)
+		}
+		if len(a.Errors) > 0 {
+			return nil, fmt.Errorf("gh api graphql: %s", a.Errors[0].Message)
+		}
+		if a.Data == nil || a.Data.Repository == nil {
+			return nil, fmt.Errorf("gh api graphql: no repository %s in the answer", repo)
+		}
+		return &a, nil
 	}
-	out, err := call(args...)
-	if err != nil {
-		return nil, err
-	}
-	var a ghAnswer
-	if err := json.Unmarshal(out, &a); err != nil {
-		return nil, fmt.Errorf("gh api graphql: unreadable answer: %v", err)
-	}
-	if len(a.Errors) > 0 {
-		return nil, fmt.Errorf("gh api graphql: %s", a.Errors[0].Message)
-	}
-	if a.Data == nil || a.Data.Repository == nil {
-		return nil, fmt.Errorf("gh api graphql: no repository %s in the answer", repo)
-	}
-	st := &Status{Forge: "github", Repo: repo, Viewer: a.Data.Viewer.Login, Branch: q.Branch, PRs: []PR{}}
+	st := &Status{Forge: "github", Repo: repo, Branch: q.Branch, PRs: []PR{}}
 	var nodes []ghPR
 	if q.Number > 0 {
+		a, err := ask("-F", "number="+strconv.Itoa(q.Number), "-f", "query="+oneQuery)
+		if err != nil {
+			return nil, err
+		}
 		if a.Data.Repository.PullRequest == nil {
 			return nil, fmt.Errorf("gh api graphql: %s has no pull request #%d", repo, q.Number)
 		}
+		st.Viewer = a.Data.Viewer.Login
 		nodes = []ghPR{*a.Data.Repository.PullRequest}
-	} else if a.Data.Repository.PullRequests != nil {
-		nodes = a.Data.Repository.PullRequests.Nodes
+	} else {
+		after := ""
+		for {
+			args := []string{"-f", "query=" + listQuery}
+			if q.Branch != "" {
+				args = append(args, "-f", "head="+q.Branch)
+			}
+			if after != "" {
+				args = append(args, "-f", "after="+after)
+			}
+			a, err := ask(args...)
+			if err != nil {
+				return nil, err
+			}
+			st.Viewer = a.Data.Viewer.Login
+			list := a.Data.Repository.PullRequests
+			if list == nil {
+				break
+			}
+			for _, n := range list.Nodes {
+				// headRefName names a branch in any repository: on a fork's
+				// parent, master or feat/x of somebody else's fork matches
+				// too. The branch asked for is the one in origin.
+				if q.Branch != "" && (n.HeadRepository == nil || !strings.EqualFold(n.HeadRepository.NameWithOwner, own)) {
+					continue
+				}
+				nodes = append(nodes, n)
+			}
+			if !list.PageInfo.HasNextPage || list.PageInfo.EndCursor == "" {
+				break
+			}
+			after = list.PageInfo.EndCursor
+		}
 	}
-	for _, n := range nodes {
-		st.PRs = append(st.PRs, fromGitHub(n, st.Viewer))
+	for i := range nodes {
+		// Threads past the first hundred: a thread left open on page two
+		// is exactly what settled must not miss.
+		for page := nodes[i].ReviewThreads.PageInfo; page.HasNextPage && page.EndCursor != ""; {
+			a, err := ask("-F", "number="+strconv.Itoa(nodes[i].Number), "-f", "after="+page.EndCursor, "-f", "query="+threadsQuery)
+			if err != nil {
+				return nil, err
+			}
+			pr := a.Data.Repository.PullRequest
+			if pr == nil {
+				return nil, fmt.Errorf("gh api graphql: pull request #%d went away while its threads were read", nodes[i].Number)
+			}
+			nodes[i].ReviewThreads.Nodes = append(nodes[i].ReviewThreads.Nodes, pr.ReviewThreads.Nodes...)
+			page = pr.ReviewThreads.PageInfo
+		}
+		st.PRs = append(st.PRs, fromGitHub(nodes[i], st.Viewer))
 	}
 	return st, nil
 }
 
 // githubTarget is the repository pull requests of this checkout go to: the
 // parent where origin is a fork, as jaira-role-pr and the cockpit settle it.
-func githubTarget(call func(...string) ([]byte, error), origin string) (string, error) {
+func githubTarget(call func(...string) ([]byte, error), origin string) (target, own string, err error) {
 	out, err := call("repo", "view", origin, "--json", "nameWithOwner,parent")
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	var v struct {
 		NameWithOwner string `json:"nameWithOwner"`
@@ -170,15 +236,15 @@ func githubTarget(call func(...string) ([]byte, error), origin string) (string, 
 		} `json:"parent"`
 	}
 	if err := json.Unmarshal(out, &v); err != nil {
-		return "", fmt.Errorf("gh repo view: unreadable answer: %v", err)
-	}
-	if v.Parent != nil && v.Parent.Owner.Login != "" && v.Parent.Name != "" {
-		return v.Parent.Owner.Login + "/" + v.Parent.Name, nil
+		return "", "", fmt.Errorf("gh repo view: unreadable answer: %v", err)
 	}
 	if v.NameWithOwner == "" {
-		return "", fmt.Errorf("gh repo view: no repository named for %s", origin)
+		return "", "", fmt.Errorf("gh repo view: no repository named for %s", origin)
 	}
-	return v.NameWithOwner, nil
+	if v.Parent != nil && v.Parent.Owner.Login != "" && v.Parent.Name != "" {
+		return v.Parent.Owner.Login + "/" + v.Parent.Name, v.NameWithOwner, nil
+	}
+	return v.NameWithOwner, v.NameWithOwner, nil
 }
 
 func login(l *ghLogin) string {
@@ -250,8 +316,17 @@ func fromGitHub(n ghPR, viewer string) PR {
 		}
 	}
 	p.CI = "none"
-	if hs := n.Head.Nodes; len(hs) > 0 && hs[0].Commit.StatusCheckRollup != nil {
-		p.CI = githubCI(hs[0].Commit.StatusCheckRollup.State)
+	if hs := n.Head.Nodes; len(hs) > 0 {
+		p.HeadSHA = hs[0].Commit.OID
+		if hs[0].Commit.StatusCheckRollup != nil {
+			p.CI = githubCI(hs[0].Commit.StatusCheckRollup.State)
+		}
+	}
+	if n.ReviewRequests.PageInfo.HasNextPage {
+		p.partial = append(p.partial, "more than 100 reviews requested: not all read")
+	}
+	if n.LatestOpinionatedReviews.PageInfo.HasNextPage {
+		p.partial = append(p.partial, "more than 100 reviewers with a verdict: not all read")
 	}
 	p.ReviewRequested = orEmpty(p.ReviewRequested)
 	p.ChangesRequested = orEmpty(p.ChangesRequested)

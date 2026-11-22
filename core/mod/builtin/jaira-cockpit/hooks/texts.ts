@@ -61,6 +61,7 @@ export const t = {
   prOpensInSignoff: (id: string, branch: string) => `${id} stays in signoff: opening the pull request for ${branch} in a Herdr tab; press Accept again once its review round is settled`,
   toSessionPrInSignoff: (id: string, branch: string) =>
     `jaira-cockpit: the person pressed Accept on ${id}; this board opens the pull request in signoff, so the pr lane is opening it for ${branch} and ${id} stays in signoff until the review round is settled`,
+  prBeingOpened: (id: string, branch: string) => `${id} stays in signoff: the pull request for ${branch} is being opened already; press Accept again once its review round is settled`,
   prWaitsSignoff: (branch: string, pending: string[]) => `the pull request for ${branch} waits: ${pending.join(', ')} not in signoff yet`,
   notSettled: (branch: string, unsettled: string[]) => `the review round of ${branch} is not settled:\n${unsettled.map(u => `- ${u}`).join('\n')}`,
   staysInLane: (id: string, lane: string) => `${id} stays in ${lane}; nothing was moved.`,

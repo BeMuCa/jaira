@@ -27,6 +27,8 @@ type rule struct {
 	key string
 	out string
 	err error
+	// seq answers successive matching calls in turn, the last repeating.
+	seq *[]string
 }
 
 func (f *fake) run(_ string, name string, args ...string) ([]byte, error) {
@@ -34,6 +36,13 @@ func (f *fake) run(_ string, name string, args ...string) ([]byte, error) {
 	f.calls = append(f.calls, line)
 	for _, r := range f.rules {
 		if strings.Contains(line, r.key) {
+			if r.seq != nil && len(*r.seq) > 0 {
+				out := (*r.seq)[0]
+				if len(*r.seq) > 1 {
+					*r.seq = (*r.seq)[1:]
+				}
+				return []byte(out), nil
+			}
 			return []byte(r.out), r.err
 		}
 	}
@@ -263,7 +272,7 @@ func TestReadGitLab(t *testing.T) {
 	if !reflect.DeepEqual(p.ChangesRequested, []string{"rev"}) || !reflect.DeepEqual(p.ReviewRequested, []string{"ann"}) || p.Settled {
 		t.Errorf("reviews %v / %v settled %v", p.ChangesRequested, p.ReviewRequested, p.Settled)
 	}
-	if !strings.Contains(strings.Join(f.calls, "\n"), "projects/grp%2Fsub%2Fjaira/merge_requests?state=opened&per_page=50&order_by=updated_at&source_branch=feat%2Fb7xq2m") {
+	if !strings.Contains(strings.Join(f.calls, "\n"), "projects/grp%2Fsub%2Fjaira/merge_requests?state=opened&per_page=100&order_by=updated_at&source_branch=feat%2Fb7xq2m") {
 		t.Errorf("list call not escaped:\n%s", strings.Join(f.calls, "\n"))
 	}
 
@@ -323,5 +332,158 @@ func TestChanges(t *testing.T) {
 	none := with(func(p *PR) { p.LastForeign = nil })
 	if got := Changes(none, base); len(got) != 1 {
 		t.Fatalf("first comment: %q", got)
+	}
+}
+
+// Every list is read to its end, and a pull request is the one of origin's
+// branch: the class of "read the first page only" and "a branch of the same
+// name elsewhere", on both forges.
+func TestReadPagesAndOrigin(t *testing.T) {
+	thread := func(resolved bool) string {
+		return fmt.Sprintf(`{"isResolved":%v,"comments":{"nodes":[{"createdAt":"2026-11-20T10:00:00Z","author":{"login":"rev"}}]}}`, resolved)
+	}
+	page := func(next bool, cursor string) string {
+		return fmt.Sprintf(`"pageInfo":{"hasNextPage":%v,"endCursor":%q}`, next, cursor)
+	}
+	mine := `"headRepository":{"nameWithOwner":"me/jaira"}`
+	theirs := `"headRepository":{"nameWithOwner":"other/jaira"}`
+	pr := func(n int, extra string) string {
+		return ghPRJSON(n, "feat/x", "SUCCESS", extra)
+	}
+	listPage := func(next bool, cursor string, nodes ...string) string {
+		return `{"data":{"viewer":{"login":"me"},"repository":{"pullRequests":{` + page(next, cursor) + `,"nodes":[` + strings.Join(nodes, ",") + `]}}}}`
+	}
+	t.Run("github: pull requests over two pages, threads over two pages, a fork's namesake left out", func(t *testing.T) {
+		lists := []string{
+			listPage(true, "P1", pr(1, mine+`,"reviewThreads":{`+page(true, "T1")+`,"nodes":[`+thread(true)+`]}`), pr(2, theirs)),
+			listPage(false, "", pr(3, mine)),
+		}
+		threads := []string{`{"data":{"repository":{"pullRequest":{"reviewThreads":{` + page(false, "") + `,"nodes":[` + thread(false) + `]}}}}}`}
+		f := &fake{rules: append([]rule{
+			{key: "after=T1", seq: &threads},
+			{key: "gh api graphql", seq: &lists},
+		}, ghRules("")...)}
+		f.rules = append(f.rules[:2], append([]rule{{key: "gh repo view", out: `{"nameWithOwner":"me/jaira"}`}}, f.rules[2:]...)...)
+		st, err := Read(f.run, found, Query{Branch: "feat/x"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var nums []int
+		for _, p := range st.PRs {
+			nums = append(nums, p.Number)
+		}
+		if !reflect.DeepEqual(nums, []int{1, 3}) {
+			t.Fatalf("pull requests %v, want 1 and 3 (2 is another fork's feat/x)", nums)
+		}
+		if p := st.PRs[0]; p.Threads.Waiting != 1 || p.Threads.Resolved != 1 || p.Settled {
+			t.Fatalf("the open thread on page two was not counted: %+v", p.Threads)
+		}
+		if !strings.Contains(strings.Join(f.calls, "\n"), "after=P1") {
+			t.Fatalf("second page of pull requests not asked:\n%s", strings.Join(f.calls, "\n"))
+		}
+	})
+	t.Run("github: more reviewers than one page holds keeps it unsettled", func(t *testing.T) {
+		node := pr(1, `"reviewRequests":{`+page(true, "")+`,"nodes":[]},"latestOpinionatedReviews":{`+page(true, "")+`,"nodes":[]}`)
+		f := &fake{rules: ghRules(ghAnswerWith(node))}
+		st, err := Read(f.run, found, Query{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if p := st.PRs[0]; p.Settled || len(p.Unsettled) != 2 || !strings.Contains(p.Unsettled[0], "not all read") {
+			t.Fatalf("settled %v, unsettled %q", p.Settled, p.Unsettled)
+		}
+	})
+	t.Run("gitlab: discussions over two pages, a fork's namesake left out", func(t *testing.T) {
+		open := `[{"individual_note":false,"notes":[{"author":{"username":"rev"},"created_at":"2026-11-20T10:00:00Z","resolvable":true,"resolved":false}]}]`
+		f := &fake{rules: []rule{
+			{key: ghOrigin, out: "git@gitlab.com:me/jaira.git"},
+			{key: "git config jaira.forge", err: exitErr{1, ""}},
+			{key: "glab repo view", out: `{"id":11,"path_with_namespace":"me/jaira","forked_from_project":{"path_with_namespace":"up/jaira"}}`},
+			{key: "glab api user", out: `{"username":"me"}`},
+			// Two pages, one after the other, as glab --paginate prints them.
+			{key: "/discussions", out: `[{"individual_note":true,"notes":[{"author":{"username":"bob"},"created_at":"2026-11-20T09:00:00Z"}]}]` + "\n" + open},
+			{key: "/reviewers", out: `[]`},
+			{key: "/commits", out: `[][]`},
+			{key: "merge_requests?state=opened", out: `[{"iid":3,"source_project_id":11},{"iid":4,"source_project_id":99}]`},
+			{key: "merge_requests/3", out: `{"iid":3,"state":"opened","source_project_id":11,"sha":"abc"}`},
+		}}
+		st, err := Read(f.run, found, Query{Branch: "feat/x"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(st.PRs) != 1 || st.PRs[0].Number != 3 {
+			t.Fatalf("merge requests %+v, want only !3 (!4 is another project's)", st.PRs)
+		}
+		if p := st.PRs[0]; p.Threads.Waiting != 1 || p.Comments != 2 || p.HeadSHA != "abc" || p.Settled {
+			t.Fatalf("page two not read: %+v", p)
+		}
+	})
+	t.Run("gitlab: an empty or broken page is an error", func(t *testing.T) {
+		for _, out := range []string{"", "[{"} {
+			f := &fake{rules: []rule{
+				{key: ghOrigin, out: "git@gitlab.com:me/jaira.git"},
+				{key: "git config", err: exitErr{1, ""}},
+				{key: "glab repo view", out: `{"id":11,"path_with_namespace":"me/jaira"}`},
+				{key: "glab api user", out: `{"username":"me"}`},
+				{key: "merge_requests?state=opened", out: out},
+			}}
+			if _, err := Read(f.run, found, Query{}); err == nil || !strings.Contains(err.Error(), "unreadable") {
+				t.Fatalf("%q: err = %v", out, err)
+			}
+		}
+	})
+}
+
+// A sign-in problem is gh's exit 4 or the forge saying so; a 401 elsewhere
+// in a message — a pull request numbered 401 — is not one.
+func TestClassify(t *testing.T) {
+	cases := []struct {
+		tool string
+		err  error
+		auth bool
+	}{
+		{"gh", exitErr{4, "To get started with GitHub CLI, please run:  gh auth login"}, true},
+		{"gh", exitErr{1, "HTTP 401: Bad credentials (https://api.github.com/graphql)"}, true},
+		{"glab", exitErr{1, "glab: 401 Unauthorized"}, true},
+		{"gh", exitErr{1, "GraphQL: Could not resolve to a PullRequest with the number of 401. (repository.pullRequest)"}, false},
+		{"glab", exitErr{1, "404 Not Found: merge_requests/401"}, false},
+		{"gh", exitErr{1, "HTTP 502: Bad Gateway"}, false},
+	}
+	for _, c := range cases {
+		if got := errors.Is(classify(c.tool, c.err), ErrAuth); got != c.auth {
+			t.Errorf("%s %q: auth = %v, want %v", c.tool, c.err, got, c.auth)
+		}
+	}
+}
+
+// CI over a run of reads, carried as the watch carries it: the class of
+// "pending in between hides the outcome".
+func TestChangesCIAcrossPending(t *testing.T) {
+	read := func(ci, sha string) PR { return PR{Number: 7, State: "open", CI: ci, HeadSHA: sha} }
+	cases := []struct {
+		name  string
+		reads []PR
+		want  []string
+	}{
+		{"red, pending, green", []PR{read("failure", "a"), read("pending", "b"), read("success", "b")}, []string{"#7: CI green again"}},
+		{"red, pending, red on a new commit", []PR{read("failure", "a"), read("pending", "b"), read("failure", "b")}, []string{"#7: CI red"}},
+		{"green, pending, green", []PR{read("success", "a"), read("pending", "b"), read("success", "b")}, nil},
+		{"pending, red", []PR{read("pending", "a"), read("failure", "a")}, []string{"#7: CI red"}},
+		{"red read twice", []PR{read("failure", "a"), read("failure", "a")}, nil},
+		{"none, green", []PR{read("none", "a"), read("success", "a")}, nil},
+		{"red, none, green", []PR{read("failure", "a"), read("none", "b"), read("success", "b")}, []string{"#7: CI green again"}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			var got []string
+			last := c.reads[0]
+			for _, r := range c.reads[1:] {
+				got = append(got, Changes(last, r)...)
+				last = Carry(last, r)
+			}
+			if !reflect.DeepEqual(got, c.want) {
+				t.Fatalf("got %q, want %q", got, c.want)
+			}
+		})
 	}
 }

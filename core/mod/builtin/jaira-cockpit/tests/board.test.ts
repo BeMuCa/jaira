@@ -110,8 +110,11 @@ type World = {
   // .jaira/pr-when as `jaira roles list --json` reports it; done unless set.
   prWhen?: string
   // What each `jaira pr <branch> --json` answers, in turn, the last one
-  // repeating; '!' + text fails with exit 3. { prs: [] } when empty.
+  // repeating; '!' + text fails with exit 3, '?' + text with exit 1.
+  // { prs: [] } when empty.
   prReads: string[]
+  // `jaira roles list --json` fails.
+  rolesFails?: boolean
 }
 
 const LANES = {
@@ -259,10 +262,13 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     const ok = (stdout = '') => ({ value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const [cmd, ...args] = e.argv
     const on = args.includes('--board') ? w.boards[args[args.indexOf('--board') + 1] ?? ''] : undefined
-    if (cmd === 'jaira' && args[0] === 'roles' && args[1] === 'list') return ok(JSON.stringify({ pr_when: w.prWhen ?? 'done' }))
+    if (cmd === 'jaira' && args[0] === 'roles' && args[1] === 'list') {
+      return w.rolesFails ? { value: { exitCode: 1, stdout: '', stderr: 'jaira: base unreadable', isStdoutTruncated: false, isStderrTruncated: false } } : ok(JSON.stringify({ pr_when: w.prWhen ?? 'done' }))
+    }
     if (cmd === 'jaira' && args[0] === 'pr') {
       const a = (w.prReads.length > 1 ? w.prReads.shift() : w.prReads[0]) ?? JSON.stringify({ prs: [] })
-      return a.startsWith('!') ? { value: { exitCode: 3, stdout: '', stderr: a.slice(1), isStdoutTruncated: false, isStderrTruncated: false } } : ok(a)
+      const code = a.startsWith('!') ? 3 : a.startsWith('?') ? 1 : 0
+      return code ? { value: { exitCode: code, stdout: '', stderr: a.slice(1), isStdoutTruncated: false, isStderrTruncated: false } } : ok(a)
     }
     if (cmd === 'jaira' && args[0] === 'boards') return ok(JSON.stringify({ boards: ['default', ...Object.keys(w.boards)].map(name => ({ name })) }))
     if (cmd === 'jaira' && args.includes('--board') && (on === undefined || (args[0] === 'lanes' && on.lanes === undefined))) return failed('jaira: unknown flag: --board')
@@ -3873,6 +3879,17 @@ describe('following a pull request (CRASZS)', () => {
     expect(prReads(w)).toHaveLength(1)
   })
 
+  test('a forge failing for a minute (exit 1) is asked again; the pull request is handed over once it answers', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 3
+    w.prReads = ['?jaira: pr: gh: HTTP 502', open(12)]
+    await press($)
+    await w.clock.advance(60_000)
+    await w.clock.advance(60_000)
+    expect(prReads(w)).toHaveLength(2)
+    expect(w.submitted.filter(x => x.includes('pull request #'))).toEqual([follow(12)])
+  })
+
   test('a pull request handed over before is not handed over again, also by a later session', async ($, on) => {
     const w = world(on, { herdr: true, store: { 'pr-followed:/repo:12': true } })
     w.ahead = 3
@@ -3938,6 +3955,28 @@ describe('following a pull request (CRASZS)', () => {
       expect(moved(w)).toEqual([])
       expect(ran(w, 'bash', SPAWN)).toEqual([])
       expect(await paneText($)).toContain('the pull request for feat/mg677r waits: AB12CD not in signoff yet')
+    })
+
+    test('a second press while the pull request is still being opened starts no second agent', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.prWhen = 'signoff'
+      w.ahead = 3
+      await press($)
+      await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+      await w.clock.advance(3_000)
+      await (await $.ui.mount(BAND)).press({ key: 'accept-MG677R' })
+      expect(ran(w, 'bash', SPAWN)).toHaveLength(1)
+      expect(moved(w)).toEqual([])
+      expect(w.toasts.at(-1)).toContain('is being opened already')
+    })
+
+    test('pr-when that cannot be read holds the ticket: unread is not done', async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.rolesFails = true
+      w.ahead = 3
+      await press($)
+      expect(moved(w)).toEqual([])
+      expect(await paneText($)).toContain('jaira roles list: jaira: base unreadable')
     })
 
     test('a forge that cannot be asked holds the ticket too, and says why', async ($, on) => {

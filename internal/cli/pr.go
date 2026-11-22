@@ -44,7 +44,11 @@ CI state of its head commit; reviews still requested, changes requested and
 approvals; the tickets its commits name; and whether its review round is
 settled (no thread open, no review pending, no changes requested — what
 jaira-role-pr's 'pr-round.sh settled' asks). --all shows every open pull
-request of the repository, --number one pull request in any state.
+request of the repository, --number one pull request in any state. Every
+pull request and every review thread is read, page after page; comments
+from others are counted over the newest 50 on the conversation and the
+newest 20 of each thread. A branch is the one in origin: a fork's branch of
+the same name is somebody else's pull request.
 
 Read through gh on GitHub and glab on GitLab — the host of origin decides, or
 git config jaira.forge. In a fork the pull requests are the parent's. jaira
@@ -208,7 +212,7 @@ func watchPR(w io.Writer, q pr.Query, st *pr.Status, every time.Duration) error 
 		for _, line := range pr.Changes(last, cur) {
 			fmt.Fprintln(w, line)
 		}
-		last = cur
+		last = pr.Carry(last, cur)
 		if pr.Over(cur) {
 			return nil
 		}

@@ -42,6 +42,13 @@ func Summary(p PR) string {
 // changed. The first read is the baseline and is never compared with
 // anything — a watch started on a pull request with ten comments reports
 // none of them, and a watch restarted reports nothing it reported before.
+//
+// CI is compared with before's last outcome, not with its last read: a fix
+// runs red, pending, green, and pending in between is no outcome. Hand
+// Changes the before that Carry returns, and an outcome — failure or success
+// — is reported when it differs from the last one or belongs to another head
+// commit: red after a pending run is red again, green after red is green
+// again, green after green says nothing.
 func Changes(before, after PR) []string {
 	var out []string
 	label := Label(after)
@@ -55,11 +62,11 @@ func Changes(before, after PR) []string {
 			out = append(out, fmt.Sprintf("%s: new comment by %s", label, a.Author))
 		}
 	}
-	if after.CI != before.CI {
+	if outcome(after.CI) && (after.CI != before.CI || after.HeadSHA != before.HeadSHA) {
 		switch {
 		case after.CI == "failure":
 			out = append(out, label+": CI red")
-		case after.CI == "success" && before.CI == "failure":
+		case before.CI == "failure":
 			out = append(out, label+": CI green again")
 		}
 	}
@@ -70,6 +77,17 @@ func Changes(before, after PR) []string {
 		out = append(out, fmt.Sprintf("%s: %s", label, after.State))
 	}
 	return out
+}
+
+func outcome(ci string) bool { return ci == "failure" || ci == "success" }
+
+// Carry is the before for the next Changes: after, with its CI and head
+// commit kept from before where after has no outcome yet (pending, none).
+func Carry(before, after PR) PR {
+	if !outcome(after.CI) {
+		after.CI, after.HeadSHA = before.CI, before.HeadSHA
+	}
+	return after
 }
 
 // Over reports whether a watch on p has ended: merged or closed.

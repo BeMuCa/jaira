@@ -12,13 +12,15 @@ type glUser struct {
 }
 
 type glMR struct {
-	IID          int    `json:"iid"`
-	Title        string `json:"title"`
-	WebURL       string `json:"web_url"`
-	State        string `json:"state"`
-	Draft        bool   `json:"draft"`
-	SourceBranch string `json:"source_branch"`
-	HeadPipeline *struct {
+	IID             int    `json:"iid"`
+	Title           string `json:"title"`
+	WebURL          string `json:"web_url"`
+	State           string `json:"state"`
+	Draft           bool   `json:"draft"`
+	SourceBranch    string `json:"source_branch"`
+	SourceProjectID int    `json:"source_project_id"`
+	SHA             string `json:"sha"`
+	HeadPipeline    *struct {
 		Status string `json:"status"`
 	} `json:"head_pipeline"`
 }
@@ -41,9 +43,11 @@ type glReviewer struct {
 
 // readGitLab reads merge requests through 'glab api': the list, then per
 // merge request its pipeline, discussions, reviewers and commits — the list
-// carries none of them.
+// carries none of them. Every list is read to its last page (--paginate):
+// on GitLab each comment outside a thread is a discussion of its own, and a
+// thread left open on page two is what settled must not miss.
 func readGitLab(call func(...string) ([]byte, error), origin string, q Query) (*Status, error) {
-	repo, err := gitlabTarget(call, origin)
+	repo, own, err := gitlabTarget(call, origin)
 	if err != nil {
 		return nil, err
 	}
@@ -70,12 +74,22 @@ func readGitLab(call func(...string) ([]byte, error), origin string, q Query) (*
 			return nil, err
 		}
 	} else {
-		path := project + "/merge_requests?state=opened&per_page=50&order_by=updated_at"
+		path := project + "/merge_requests?state=opened&per_page=100&order_by=updated_at"
 		if q.Branch != "" {
 			path += "&source_branch=" + url.QueryEscape(q.Branch)
 		}
-		if err := get(path, &list); err != nil {
+		found, err := pages[glMR](call, path)
+		if err != nil {
 			return nil, err
+		}
+		for _, m := range found {
+			// source_branch names a branch in any project: a fork's branch
+			// of the same name is somebody else's. The one asked for is
+			// origin's.
+			if q.Branch != "" && m.SourceProjectID != own {
+				continue
+			}
+			list = append(list, m)
 		}
 	}
 	for _, m := range list {
@@ -86,18 +100,18 @@ func readGitLab(call func(...string) ([]byte, error), origin string, q Query) (*
 				return nil, err
 			}
 		}
-		var discussions []glDiscussion
-		if err := get(mr+"/discussions?per_page=100", &discussions); err != nil {
+		discussions, err := pages[glDiscussion](call, mr+"/discussions?per_page=100")
+		if err != nil {
 			return nil, err
 		}
-		var reviewers []glReviewer
-		if err := get(mr+"/reviewers", &reviewers); err != nil {
+		reviewers, err := pages[glReviewer](call, mr+"/reviewers?per_page=100")
+		if err != nil {
 			return nil, err
 		}
-		var commits []struct {
+		commits, err := pages[struct {
 			Title string `json:"title"`
-		}
-		if err := get(mr+"/commits?per_page=100", &commits); err != nil {
+		}](call, mr+"/commits?per_page=100")
+		if err != nil {
 			return nil, err
 		}
 		var subjects []string
@@ -109,27 +123,47 @@ func readGitLab(call func(...string) ([]byte, error), origin string, q Query) (*
 	return st, nil
 }
 
-func gitlabTarget(call func(...string) ([]byte, error), origin string) (string, error) {
+// pages reads every page of a list (--paginate) and decodes each — a JSON
+// array of T — into one slice.
+func pages[T any](call func(...string) ([]byte, error), path string) ([]T, error) {
+	out, err := call("api", "--paginate", path)
+	if err != nil {
+		return nil, err
+	}
+	var list []T
+	err = values(out, "glab api "+path, func(page json.RawMessage) error {
+		var v []T
+		if err := json.Unmarshal(page, &v); err != nil {
+			return fmt.Errorf("glab api %s: unreadable answer: %v", path, err)
+		}
+		list = append(list, v...)
+		return nil
+	})
+	return list, err
+}
+
+func gitlabTarget(call func(...string) ([]byte, error), origin string) (target string, own int, err error) {
 	out, err := call("repo", "view", origin, "-F", "json")
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 	var v struct {
+		ID                int    `json:"id"`
 		PathWithNamespace string `json:"path_with_namespace"`
 		ForkedFrom        *struct {
 			PathWithNamespace string `json:"path_with_namespace"`
 		} `json:"forked_from_project"`
 	}
 	if err := json.Unmarshal(out, &v); err != nil {
-		return "", fmt.Errorf("glab repo view: unreadable answer: %v", err)
-	}
-	if v.ForkedFrom != nil && v.ForkedFrom.PathWithNamespace != "" {
-		return v.ForkedFrom.PathWithNamespace, nil
+		return "", 0, fmt.Errorf("glab repo view: unreadable answer: %v", err)
 	}
 	if v.PathWithNamespace == "" {
-		return "", fmt.Errorf("glab repo view: no project named for %s", origin)
+		return "", 0, fmt.Errorf("glab repo view: no project named for %s", origin)
 	}
-	return v.PathWithNamespace, nil
+	if v.ForkedFrom != nil && v.ForkedFrom.PathWithNamespace != "" {
+		return v.ForkedFrom.PathWithNamespace, v.ID, nil
+	}
+	return v.PathWithNamespace, v.ID, nil
 }
 
 func username(u *glUser) string {
@@ -188,6 +222,7 @@ func fromGitLab(m glMR, discussions []glDiscussion, reviewers []glReviewer, subj
 		}
 	}
 	p.CI = "none"
+	p.HeadSHA = m.SHA
 	if m.HeadPipeline != nil {
 		p.CI = gitlabCI(m.HeadPipeline.Status)
 	}

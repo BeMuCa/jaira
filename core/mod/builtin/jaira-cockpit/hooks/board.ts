@@ -803,12 +803,21 @@ export function huntOf(briefJson: string): { state: Hunt; at: string } | undefin
 
 // ── following a pull request (CRASZS) ────────────────────────────────────
 
-// The pull request a report names by its address: GitHub's /pull/<n> or
-// GitLab's /-/merge_requests/<n>, the first one. A bare "#12" is not taken —
-// an issue, a list item and a pull request all write it.
-export function pullRequestIn(text: string): number | undefined {
-  const m = /https?:\/\/\S+?\/(?:pull|-\/merge_requests)\/(\d+)\b/.exec(text)
-  return m ? Number(m[1]) : undefined
+// The pull request of this repository a report names by its address:
+// GitHub's /pull/<n> or GitLab's /-/merge_requests/<n>, the first whose
+// host and project a remote here points at (`git remote -v`, https or ssh
+// form) — a report quoting another project's pull request names none of
+// this one's. A bare "#12" is not taken: an issue, a list item and a pull
+// request all write it.
+export function pullRequestIn(text: string, remotes: string): number | undefined {
+  const known = remotes.toLowerCase().replace(/\.git(?=\s|$)/gm, '')
+  for (const m of text.matchAll(/https?:\/\/([^/\s]+)\/(\S+?)\/(?:pull|-\/merge_requests)\/(\d+)\b/g)) {
+    const host = m[1]!.toLowerCase()
+    const path = m[2]!.toLowerCase()
+    const at = [`${host}/${path}`, `${host}:${path}`]
+    if (known.split(/\s+/).some(url => at.some(a => url.endsWith(a)))) return Number(m[3])
+  }
+  return undefined
 }
 
 // One pull request as `jaira pr --json` prints it, as far as the cockpit

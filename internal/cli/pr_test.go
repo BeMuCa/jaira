@@ -61,7 +61,7 @@ func prNode(state, ci, lastComment string) string {
 	if lastComment != "" {
 		comments = fmt.Sprintf(`{"createdAt":%q,"author":{"login":"bob"}}`, lastComment)
 	}
-	return fmt.Sprintf(`{"number":7,"title":"t","url":"https://x/7","state":%q,"headRefName":"feat/craszs",
+	return fmt.Sprintf(`{"number":7,"title":"t","url":"https://x/7","state":%q,"headRefName":"feat/craszs","headRepository":{"nameWithOwner":"me/jaira"},
 	 "comments":{"nodes":[%s]},"head":{"nodes":[{"commit":{"statusCheckRollup":{"state":%q}}}]}}`, state, comments, ci)
 }
 

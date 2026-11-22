@@ -11,8 +11,11 @@
 package pr
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os/exec"
 	"regexp"
 	"slices"
@@ -84,13 +87,17 @@ type PR struct {
 	// Comments counts what others wrote, in threads and on the conversation.
 	Comments    int       `json:"comments"`
 	LastForeign *Activity `json:"last_foreign"`
-	// CI is success, failure, pending or none.
+	// CI is success, failure, pending or none, for the head commit HeadSHA.
 	CI               string   `json:"ci"`
+	HeadSHA          string   `json:"head_sha"`
 	ReviewRequested  []string `json:"review_requested"`
 	ChangesRequested []string `json:"changes_requested"`
 	Approved         []string `json:"approved"`
 	Settled          bool     `json:"settled"`
 	Unsettled        []string `json:"unsettled"`
+	// partial names what could not be read whole and settled depends on:
+	// it keeps the pull request unsettled rather than settle it on half.
+	partial []string
 }
 
 // Query says what to read: pull request Number in whatever state it is in,
@@ -148,9 +155,15 @@ func forgeOf(run Run, dir string) (forge, origin string, err error) {
 	return forge, origin, nil
 }
 
+// signedOut is how gh and glab say the sign-in is missing or gone: an HTTP
+// 401 from the API, GitHub's "Bad credentials", the hint to log in. A bare
+// 401 is not one — "no pull request with the number of 401" is not about
+// the sign-in.
+var signedOut = regexp.MustCompile(`(?i)\bHTTP 401\b|\b401 Unauthorized\b|Bad credentials|auth login`)
+
 // classify turns a failed gh/glab call into ErrAuth where it is a sign-in
-// problem — gh ends with 4 then, glab says 401 — and keeps the tool's own
-// words otherwise.
+// problem — gh ends with 4 then, both say so in signedOut's words — and keeps
+// the tool's own words otherwise.
 func classify(tool string, err error) error {
 	code := -1
 	var ec exitCoder
@@ -162,11 +175,11 @@ func classify(tool string, err error) error {
 	if errors.As(err, &ee) && len(ee.Stderr) > 0 {
 		msg = strings.TrimSpace(string(ee.Stderr))
 	}
-	lower := strings.ToLower(msg)
-	if (tool == "gh" && code == 4) || strings.Contains(lower, "auth login") || strings.Contains(lower, "401") {
+	if (tool == "gh" && code == 4) || signedOut.MatchString(msg) {
 		return fmt.Errorf("%w: %s — run: %s auth login", ErrAuth, firstLine(msg), tool)
 	}
-	return fmt.Errorf("%s: %s", tool, firstLine(msg))
+	// gh and glab often start their own message with their name already.
+	return fmt.Errorf("%s: %s", tool, strings.TrimPrefix(firstLine(msg), tool+": "))
 }
 
 func firstLine(s string) string {
@@ -194,6 +207,29 @@ func ticketsOf(subjects []string, branch string) []string {
 }
 
 var handle = regexp.MustCompile(`^[0-9A-Z]{6}$`)
+
+// values decodes what a --paginate call printed: one JSON value per page
+// (gh and glab write the pages one after another), each handed to each.
+func values(out []byte, what string, each func(json.RawMessage) error) error {
+	dec := json.NewDecoder(bytes.NewReader(out))
+	n := 0
+	for {
+		var v json.RawMessage
+		if err := dec.Decode(&v); err == io.EOF {
+			break
+		} else if err != nil {
+			return fmt.Errorf("%s: unreadable answer: %v", what, err)
+		}
+		n++
+		if err := each(v); err != nil {
+			return err
+		}
+	}
+	if n == 0 {
+		return fmt.Errorf("%s: unreadable answer: empty", what)
+	}
+	return nil
+}
 
 // newer reports whether RFC 3339 time a is after b; an unreadable a never is.
 func newer(a, b string) bool {
@@ -233,6 +269,7 @@ func settle(p *PR) {
 	for _, r := range p.ChangesRequested {
 		p.Unsettled = append(p.Unsettled, "changes requested: "+r)
 	}
+	p.Unsettled = append(p.Unsettled, p.partial...)
 	p.Settled = len(p.Unsettled) == 0
 }
 
