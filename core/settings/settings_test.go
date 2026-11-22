@@ -2,10 +2,12 @@ package settings_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -544,5 +546,62 @@ func TestUpdateNeverWipesTheFile(t *testing.T) {
 	}
 	if s := settings.Load(); s.Remote != "upstream" || s.Language != "" {
 		t.Fatalf("Load: %+v, want remote upstream and no language", s)
+	}
+}
+
+// TestUpdateTwoWritersAtOnce: two settings screens writing at the same
+// moment take turns. Every write lands, and nothing beside them is lost.
+func TestUpdateTwoWritersAtOnce(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("JAIRA_HOME", home)
+	path := filepath.Join(home, "settings.json")
+	if err := os.WriteFile(path, []byte(`{"remote":"upstream","hook":"/h","zz-unknown":1}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	for i := range 2 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for n := range 50 {
+				_, err := settings.Update(func(s *settings.Settings) {
+					if i == 0 {
+						s.Language = settings.Language(fmt.Sprint("L", n))
+					} else {
+						s.Python = fmt.Sprint("py", n)
+					}
+				})
+				if err != nil {
+					t.Error(err)
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	b, _ := os.ReadFile(path)
+	var got map[string]any
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatalf("settings.json does not parse after two writers: %v\n%s", err, b)
+	}
+	want := map[string]any{"remote": "upstream", "hook": "/h", "zz-unknown": 1.0, "language": "L49", "python": "py49"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("after two writers: %v, want %v", got, want)
+	}
+}
+
+// TestUpdateDropsAKnownKeyInAnyCase: encoding/json reads "Language" as the
+// language, so emptying the language takes that key out too.
+func TestUpdateDropsAKnownKeyInAnyCase(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("JAIRA_HOME", home)
+	path := filepath.Join(home, "settings.json")
+	if err := os.WriteFile(path, []byte(`{"Language":"Deutsch","REMOTE":"upstream"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := settings.Update(func(s *settings.Settings) { s.Language = "" }); err != nil {
+		t.Fatal(err)
+	}
+	if s := settings.Load(); s.Language != "" || s.Remote != "upstream" {
+		t.Fatalf("after emptying: %+v, want no language and remote upstream", s)
 	}
 }

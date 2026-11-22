@@ -486,11 +486,22 @@ func Load() Settings {
 // Load's defaults written back would wipe the remote, the hook and
 // everything else — and says where the file is; and keys this build does not
 // know, written by a newer jaira or by hand, stay in the file as they were.
+// Two writers - two settings screens open at once - take turns under the lock
+// file the ticket store's own locks are made of, and the file is replaced
+// whole (ticket.WriteAtomic), so neither ever reads it half written.
 func Update(change func(*Settings)) (Settings, error) {
 	path := Path()
 	if path == "" {
 		return Settings{}, nil
 	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return Settings{}, err
+	}
+	unlock, err := ticket.LockFile(path + ".lock")
+	if err != nil {
+		return Settings{}, err
+	}
+	defer unlock()
 	raw := map[string]json.RawMessage{}
 	var s Settings
 	b, err := os.ReadFile(path)
@@ -518,9 +529,14 @@ func Update(change func(*Settings)) (Settings, error) {
 	}
 	// The fields this build knows are written as the struct now has them —
 	// one emptied by change is gone, as omitempty leaves it out; the rest of
-	// the file is kept.
-	for k := range before {
-		delete(raw, k)
+	// the file is kept. encoding/json read them whatever their case, so a
+	// hand-written "Language" goes with "language".
+	for k := range raw {
+		for b := range before {
+			if strings.EqualFold(k, b) {
+				delete(raw, k)
+			}
+		}
 	}
 	for k, v := range after {
 		raw[k] = v
@@ -529,10 +545,7 @@ func Update(change func(*Settings)) (Settings, error) {
 	if err != nil {
 		return Settings{}, err
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return Settings{}, err
-	}
-	return s, os.WriteFile(path, append(out, '\n'), 0o644)
+	return s, ticket.WriteAtomic(path, append(out, '\n'))
 }
 
 // known is s as the keys and values its JSON form carries.
@@ -545,7 +558,9 @@ func known(s Settings) (map[string]json.RawMessage, error) {
 	return m, json.Unmarshal(b, &m)
 }
 
-// Save writes the settings, creating ~/.jaira if it is not there yet.
+// Save writes the settings whole, creating ~/.jaira if it is not there yet.
+// A choice made on a screen goes through Update instead, which keeps what
+// this struct does not know and never writes over a file it cannot read.
 func Save(s Settings) error {
 	path := Path()
 	if path == "" {
@@ -558,7 +573,7 @@ func Save(s Settings) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(b, '\n'), 0o644)
+	return ticket.WriteAtomic(path, append(b, '\n'))
 }
 
 // RemoteFor returns the remote this board's ticket refs travel on.

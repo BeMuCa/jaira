@@ -1,7 +1,7 @@
 ---
 id: 01M81VFQRXRFE870G9010GMYQB
 title: "Das Verdict zeigt jede Notiz mit Ampel-Marker und in der Sprache der Person, verständlich umformuliert"
-status: optimize
+status: in-progress
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,7 +24,7 @@ related: []
 follows: 01M81G681S9YWPBZWQ7HAJ41SC
 commits: []
 created-at: 2026-11-22T14:45:11Z
-updated-at: 2026-11-22T15:09:25Z
+updated-at: 2026-11-22T15:16:01Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3863384
 claimed-at: 2026-11-22T14:47:40Z
@@ -33,12 +33,12 @@ outcome-why: "Alex liest langsam und auf Russisch; er musste jede englische Noti
 outcome-resolves: "DoD 1-4, 6-8; DoD 5 (Alex sieht es) offen. Geprüft: Nebenläufigkeit (ein Aufruf pro Ticket+Notizen, Set rephrasing), Fehlerpfade (Modell wirft/antwortet nicht/falsche Form -> Original), ungewöhnliche Eingabe (leere/kaputte settings, falsche Anzahl, leere Strings), Rechte (Sprache nur aus eigener settings.json, Notiztext nur zur Anzeige)."
 review-summary: none
 review-gaps: "round 2: one error return for the two unmarshals in settings.Update. Left: settings.Save is now called only by tests for setup - kept as the plain writer; earlier round's choices stand (stepAfter, keep() vs rephrase store pattern)."
-test-verdict: "pass: go vet + go build + go test ./... RC=0, -race tui/settings RC=0, cockpit 316 pass, check-ticket-commits and shipped-history --check RC=0; DoD 1-4,6-8 verified in tree; real haiku answered the prompt in Russian, parsed to 3 notes, paths kept; Save failure (JAIRA_HOME=/dev/null/nope) shows mkdir error, row stays none"
-hunt-verdict: "fail: bughunt done at ddd89fd6a, 2 change (1 blocker: settings step overwrites an unparseable settings.json; stale rephrased text after language set to none or failed call)"
-round: 2
+test-verdict: "fail: two parallel settings.Update calls corrupt settings.json (in-place write); scratch test 3/3 runs lost remote+hook"
+hunt-verdict: "fail: bughunt done at 2b72d2ac2, 3 change (1 blocker: in-place write wipes on concurrent Update; case-insensitive key kept; stale rephrase lands after language change)"
+round: 3
 back-from: testing
 back-by: lane
-back-count: 1
+back-count: 2
 ---
 
 # Das Verdict zeigt jede Notiz mit Ampel-Marker und in der Sprache der Person, verständlich umformuliert
@@ -84,3 +84,9 @@ back-count: 1
 - **2026-11-22 15:05 · Alexander Sacharov** — testing: class: a settings write from a copy Load could not read whole (and a typed field that makes a whole file unreadable); example: hunter's settings.json with trailing comma or language:5, enter on Notes language -> file reduced to language; fix: one Update path in core/settings that refuses to write over a file that does not parse and keeps unknown keys, used by all three screen writes; Language tolerant of a non-string. Second: rephrase clears the ticket's shown texts whenever it produces none.
 - **2026-11-22 15:08 · Alexander Sacharov** — round 2 fix: settings.Update (core/settings) is now the one write path of the S screen - logbook days, dispatch, language: refuses a file that does not parse (error names the path), keeps unknown keys, drops a field the change emptied. Language is its own type that reads a non-string as none, so a typo no longer makes Load drop remote/hook. Save stays for tests and no screen calls it. rephrase clears the ticket's shown texts on no language/failed call.
 - **2026-11-22 15:08 · Alexander Sacharov** — critique (pass 2, repair only): none. settings.Update sits in core/settings beside Load/Save, where the file is owned; all three screen writes use it. Save left for test setup.
+- **2026-11-22 15:11 · Alexander Sacharov** — bughunt: change: blocker: core/settings/settings.go:496-535 (Update) - class: settings.json is rewritten in place (os.WriteFile truncates, then writes) and read without a lock, and Update reads an empty file as 'no file yet'; so a second Update that reads in the truncate window writes only the known fields back and the remote, the hook and every unknown key are gone - exactly the wipe Update promises to prevent; the same read-modify-write also loses one of two parallel choices (dispatch vs language). Save at :549 has the same in-place write; example: two settings screens (two terminals) stepping language and dispatch at the same moment; ran: scratch test via go test -overlay, two goroutines Update(dispatch) + Update(language) on {remote,hook,zz-unknown}, 300 rounds -> remote/unknown key lost in 47/300. Window is narrow (needs two writes within the same instant), but the result is data loss; write to a temp file + rename (and/or a lock file) closes it
+- **2026-11-22 15:11 · Alexander Sacharov** — bughunt: change: core/settings/settings.go:519-524 - class: encoding/json matches keys case-insensitively when reading, but Update removes the old known keys from the raw map case-sensitively (delete(raw, k)), so a hand-written key in another case survives every write and is read back again; it bites where the new value is omitted (omitempty) - stepping the notes language to none; example: {"Language":"Deutsch"} -> S steps language to none -> file still holds "Language":"Deutsch", Load() returns Deutsch, the screen shows none until reopened (the cockpit, case-sensitive, ignores it). Before this change Save rewrote the whole struct and dropped it; ran: scratch test via go test -overlay (TestHuntCase: after clearing, file keeps Language, Load="Deutsch"). Not a blocker: needs a hand-edited key in the wrong case
+- **2026-11-22 15:11 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1079-1116 (rephrase) - class: overlapping rephrase calls for one ticket finish in any order and the last to finish writes rephrasedAtom and the store, with no check that its language is still the current one; the new original() reset is undone by an older call still in flight; example: Verdict opened with language Deutsch (haiku call pending), language set to none or English in S, pane opened again -> original()/English shown, then the pending Deutsch answer lands and the pane shows German again; read (the busy key includes the language, so the second call is not suppressed). Display only, not a blocker
+- **2026-11-22 15:11 · Alexander Sacharov** — bughunt: done at 2b72d2ac2 - 3 findings (3 change, 1 of them blocker; 0 pre-existing) in 11 files, follow-up hunt since ddd89fd6a; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/0GMYQB.md core/settings/settings.go core/settings/settings_test.go core/shipped/shipped.sha256 internal/tui/settings.go internal/tui/settings_test.go
+- **2026-11-22 15:11 · Alexander Sacharov** — testing: class: settings.json written in place and read-modify-written without a lock; example: two goroutines Update(language)/Update(dispatch) x50 -> file unparseable, Load {} (3/3 runs); fix: atomic temp+rename under a lock, reuse an existing jaira helper.
+- **2026-11-22 15:16 · Alexander Sacharov** — round 3 fix: settings.Update and Save write through ticket.WriteAtomic under ticket.LockFile(settings.json.lock) - reused from core/ticket, no new lock code; known keys dropped case-insensitively (encoding/json reads them so). rephrase: a per-ticket 'newest' counter - an older call answered after the language changed writes nothing to the panes (its store entry stays, keyed by its language); busy mark taken before the first await, so two presses send one call. Model/store part split into rephrased().

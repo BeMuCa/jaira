@@ -36,6 +36,9 @@ type World = {
   prompts: string[]
   // The cheap model gives no answer: offline, or the call failed.
   modelDown?: boolean
+  // When set, every cheap-model call waits here, in order, answering with
+  // what w.model held when it was made.
+  modelHeld?: (() => void)[]
   filled: string[]
   store: Map<string, unknown>
   status: (string | undefined)[]
@@ -373,11 +376,13 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     return { result: { questions, answers: { [questions[0]!.question]: w.answer } }, text: w.answer }
   })
   on('agent.list', () => ({ value: w.agents }) as never)
-  on('model.complete', ($, e) => {
+  on('model.complete', async ($, e) => {
     w.modelCalls++
     w.prompts.push((e as { prompt: string }).prompt)
     if (w.modelDown) return { value: { isAnswered: false } } as never
-    return { value: { isAnswered: true, text: w.model, usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }
+    const text = w.model
+    if (w.modelHeld) await new Promise<void>(go => w.modelHeld!.push(go))
+    return { value: { isAnswered: true, text, usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }
   })
   return w
 }
@@ -4007,6 +4012,34 @@ describe('review notes as a person reads them', () => {
     w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
     w.modelDown = true
     expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
+  })
+
+  test('an older call answered after the language changed shows nothing', async ($, on) => {
+    const w = withNotes(on, 'Deutsch', de)
+    w.modelHeld = []
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    void band.press({ key: 'verdict-MG677R' })
+    await w.clock.settle()
+    expect(w.modelHeld).toHaveLength(1)
+    // The language taken away while the Deutsch call waits.
+    w.files.set(SETTINGS, JSON.stringify({ dispatch: 'worker' }))
+    await band.press({ key: 'verdict-MG677R' })
+    w.modelHeld.shift()!()
+    await w.clock.settle()
+    expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
+    // A second press while one call waits sends no second call.
+    w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
+    w.model = JSON.stringify(ru)
+    void band.press({ key: 'verdict-MG677R' })
+    void band.press({ key: 'verdict-MG677R' })
+    await w.clock.settle()
+    expect(w.modelHeld).toHaveLength(1)
+    w.modelHeld.shift()!()
+    await w.clock.settle()
+    w.modelHeld = undefined
+    expect((await verdictNotes($))[0]).toBe(`🔴 ${ru[0]}`)
+    expect(w.modelCalls).toBe(2)
   })
 
   test('a model that does not answer leaves the original text with its mark', async ($, on) => {

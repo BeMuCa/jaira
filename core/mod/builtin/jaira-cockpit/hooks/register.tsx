@@ -1067,6 +1067,10 @@ const CLASS_ORDER: readonly NoteClass[] = ['blocker', 'edge', 'limit', 'elsewher
 const REPHRASED_PREFIX = 'rephrased:'
 const REPHRASED_TICKETS = 50
 const rephrasing = new Set<string>()
+// The newest rephrase of each ticket: an older one still waiting for the
+// model when the language changed shows nothing once it is answered.
+const newest = new Map<string, number>()
+let rephrases = 0
 
 // The review notes of a ticket in the language the person set in their own
 // settings.json, short and plain, for the Verdict and Give back panes to show
@@ -1077,38 +1081,42 @@ const rephrasing = new Set<string>()
 // or an answer that does not fit: nothing is shown but the original, a
 // rewrite shown before included - the language may have been taken away.
 async function rephrase($: EngineInterface, id: string, texts: readonly string[]): Promise<void> {
-  const original = () => update($, rephrasedAtom, ({ [id]: _, ...rest }) => rest)
-  if (texts.length === 0) return original()
-  const language = languageOf(await settingsJson($))
-  if (language === undefined) return original()
+  const language = texts.length === 0 ? undefined : languageOf(await settingsJson($))
   const key = REPHRASED_PREFIX + id
+  // One call at a time per ticket, language and notes: a second press while
+  // the first waits sends nothing more, and leaves the first the newest.
+  const busy = `${key}\n${language}\n${texts.join('\n')}`
+  if (rephrasing.has(busy)) return
+  const mine = ++rephrases
+  newest.set(id, mine)
+  const show = (map?: Record<string, string>) =>
+    newest.get(id) !== mine ? undefined : update($, rephrasedAtom, ({ [id]: _, ...rest }) => (map === undefined ? rest : { ...rest, [id]: map }))
+  if (language === undefined) return show()
+  rephrasing.add(busy)
+  const shown = await rephrased($, key, language, texts).finally(() => rephrasing.delete(busy))
+  await show(shown === undefined ? undefined : Object.fromEntries(texts.map((x, i) => [x, shown[i]!])))
+}
+
+// The notes in that language: kept in the store, or asked of the cheap model
+// and kept; undefined where the call fails or its answer does not fit.
+async function rephrased($: EngineInterface, key: string, language: string, texts: readonly string[]): Promise<string[] | undefined> {
   const kept = (await $.store.get(key)) as { language: string; source: string[]; shown: string[] } | undefined
-  const same = kept?.language === language && kept.source.length === texts.length && kept.source.every((x, i) => x === texts[i])
-  let shown = same ? kept.shown : undefined
-  if (shown === undefined) {
-    // One call at a time per ticket and notes: a second press while the
-    // first waits sends nothing more.
-    const busy = `${key}\n${language}\n${texts.join('\n')}`
-    if (rephrasing.has(busy)) return
-    rephrasing.add(busy)
-    try {
-      const result = await $.model.complete({ model: 'haiku', prompt: rephrasePrompt(language, texts), maxTokens: 4000 })
-      shown = result.isAnswered ? rephrasedOf(result.text, texts.length) : undefined
-    } catch {
-      shown = undefined
-    } finally {
-      rephrasing.delete(busy)
-    }
-    if (shown === undefined) return original()
-    // Delete first so the key moves to the end of the store's insertion
-    // order, as keep() does; the tickets read longest ago drop out.
-    await $.store.delete(key)
-    await $.store.set(key, { language, source: [...texts], shown })
-    const keys = (await $.store.keys()).filter(k => k.startsWith(REPHRASED_PREFIX))
-    for (const old of keys.slice(0, Math.max(0, keys.length - REPHRASED_TICKETS))) await $.store.delete(old)
+  if (kept?.language === language && kept.source.length === texts.length && kept.source.every((x, i) => x === texts[i])) return kept.shown
+  let shown: string[] | undefined
+  try {
+    const result = await $.model.complete({ model: 'haiku', prompt: rephrasePrompt(language, texts), maxTokens: 4000 })
+    shown = result.isAnswered ? rephrasedOf(result.text, texts.length) : undefined
+  } catch {
+    return undefined
   }
-  const map = Object.fromEntries(texts.map((x, i) => [x, shown![i]!]))
-  await update($, rephrasedAtom, r => ({ ...r, [id]: map }))
+  if (shown === undefined) return undefined
+  // Delete first so the key moves to the end of the store's insertion order,
+  // as keep() does; the tickets read longest ago drop out.
+  await $.store.delete(key)
+  await $.store.set(key, { language, source: [...texts], shown })
+  const keys = (await $.store.keys()).filter(k => k.startsWith(REPHRASED_PREFIX))
+  for (const old of keys.slice(0, Math.max(0, keys.length - REPHRASED_TICKETS))) await $.store.delete(old)
+  return shown
 }
 
 // The review's notes, each with what it starts as: its class, or how it was
