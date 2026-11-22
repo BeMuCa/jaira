@@ -1469,6 +1469,11 @@ type Pulled struct {
 	// --steal. A silent steal would leave the other person's board saying the
 	// ticket is theirs, with nothing anywhere saying why it stopped being.
 	TakenFrom string `json:"taken-from,omitempty"`
+
+	// Unrejected is the rejection the ref carried, taken off by this pull: a
+	// ticket rejected on its ref has no archive file for 'jaira restore', and
+	// pulling it is saying it is wanted after all — out loud, never silently.
+	Unrejected *ticket.Rejection `json:"unrejected,omitempty"`
 }
 
 // ErrUnsent means the file here holds a write that has not reached the remote,
@@ -1585,6 +1590,17 @@ func (y *Syncer) Pull(id string, steal bool) (*Pulled, error) {
 			return nil, err
 		}
 	}
+	var unrejected *ticket.Rejection
+	if was, derr := ticket.Decode(d, ""); derr == nil && was.Rejected.Kind != "" {
+		r := was.Rejected
+		unrejected = &r
+		if _, err := ticket.Unreject(d); err != nil {
+			return nil, err
+		}
+		if err := ticket.AppendNote(d, fmt.Sprintf("%s pulled this ticket back; the rejection by %s (%s: %s) is taken off", y.Actor, r.By, r.Kind, r.Why), time.Now(), y.Actor); err != nil {
+			return nil, err
+		}
+	}
 	if err := d.SetScalar(ticket.FieldAssignee, y.Actor); err != nil {
 		return nil, err
 	}
@@ -1618,7 +1634,7 @@ func (y *Syncer) Pull(id string, steal bool) (*Pulled, error) {
 	if err := ticket.WriteAtomic(path, taken); err != nil {
 		return nil, err
 	}
-	return &Pulled{ID: id, Title: title, Path: path, TakenFrom: stolenFrom}, nil
+	return &Pulled{ID: id, Title: title, Path: path, TakenFrom: stolenFrom, Unrejected: unrejected}, nil
 }
 
 // Released reports what a release did.
@@ -1692,6 +1708,91 @@ func (y *Syncer) Release(id string, force bool) (*Released, error) {
 		out.Removed = path
 	}
 	return out, nil
+}
+
+// ErrAlreadyRejected means the ref already carries a rejection.
+var ErrAlreadyRejected = errors.New("refsync: the ticket is already rejected")
+
+// Reject writes a rejection onto a ticket that lives only on its ref, and
+// leaves it there: fetch, read, stamp, write back under the lease of what was
+// read.
+//
+// A person who says "not this, because ..." should not have to pick a branch
+// for the ticket's archive file first. Pulled into whatever checkout they stand
+// in, the file would travel in that branch's pull request, the work of an
+// unrelated ticket. On the ref, everybody sees the rejection after their next
+// fetch, and Store.List keeps it off every board.
+//
+// Synchronous like Pull and Release, for their reason: there is nothing to
+// reject without a ref to read. It fetches first, so a stale local copy is
+// never the state stamped. A push the remote refuses because the ref moved
+// since the fetch is gitref.ErrRaceLost, and nothing is written.
+//
+// The assignee goes with it, and the one it had is returned as heldBy: on a
+// ref an assignee does not say whether anybody pulled the ticket — a ticket
+// gets one to leave the backlog — so it refuses nothing, but left in place it
+// would make the way back, 'jaira pull', refuse everybody else as "taken".
+func (y *Syncer) Reject(id, kind, why, duplicateOf string, now time.Time) (rejected *ticket.Ticket, heldBy string, err error) {
+	if y == nil || y.Store == nil {
+		return nil, "", errors.New("refsync: no board here")
+	}
+	if err := y.Usable(); err != nil {
+		return nil, "", err
+	}
+	if _, ok := y.localPath(id); ok {
+		return nil, "", fmt.Errorf("refsync: %s has a file here; reject it through the store", ticket.Handle(id))
+	}
+	if _, ok := y.Pending(id); ok {
+		return nil, "", fmt.Errorf("%w: send it first ('jaira fetch' sends what is queued)", ErrUnsent)
+	}
+	if err := y.Repo.Fetch(); err != nil {
+		return nil, "", err
+	}
+	content, lease, err := y.Repo.Read(id)
+	if errors.Is(err, gitref.ErrNoRef) {
+		return nil, "", fmt.Errorf("%s: %w", ticket.Handle(id), ticket.ErrNotFound)
+	}
+	if err != nil {
+		return nil, "", err
+	}
+	d, err := ticket.ParseDoc(content)
+	if err != nil {
+		return nil, "", fmt.Errorf("refsync: the ref for %s does not carry a ticket: %w", id, err)
+	}
+	t, err := ticket.Decode(d, "")
+	if err != nil {
+		return nil, "", err
+	}
+	if t.Rejected.Kind != "" {
+		return t, "", fmt.Errorf("%s: %w (%s by %s)", ticket.Handle(id), ErrAlreadyRejected, t.Rejected.Kind, t.Rejected.By)
+	}
+	heldBy = strings.TrimSpace(t.Assignee)
+	if err := ticket.StampRejection(t, kind, why, y.Actor, duplicateOf, now); err != nil {
+		return nil, "", err
+	}
+	if err := d.SetScalar(ticket.FieldAssignee, ""); err != nil {
+		return nil, "", err
+	}
+	if err := ticket.Touch(d, now); err != nil {
+		return nil, "", err
+	}
+	if err := ticket.TouchBy(d, y.Actor); err != nil {
+		return nil, "", err
+	}
+	if _, err := y.Repo.Write(id, d.Bytes(), lease); err != nil {
+		return nil, "", err
+	}
+	rejected, err = ticket.Decode(d, "")
+	return rejected, heldBy, err
+}
+
+// HeldByWarning is what a rejection on the ref says about the assignee Reject
+// took off: if that person pulled the ticket, a file in their checkout is
+// behind the ref now. 'jaira reject' and R on the board say it alike.
+func HeldByWarning(handle, heldBy string) string {
+	return fmt.Sprintf("%s was assigned to %s. If it was pulled into a checkout, that file is behind the ref now: "+
+		"after a fetch there, the next write is refused as stale, and 'jaira pull %s' brings the rejection in and takes the card off that board",
+		handle, heldBy, handle)
 }
 
 // Extra hands the store the tickets this board can see but has no file for —
