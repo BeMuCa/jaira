@@ -1384,11 +1384,22 @@ type Place = { args: string[]; slug: string; root: string; branch?: string; why:
 async function ticketBranch($: EngineInterface, b: { dir: string; repo: string }, id: string, porcelain: string, base: string | undefined): Promise<ReturnType<typeof carrierFor>> {
   const found = branchesFor(porcelain, id)
   let holders: string | undefined
+  const past: Record<string, number> = {}
   if (base !== undefined) {
     const log = await run($, ['git', 'log', '--branches', '--not', base, '--format=%H %s'], b.repo)
     const sha = log?.exitCode === 0 ? commitNaming(log.stdout, id) : undefined
     const held = sha ? await run($, ['git', 'branch', '--contains', sha, '--format=%(refname:short)'], b.repo) : undefined
     if (held?.exitCode === 0) holders = held.stdout
+    // More than one holds it: how far past the commit each one's tip is, so a
+    // branch stacked on top of the ticket's never wins (carrierFor).
+    const listed = (holders ?? '').split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('('))
+    if (sha && listed.length > 1) {
+      for (const branch of listed) {
+        const counted = await run($, ['git', 'rev-list', '--count', `${sha}..${branch}`], b.repo)
+        const n = counted?.exitCode === 0 ? Number.parseInt(counted.stdout.trim(), 10) : Number.NaN
+        if (Number.isFinite(n)) past[branch] = n
+      }
+    }
   }
   let slugBranches: string | undefined
   if (holders === undefined && found.ticket === undefined) {
@@ -1401,6 +1412,7 @@ async function ticketBranch($: EngineInterface, b: { dir: string; repo: string }
     base: found.base ?? base ?? '',
     ...(holders !== undefined ? { holders } : {}),
     ...(slugBranches !== undefined ? { slugBranches } : {}),
+    past,
   })
 }
 

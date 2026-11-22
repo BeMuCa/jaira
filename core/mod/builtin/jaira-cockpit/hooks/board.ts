@@ -572,12 +572,19 @@ export function worktreeOfBranch(porcelain: string, branch: string): string | un
 // and spawn.sh makes <prefix>/<slug>. holders is `git branch --contains
 // <that commit>`, slugBranches `git branch --list '*/<slug>'`, both as
 // --format=%(refname:short) lists them.
-export function carrierFor(input: { slug: string; own?: string; base: string; holders?: string; slugBranches?: string }): { branch: string; by: 'commit' | 'worktree' | 'name' } | undefined {
-  const { slug, own, base, holders, slugBranches } = input
+// Where neither of those holds it, the branch whose tip is fewest commits
+// past it: a branch stacked on top has the ticket's commit and more besides,
+// so it never wins over the one the work rode on, whatever git's alphabetical
+// order (review, QTQW15). past maps a holder to `git rev-list --count
+// <commit>..<holder>`; a holder it does not name counts as furthest.
+export function carrierFor(input: { slug: string; own?: string; base: string; holders?: string; slugBranches?: string; past?: Readonly<Record<string, number>> }): { branch: string; by: 'commit' | 'worktree' | 'name' } | undefined {
+  const { slug, own, base, holders, slugBranches, past = {} } = input
   if (holders !== undefined && holders.trim() !== '') {
     const listed = holders.split('\n').map(l => l.trim()).filter(Boolean)
     const named = listed.filter(b => b.endsWith(`/${slug}`) && b !== base)
-    const branch = own !== undefined && listed.includes(own) ? own : carrierBranch(named.join('\n'), base) ?? carrierBranch(holders, base)
+    const far = (b: string) => past[b] ?? Number.MAX_SAFE_INTEGER
+    const nearest = [...listed].sort((a, b) => far(a) - far(b)).join('\n')
+    const branch = own !== undefined && listed.includes(own) ? own : carrierBranch(named.join('\n'), base) ?? carrierBranch(nearest, base)
     if (branch !== undefined) return { branch, by: 'commit' }
   }
   if (own !== undefined && own !== base) return { branch: own, by: 'worktree' }
