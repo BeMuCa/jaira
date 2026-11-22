@@ -1,7 +1,7 @@
 ---
 id: 01M6PDF2D6RQ8K1T7N0G1MYFKE
 title: "Ein Milestone erreicht die Kollegen so schnell wie ein Ticket, ueber einen Ref"
-status: critique
+status: optimize
 ready: true
 creator: BeMuCa
 goal: "Ein angelegter oder geaenderter Milestone liegt auf einem Ref wie Tickets und Epics und erscheint bei Kollegen mit dem naechsten Fetch, ohne Commit und Merge."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:49Z
-updated-at: 2026-11-22T11:20:40Z
+updated-at: 2026-11-22T11:22:26Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: "DESKTOP-RFTCH11-36703"
@@ -27,14 +27,14 @@ claimed-at: 2026-11-22T11:08:35Z
 outcome-what: "Milestones bleiben Dateien unter .jaira/milestones/, aber nie in git: share und init/update auf geteiltem Board legen /.jaira/milestones/ in .gitignore; update und validate warnen vor getrackten Milestone-Dateien mit git rm -r --cached; jede Milestone-Schreibung zieht vorher eine hinter ihrem Ref zurückgebliebene Datei nach (CatchUpMilestones). Die ref-only-Runde ist zurückgenommen."
 outcome-why: "Alex' Entscheidung 21.11. 22:05: Milestone-Dateien sollen nie wieder hin und her committet werden, und eine veraltete Datei darf den Ref nie überschreiben (KWQCYZ)."
 outcome-resolves: "Milestone-Dateien in Commits und Konflikte; KWQCYZ (veraltete Kopie in einem Worktree löscht still Tickets aus dem Milestone)"
-review-summary: none
+review-summary: "none"
 review-gaps: "none in round 3 (the fix copies one file and appends one checksum line); round 2: ReadMany through gitref.batch, pendingMilestone single ID, store.LogbookMilestone and gitref.ListMilestones removed"
 test-verdict: "pass: go test ./... green except a TUI package timeout under load (hunt running beside it; re-run alone next round); DoD 1-7 verified against the tree; binary: two clones, old file taken onto its ref and deleted, outside git exit 3, four parallel milestone add on a no-remote board all land"
 hunt-verdict: "fail: bughunt at 8953e2910 - 4 change blockers: symlink in .jaira/milestones sent to the ref, lost update across worktrees on a no-remote board, local-only ref pruned by the first fetch, cat-file batch parser shifted by a tree name with whitespace"
-round: 8
-back-from: testing
+round: 9
+back-from: critique
 back-by: lane
-back-count: 2
+back-count: 1
 review-verdict: "DoD 1-4 met: the gap DoD 3 still had (ID-named file without ref) is closed and tested in core/refsync/publish_test.go, including the offline case the first bughunt found. No blocker; four notes, all small. go test -race ./core/refsync ./internal/cli ./internal/tui passes."
 review-round: 3
 review-verdict-gaps: |-
@@ -66,11 +66,11 @@ mode: ""
 - [-] jaira logbook <milestone> setzt nur status: filed auf dem Ref, keine Datei (Test)
   proof: internal/cli/logbook.go:353 logbookMilestone -> milestone.EditFiled SetStatus(filed), kein Datei-Schreibvorgang; test internal/cli/milestoneref_test.go TestLogbookAndRestoreSpeakIDFileNamesAndMigrateAnOldOne (milestoneFilesUnder leer), TestAFiledMilestoneStaysOffTheOtherCloneAndKeepsItsRef
 - [x] Milestone-Dateien stehen nie in git: init und update legen /.jaira/milestones/ in .gitignore (Test)
-  proof: core/board/gitignore.go:531 AddMilestonesIgnore aus share (internal/cli/share.go:101), init auf geteiltem Board (internal/cli/tickets.go:91), update auf geteiltem Board (internal/cli/update.go:280); privates Board: /.jaira/ deckt es; tests internal/cli/milestoneignore_test.go TestShareKeepsMilestoneFilesOutOfGit, TestUpdateAndInitAddTheMilestonesLineToASharedBoard, TestAPrivateBoardGetsNoMilestonesLine
+  proof: core/board/gitignore.go:531 AddMilestonesIgnore aus share (internal/cli/share.go:101), init auf geteiltem, nicht ausgeschlossenem Board (internal/cli/tickets.go:94), update auf geteiltem Board (internal/cli/update.go:278); privates Board: /.jaira/ deckt es; tests internal/cli/milestoneignore_test.go TestShareKeepsMilestoneFilesOutOfGit, TestUpdateAndInitAddTheMilestonesLineToASharedBoard, TestAPrivateBoardGetsNoMilestonesLine
 - [x] Jede Milestone-Schreibung und jaira fetch ziehen zuerst den Ref nach; eine veraltete Datei überschreibt den Ref nie (Test, deckt KWQCYZ)
   proof: core/milestone/write.go:157 lockAndMigrate -> refsync.CatchUpMilestones (core/refsync/refsync.go:454) vor jeder Schreibung; fetch: IncomingMilestones; tests core/refsync/catchup_test.go TestAStaleMilestoneFileNeverOverwritesItsRef (KWQCYZ-Repro, ohne Fix rot), TestACatchUpKeepsAHandEdit, TestACatchUpKeepsAWriteThatHasNotBeenSent
 - [x] Sind Milestone-Dateien in git getrackt, warnen update und validate mit Abhilfe 'git rm --cached' (Test)
-  proof: internal/cli/update.go:484 milestonesTracked; validate internal/cli/validate.go:75 Warnung milestones_tracked, update milestonesLine; test internal/cli/milestoneignore_test.go TestCommittedMilestoneFilesAreWarnedAbout
+  proof: internal/cli/milestones.go:882 milestonesTracked; validate internal/cli/validate.go:75 Warnung milestones_tracked; update internal/cli/update.go milestonesLine; test internal/cli/milestoneignore_test.go TestCommittedMilestoneFilesAreWarnedAbout
 
 ## Options
 
@@ -133,3 +133,5 @@ mode: ""
 - **2026-11-22 11:10 · Alexander Sacharov** — Runde 3 (22.11.): nach Alex' Entscheidung 21.11. 22:05 die ref-only-Runde zurueckgenommen (b54bb3a5e revertiert 7a5f0b3c2, 34c4a7e6d, 86b012a22, 8953e2910; Code = c3728ba70), upstream/master 0.6.1 gemergt (2386b1de8). Damit entfallen DoD 5 und 7 (ref-only) und die Hunt-Funde bei 8953e2910 zu Import/Symlink, lokalem Namensraum, cat-file-Parser, hängendem list - der Code ist weg. Nicht von mir: .jaira/lanes/*.md, AGENTS.md, CLAUDE.md (lokales jaira update 0.6.0) bleiben uncommitted im Worktree.
 - **2026-11-22 11:11 · Alexander Sacharov** — decision Runde 3: (a) .gitignore-Zeile nur auf geteiltem Board (share, update, init auf geteiltem Board) - auf einem privaten Board deckt der /.jaira/-Ausschluss in info/exclude sie schon, und init soll in einem fremden Repo keine getrackte Datei aendern. (b) 'zieht zuerst den Ref nach' = jede Milestone-Schreibung ruft unter dem Milestone-Lock dieselbe IncomingMilestones wie fetch, nur ohne Netz (lokale Refs); eine Datei mit wartendem Outbox-Eintrag bleibt wie bei fetch. Bekannte Grenze: eine Handbearbeitung, die nicht in der Outbox steht, wird wie schon bei jedem fetch durch den Ref ersetzt.
 - **2026-11-22 11:15 · Alexander Sacharov** — decision Runde 3 (korrigiert): der Catch-up vor jeder Milestone-Schreibung ist NICHT IncomingMilestones - das hat Handbearbeitungen überschrieben (3 cli-Tests in milestonebase/milestoneround9 rot). Jetzt refsync.CatchUpMilestones: eine ID-Datei wird nur durch ihren Ref ersetzt, wenn ihr Inhalt ein früherer Stand des Refs ist (Repo.MilestoneHad, wie hadBefore bei Tickets); Handbearbeitung und wartende Outbox-Schreibung bleiben. Damit gilt die frühere 'bekannte Grenze' nicht mehr. Tests core/refsync/catchup_test.go (KWQCYZ-Repro, ohne Fix rot geprüft).
+- **2026-11-22 11:21 · Alexander Sacharov** — critique: (1) init-Warnung über getrackte Milestone-Dateien streichen (nicht verlangt, Helfer mit einem Aufrufer); (2) Milestone-Helfer aus update.go nach milestones.go, weil validate sie auch nutzt. Rest geprüft und gelassen: optionales Interface catchUpper folgt migrationRecorder (core/milestone/migrate.go:82); 'zurückgeblieben' = Repo.MilestoneHad wie hadBefore bei Tickets (refsync.go isStale).
+- **2026-11-22 11:22 · Alexander Sacharov** — critique Runde 2: beide Befunde erledigt (init-Warnung weg, Helfer in internal/cli/milestones.go); nichts weiter.

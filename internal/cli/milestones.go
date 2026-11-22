@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/BeMuCa/jaira/core/gitrepo"
 	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -866,4 +867,18 @@ func milestoneKey(raw string) (string, error) {
 func refuseAmbiguous(amb *milestone.AmbiguousError) error {
 	return fail(ExitValidation, "milestone_ambiguous",
 		"%v — nothing was written; run it again with one of them", amb)
+}
+
+// milestonesPath is where a board keeps its milestone files, relative to its root.
+var milestonesPath = filepath.ToSlash(filepath.Join(ticket.DirName, milestone.Subdir))
+
+// trackedMilestonesMessage is what update and validate say about
+// milestone files somebody committed.
+var trackedMilestonesMessage = "milestone files are committed under " + milestonesPath + "/: they travel on their refs, and a committed copy only adds commits and merge conflicts; " +
+	"take them out of git with: git rm -r --cached " + milestonesPath + " && git commit -m \"stop committing jaira milestones\""
+
+// milestonesTracked reports whether git tracks a file under the board's
+// milestone directory.
+func milestonesTracked(root string) bool {
+	return (&gitrepo.Repo{Dir: root}).Tracks(milestonesPath)
 }

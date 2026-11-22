@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -13,7 +12,6 @@ import (
 	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/gitrepo"
 	"github.com/BeMuCa/jaira/core/lane"
-	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -469,28 +467,6 @@ func entriesJSON(entries []release.Entry) []map[string]any {
 		out = append(out, map[string]any{"version": e.Version, "changes": e.Changes})
 	}
 	return out
-}
-
-// milestonesPath is where a board keeps its milestone files, relative to its root.
-var milestonesPath = filepath.ToSlash(filepath.Join(ticket.DirName, milestone.Subdir))
-
-// trackedMilestonesMessage is what update, init and validate say about
-// milestone files somebody committed.
-var trackedMilestonesMessage = "milestone files are committed under " + milestonesPath + "/: they travel on their refs, and a committed copy only adds commits and merge conflicts; " +
-	"take them out of git with: git rm -r --cached " + milestonesPath + " && git commit -m \"stop committing jaira milestones\""
-
-// milestonesTracked reports whether git tracks a file under the board's
-// milestone directory.
-func milestonesTracked(root string) bool {
-	return (&gitrepo.Repo{Dir: root}).Tracks(milestonesPath)
-}
-
-// warnTrackedMilestones writes the warning about committed milestone files
-// to w when there are any.
-func warnTrackedMilestones(w io.Writer, root string) {
-	if milestonesTracked(root) {
-		fmt.Fprintf(w, "jaira: warning: %s\n", trackedMilestonesMessage)
-	}
 }
 
 // milestonesLine is what update says about the milestone files: the

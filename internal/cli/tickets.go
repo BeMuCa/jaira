@@ -135,7 +135,6 @@ on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
 			} else if msIgnored {
 				fmt.Fprintf(cmd.OutOrStdout(), "Added %s to .gitignore: milestone files travel on their refs and stay out of git.\n", board.MilestonesIgnoreLine)
 			}
-			warnTrackedMilestones(os.Stderr, s.Root)
 			if p.NoteErr != nil {
 				fmt.Fprintf(os.Stderr, "jaira: warning: could not update an agent instruction file: %v\n", p.NoteErr)
 			} else if line := announceLine(p.Notes); line != "" {
