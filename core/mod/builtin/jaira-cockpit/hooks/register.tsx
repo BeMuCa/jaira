@@ -558,7 +558,14 @@ async function ticketHere($: EngineInterface, b: { dir: string; repo: string }, 
   if (own !== undefined || before.state !== 'ref-only') return stays
   const { path } = await disk()
   if (path === '') return stays
-  return { ok: true, dir, leave: async () => void (await run($, ['git', 'clean', '-fqx', '--', path], dir)) }
+  return {
+    ok: true,
+    dir,
+    leave: async () => {
+      const r = await run($, ['git', 'clean', '-fqx', '--', path], dir)
+      if (r?.exitCode !== 0) await show($, t.copyLeft(id), t.copyNotRemoved(id, path, output(r)))
+    },
+  }
 }
 
 type Done = { ok: true; out: string } | { ok: false; why: string }

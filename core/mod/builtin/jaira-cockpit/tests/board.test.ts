@@ -113,6 +113,8 @@ type World = {
   disk: Record<string, 'ref-only' | 'behind'>
   // What `jaira pull` refuses with; undefined: it pulls.
   pullFails?: string
+  // What `git clean` refuses with; undefined: it removes the file.
+  cleanFails?: string
 }
 
 const LANES = {
@@ -266,6 +268,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
       delete w.disk[here]
       return ok()
     }
+    if (cmd === 'git' && args[0] === 'clean' && w.cleanFails !== undefined) return refuse(w.cleanFails)
     if (cmd === 'jaira' && ['move', 'note', 'set', 'dod'].includes(args[0]!) && args[1] === 'MG677R' && w.disk[here] === 'ref-only') return refuse('jaira: MG677R: ticket: on its ref and not on your disk; pull it first')
     if (cmd === 'jaira' && ['move', 'note', 'set', 'dod'].includes(args[0]!) && args[1] === 'MG677R' && w.disk[here] === 'behind') return refuse('jaira: MG677R: the file here is older than its ref (stale_file); jaira pull MG677R')
     const on = args.includes('--board') ? w.boards[args[args.indexOf('--board') + 1] ?? ''] : undefined
@@ -3915,6 +3918,20 @@ describe('a ticket not on the disk the press writes from', () => {
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toEqual([])
     expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Accept MG677R failed', focus: true })
     expect(ran(w, 'git', 'clean')).toHaveLength(1)
+  })
+
+  test('a copy that cannot be taken away is shown with its path, after the press has gone through', async ($, on) => {
+    const w = world(on)
+    w.worktrees = ALONE
+    w.disk[MAIN] = 'ref-only'
+    w.cleanFails = "warning: failed to remove .jaira/tickets/01MG677R-cache-key.md: Permission denied"
+    await startSession($)
+    await press($, w, 'accept')
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Copy of MG677R left behind', focus: true })
+    const text = (await (await $.ui.mount(MESSAGE('Copy of MG677R left behind'))).findAll({ type: 'Text' })).map(x => x.text).join('\n')
+    expect(text).toContain('Permission denied')
+    expect(text).toContain("git clean -fqx -- '/repo/.jaira/tickets/01MG677R-cache-key.md'")
   })
 
   for (const how of ['accept', 'give back'] as const) {
