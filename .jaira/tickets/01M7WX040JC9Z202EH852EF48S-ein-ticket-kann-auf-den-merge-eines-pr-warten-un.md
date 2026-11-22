@@ -1,7 +1,7 @@
 ---
 id: 01M7WX040JC9Z202EH852EF48S
 title: "Ein Ticket kann auf den Merge eines PR warten, und nach dem Merge startet sein Worker"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,20 +19,19 @@ related:
   - 01M263RFEQMYPPT67D40Y5SW81
 commits: []
 created-at: 2026-11-20T16:35:24Z
-updated-at: 2026-11-22T19:55:45Z
+updated-at: 2026-11-22T19:56:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-81804
 claimed-at: 2026-11-22T19:38:55Z
 outcome-what: "blocked-by takes pr#<n>; list/next/move ask gh or glab for the pull request's state (core/pr State + Checker, cached in ~/.jaira/repo/<key>/pr-state.json: merged for good, open/closed 2 min); list shows [waits for PR #12: open], list --json waiting_on, next --json waiting_on_pr; TUI reads the cache only; teamlead skill starts a worker for tickets a merge freed"
 outcome-why: "a dependency on a pull request lived only in the teamlead's notes, so a merged PR freed nothing and the follow-up waited until somebody remembered"
 outcome-resolves: "2EF48S: a ticket can wait for a PR merge and becomes actionable on the next run after it"
-review-summary: |-
-  core/pr/state.go:19-33 repeats the forge/tool/call setup of Read (core/pr/pr.go:113-128: forgeOf, look, classify closure); extract one helper (connect) both call
-  internal/tui/model.go:2005 adds a package-level sync.Map for the cache path and builds a new pr.Checker per gateEnv call; the model already caches derived state lazily in fields reset on reload (m.index, linkIndex) - keep one *pr.Checker on the model the same way, reset where m.index is reset; this also gives gateEnv its doc comment back, which the insertion detached
+review-summary: none
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "removed ticket.PRRef (no caller besides its test); core/pr/cache.go store now writes through ticket.WriteAtomic (core/ticket/store.go:1645, temp+rename with the Windows rename retry) instead of its own temp-file dance - cache file is 0644 now, not 0600 as an earlier note said; left: printTable and next call gate.blockedBy two or three times per not-actionable ticket (Waiting + WaitingOnPR + Actionable) - in-memory after the first forge answer, O(tickets) each, not worth a new exported Violations API; gitlab state normalization (opened->open) exists in fromGitLab too, two lines, left"
 ---
 
 # Ein Ticket kann auf den Merge eines PR warten, und nach dem Merge startet sein Worker
@@ -50,7 +49,7 @@ back-count: 1
 - [x] forge failure classes keep the ticket waiting with the reason in list/next: gh/glab missing, not signed in, no forge origin, PR closed without merge, unreadable answer (table test with a fake runner)
   proof: core/pr/state_test.go TestState (gh missing, signed out, no origin, foreign host, no such PR, graphql error, unreadable, unknown state, closed); internal/cli/prblock_test.go TestTicketWaitsForItsPullRequest (closed, 401) + TestNoForgeToolKeepsTheTicketWaiting
 - [x] cache: merged is remembered across processes and worktrees, open/closed re-asked after 2 minutes; written atomically (temp+rename), an unwritable or corrupt cache file only costs a forge call, never an error (test)
-  proof: core/pr/cache_test.go TestCheckerCache (one call per process, shared file, merged kept, open re-asked after OpenFor, failures not cached, no temp left) + TestCheckerCacheFailures (corrupt, unwritable, offline); core/pr/cache.go store temp+rename
+  proof: core/pr/cache_test.go TestCheckerCache (one call per process, shared file, merged kept, open re-asked after OpenFor, failures not cached, no temp left) + TestCheckerCacheFailures (corrupt, unwritable, offline); core/pr/cache.go store writes through ticket.WriteAtomic
 - [x] every reader of blocked-by treats pr#<n> as a PR, not a ticket: validate (no dangling-dep error), link index, sync export, show, TUI blocker lines; grep of BlockedBy users is the checklist (test where code)
   proof: validate: core/validate/prref_test.go; link: core/link/prref_test.go TestPRRefIsNoRelation; show/TUI display: ticket.Handle keeps pr#n (core/ticket/prref_test.go TestHandleKeepsPRRef); TUI: internal/tui/prblock_test.go (cache-only gate, b key), linklines skips pr refs; sync keeps existing entries (no change needed); create resolves like set
 - [x] acceptance rule: starting work before the PR merged is worse than waiting a round longer

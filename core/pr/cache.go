@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // CacheFile is the name of the file in a repository's shared state directory
@@ -103,8 +105,8 @@ func readCache(path string) map[string]cached {
 }
 
 // store re-reads the file before it writes, so an answer another process
-// wrote meanwhile is kept, and replaces it through a temp file and a rename:
-// a reader sees the old file or the new one, never half of one.
+// wrote meanwhile is kept, and replaces it atomically: a reader sees the old
+// file or the new one, never half of one.
 func (c *Checker) store(n int, e cached) {
 	c.load()[strconv.Itoa(n)] = e
 	if c.File == "" {
@@ -113,26 +115,10 @@ func (c *Checker) store(n int, e cached) {
 	m := readCache(c.File)
 	m[strconv.Itoa(n)] = e
 	b, err := json.Marshal(m)
-	if err != nil {
+	if err != nil || os.MkdirAll(filepath.Dir(c.File), 0o755) != nil {
 		return
 	}
-	dir := filepath.Dir(c.File)
-	if os.MkdirAll(dir, 0o755) != nil {
-		return
-	}
-	f, err := os.CreateTemp(dir, ".pr-state-*")
-	if err != nil {
-		return
-	}
-	tmp := f.Name()
-	_, werr := f.Write(b)
-	if cerr := f.Close(); werr != nil || cerr != nil {
-		_ = os.Remove(tmp)
-		return
-	}
-	if os.Rename(tmp, c.File) != nil {
-		_ = os.Remove(tmp)
-	}
+	_ = ticket.WriteAtomic(c.File, b)
 }
 
 // Merged reports whether the pull request is merged — the one answer that

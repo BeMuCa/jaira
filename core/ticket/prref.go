@@ -9,20 +9,12 @@ import (
 // PRPrefix starts a blocked-by entry that waits on a pull request (a merge
 // request on GitLab) rather than on a ticket: pr#12 clears once pull request
 // 12 of this repository's forge is merged. It sits in blocked-by beside
-// ticket ids, so every reader of that list tells the two apart with PRRef.
+// ticket ids, so every reader of that list tells the two apart with ParsePRRef.
 const PRPrefix = "pr#"
 
 // maxPR bounds a pull request number to what GitHub's GraphQL Int and
 // GitLab's iid both hold.
 const maxPR = 1<<31 - 1
-
-// PRRef reports the pull request number a blocked-by entry waits on. ok is
-// false for anything that is not pr#<n> — a ticket id, or a malformed pr ref,
-// which ParsePRRef tells apart.
-func PRRef(entry string) (n int, ok bool) {
-	n, isPR, err := ParsePRRef(entry)
-	return n, isPR && err == nil
-}
 
 // ParsePRRef reads a blocked-by entry as typed or hand-edited. isPR says the
 // entry starts with pr# (any case) and is meant as a pull request; err then

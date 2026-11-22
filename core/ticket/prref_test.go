@@ -38,9 +38,6 @@ func TestParsePRRef(t *testing.T) {
 		if n != c.n || isPR != c.isPR || (err != nil) != c.failed {
 			t.Errorf("ParsePRRef(%q) = %d, %v, %v; want %d, %v, failed=%v", c.in, n, isPR, err, c.n, c.isPR, c.failed)
 		}
-		if got, ok := PRRef(c.in); ok != (c.isPR && !c.failed) || got != c.n {
-			t.Errorf("PRRef(%q) = %d, %v", c.in, got, ok)
-		}
 	}
 	if got := FormatPRRef(12); got != "pr#12" {
 		t.Errorf("FormatPRRef(12) = %q", got)

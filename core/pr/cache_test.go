@@ -88,7 +88,7 @@ func TestCheckerCache(t *testing.T) {
 	}
 
 	// No temp file is left behind.
-	left, _ := filepath.Glob(filepath.Join(filepath.Dir(file), ".pr-state-*"))
+	left, _ := filepath.Glob(filepath.Join(filepath.Dir(file), ".jaira-tmp-*"))
 	if len(left) != 0 {
 		t.Fatalf("temp files left: %v", left)
 	}
