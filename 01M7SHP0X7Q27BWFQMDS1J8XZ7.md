@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T23:00:42Z
+updated-at: 2026-11-22T23:01:03Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -35,6 +35,7 @@ outcome-resolves: "1J8XZ7: Milestones tab in the cockpit Overview with progress 
 review-summary: none
 review-gaps: "none - considered: no milestone or logbook reading exists elsewhere in the cockpit hooks (grep milestone/filed_away/rejected in board.ts, register.tsx, sessions.ts, digest.ts); nothing the change added is uncalled (milestonesOf and Stand are exported though only overview.ts uses them, matching how overview.ts exports its other helpers); standOf runs only while the Milestones tab is drawn, its sort over a milestone's handles is small"
 test-verdict: "pass: claude plugin test . in core/mod/builtin/jaira-cockpit 402 pass 0 fail (exit 0, 3 new Milestones tests); tsc over the mod 182 errors before and after, none new; go build of cmd/jaira exit 0 (go test not run, house rule: suite once before the PR). DoD 1-5 checked in the tree at the proof lines. Function: overview.ts run under node against the real board's lanes/list/next/milestone ls and jaira show of absent handles - release-0-6-0 reads 3 of 3 done (all logbook; jaira list --milestone gives 0 there), jaira-improvement-findings-1 3 of 17 (done,done,logbook), paging back from the first lands on the last. Failure paths: jaira show of a missing handle exits 5 -> row stays at lane '?'; milestone ls failing -> tab says it could not be read (test). Writers: the change writes no board state, only the session's own state atoms. DoD 6 (seen by a person) left open for the person."
+hunt-verdict: "fail: bughunt done at e68f3d2ab, 3 change findings (1 blocker: another board's tickets grouped by today's lanes), 0 pre-existing"
 ---
 
 # Das Cockpit zeigt einen Milestone mit Fortschritt und seinen Tickets nach Stand sortiert
