@@ -46,7 +46,31 @@ case "$cmd" in
       space="$(labelof "$("$hc" get "$HC_TERMINAL_ID" --json 2>/dev/null || true)" herdr.space)"
       [ -z "$space" ] || args+=(--label "herdr.space=$space")
     fi
-    t="$("$hc" "${args[@]}" | jaira json get address)"
+    # The app's agent list shows a terminal by its hc name and nothing else:
+    # without one, every tab reads 'Claude Code'. The label <ID>/<role> gives
+    # <role>-<id>, in the characters and length hc accepts.
+    name=""
+    if [ -n "$label" ]; then
+      case "$label" in */*) name="${label##*/}-${label%%/*}" ;; *) name="$label" ;; esac
+      name="$(printf '%s' "$name" | tr 'A-Z' 'a-z' | tr -c 'a-z0-9_-' '-')"
+      name="${name:0:32}"
+    fi
+    # A name belongs to one live terminal, and the old tab of the same ticket
+    # may still be up: -2 to -9, then no name, rather than no tab at all.
+    out=""
+    for n in "" -2 -3 -4 -5 -6 -7 -8 -9 none; do
+      try=("${args[@]}")
+      if [ -n "$name" ] && [ "$n" != none ]; then
+        try+=(--name "${name:0:$((32 - ${#n}))}$n")
+      fi
+      if out="$("$hc" "${try[@]}")"; then break; fi
+      # Only a taken name is worth another try; any other refusal is the error.
+      if [ -z "$name" ] || [ "$n" = none ] || ! grep -q '"name_taken"' <<<"$out"; then
+        printf '%s\n' "$out" >&2
+        exit 1
+      fi
+    done
+    t="$(jaira json get address <<<"$out")"
     printf '{"result":{"tab":{"tab_id":"%s","label":"%s"},"root_pane":{"pane_id":"%s"}}}\n' \
       "$(js "$t")" "$(js "$label")" "$(js "$t")"
     ;;
