@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { ElementTable, EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
-  branchesFor, carrierFor, commitNaming, parentOf, slugFor, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
+  branchesFor, carrierFor, commitNaming, slugFor, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf,
   createdHandle, decisionLines, oneLine, decisionsOf, followTitle, gapItems, languageOf, nextChoice, NOTE_MARK, rephrasedOf, rephrasePrompt, standOf,
@@ -519,7 +519,7 @@ async function upgradeJaira($: EngineInterface, dir: string, to: string): Promis
   await show($, t.upgraded(to), withoutWarnings(`${up.stdout}\n${up.stderr}\n${setup === undefined ? 'jaira update did not run' : `${setup.stdout}\n${setup.stderr}`}`))
 }
 
-async function noteOn($: EngineInterface, dir: string, id: string, kind: 'explain' | 'decision') {
+async function noteOn($: EngineInterface, dir: string, id: string, kind: 'explain' | 'decision' | 'parent session') {
   const shown = await run($, ['jaira', 'show', id, '--json'], dir)
   return shown?.exitCode === 0 ? noteOf(shown.stdout, kind) : undefined
 }
@@ -672,8 +672,7 @@ async function accepting($: EngineInterface, w: Waiting, to: string, dir: string
     // One line into this session, the teamlead's, once the press has done
     // all it does: it goes on from there — logbook, the next worker — without
     // the person typing it, and never starts the pull request Accept started.
-    const line = t.toSessionAccepted(w.id, w.lane, to, next)
-    void $.prompt.submit({ text: line })
+    void $.prompt.submit({ text: t.toSessionAccepted(w.id, w.lane, to, next) })
     // The same line on the ticket: a teamlead in another session reads it
     // there, where the cockpit's own session is not its own.
     const noted = await jaira($, dir, ['note', w.id, `cockpit: ${t.acceptedNote(w.lane, to)}`])
@@ -1422,8 +1421,9 @@ async function workPlace($: EngineInterface, b: { dir: string; repo: string }, i
 // parent spawn.sh refuses (exit 2, no session listens there) stops it before
 // a tab is made, so the next one is tried. parentWhy goes onto the note.
 async function spawnWorker($: EngineInterface, script: string[], id: string, place: Place): Promise<{ ok: true; pane: string; parentWhy: string } | { ok: false; err: string; parentWhy: string }> {
-  const shown = await run($, ['jaira', 'show', id, '--json'], place.root)
-  const noted = shown?.exitCode === 0 ? parentOf(shown.stdout) : undefined
+  // The newest 'parent session: <address>' note — what a worker writes the
+  // first time it reads its --parent — names the ticket's teamlead.
+  const noted = (await noteOn($, place.root, id, 'parent session'))?.text.split(/\s/)[0]?.replace(/`/g, '') || undefined
   const own = await $.env.get('CLAUDE_CODE_MESSAGING_SOCKET')
   const tries: { flags: string[]; why: string }[] = []
   if (noted !== undefined) tries.push({ flags: ['--parent', noted], why: `reports to ${noted}, the ticket's parent session` })

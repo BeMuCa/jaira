@@ -381,7 +381,7 @@ export function otherRefusal(errorJson: string): string | undefined {
 // Discuss chat's `decision:` note, up to the next note or section, and when
 // it was written (jaira stamps notes to the minute, in UTC). undefined when
 // there is none yet.
-export function noteOf(showJson: string, kind: 'explain' | 'decision'): { text: string; at: number; line: number } | undefined {
+export function noteOf(showJson: string, kind: 'explain' | 'decision' | 'parent session'): { text: string; at: number; line: number } | undefined {
   const lead = new RegExp(`^- \\*\\*(\\d{4}-\\d\\d-\\d\\d \\d\\d:\\d\\d) · [^*]*\\*\\* — ${kind}:\\s*`)
   const body = parse<{ body?: string }>(withoutWarnings(showJson))?.body ?? ''
   const lines = body.split('\n')
@@ -561,20 +561,6 @@ export function branchesFor(porcelain: string, id: string): { ticket?: string; b
 // put it: beside the repository, never inside it.
 export function worktreeOfBranch(porcelain: string, branch: string): string | undefined {
   return worktreesOf(porcelain).find(w => w.branch === branch)?.path
-}
-
-// The session a ticket's agents report to, off its notes: the newest
-// 'parent session: <address>' — the line a worker writes the first time it
-// reads its --parent, so a worker started later for the same ticket reports
-// to the same teamlead. undefined where no note names one.
-export function parentOf(showJson: string): string | undefined {
-  const body = parse<{ body?: string }>(withoutWarnings(showJson))?.body ?? ''
-  let found: string | undefined
-  for (const line of body.split('\n')) {
-    const m = /^- \*\*[^*]*\*\* — parent session: `?([^\s`]+)`?/.exec(line)
-    if (m) found = m[1]
-  }
-  return found
 }
 
 // Which branch a new worker for a ticket takes up, from what git says: the

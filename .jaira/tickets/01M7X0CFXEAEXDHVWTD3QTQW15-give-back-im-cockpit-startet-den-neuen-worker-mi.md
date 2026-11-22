@@ -1,7 +1,7 @@
 ---
 id: 01M7X0CFXEAEXDHVWTD3QTQW15
 title: "Give back im Cockpit startet den neuen Worker mit Teamlead, im Worktree mit dem Code und nie doppelt"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -24,20 +24,19 @@ related:
   - 01M5MNWDKYJGC78B3EKMX2TGXG
 commits: []
 created-at: 2026-11-20T17:34:35Z
-updated-at: 2026-11-22T19:12:54Z
+updated-at: 2026-11-22T19:15:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-1167205
 claimed-at: 2026-11-22T18:52:27Z
 outcome-what: "Give back im Cockpit: neuer Worker berichtet an die parent session des Tickets (sonst an die Cockpit-Session, sonst eigener Tab), startet auf dem Branch mit dem neuesten Commit der ID (vorhandener Worktree oder spawn.sh --branch), ein arbeitender Worker bekommt die Entscheidung statt ersetzt zu werden; Accept/Give back/Decide schicken '<ID>: ... (Person, Cockpit)' in die Session, Accept auch als Note. spawn.sh: --branch, vorhandener <prefix>/<slug> wird wieder ausgecheckt, Setup-Fehler loescht nur selbst angelegte Branches, Prompt mit parent nennt SendMessage statt AskUserQuestion."
 outcome-why: "Ein Teamlead eines anderen Projekts sah am 20.11. Worker, die per AskUserQuestion fragten, in leeren feat/<id>-Worktrees starteten und dreifach liefen."
 outcome-resolves: QTQW15 DoD 1-6
-review-summary: |-
-  core/mod/builtin/jaira-cockpit/hooks/register.tsx workPlace repeats the branch search decideStep already does inline (worktree branch, */<slug> listing, branch --contains the newest commit naming the id) - move the git queries into one helper both call, with carrierFor deciding
-  core/mod/builtin/jaira-cockpit/hooks/register.tsx givingBack: a worker at work with no record is reported to the teamlead as 'worker none', which invites it to start the very second worker this press refuses to - the line must name the working tab and say the decision is to be typed there
+review-summary: none
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "removed parentOf (board.ts): noteOf/noteOn already read the newest note of a kind - 'parent session' is now one of their kinds; inlined the one-use 'line' in accepting(). Left: spawnWorker's trailing return (unreachable, TypeScript needs it); ticketBranch now also serves decideStep (done in critique). No pre-existing dead code found in the touched functions."
 ---
 
 # Give back im Cockpit startet den neuen Worker mit Teamlead, im Worktree mit dem Code und nie doppelt
@@ -45,17 +44,17 @@ back-count: 1
 ## Definition of Done
 
 - [x] Der Start-Prompt eines Give back nennt die parent session des Tickets und verbietet AskUserQuestion; danach geht eine Zeile '<ID> given back: <Entscheidung>, Worker <name>' an den Teamlead (Test im Cockpit)
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1424 + spawn.sh asks=: test 'the new worker reports to the parent session the ticket names, and the teamlead hears who took it'; Go TestSpawnTypesTheRoleForItsLaneName
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1423 + spawn.sh asks=: test 'the new worker reports to the parent session the ticket names, and the teamlead hears who took it'; Go TestSpawnTypesTheRoleForItsLaneName
 - [x] Give back findet den Branch mit den Commits des Tickets (Commits mit der ID, PR-Branch) und dessen Worktree und startet dort; nur ohne solchen Branch entsteht feat/<id> (Test: Branch mit anderem Namen)
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1385 ticketBranch (shared with Accept's decideStep), workPlace; tests 'the branch the ticket\'s commits ride on wins over an empty feat/<id>...', 'a branch whose worktree was removed is checked out again...'; Go TestSpawnTakesUpTheBranchTheWorkRidesOn
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1384 ticketBranch (shared with Accept's decideStep), workPlace; tests 'the branch the ticket\'s commits ride on wins over an empty feat/<id>...', 'a branch whose worktree was removed is checked out again...'; Go TestSpawnTakesUpTheBranchTheWorkRidesOn
 - [x] Laeuft fuer das Ticket schon ein Worker, startet Give back keinen zweiten, sondern schickt ihm die Entscheidung (Test: zweimal Give back hintereinander = ein Worker)
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1344: tests 'a worker at work gets the decision...', 'a worker at work with nothing recorded...', 'Give back twice in a row: one worker...'
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1343: tests 'a worker at work gets the decision...', 'a worker at work with nothing recorded...', 'Give back twice in a row: one worker...'
 - [x] Eingabeklassen: Ticket ohne parent-Note, parent-Session tot, zwei Branches mit Commits der ID, Worktree geloescht aber Branch da, zwei Give back gleichzeitig
   proof: tests in core/mod/builtin/jaira-cockpit/tests/board.test.ts 'give back': no parent note -> 'no parent anywhere...'/'reports to this session (no parent noted)'; parent dead -> 'a parent session that is gone...'; two branches -> 'two branches hold the commit...'; worktree deleted -> 'a branch whose worktree was removed...' + Go TestSpawnTakesUpTheBranchTheWorkRidesOn; two at once -> 'Give back twice in a row' + existing 'a move another session made first'
 - [x] Jede Entscheidung der Person im Cockpit (Accept, Give back, Decide) schickt dem Teamlead des Tickets sofort eine Zeile '<ID>: <Entscheidung> (Person, Cockpit)'; heute erfaehrt der Teamlead davon nichts und listet laengst entschiedene Tickets weiter als offen (Alex 20.11.2026: 'du bekommst die Info nicht schnell und wiederholst dich')
   proof: core/mod/builtin/jaira-cockpit/hooks/texts.ts toSessionAccepted/toSessionGivenBack/decisionFor: '<ID>: ... (Person, Cockpit)'; tests 'the line a press hands this session'
 - [x] Entscheidung Teamlead 22.11.: DoD5 nur fuer die eigene Session - Accept, Give back und Decide geben ihre Zeile per prompt.submit in die Session des Cockpits und schreiben sie zusaetzlich als Note ans Ticket; ein Teamlead in einer anderen Session ist eine bekannte Grenze (Note)
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:679 Accept-Note; Give back/Decide notes vorhanden; test 'an option marked [accept] accepts the ticket as the band\'s Accept does'
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:678 Accept-Note; Give back/Decide notes vorhanden; test 'an option marked [accept] accepts the ticket as the band\'s Accept does'
 
 ## Options
 
@@ -84,3 +83,4 @@ back-count: 1
 - **2026-11-22 19:07 · Alexander Sacharov** — known limit (worker): Give back sucht Branches nur lokal (git log --branches). Ein PR-Branch, der nur noch auf origin liegt (lokal geloescht), wird nicht gefunden -> neuer feat/<id>. Ein Worktree der Ticket-ID mitten im Rebase (kein Branch) und Commits auf anderem Branch: spawn.sh verweigert mit 'already stands on no branch', die Note sagt es. Ein arbeitender Worker ohne Session-Record: kein Zweiter, die Note nennt seinen Tab - die Entscheidung muss dort eingetippt werden.
 - **2026-11-22 19:09 · Alexander Sacharov** — critique: (1) workPlace und decideStep suchen den Branch des Tickets zweimal mit denselben drei git-Abfragen - ein Helfer fuer beide, carrierFor entscheidet. Folge fuer Accept: ein leerer feat/<id>-Worktree verliert gegen den Branch mit den Commits der ID, auch fuer den PR - gewollt, derselbe Fehler. (2) Arbeitender Worker ohne Record: die Zeile an den Teamlead sagt 'worker none' und laedt zum zweiten Worker ein - sie muss den Tab nennen.
 - **2026-11-22 19:12 · Alexander Sacharov** — in-progress (Runde 2): beide critique-Funde behoben - ticketBranch ist der eine Helfer fuer Accept (decideStep) und Give back (workPlace); Accept waehlt damit auch den Branch mit dem neuesten Commit der ID statt eines leeren feat/<id> (Release-Note-Zeile dazu). Arbeitender Worker ohne Record: Zeile an den Teamlead nennt den Tab und 'start no other'. 370/370 Mod-Tests, go test core/role ok.
+- **2026-11-22 19:13 · Alexander Sacharov** — critique (Runde 2): beide Funde aus Runde 1 erledigt - ticketBranch (register.tsx) ist die eine Branch-Suche fuer decideStep und workPlace; die Zeile fuer einen arbeitenden Worker ohne Record nennt den Tab. Nichts Neues.
