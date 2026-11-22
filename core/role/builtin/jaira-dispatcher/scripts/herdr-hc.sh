@@ -52,7 +52,10 @@ case "$cmd" in
     name=""
     if [ -n "$label" ]; then
       case "$label" in */*) name="${label##*/}-${label%%/*}" ;; *) name="$label" ;; esac
-      name="$(printf '%s' "$name" | tr 'A-Z' 'a-z' | tr -c 'a-z0-9_-' '-')"
+      # LC_ALL=C: tr works on bytes in GNU and BSD alike. Under a UTF-8 locale
+      # BSD tr reads ü as one character and GNU as two bytes, so the same label
+      # gave two names; in C both give one dash per byte, ranges plain ASCII.
+      name="$(printf '%s' "$name" | LC_ALL=C tr 'A-Z' 'a-z' | LC_ALL=C tr -c 'a-z0-9_-' '-')"
       name="${name:0:32}"
     fi
     # A name belongs to one live terminal, and the old tab of the same ticket
