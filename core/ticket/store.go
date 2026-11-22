@@ -737,17 +737,23 @@ func (s *Store) LoggedPerDay(now time.Time, days int) []int {
 // path, so a name built to escape the store (e.g. "../../etc/passwd") cannot
 // walk it anywhere but back into TicketsDir.
 func (s *Store) Restore(name string) (string, error) {
+	_, dst, err := s.RestoreFrom(name)
+	return dst, err
+}
+
+// RestoreFrom is Restore that also says where the file came from, so a caller
+// whose next step fails can put it back there.
+func (s *Store) RestoreFrom(name string) (src, dst string, err error) {
 	base := filepath.Base(name)
 	home := s.TicketsDir()
 
-	var src string
 	if _, err := os.Stat(filepath.Join(s.ArchiveDir(), base)); err == nil {
 		src = filepath.Join(s.ArchiveDir(), base)
 	}
 
 	folders, err := s.logbookFolders()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	// A file is looked for in the folder itself and in its milestones/
 	// subfolder, and where it was found is where it goes back to: a milestone
@@ -768,9 +774,9 @@ func (s *Store) Restore(name string) (string, error) {
 
 	switch {
 	case src != "" && len(logMatches) > 0:
-		return "", fmt.Errorf("%s is in both the archive and %s — remove one before restoring", base, strings.Join(names, ", "))
+		return "", "", fmt.Errorf("%s is in both the archive and %s — remove one before restoring", base, strings.Join(names, ", "))
 	case len(logMatches) > 1:
-		return "", fmt.Errorf("%s is in more than one logbook folder (%s) — remove one before restoring", base, strings.Join(names, ", "))
+		return "", "", fmt.Errorf("%s is in more than one logbook folder (%s) — remove one before restoring", base, strings.Join(names, ", "))
 	case len(logMatches) == 1:
 		src = logDirs[0]
 		if filepath.Base(src) == MilestonesSubdir {
@@ -778,23 +784,23 @@ func (s *Store) Restore(name string) (string, error) {
 		}
 		src = filepath.Join(src, base)
 	case src == "":
-		return "", fmt.Errorf("%s is not in the archive or in .jaira/logbook/", base)
+		return "", "", fmt.Errorf("%s is not in the archive or in .jaira/logbook/", base)
 	}
 
 	if err := os.MkdirAll(home, 0o755); err != nil {
-		return "", err
+		return "", "", err
 	}
-	dst := filepath.Join(home, base)
+	dst = filepath.Join(home, base)
 	if _, err := os.Stat(dst); err == nil {
-		return "", fmt.Errorf("%s is already on the board", base)
+		return "", "", fmt.Errorf("%s is already on the board", base)
 	}
 	if err := unreject(src); err != nil {
-		return "", err
+		return "", "", err
 	}
 	if err := os.Rename(src, dst); err != nil {
-		return "", err
+		return "", "", err
 	}
-	return dst, nil
+	return src, dst, nil
 }
 
 // unreject takes a rejection off a file about to go back on the board: a
