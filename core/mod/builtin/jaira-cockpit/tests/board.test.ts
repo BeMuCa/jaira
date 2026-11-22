@@ -1885,6 +1885,74 @@ describe('after Accept', () => {
   })
 })
 
+describe('the head of every pane', () => {
+  // A head row as the terminal lays it out: '[ label ]' per Button, one
+  // column between the tabs, Close pushed to the right edge.
+  type Node = { type: string; props: Record<string, unknown>; children?: Node[] }
+  const buttonsOf = (n: Node | undefined): string[] =>
+    n === undefined ? [] : n.type === 'Button' ? [n.props.label as string] : (n.children ?? []).flatMap(buttonsOf)
+  async function headOf(pane: { find: (q: { key: string }) => Promise<unknown> }, key: string) {
+    const row = (await pane.find({ key })) as Node | undefined
+    expect(row).toBeDefined()
+    // One line: a row that never wraps, its parts never shrunk to a second line.
+    expect(row!.props).toMatchObject({ flexDirection: 'row', flexWrap: 'nowrap', justifyContent: 'space-between' })
+    const [tabs, close] = row!.children
+    expect(tabs!.props).toMatchObject({ flexWrap: 'nowrap', flexShrink: 0 })
+    expect(close!.props).toMatchObject({ flexShrink: 0 })
+    const left = buttonsOf(tabs!)
+    const right = buttonsOf(close!)
+    expect(right).toEqual(['Close'])
+    const drawn = [...left, ...right].map(l => `[ ${l} ]`)
+    // Every button is hit across at least three columns, brackets included.
+    for (const d of drawn) expect(d.length).toBeGreaterThanOrEqual(3)
+    const width = drawn.reduce((n, d) => n + d.length, 0) + Math.max(0, left.length - 1) + (left.length > 0 ? 1 : 0)
+    return { left, width }
+  }
+
+  test('Overview: the tabs and Close on one line that fits 80 columns', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...WORKING, assignee: 'Alex', updated_at: ago(0.1) }]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    const { left, width } = await headOf(pane, 'overview-top-row')
+    expect(left).toEqual(['Queue', 'Log', 'Workers'])
+    expect(width).toBeLessThanOrEqual(80)
+  })
+
+  test('Verdict, Give back, Explanation, Message and the ticket pane: Close at the right of a one-line head, first', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = ['## Progress', '', '- **2026-10-12 15:00 · Alex** — explain: The key leaves out the branch.'].join('\n')
+    await startSession($)
+    const band = await $.ui.mount(BAND)
+    const first = async (pane: { find: (q: { type: 'Box' }) => Promise<unknown> }, key: string) =>
+      expect(((await pane.find({ type: 'Box' })) as Node).children[0]?.props.key).toBe(key)
+    const panes: [string, () => Promise<{ find: never; press: (q: { key: string }) => Promise<unknown> }>, string][] = [
+      ['verdict', async () => { await band.press({ key: 'verdict-MG677R' }); return $.ui.mount(VERDICT('Review verdict of MG677R')) as never }, 'cockpit-verdict'],
+      ['give-back', async () => { await band.press({ key: 'back-MG677R' }); return $.ui.mount(GIVE('Give back MG677R')) as never }, 'cockpit-give-back'],
+      ['explanation', async () => { await band.press({ key: 'read-MG677R' }); return $.ui.mount(EXPLANATION('Explanation of MG677R')) as never }, 'cockpit-explanation'],
+      ['message', async () => {
+        w.refusals = [...w.refusals, { code: 'needs_nonmodel_signal', message: 'criterion 1 is still open' }]
+        await band.press({ key: 'accept-MG677R' })
+        return $.ui.mount(MESSAGE('Accept MG677R failed')) as never
+      }, 'cockpit-message'],
+      ['ticket', async () => {
+        await $.command.run(typed('ticket MG677R'))
+        return $.ui.mount({ plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-ticket', props: { title: 'Ticket MG677R', isFocused: false, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 20 }, view: {} } } as never) as never
+      }, 'cockpit-ticket'],
+    ]
+    for (const [name, open, id] of panes) {
+      const pane = await open()
+      await first(pane as never, `${name}-head`)
+      const { left, width } = await headOf(pane as never, `${name}-head`)
+      expect(left).toEqual([])
+      expect(width).toBeLessThanOrEqual(80)
+      await pane.press({ key: `${name}-close` })
+      expect(w.closed.at(-1)).toBe(id)
+    }
+  })
+})
+
 describe('give back', () => {
   async function giveBack($: Test$, w: World) {
     const ui = await $.ui.mount(BAND)
@@ -3445,48 +3513,36 @@ describe('the overview', () => {
     expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBe('primary')
   })
 
-  test('the top row is one row of framed buttons alike — the tabs and Close — and the open tab is the one highlighted', async ($, on) => {
+  test('the top row is one line of buttons alike — the tabs on the left, Close at the right — and the open tab is the one highlighted', async ($, on) => {
     const w = world(on)
     w.tickets = [{ ...WORKING, assignee: 'Alex', updated_at: ago(0.1) }]
     await startSession($)
     await (await $.ui.mount(BAND)).press({ key: 'overview' })
     const pane = await $.ui.mount(OVERVIEW)
-    const KEYS = ['overview-tab-queue', 'overview-tab-log', 'overview-tab-workers', 'overview-close']
     for (const tab of ['queue', 'log', 'workers']) {
       await pane.press({ key: `overview-tab-${tab}` })
-      // One row, in this order, every button in a frame of its own with the
-      // same border and padding: none stands higher or lower than another.
-      const frames = await Promise.all(KEYS.map(k => pane.find({ key: `${k}-frame` })))
-      for (const frame of frames) {
-        expect(frame?.props).toMatchObject({ borderStyle: 'round', paddingX: 1 })
-        expect(frame?.children.length).toBe(1)
-      }
-      const row = await pane.find({ key: 'overview-top-row' })
-      expect(row?.children.map(c => c.props)).toEqual(frames.map(f => f?.props))
-      // It never wraps: the pane budgets it three rows (OVERVIEW_ROWS).
-      expect(row?.props).toMatchObject({ flexDirection: 'row' })
-      expect(row?.props.flexWrap).toBeUndefined()
+      // No frame anywhere: every button is drawn as the terminal draws a
+      // Button, '[ label ]', one line high.
+      expect(await pane.find({ key: 'overview-close-frame' })).toBeUndefined()
+      expect(await pane.find({ key: `overview-tab-${tab}-frame` })).toBeUndefined()
       const labels = (await pane.findAll({ type: 'Button' } as never)).map(b => (b.props as { label: string }).label)
       expect(labels.slice(0, 4)).toEqual(['Queue', 'Log', 'Workers', 'Close'])
-      // The open tab, and only it, is highlighted: a coloured frame and the
-      // primary variant; the others are dimmed. Close is never a tab.
-      for (const [i, other] of ['queue', 'log', 'workers'].entries()) {
+      // The open tab, and only it, is the primary button; the others are
+      // dimmed. Close is never a tab.
+      for (const other of ['queue', 'log', 'workers']) {
         const open = other === tab
-        expect(frames[i]?.props.borderColor).toBe(open ? 'claude' : undefined)
-        expect(frames[i]?.props.borderDimColor).toBe(!open)
-        expect((await pane.find({ key: `overview-tab-${other}` }))?.props.variant).toBe(open ? 'primary' : undefined)
+        const b = await pane.find({ key: `overview-tab-${other}` })
+        expect(b?.props.variant).toBe(open ? 'primary' : undefined)
+        expect(b?.props.dimColor).toBe(!open)
       }
-      expect(frames[3]?.props.borderColor).toBeUndefined()
-      expect(frames[3]?.props.borderDimColor).toBe(false)
+      expect((await pane.find({ key: 'overview-close' }))?.props.variant).toBeUndefined()
     }
-    // What Close draws is longer than the longest tab's label.
-    const closeText = (await pane.find({ type: 'Text', text: /^ +Close +$/ }))?.text ?? ''
-    expect(closeText.length).toBeGreaterThan('Workers'.length)
     await pane.press({ key: 'overview-close' })
     await pane.unmount()
+    // An unread board keeps the same head, Close alone at its right.
     w.nextFails = true
     await (await $.ui.mount(BAND)).press({ key: 'overview' })
-    expect(await (await $.ui.mount(OVERVIEW)).find({ key: 'overview-close-frame' })).toBeDefined()
+    expect(await (await $.ui.mount(OVERVIEW)).find({ key: 'overview-top-row-close' })).toBeDefined()
   })
 
   test('every Log line starts with its kind\'s sign, one wide code point, so no column shifts', async ($, on) => {
@@ -3684,8 +3740,8 @@ describe('the workers tab', () => {
       const picture = await pictureOf(pane, 100)
       const lines = await linesOf(pane)
       expect(lines).toHaveLength(n)
-      // 40 rows less the tab row, three high with the framed Close in it.
-      expect(picture.length + lines.length).toBeLessThanOrEqual(37)
+      // 40 rows less the head: the tabs and Close, one line.
+      expect(picture.length + lines.length).toBeLessThanOrEqual(39)
       const crabs = picture.join('\n')
       const big = crabs.split('▐▛███▜▌').length - 1
       const small = crabs.split('▐▛▜▌').length - 1

@@ -17,7 +17,7 @@ import {
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
 import { COLORS, HATS, overviewOf, pickOf, stoneOf, workerKey, workersOf } from './overview.ts'
-import { drawOverview, type OverviewTab } from './overview-pane.tsx'
+import { drawOverview, headRow, type OverviewTab } from './overview-pane.tsx'
 import {
   backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
   workerLines, type Role, type SessionRecord, type Tab,
@@ -101,9 +101,9 @@ const BUSY_MS = 20_000
 // a reopening.
 const FRAME_MS = 250
 const READ_FRAMES = 20
-// The Overview pane's own rows, beside the Workers tab's picture: its tab
-// row, three high since the framed Close stands in it.
-const OVERVIEW_ROWS = 3
+// The Overview pane's own rows, beside the Workers tab's picture: its head,
+// the tabs and Close on one line.
+const OVERVIEW_ROWS = 1
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
 // A filter's choice with one item pressed: out if it was in, in if it was not.
@@ -1732,6 +1732,7 @@ export const register: Register = (on, options) => {
     }
     return (
       <Box flexDirection="column">
+        {headRow({ Box }, 'give-back-head', [], <Button key="give-back-close" label={t.close} onPress={close} />)}
         <Text>{w.id} · {w.lane}{w.verdict !== '' ? ` · ${w.verdict}` : ''}</Text>
         {items.length > 0 ? <Box marginTop={1}><Text bold>{t.gapsHeading}</Text></Box> : null}
         {items.map((x, i) => (
@@ -1827,6 +1828,7 @@ export const register: Register = (on, options) => {
     const ownDigit = String(x.options.length + 1)
     return (
       <Box flexDirection="column">
+        {headRow({ Box }, 'explanation-head', [], <Button key="explanation-close" label={t.close} onPress={() => void $.ui.close({ id: EXPLANATION })} />)}
         {about(Text, ticket)}
         <Box marginTop={ticket !== undefined ? 1 : 0}><Text bold>{t.explanationOf(id)}</Text></Box>
         {x.parts.map((p, i) => p.kind === 'option'
@@ -1857,7 +1859,6 @@ export const register: Register = (on, options) => {
         {open
           ? <Box marginTop={1}><Button key={`pick-${id}-own`} plain hotkey={ownDigit} {...(x.options.length === 0 ? { autoFocus: true as const } : {})} label={t.ownAnswer} onPress={() => void askOwnAnswer($, id)} /></Box>
           : <Box marginTop={1}><Text wrap="wrap"><Text bold>{t.decidedAs}</Text> {decided}</Text></Box>}
-        <Button key="explanation-close" label={t.close} onPress={() => void $.ui.close({ id: EXPLANATION })} />
       </Box>
     )
   })
@@ -1946,6 +1947,7 @@ export const register: Register = (on, options) => {
     const first = light.reasons[0]
     return (
       <Box flexDirection="column">
+        {headRow({ Box }, 'verdict-head', [], <Button key="verdict-close" label={t.close} onPress={() => void $.ui.close({ id: VERDICT })} />)}
         <Text key="light" wrap="wrap">
           <Text bold color={LIGHT_COLOUR[light.color]}>● {t.light[light.color]}</Text>
           : {first === undefined ? t.lightAccept : t.lightReason(first)}{light.reasons.length > 1 ? t.lightMore(light.reasons.length - 1) : ''}
@@ -1958,7 +1960,6 @@ export const register: Register = (on, options) => {
         {!w.findingsKnown ? <Box marginTop={1}><Text dimColor wrap="wrap">{t.notesNotKept}</Text></Box> : null}
         {w.blockers.map((n, i) => <Text key={`blocker-${i}`} wrap="wrap"><Text bold color="error">[blocker]</Text> {n}</Text>)}
         {w.notes.map((n, i) => <Text key={`note-${i}`} wrap="wrap">· {n}</Text>)}
-        <Button key="verdict-close" label={t.close} onPress={() => void $.ui.close({ id: VERDICT })} />
       </Box>
     )
   })
@@ -1968,9 +1969,9 @@ export const register: Register = (on, options) => {
     const { Box, Button, Text } = $.ui.resolve(e)
     return (
       <Box flexDirection="column">
+        {headRow({ Box }, 'message-head', [], <Button key="message-close" label={t.close} onPress={() => void $.ui.close({ id: MESSAGE })} />)}
         <Text bold>{message?.title ?? ''}</Text>
         <Text wrap="wrap">{message?.text ?? ''}</Text>
-        <Button key="message-close" label={t.close} onPress={() => void $.ui.close({ id: MESSAGE })} />
       </Box>
     )
   })
@@ -1996,7 +1997,7 @@ export const register: Register = (on, options) => {
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const id = await read($, paneAtom)
-    const { Box, Text } = $.ui.resolve(e)
+    const { Box, Button, Text } = $.ui.resolve(e)
     if (id === null) return <Box><Text dimColor>{t.paneNothing}</Text></Box>
     // Opening a ticket reads its reports: they count as read, as after report.
     const kept = await locked(async () => readReports($, keyOf(await project($), id)))
@@ -2008,6 +2009,7 @@ export const register: Register = (on, options) => {
     const waiting = (await read($, boardAtom))?.waiting.find(w => w.id === id)
     return (
       <Box flexDirection="column">
+        {headRow({ Box }, 'ticket-head', [], <Button key="ticket-close" label={t.close} onPress={() => void $.ui.close({ id: PANE })} />)}
         {waiting !== undefined ? <Text bold>{waiting.lane}{waiting.verdict !== '' ? ` · ${waiting.verdict}` : ''}</Text> : null}
         <Text bold>{t.paneReports}</Text>
         {kept.length === 0 ? <Text dimColor>{t.paneNothing}</Text> : null}
