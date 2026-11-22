@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T23:09:11Z
+updated-at: 2026-11-22T23:09:14Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -33,7 +33,12 @@ outcome-what: "The cockpit's Overview pane has a fourth tab, Milestones: a selec
 outcome-why: "Seeing how far a milestone is meant leaving the cockpit for the board (M) or typing jaira list --milestone, and that list leaves out tickets already filed into the logbook."
 outcome-resolves: "1J8XZ7: Milestones tab in the cockpit Overview with progress and tickets sorted by stand; tickets jaira list does not return are read with jaira show, so filed ones count as done."
 review-summary: "Adds a fourth tab, Milestones, to the cockpit's Overview pane. At opening the cockpit also runs 'jaira milestone ls --json' (overview.ts milestonesOf; null on failure shows a could-not-read line). The tab draws a selector [ < ] name [ > ] (two Buttons, paging wraps round, pagedTo) and 'x of n done', then the milestone's tickets as ID | lane | title in three groups: In work (agentic or person's lane), Not started (everything else incl. blocked and unknown '?'), Done (terminal lane, logbook, rejected). Lane and title come from the 'jaira list --json' the pane already reads; handles list does not return (filed into the logbook, other boards) are asked of 'jaira show --json' once per opening, and a ticket on another board is grouped by that board's own lanes ('jaira lanes --board <b> --json', groupIn). The chosen milestone's ID lives in a session atom written only by a press, so it survives closing/reopening and an opening where ls fails. Twins show as name-ID. Release note core/release/notes/1J8XZ7.md."
-review-gaps: "none - pass 2 read only the repair (82710fe25): groupIn is the one place a lane maps to a group for another board, overviewOf keeps its finished/started lists for today's board because the pane needs them per render without a lanes read; board lanes are read once per distinct board, not per ticket"
+review-gaps: |-
+  note: the worktree carries uncommitted AGENTS.md/CLAUDE.md drift (jaira 0.6.1 regenerated the lanes block and reverts the human-lane line) - not in either commit, keep it out of every commit on this branch
+  note: concurrency - showMilestone (register.tsx) merges late jaira show results into overviewFiled without checking that overviewDir/overviewAtom are still the ones it started from, so a press from a previous opening or project can land after openOverview reset the atom; harmless today because results are keyed by handle, fix: drop the merge when overviewDir changed since the start
+  note: showMilestone starts one jaira show per absent handle at once with no cap - a milestone with many logbook tickets (abnahme-2026-11 holds 18) starts that many processes per opening/page; a small concurrency limit would bound it
+  note: a ticket on another board is grouped by its own lanes but ranked by today's lane order, so it always sorts last within its group - acceptable, mention if it reads oddly
+  note: DoD 1 'Pfeiltasten' is met as arrow keys moving the focus ring onto [ < ]/[ > ] plus Enter, not left/right paging directly (the cockpit has no key handler) - the person's item 6 decides whether that is enough
 test-verdict: "pass: round 2 - claude plugin test . 404 pass 0 fail (exit 0) incl. 'a ticket on another board goes by that board's lanes' and 'an opening that finds no milestone keeps the one chosen'; tsc: no new error in hooks; go build exit 0 (no go test, house rule). Real board via node: same groups as round 1 (release-0-6-0 3 of 3 by logbook). Another board exercised only through the mock (the real repo has one board; round 1's hunter reproduced it on a scratch repo). Writes no board state. DoD 6 (seen by a person) left open for the person."
 hunt-verdict: "pass: bughunt done at 82710fe25, 0 change, 0 pre-existing (round 2; round 1's 3 change findings fixed in 82710fe25, AGENTS.md/CLAUDE.md drift kept out of every commit)"
 round: 2
