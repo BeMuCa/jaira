@@ -349,7 +349,7 @@ func reportDryRun(cmd *cobra.Command, env gate.Env, t *ticket.Ticket, to string,
 // stands in for cannot report different ones.
 func refusalCode(vs gate.Violations) int {
 	for _, v := range vs {
-		if v.Code == gate.CodeBlocked || v.Code == gate.CodeSelfBlock {
+		if v.Code == gate.CodeBlocked || v.Code == gate.CodeSelfBlock || v.Code == gate.CodeWaitsOnPR {
 			return ExitBlocked
 		}
 	}
@@ -388,7 +388,7 @@ skipping this command.`,
 				return err
 			}
 			tickets = onBoard(tickets, board)
-			var ready []*ticket.Ticket
+			var ready, onPR []*ticket.Ticket
 			for _, t := range tickets {
 				if laneFilter != "" && t.Status != laneFilter {
 					continue
@@ -397,6 +397,9 @@ skipping this command.`,
 					continue
 				}
 				if !gate.Actionable(env, t) {
+					if waitsOnPR(env, t) {
+						onPR = append(onPR, t)
+					}
 					continue
 				}
 				// Skip work another live session has claimed, so two sessions are
@@ -423,14 +426,25 @@ skipping this command.`,
 				for _, t := range ready {
 					arr = append(arr, ticketJSON(t, env.Lanes))
 				}
-				return emit(cmd.OutOrStdout(), map[string]any{"tickets": arr, "count": len(arr)})
+				waiting := make([]map[string]any, 0, len(onPR))
+				for _, t := range onPR {
+					waiting = append(waiting, map[string]any{"id": t.ID, "handle": ticket.Handle(t.ID),
+						"title": t.Title, "status": t.Status, "waiting_on": gate.Waiting(env, t)})
+				}
+				return emit(cmd.OutOrStdout(), map[string]any{"tickets": arr, "count": len(arr), "waiting_on_pr": waiting})
 			}
 			if len(ready) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "Nothing is actionable. Either everything is done, blocked, or still needs a spec.")
-				return nil
 			}
 			for _, t := range ready {
 				printDetail(cmd.OutOrStdout(), t, env, 0)
+			}
+			if len(onPR) > 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "\nWaiting on a pull request:")
+				for _, t := range onPR {
+					fmt.Fprintf(cmd.OutOrStdout(), "  %s  %s — %s\n", ticket.Handle(t.ID), t.Title,
+						strings.Join(gate.Waiting(env, t), "; "))
+				}
 			}
 			return nil
 		},
@@ -442,6 +456,16 @@ skipping this command.`,
 		"one ticket per lane that has work waiting, in pipeline order")
 	cmd.Flags().StringVar(&board, "board", "", boardFlagUsage)
 	return cmd
+}
+
+// waitsOnPR reports whether a ticket that is not actionable would be, but for
+// a pull request in its blocked-by that has not merged: specified, not in a
+// terminal lane, and held back by at least one pr#<n>.
+func waitsOnPR(env gate.Env, t *ticket.Ticket) bool {
+	if l, ok := env.Lanes.Get(t.Status); (ok && l.Terminal) || !gate.Ready(t) {
+		return false
+	}
+	return len(gate.WaitingOnPR(env, t)) > 0
 }
 
 // emitPerLane answers "where is work waiting", one line per lane, instead of

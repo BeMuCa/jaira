@@ -102,6 +102,10 @@ func (m *Model) cursorLinks(t *ticket.Ticket) []lineLink {
 		return slices.ContainsFunc(refs, func(r string) bool { return target(r) == t.ID })
 	}
 	for _, r := range t.BlockedBy {
+		// A pull request (pr#12) has no card to draw a line to.
+		if _, isPR, _ := ticket.ParsePRRef(r); isPR {
+			continue
+		}
 		note(r, link.KindBlockedBy)
 	}
 	note(t.Parent, link.KindParent)

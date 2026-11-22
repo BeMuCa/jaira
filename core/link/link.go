@@ -380,6 +380,11 @@ func (ix *Index) Relations(id string) []Entry {
 
 	if subject != nil {
 		for _, dep := range subject.BlockedBy {
+			// A pull request (pr#12) is no ticket to link to: it is shown
+			// with the blockers, not as a dangling link.
+			if _, isPR, _ := ticket.ParsePRRef(dep); isPR {
+				continue
+			}
 			add(KindBlockedBy, dep, 0)
 		}
 		add(KindParent, subject.Parent, 0)

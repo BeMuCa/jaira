@@ -16,6 +16,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -30,6 +31,7 @@ import (
 	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/move"
+	"github.com/BeMuCa/jaira/core/pr"
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/session"
@@ -1625,7 +1627,18 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			// always "and what is that one waiting on" — so the link is walkable.
 			// Repeated presses follow the chain; esc returns to the board.
 			if m.detail != nil && len(m.detail.BlockedBy) > 0 {
-				if full, err := m.store.Load(m.detail.BlockedBy[0]); err != nil {
+				// The first ticket it waits on; a pull request is no ticket
+				// to open, so one that waits only on pull requests says so.
+				dep := ""
+				for _, d := range m.detail.BlockedBy {
+					if _, isPR, _ := ticket.ParsePRRef(d); !isPR {
+						dep = d
+						break
+					}
+				}
+				if dep == "" {
+					m.notify("waits for "+strings.Join(m.detail.BlockedBy, ", ")+" — a pull request, not a ticket", false)
+				} else if full, err := m.store.Load(dep); err != nil {
 					m.notify(err.Error(), true)
 				} else {
 					m.detail = full
@@ -1989,6 +2002,24 @@ func (m *Model) linkIndex() *link.Index {
 // renderDetail) pay nothing extra for the DeriveCommits closure: gate.Ready
 // and gate.Actionable never call it, only CheckAdvance does, and that only
 // runs at the moment a move is actually attempted.
+// prCacheFiles is the pull request cache file per board root.
+var prCacheFiles sync.Map
+
+// prWait answers a blocked-by pr#<n> from the shared cache list and next
+// fill, never from the forge. A fresh checker per call: the cache file is
+// read only when a ticket names a pull request, and a long-running board
+// sees the answer the next command wrote.
+func (m *Model) prWait(n int) gate.PRWait {
+	file, ok := prCacheFiles.Load(m.store.Root)
+	if !ok {
+		// RepoStateDir asks git; a render must not, more than once.
+		file, _ = prCacheFiles.LoadOrStore(m.store.Root, filepath.Join(m.store.RepoStateDir(), pr.CacheFile))
+	}
+	c := &pr.Checker{File: file.(string), Offline: true}
+	a := c.Ask(n)
+	return gate.PRWait{Merged: a.Merged(), Why: a.Why()}
+}
+
 func (m *Model) gateEnv() gate.Env {
 	repo := &gitrepo.Repo{Dir: m.store.Root}
 	return gate.Env{
@@ -1999,6 +2030,9 @@ func (m *Model) gateEnv() gate.Env {
 		// and was filed away clears the dependency in the CLI and went on
 		// blocking here.
 		Satisfied: m.linkIndex().Satisfied,
+		// The board reads what list and next last learned about a pull
+		// request and never asks the forge itself: it has to stay instant.
+		PR: m.prWait,
 		DeriveCommits: func(t *ticket.Ticket) []string {
 			shas, err := repo.CommitsForTicket(t.Path, t.ID)
 			if err != nil {

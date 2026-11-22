@@ -34,6 +34,7 @@ const (
 	CodeBadTimestamp  = "bad_timestamp"
 	CodeDanglingDep   = "dangling_dependency"
 	CodeSelfDep       = "self_dependency"
+	CodeBadPRRef      = "bad_pr_ref"
 	CodeDuplicateID   = "duplicate_id"
 	CodeIncomplete    = "incomplete"
 	CodeUndeclaredDep = "undeclared_dependency"
@@ -235,6 +236,15 @@ func TicketsOnBoards(ts []*ticket.Ticket, lanesOf func(*ticket.Ticket) *lane.Set
 
 		declared := make(map[string]bool, len(t.BlockedBy))
 		for _, dep := range t.BlockedBy {
+			// A pull request is no ticket and never dangles; a malformed
+			// one would wait forever, so it is named.
+			if _, isPR, err := ticket.ParsePRRef(dep); isPR {
+				if err != nil {
+					add(CodeBadPRRef, SeverityError, ticket.FieldBlockedBy,
+						"%v; the ticket waits on it forever — fix it with 'jaira set %s blocked-by=...'", err, handleOf(t.ID))
+				}
+				continue
+			}
 			declared[handleOf(dep)] = true
 			switch {
 			case dep == t.ID:

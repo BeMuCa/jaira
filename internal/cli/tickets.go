@@ -255,6 +255,19 @@ already know it is yours; --assignee wins over it.`,
 				}
 				parentID = full
 			}
+			// blocked-by is resolved like every other link: a handle stored
+			// as typed matched nothing and blocked forever.
+			blockerIDs := make([]string, 0, len(blockedBy))
+			for _, ref := range blockedBy {
+				if strings.TrimSpace(ref) == "" {
+					continue
+				}
+				full, err := resolveBlocker(s, ref)
+				if err != nil {
+					return err
+				}
+				blockerIDs = append(blockerIDs, full)
+			}
 			relatedIDs := make([]string, 0, len(related))
 			for _, ref := range related {
 				if strings.TrimSpace(ref) == "" {
@@ -328,7 +341,7 @@ already know it is yours; --assignee wins over it.`,
 				return err
 			}
 			lists := map[string][]string{
-				ticket.FieldBlockedBy: blockedBy,
+				ticket.FieldBlockedBy: blockerIDs,
 				ticket.FieldTags:      tagNames,
 				ticket.FieldRelated:   relatedIDs,
 				ticket.FieldCommits:   nil,
@@ -468,7 +481,7 @@ already know it is yours; --assignee wins over it.`,
 	f.StringVar(&board, "board", "", boardFlagUsage)
 	f.StringVar(&tier, "tier", "", "model tier alias for agentic lanes")
 	f.StringVar(&body, "body", "", "markdown body")
-	f.StringSliceVar(&blockedBy, "blocked-by", nil, "ticket ids that must finish first")
+	f.StringSliceVar(&blockedBy, "blocked-by", nil, "ticket ids that must finish first, or pr#<n>: a pull request that must be merged first")
 	f.StringArrayVar(&tags, "tag", nil, "topic tag; repeat for several. Run 'jaira tags' first and reuse an existing name")
 	f.StringVar(&follows, "follows", "", "id of the ticket this one follows on from (default: the ticket the branch is named after; 'none' for no link)")
 	f.StringVar(&parent, "parent", "", "id of the ticket this one is a part of")
@@ -677,6 +690,7 @@ ticket.`,
 				for _, t := range out {
 					row := ticketJSON(t, env.Lanes)
 					row["milestones"] = strOrEmpty(ms.Names(t.ID))
+					row["waiting_on"] = gate.Waiting(env, t)
 					arr = append(arr, row)
 				}
 				return emit(cmd.OutOrStdout(), map[string]any{"tickets": arr, "count": len(arr)})
@@ -757,8 +771,13 @@ func printTable(w io.Writer, ts []*ticket.Ticket, env gate.Env) {
 			if !gate.Ready(t) {
 				flags += " [needs spec]"
 			}
-			if len(t.BlockedBy) > 0 && !gate.Actionable(env, t) {
+			// A pull request it waits on is named, so the row says what
+			// clears it; a ticket blocker is in show.
+			if waits := gate.Waiting(env, t); len(waits) > 0 {
 				flags += " [blocked]"
+				for _, w := range gate.WaitingOnPR(env, t) {
+					flags += " [" + w + "]"
+				}
 			}
 			// On its ref and not on this disk: it can be read and it cannot be
 			// written, so the row says which command changes that rather than
@@ -1145,7 +1164,13 @@ its end. Review fields keep their history across loop rounds that way.`,
 							if p = strings.TrimSpace(p); p == "" {
 								continue
 							}
-							if linkFields[k] {
+							if k == ticket.FieldBlockedBy {
+								full, rerr := resolveBlocker(s, p)
+								if rerr != nil {
+									return rerr
+								}
+								p = full
+							} else if linkFields[k] {
 								full, rerr := resolveRef(s, p)
 								if rerr != nil {
 									return rerr
@@ -1845,6 +1870,21 @@ var linkFields = map[string]bool{
 // ticket that exists — on the board, on a ref, or filed away. A reference
 // that resolves to nothing is refused rather than written: a dead link is
 // worse than no link, because it looks like a trail exists.
+// resolveBlocker is resolveRef for a blocked-by entry, which may also be a
+// pull request: pr#12, any case, is written as pr#12 and waits for that pull
+// request's merge. A malformed one is refused rather than looked up as a
+// ticket, so "pr#12a" says what is wrong with it instead of "no such ticket".
+func resolveBlocker(s *ticket.Store, ref string) (string, error) {
+	n, isPR, err := ticket.ParsePRRef(ref)
+	if isPR {
+		if err != nil {
+			return "", fail(ExitValidation, "bad_pr_ref", "%v", err)
+		}
+		return ticket.FormatPRRef(n), nil
+	}
+	return resolveRef(s, ref)
+}
+
 func resolveRef(s *ticket.Store, ref string) (string, error) {
 	t, _, err := s.LoadAnywhere(ref)
 	if err != nil {

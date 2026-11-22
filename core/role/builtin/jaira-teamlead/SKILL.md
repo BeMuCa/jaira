@@ -42,6 +42,18 @@ with the reason. Tell the person, in one line each, what it `closed` and what
 it `kept`; `waiting` lines are work in flight and not news; nothing either way:
 say nothing. `--dry-run` shows the same without doing it.
 
+Then start what a merge freed. A ticket that may start only once a pull
+request is merged says so in its blocked-by — `jaira set <id>
+blocked-by=pr#12`, or `jaira create --blocked-by pr#12` — never only in a note
+or in your head. jaira asks gh or glab on the next `next` or `list`, there is
+no daemon: while the pull request is open the ticket stands in `next --json`
+under `waiting_on_pr`, and once it is merged it is in `tickets` like any other
+actionable ticket. Every ticket that left `waiting_on_pr` for `tickets` since
+your last pass gets its worker in this pass, the way any ticket does, without
+asking the person: that was decided when the blocker was written down. A
+`waiting_on_pr` line that says `closed without merge` or `state unknown` is
+news — one line to the person each.
+
 Then name what happened on the board in the last seven days, newest day
 first, with who did it — the person slept, and what a session filed at night
 is otherwise lost to them. The source is the one the cockpit's Overview pane

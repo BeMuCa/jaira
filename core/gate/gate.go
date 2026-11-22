@@ -21,16 +21,18 @@ import (
 // Violation codes. Agents branch on these, so they are stable strings rather
 // than prose that might be reworded.
 const (
-	CodeMissingField    = "missing_field"
-	CodeBlocked         = "blocked"
-	CodeUnknownLane     = "unknown_lane"
-	CodeNoSuchLane      = "no_such_lane"
-	CodeMissingOutcome  = "missing_outcome"
-	CodeNeedsSignal     = "needs_nonmodel_signal"
-	CodeNeedsQuestion   = "needs_question"
-	CodeNeedsReason     = "needs_blocked_reason"
-	CodeNeedsCommits    = "needs_commits"
-	CodeSelfBlock       = "self_block"
+	CodeMissingField   = "missing_field"
+	CodeBlocked        = "blocked"
+	CodeUnknownLane    = "unknown_lane"
+	CodeNoSuchLane     = "no_such_lane"
+	CodeMissingOutcome = "missing_outcome"
+	CodeNeedsSignal    = "needs_nonmodel_signal"
+	CodeNeedsQuestion  = "needs_question"
+	CodeNeedsReason    = "needs_blocked_reason"
+	CodeNeedsCommits   = "needs_commits"
+	CodeSelfBlock      = "self_block"
+	// CodeWaitsOnPR: a pull request in blocked-by (pr#<n>) has not merged.
+	CodeWaitsOnPR       = "waits_on_pr"
 	CodeMissingProduces = "missing_lane_output"
 	CodePlanIncomplete  = "plan_incomplete"
 	CodeNeedsHuman      = "needs_human"
@@ -177,6 +179,13 @@ type Env struct {
 	// finishing the blocker was the thing that broke the board. nil keeps the
 	// old behaviour, which is right for a caller that has no store.
 	Satisfied func(id string) bool
+
+	// PR answers a blocked-by entry pr#<n>: whether pull request n is
+	// merged, and what the ticket waits on while it is not. Injected for the
+	// same reason DeriveCommits is — answering it means asking gh or glab.
+	// nil leaves every pr#<n> waiting: starting work before its pull request
+	// merged is worse than waiting a round longer.
+	PR func(n int) PRWait
 
 	// Hunt reports whether a ticket changed code and what its newest bug
 	// hunt says about HEAD. Injected for the same reason DeriveCommits is:
@@ -753,6 +762,13 @@ func fieldFilled(t *ticket.Ticket, field string) bool {
 	return strings.TrimSpace(v) != ""
 }
 
+// PRWait is what a pull request in blocked-by stands at. Why is the reason
+// it still blocks, shown as "waits for PR #12: <Why>"; empty when Merged.
+type PRWait struct {
+	Merged bool
+	Why    string
+}
+
 // blockedBy reports unresolved dependencies.
 func blockedBy(env Env, t *ticket.Ticket) Violations {
 	if len(t.BlockedBy) == 0 {
@@ -764,6 +780,30 @@ func blockedBy(env Env, t *ticket.Ticket) Violations {
 	}
 	var vs Violations
 	for _, dep := range t.BlockedBy {
+		if n, isPR, err := ticket.ParsePRRef(dep); isPR {
+			why := ""
+			switch {
+			case err != nil:
+				why = err.Error()
+			case env.PR == nil:
+				why = "not asked here"
+			default:
+				w := env.PR(n)
+				if w.Merged {
+					continue
+				}
+				why = w.Why
+			}
+			label := dep
+			if err == nil {
+				label = fmt.Sprintf("PR #%d", n)
+			}
+			vs = append(vs, Violation{
+				Code:    CodeWaitsOnPR,
+				Message: fmt.Sprintf("waits for %s: %s", label, why),
+			})
+			continue
+		}
 		if dep == t.ID {
 			vs = append(vs, Violation{
 				Code:    CodeSelfBlock,
@@ -796,6 +836,30 @@ func blockedBy(env Env, t *ticket.Ticket) Violations {
 		}
 	}
 	return vs
+}
+
+// Waiting is what a ticket still waits on, one line per blocked-by entry
+// that has not cleared — "waits for PR #12: open", "blocked by A3K9QP ...".
+// Empty when nothing in blocked-by holds it back.
+func Waiting(env Env, t *ticket.Ticket) []string {
+	vs := blockedBy(env, t)
+	out := make([]string, 0, len(vs))
+	for _, v := range vs {
+		out = append(out, v.Message)
+	}
+	return out
+}
+
+// WaitingOnPR is the part of Waiting that names a pull request in
+// blocked-by: "waits for PR #12: open".
+func WaitingOnPR(env Env, t *ticket.Ticket) []string {
+	var out []string
+	for _, v := range blockedBy(env, t) {
+		if v.Code == CodeWaitsOnPR {
+			out = append(out, v.Message)
+		}
+	}
+	return out
 }
 
 // Ready reports whether a ticket satisfies the promotion gate, without
