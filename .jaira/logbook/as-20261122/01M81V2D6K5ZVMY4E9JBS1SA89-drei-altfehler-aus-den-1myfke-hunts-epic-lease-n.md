@@ -1,7 +1,7 @@
 ---
 id: 01M81V2D6K5ZVMY4E9JBS1SA89
 title: "Drei Altfehler aus den 1MYFKE-Hunts: Epic-Lease nach ErrRaceLost, CRLF-AGENTS.md driftet immer, TUI verschluckt Fetch-Fehler"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -17,23 +17,42 @@ tags:
   - concurrency
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 844ade861d6a8b6d2b28cb41126a27ec7c369f8a
+  - dfff60c36adbe8c32e23629f4fd894929eb05033
+  - 9659685475da23e74cb521f540049f338cfe4d50
+  - e3d736ef62af155e7023adf9ec7e1b834154b37c
+  - dc514243cf9b6166e99f118f3942cd1fd30b8e93
 created-at: 2026-11-22T14:37:54Z
-updated-at: 2026-11-22T14:54:41Z
+updated-at: 2026-11-22T16:19:25Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3557981
 claimed-at: 2026-11-22T14:38:23Z
 outcome-what: "rebaseEpic queues an unsent merge on the lease it was merged onto; the agent-file block follows the file's CRLF line endings; the board warns when a fetched milestone could not be queued"
 outcome-why: "three pre-existing defects from the 1MYFKE hunts: a teammate's epic change overwritten on the next flush, CRLF AGENTS.md always drifted, a milestone silently never reaching the remote"
 outcome-resolves: S1SA89
-review-summary: "none"
+review-summary: "Drei Altfehler behoben. (1) core/refsync/epic.go rebaseEpic: ein Epic-Edit, der alle Runden gegen fremde Schreiber verliert, wird jetzt mit dem Lease des Standes wieder eingereiht, auf den er gemergt wurde (oursLease), statt mit EpicSHA nach dem Fetch - der nächste Flush verliert dann gegen den unbekannten Schreiber und merged erneut, statt dessen Mitglied zu überschreiben. (2) core/board: neuer Helper lineEnding (CRLF, wenn die Mehrheit der Zeilen CRLF ist); managedBlock baut den jaira-Block in den Zeilenenden der Zeilen außerhalb des Blocks, der Anhängepfad in announceInAgentFile ebenso, appendEntry nutzt denselben Helper - eine CRLF-AGENTS.md gilt nach jaira update nicht mehr als drifted. (3) TUI: ein milestone.RecordError aus dem Hintergrund-FetchMilestones kommt als refFetchedMsg.warn an und erscheint in der Statuszeile (flash, kein Moduswechsel) mit demselben Wortlaut wie jaira fetch (RecordError.Warning, von CLI und TUI geteilt). Release-Note S1SA89.md mit drei Zeilen."
 round: 4
 back-from: testing
 back-by: lane
 back-count: 2
-review-gaps: "none: round 2 diff (flash instead of notify, majority lineEnding) adds nothing redundant; round 1 cleanup stands (lineEnding placement, frontmatter.go:64 left alone)"
-test-verdict: "pass: round 2 - go build/vet ./... ok, go test -race core/board internal/tui internal/cli exit 0 (whole suite green in round 1); DoD 2 and 3 re-verified: TestAStrayCRLFLineLeavesTheBlockInLF and the mode check in TestTheBoardSaysWhenAMilestoneCouldNotBeQueued fail without the fix and pass with it"
-hunt-verdict: "fail: bughunt done at e3d736ef6, 1 change (majority lineEnding counts jaira's own LF block, so a mixed file an old build left stays mixed)"
+review-gaps: |-
+  note: Text hinter <!-- jaira:local --> behält seine eigenen Zeilenenden (announce.go:448), ein CRLF-Block mit LF-Lokalregeln von einem alten Build bleibt gemischt; Drift-Check bleibt konsistent (dieselbe Funktion), Fix: preserved per ReplaceAll auf nl normalisieren
+  note: der CRLF-Pfad mit Versionszeile (release.Current != dev) ist ungetestet; versionLineRe nimmt \r?\n, funktioniert also, Fix: ein Test mit gesetztem release.Current
+  note: pre-existing: removeBlock und setClaudeImport in core/board/announce.go nehmen weiter LF an (CRLF-CLAUDE.md: gemischte Leerzeilen bzw. @AGENTS.md-Import bleibt stehen)
+  note: pre-existing: Flush hält keinen epics-Lock, rebaseEpic DropEpic+QueueEpic kann ein paralleles jaira epic add im selben Klon verschlucken (core/refsync/epic.go:119/140, core/outbox/outbox.go:471/481)
+  note: pre-existing: der msg.err-Zweig von refFetchedMsg (internal/tui/model.go:1134) nutzt noch m.notify und nimmt im Hintergrund dem Tippenden die Tasten
+test-verdict: "pass: round 3 - go vet ./core/board, go test -race ./core/board exit 0, internal/cli agent-file tests exit 0; DoD 2 re-verified: TestAnLFBlockInACRLFFileBecomesCRLF fails without the fix and passes with it"
+hunt-verdict: "pass: bughunt done at dc514243c, 0 blocker; 1 change non-blocker (jaira:local text keeps its own line endings inside a converted block) left as the hunter's note for the person; earlier pre-existing: other agent-file writers LF-only, epic outbox drop vs concurrent add - notes for the person"
+review-verdict: "accept: alle vier DoD-Punkte erfüllt, jeder Fix mit Test, der Epic-Test fällt nachweislich ohne den Fix (gegen 180daf772 geprüft); keine Blocker, nur Randnotizen"
+review-round: 4
+review-verdict-gaps: |-
+  note: Text hinter <!-- jaira:local --> behält seine eigenen Zeilenenden (announce.go:448), ein CRLF-Block mit LF-Lokalregeln von einem alten Build bleibt gemischt; Drift-Check bleibt konsistent (dieselbe Funktion), Fix: preserved per ReplaceAll auf nl normalisieren
+  note: der CRLF-Pfad mit Versionszeile (release.Current != dev) ist ungetestet; versionLineRe nimmt \r?\n, funktioniert also, Fix: ein Test mit gesetztem release.Current
+  note: pre-existing: removeBlock und setClaudeImport in core/board/announce.go nehmen weiter LF an (CRLF-CLAUDE.md: gemischte Leerzeilen bzw. @AGENTS.md-Import bleibt stehen)
+  note: pre-existing: Flush hält keinen epics-Lock, rebaseEpic DropEpic+QueueEpic kann ein paralleles jaira epic add im selben Klon verschlucken (core/refsync/epic.go:119/140, core/outbox/outbox.go:471/481)
+  note: pre-existing: der msg.err-Zweig von refFetchedMsg (internal/tui/model.go:1134) nutzt noch m.notify und nimmt im Hintergrund dem Tippenden die Tasten
+review-check: "1. go test ./core/refsync -run TestAnEpicThatKeepsLosing  -> ok (Remote-Hook lässt jeden Push verlieren; am Ende hält das Remote-Epic alle Mitglieder)  2. go test ./core/board -run 'CRLF|StrayCRLF|LFBlockInACRLF' -v  -> drei Tests PASS  3. Handprobe: go build -o /tmp/jaira ./cmd/jaira, in einem Scratch-Repo mit Board: sed -i 's/$/\\r/' AGENTS.md, dann /tmp/jaira update und /tmp/jaira validate  -> validate meldet keine Drift, file AGENTS.md zeigt 'with CRLF line terminators'  4. go test ./internal/tui -run TestTheBoardSaysWhenAMilestoneCouldNotBeQueued  -> PASS (eine TUI-Handprobe bräuchte eine read-only Outbox; der Test baut genau das)"
 ---
 
 # Drei Altfehler aus den 1MYFKE-Hunts: Epic-Lease nach ErrRaceLost, CRLF-AGENTS.md driftet immer, TUI verschluckt Fetch-Fehler
@@ -75,3 +94,5 @@ hunt-verdict: "fail: bughunt done at e3d736ef6, 1 change (majority lineEnding co
 - **2026-11-22 14:53 · Alexander Sacharov** — bughunt: change: core/board/gitignore.go:434 (lineEnding, majority rule from e3d736ef6) via core/board/announce.go:437 managedBlock - class: the line ending is voted on by the whole file, including the jaira block jaira itself wrote, so a CRLF file whose block an older build appended in LF keeps that LF block forever: the update rewrites it in LF, and NoteIsCurrent then calls the mixed file current, so nothing repairs it (the 'any CRLF' rule at 965968547 did). Same vote in appendEntry gitignore.go:453 for .gitignore/info/exclude, smaller since an entry is 2 lines; example: CRLF '# Project / Some notes' (4 lines) + LF block of 9 lines -> action updated, LF lines remain, current=true. Possible fix: count only the lines outside the managed block. Not a blocker: no data loss, the result is stable, a fresh checkout with autocrlf makes the file CRLF again; ran: go test -overlay with a scratch test in core/board (FAIL: mixed endings remain after update)
 - **2026-11-22 14:53 · Alexander Sacharov** — bughunt: done at e3d736ef6 - 1 finding (1 change, 0 pre-existing) in 3 modules, follow-up hunt since 965968547 (diff only: core/board/gitignore.go core/board/crlf_test.go internal/tui/model.go internal/tui/recorderror_test.go); concurrency, error paths, input, permissions checked; files: core/board/announce.go core/board/crlf_test.go core/board/gitignore.go core/milestone/write.go core/refsync/epic.go core/refsync/epic_test.go core/release/notes/S1SA89.md internal/cli/milestones.go internal/tui/model.go internal/tui/recorderror_test.go internal/tui/refs.go
 - **2026-11-22 14:53 · Alexander Sacharov** — testing: class: Zeilenende wird über den eigenen Block mitgezählt; example: 4 CRLF-Nutzerzeilen + 9 LF-Blockzeilen -> Block bleibt LF, current=true; fix: Mehrheit nur über die Zeilen außerhalb des Blocks, ohne solche Zeilen über die ganze Datei; Test mit genau diesem Fall.
+- **2026-11-22 14:55 · Alexander Sacharov** — bughunt: change: core/board/announce.go:448 - class: the text a person keeps behind <!-- jaira:local --> is copied into the block in its own line endings, while the rest of the block now takes the line ending of the lines outside it (announce.go:443), so the two can differ and the block ends up mixed - the thing managedBlock's comment says it prevents; example: a CRLF AGENTS.md whose block an older build wrote in LF with two local rules after the marker -> after jaira update the block has 142 CRLF lines and the local rules stay '\nmy rule 1\nmy rule 2' in LF; NoteIsCurrent says current and a second update is byte-stable, so no drift loop and no lost text, an edge, not a blocker; the reverse (LF file, CRLF local text) is the same class; ran: scratch test in core/board calling announceInAgentFile on that file (removed afterwards)
+- **2026-11-22 14:56 · Alexander Sacharov** — bughunt: done at dc514243c - 1 finding (1 change, 0 pre-existing) in 1 module, follow-up hunt since e3d736ef6 (diff only: core/board/announce.go core/board/crlf_test.go); concurrency, error paths, input, permissions checked; files: core/board/announce.go core/board/crlf_test.go core/board/gitignore.go core/milestone/write.go core/refsync/epic.go core/refsync/epic_test.go core/release/notes/S1SA89.md internal/cli/milestones.go internal/tui/model.go internal/tui/recorderror_test.go internal/tui/refs.go
