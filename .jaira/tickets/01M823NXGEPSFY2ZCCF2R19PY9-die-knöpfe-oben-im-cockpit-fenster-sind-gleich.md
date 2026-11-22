@@ -20,13 +20,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-22T17:08:22Z
-updated-at: 2026-11-22T17:19:49Z
+updated-at: 2026-11-22T17:22:18Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-2402047
 claimed-at: 2026-11-22T17:08:58Z
 outcome-what: "Every cockpit pane head is one line: tabs as [ label ] on the left, [ Close ] at the right (headRow); framed 3-line buttons removed; Give back and the ticket pane got a Close"
 outcome-why: "Alex's screenshot: tabs, a 3-line framed Close and a tiny × looked three different ways and were hard to hit"
 outcome-resolves: "R19PY9: one shape, one height, Close as the large close target in every headed pane"
+review-summary: "core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx headRow: all six callers build the same Close Button by hand (key, t.close, onPress); let headRow build it from a close key and handler, with role=\"dismiss\" (ButtonProps: the host's documented mark for a site's close button, native close on desktop)"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Die Knöpfe oben im Cockpit-Fenster sind gleich groß und gut klickbar: Tabs, Close und das Kreuz
@@ -34,11 +39,11 @@ outcome-resolves: "R19PY9: one shape, one height, Close as the large close targe
 ## Definition of Done
 
 - [x] Tabs, Close und Kreuz haben dieselbe Form und Höhe (eine Zeile, '[ ... ]'-Stil oder ein gemeinsamer Stil); Close steht nicht mehr als dreizeiliger Rahmen in der Tab-Zeile
-  proof: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:198 headRow; test 'the top row is one line of buttons alike' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:3516)
+  proof: core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:198 headRow; test 'the top row is one line of buttons alike' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:3518)
 - [x] Jeder Kopf-Knopf (Tabs, Close) hat eine Klickfläche über den ganzen Klammertext, mindestens 3 Zeichen; das × zeichnet Claude Code und bleibt, Close ist die grosse Schliessen-Fläche in jedem Pane mit Kopf (Test über die Layout-Breiten) - Alex 22.11.
   proof: test 'the head of every pane' (core/mod/builtin/jaira-cockpit/tests/board.test.ts:1888): every button drawn '[ label ]' >= 3 columns, Close at the right; × stays the host's (Alex 22.11.)
 - [x] Gilt in jedem Pane mit Kopf (Board overview, Verdict, Give back, Report); schmale Terminals (80 Spalten) brechen die Zeile nicht kaputt (Test)
-  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts:1912 (Overview head <= 80 columns, nowrap) and core/mod/builtin/jaira-cockpit/tests/board.test.ts:1923 (Verdict, Give back, Explanation, Message, ticket pane)
+  proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts:1914 (Overview head <= 80 columns, nowrap) and core/mod/builtin/jaira-cockpit/tests/board.test.ts:1925 (Verdict, Give back, Explanation, Message, ticket pane)
 - [x] Release-Note core/release/notes/<ID>.md, shipped.sha256
   proof: core/release/notes/R19PY9.md; core/shipped/shipped.sha256 regenerated (scripts/shipped-history.sh --write)
 - [ ] seen by a person: Alex klickt Tabs, Close und Kreuz im laufenden Cockpit
@@ -58,3 +63,4 @@ outcome-resolves: "R19PY9: one shape, one height, Close as the large close targe
 - **2026-11-22 17:11 · Alexander Sacharov** — Frage an Alex (1/2): Welche Form für Tabs und Close im Kopf? 1) (Empfohlen) Eine Zeile im '[ Queue ]'-Stil für alle, Close als '[ Close ]' am rechten Rand - flach, braucht 1 statt 3 Zeilen, Klickfläche = ganzer Klammertext. 2) HQHFXQ-Stil behalten: alle gerahmt, drei Zeilen hoch - größte Klickfläche, kostet 2 Zeilen pro Pane; DoD 1-Halbsatz zu Close fällt weg. --- Frage (2/2): Das × gehört Claude Code, der Mod kann es nicht vergrößern. 1) (Empfohlen) × bleibt wie es ist; unser Close in jedem Pane mit Kopf ist der große Knopf daneben; DoD 2 wird so umformuliert. 2) Ticket für das × abgeben (Feedback an Anthropic), hier nur Tabs/Close.
 - **2026-11-22 17:12 · Alexander Sacharov** — decision (Alex 22.11.): F1=1 alle Kopf-Knöpfe einzeilig im Stil '[ Queue ] [ Log ] [ Workers ]   [ Close ]', Close rechts, ganzer Klammertext klickbar (ersetzt die dreizeiligen Rahmen von HQHFXQ). F2=1 das × von Claude Code bleibt; die grosse Schliessen-Fläche ist unser Close in jedem Pane mit Kopf.
 - **2026-11-22 17:19 · Alexander Sacharov** — Umsetzung: ein Helfer headRow (overview-pane.tsx) für jede Kopfzeile - Tabs links, Close rechts, Box nowrap + space-between, beide Teile flexShrink 0. Die Close-Knöpfe von Verdict/Explanation/Message standen bisher unten; sie stehen jetzt oben im Kopf, Give back und das Ticket-Pane (/cockpit ticket) bekommen erstmals ein Close. OVERVIEW_ROWS 3 -> 1, der Workers-Tab hat zwei Zeilen mehr (Test 40x100 jetzt <= 39). Offen für die Person: die Release-Note HQHFXQ.md (unreleased) sagt noch 'gerahmte Knöpfe'; R19PY9.md sagt das Gegenteil - beim Release lesen beide nacheinander, HQHFXQ.md könnte gestrichen werden.
+- **2026-11-22 17:20 · Alexander Sacharov** — critique: headRow baut den Close-Knopf selbst (Schlüssel + Handler), role=dismiss nach ButtonProps; die sechs Aufrufer übergeben nur noch key und onPress.

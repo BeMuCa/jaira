@@ -195,11 +195,11 @@ type OverviewActions = {
 // stays beside it; a mod cannot size it, so Close is the one to aim at. The
 // row never wraps: the Overview budgets it one row (OVERVIEW_ROWS), and its
 // widest head, the three tabs and Close, fits an 80-column terminal.
-export function headRow({ Box }: Pick<ElementTable, 'Box'>, key: string, left: unknown[], close: unknown) {
+export function headRow({ Box, Button }: Pick<ElementTable, 'Box' | 'Button'>, key: string, close: { key: string; label: string; onPress: () => void }, left: unknown[] = []) {
   return (
     <Box key={key} flexDirection="row" flexWrap="nowrap" justifyContent="space-between">
       <Box key={`${key}-tabs`} flexDirection="row" flexWrap="nowrap" columnGap={1} flexShrink={0}>{left}</Box>
-      <Box key={`${key}-close`} flexShrink={0}>{close}</Box>
+      <Box key={`${key}-close`} flexShrink={0}><Button key={close.key} role="dismiss" label={close.label} onPress={close.onPress} /></Box>
     </Box>
   )
 }
@@ -207,8 +207,8 @@ export function headRow({ Box }: Pick<ElementTable, 'Box'>, key: string, left: u
 // `view` null: the board could not be read.
 export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview | null, state: OverviewState, act: OverviewActions, scene: WorkersScene) {
   const person = (who: string) => <Text key="who" color={personColor(who)}>{who}</Text>
-  const closeButton = <Button key="overview-close" label={w.close} onPress={act.close} />
-  if (view === null) return <Box flexDirection="column">{headRow({ Box }, 'overview-top-row', [], closeButton)}<Text dimColor>{w.unread}</Text></Box>
+  const close = { key: 'overview-close', label: w.close, onPress: act.close }
+  if (view === null) return <Box flexDirection="column">{headRow({ Box, Button }, 'overview-top-row', close)}<Text dimColor>{w.unread}</Text></Box>
   // The open tab is drawn as the primary button, in the theme's accent; the
   // others are dimmed.
   const tabButton = (tab: OverviewTab, label: string) => (
@@ -312,7 +312,7 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
   }
   return (
     <Box flexDirection="column">
-      {headRow({ Box }, 'overview-top-row', [tabButton('queue', w.tabQueue), tabButton('log', w.tabLog), tabButton('workers', w.tabWorkers)], closeButton)}
+      {headRow({ Box, Button }, 'overview-top-row', close, [tabButton('queue', w.tabQueue), tabButton('log', w.tabLog), tabButton('workers', w.tabWorkers)])}
       {state.tab === 'queue' ? queue : state.tab === 'log' ? log : workers()}
     </Box>
   )

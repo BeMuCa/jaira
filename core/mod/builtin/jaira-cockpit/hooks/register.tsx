@@ -1732,7 +1732,7 @@ export const register: Register = (on, options) => {
     }
     return (
       <Box flexDirection="column">
-        {headRow({ Box }, 'give-back-head', [], <Button key="give-back-close" label={t.close} onPress={close} />)}
+        {headRow({ Box, Button }, 'give-back-head', { key: 'give-back-close', label: t.close, onPress: close })}
         <Text>{w.id} · {w.lane}{w.verdict !== '' ? ` · ${w.verdict}` : ''}</Text>
         {items.length > 0 ? <Box marginTop={1}><Text bold>{t.gapsHeading}</Text></Box> : null}
         {items.map((x, i) => (
@@ -1828,7 +1828,7 @@ export const register: Register = (on, options) => {
     const ownDigit = String(x.options.length + 1)
     return (
       <Box flexDirection="column">
-        {headRow({ Box }, 'explanation-head', [], <Button key="explanation-close" label={t.close} onPress={() => void $.ui.close({ id: EXPLANATION })} />)}
+        {headRow({ Box, Button }, 'explanation-head', { key: 'explanation-close', label: t.close, onPress: () => void $.ui.close({ id: EXPLANATION }) })}
         {about(Text, ticket)}
         <Box marginTop={ticket !== undefined ? 1 : 0}><Text bold>{t.explanationOf(id)}</Text></Box>
         {x.parts.map((p, i) => p.kind === 'option'
@@ -1947,7 +1947,7 @@ export const register: Register = (on, options) => {
     const first = light.reasons[0]
     return (
       <Box flexDirection="column">
-        {headRow({ Box }, 'verdict-head', [], <Button key="verdict-close" label={t.close} onPress={() => void $.ui.close({ id: VERDICT })} />)}
+        {headRow({ Box, Button }, 'verdict-head', { key: 'verdict-close', label: t.close, onPress: () => void $.ui.close({ id: VERDICT }) })}
         <Text key="light" wrap="wrap">
           <Text bold color={LIGHT_COLOUR[light.color]}>● {t.light[light.color]}</Text>
           : {first === undefined ? t.lightAccept : t.lightReason(first)}{light.reasons.length > 1 ? t.lightMore(light.reasons.length - 1) : ''}
@@ -1969,7 +1969,7 @@ export const register: Register = (on, options) => {
     const { Box, Button, Text } = $.ui.resolve(e)
     return (
       <Box flexDirection="column">
-        {headRow({ Box }, 'message-head', [], <Button key="message-close" label={t.close} onPress={() => void $.ui.close({ id: MESSAGE })} />)}
+        {headRow({ Box, Button }, 'message-head', { key: 'message-close', label: t.close, onPress: () => void $.ui.close({ id: MESSAGE }) })}
         <Text bold>{message?.title ?? ''}</Text>
         <Text wrap="wrap">{message?.text ?? ''}</Text>
       </Box>
@@ -2009,7 +2009,7 @@ export const register: Register = (on, options) => {
     const waiting = (await read($, boardAtom))?.waiting.find(w => w.id === id)
     return (
       <Box flexDirection="column">
-        {headRow({ Box }, 'ticket-head', [], <Button key="ticket-close" label={t.close} onPress={() => void $.ui.close({ id: PANE })} />)}
+        {headRow({ Box, Button }, 'ticket-head', { key: 'ticket-close', label: t.close, onPress: () => void $.ui.close({ id: PANE }) })}
         {waiting !== undefined ? <Text bold>{waiting.lane}{waiting.verdict !== '' ? ` · ${waiting.verdict}` : ''}</Text> : null}
         <Text bold>{t.paneReports}</Text>
         {kept.length === 0 ? <Text dimColor>{t.paneNothing}</Text> : null}

@@ -1902,6 +1902,8 @@ describe('the head of every pane', () => {
     const left = buttonsOf(tabs!)
     const right = buttonsOf(close!)
     expect(right).toEqual(['Close'])
+    // Marked as the pane's close: a desktop draws its native close for it.
+    expect(close!.children![0]!.props.role).toBe('dismiss')
     const drawn = [...left, ...right].map(l => `[ ${l} ]`)
     // Every button is hit across at least three columns, brackets included.
     for (const d of drawn) expect(d.length).toBeGreaterThanOrEqual(3)
