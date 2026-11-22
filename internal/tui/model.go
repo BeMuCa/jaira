@@ -56,6 +56,7 @@ const (
 	modeDefaultBoard
 	modeDelete
 	modeReject
+	modeSendBack
 	modeDropBoard
 	modeLegend
 	modeMilestones
@@ -178,6 +179,10 @@ type Model struct {
 	// typed: on the board the cursor may move under a reload, and the
 	// reason must land on the ticket it was typed for.
 	rejecting *ticket.Ticket
+	// sendingBack is the send-back the reason prompt was opened for. It is
+	// pinned here, not re-read from the cursor, because the board reloads
+	// every two seconds while the person types.
+	sendingBack *sendBack
 
 	// copied marks that the id was just put on the clipboard. OSC52 gives no
 	// feedback of its own, so the pane has to say the copy happened — it is
@@ -341,6 +346,17 @@ type pendingMove struct {
 	claiming bool
 	refusals gate.Violations
 	confirm  bool
+	note     string // the send-back reason, written with the forced move
+}
+
+// sendBack is a move out of a person's lane waiting for its reason: which
+// ticket, the lane it was in when the prompt opened, where it goes, and the
+// page the prompt returns to.
+type sendBack struct {
+	id     string
+	from   string
+	target *lane.Lane
+	back   mode
 }
 
 // New builds a board model.
@@ -1275,7 +1291,7 @@ func (m *Model) insertText(text string) {
 		m.filter = m.input
 		m.rebuild()
 
-	case modeCreate, modeDelete, modeReject:
+	case modeCreate, modeDelete, modeReject, modeSendBack:
 		m.input += foldToOneLine(text)
 
 	case modeLayer:
@@ -1362,6 +1378,28 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.input, m.rejecting = "", nil
 			m.mode = m.returnTo
+		case "backspace":
+			if r := []rune(m.input); len(r) > 0 {
+				m.input = string(r[:len(r)-1])
+			}
+		default:
+			m.insertText(k.Text)
+		}
+		return m, nil
+
+	case modeSendBack:
+		if m.sendingBack == nil {
+			// Nothing to send back: a stale way back led here.
+			m.mode, m.input = modeBoard, ""
+			return m, nil
+		}
+		switch s {
+		case "enter":
+			if why := strings.TrimSpace(m.input); why != "" {
+				m.confirmSendBack(why)
+			}
+		case "esc":
+			m.leaveSendBack()
 		case "backspace":
 			if r := []rune(m.input); len(r) > 0 {
 				m.input = string(r[:len(r)-1])
@@ -1931,6 +1969,10 @@ func (m *Model) notify(msg string, isErr bool) {
 		m.returnTo = m.mode
 	case modeMove, modeMessage:
 		// Leave returnTo alone.
+	case modeSendBack:
+		// Back to the prompt with what was typed: the send-back keeps its
+		// own way back in sendingBack.
+		m.returnTo = modeSendBack
 	default:
 		m.returnTo = modeBoard
 	}
@@ -2030,20 +2072,69 @@ func (m *Model) gateEnv() gate.Env {
 	}
 }
 
-// applyMove runs the same gate checks and the same core mutation the CLI uses.
+// applyMove moves the selected ticket to the lane the picker points at.
 func (m *Model) applyMove() {
 	t := m.selected()
 	if t == nil || m.moveTarget >= len(m.lanes.Lanes) {
 		m.mode = m.returnTo
 		return
 	}
-	target := m.lanes.Lanes[m.moveTarget]
-	env := m.gateEnv()
+	m.moveTo(t.ID, m.lanes.Lanes[m.moveTarget], "")
+}
 
-	full, err := m.store.Load(t.ID)
+// confirmSendBack carries out the send-back the prompt was opened for — that
+// ticket, not whichever the cursor rests on now — and only while it still
+// sits in the lane it was sent back from: a ticket that moved while the
+// reason was typed is not moved again on a reason written for where it was.
+func (m *Model) confirmSendBack(why string) {
+	sb := m.leaveSendBack()
+	t, err := m.store.Load(sb.id)
 	if err != nil {
 		m.notify(err.Error(), true)
 		return
+	}
+	if t.Status != sb.from {
+		m.notify(fmt.Sprintf("%s left %s while you typed, to %s — nothing was moved. Your reason was:\n\n  %s",
+			ticket.Handle(sb.id), sb.from, t.Status, why), true)
+		return
+	}
+	m.moveTo(sb.id, sb.target, why)
+}
+
+// leaveSendBack closes the reason prompt onto the page it was opened from.
+// returnTo is set back as well: a message raised over the prompt pointed it
+// at the prompt, and a move that finishes after would reopen it empty.
+func (m *Model) leaveSendBack() *sendBack {
+	sb := m.sendingBack
+	m.sendingBack, m.input = nil, ""
+	m.mode, m.returnTo = sb.back, sb.back
+	return sb
+}
+
+// moveTo runs the same gate checks and the same core mutation the CLI uses.
+// why is what a person typed for a send-back out of their own lane; empty
+// until the prompt has asked for it.
+func (m *Model) moveTo(id string, target *lane.Lane, why string) {
+	env := m.gateEnv()
+
+	full, err := m.store.Load(id)
+	if err != nil {
+		m.notify(err.Error(), true)
+		return
+	}
+	// Work a person sends back out of their own lane leaves with the reason,
+	// or the next session finds the ticket in an earlier lane and no word of
+	// what was wrong with it — the loss fe5a979 kept the follow-up ticket for.
+	// An empty reason keeps the prompt open, as reject's does.
+	note := ""
+	if m.sendsBackFromPerson(full.Status, target.ID) {
+		if why == "" {
+			m.sendingBack = &sendBack{id: full.ID, from: full.Status, target: target, back: m.returnTo}
+			m.input = ""
+			m.mode = modeSendBack
+			return
+		}
+		note = fmt.Sprintf("sent back to %s from %s: %s", target.ID, full.Status, why)
 	}
 	// Moving an unassigned ticket claims it — the same rule the CLI's move
 	// applies. Set before the gate check so the promotion gate's assignee
@@ -2063,6 +2154,7 @@ func (m *Model) applyMove() {
 			actor:    me,
 			claiming: claiming,
 			refusals: vs,
+			note:     note,
 		}
 		var b strings.Builder
 		fmt.Fprintf(&b, "Cannot move to %s:\n\n", target.Name)
@@ -2076,7 +2168,7 @@ func (m *Model) applyMove() {
 	// pre-check above and here, so it lands the same verdict and writes.
 	res, err := move.Move(m.store, env, full.ID, move.Request{
 		To: target.ID, Actor: me, ActorAliases: identity.Aliases(m.store.Root), ByPerson: true,
-		ClaimOnPull: true, Folder: m.settleFolder(), Prepare: m.settlePrepare(),
+		ClaimOnPull: true, Note: note, Folder: m.settleFolder(), Prepare: m.settlePrepare(),
 	})
 	if err != nil {
 		m.notify(err.Error(), true)
@@ -2099,6 +2191,23 @@ func (m *Model) applyMove() {
 	if trimMsg != "" {
 		m.notify(trimMsg, false)
 	}
+}
+
+// sendsBackFromPerson reports a move from a lane a person decides in — one
+// only a person may move work on from, or one a question waits in — to an
+// earlier lane: the give-back that has to say why.
+func (m *Model) sendsBackFromPerson(from, to string) bool {
+	l, ok := m.lanes.Get(from)
+	return ok && (l.RequiresHumanExit || l.RequiresQuestion) && m.lanes.SendsBack(from, to)
+}
+
+// sendBackPrompt is the status line while a send-back waits for its reason.
+func (m *Model) sendBackPrompt() string {
+	to := ""
+	if m.sendingBack != nil {
+		to = ticket.Handle(m.sendingBack.id) + " to " + m.sendingBack.target.ID
+	}
+	return styWarn.Render("send back "+to+" — what is still open: ") + m.input + stySelected.Render("▏")
 }
 
 func refusalBullets(vs gate.Violations) string {
@@ -2131,7 +2240,7 @@ func (m *Model) forceMove() {
 	m.pending = nil
 	res, err := move.Move(m.store, m.gateEnv(), p.ticketID, move.Request{
 		To: p.target.ID, Actor: p.actor, ActorAliases: identity.Aliases(m.store.Root),
-		Force: true, ByPerson: true, ClaimOnPull: true, Folder: m.settleFolder(), Prepare: m.settlePrepare(),
+		Force: true, ByPerson: true, ClaimOnPull: true, Note: p.note, Folder: m.settleFolder(), Prepare: m.settlePrepare(),
 	})
 	if err != nil {
 		m.notify(err.Error(), true)
