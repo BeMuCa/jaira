@@ -1177,3 +1177,44 @@ func TestLogbookAndRestoreRefuseOneIDInTwoFiles(t *testing.T) {
 		t.Errorf("the twin on the board changed:\n%s", b)
 	}
 }
+
+// A restore beside a twin pair puts an old-format file (q4.md, from before
+// IDs) back in the logbook too, although Migrate has already moved it to its
+// ID name on the board by the time the twins are found.
+func TestRestoreOfAnOldFormatFileBesideATwinGoesBackToTheLogbook(t *testing.T) {
+	dir := emptyStore(t)
+	if out, err := runCLI(t, dir, "milestone", "create", "q5"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	ms, _ := milestone.Load(dir, "q5")
+	b, err := os.ReadFile(ms.Path(dir))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(milestone.Dir(dir), "q6-"+ms.ID+".md"), b, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	logDir := filepath.Join(dir, ".jaira", "logbook", "me-2026-01-01", "milestones")
+	if err := os.MkdirAll(logDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	logged := filepath.Join(logDir, "q4.md")
+	if err := os.WriteFile(logged, []byte("---\ncolor: 45\nstatus: filed\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	before, _ := os.ReadDir(milestone.Dir(dir))
+
+	_, err = runCLI(t, dir, "restore", "q4.md")
+	if code, reason := classify(err); code != ExitValidation || reason != "milestone_twin_files" {
+		t.Fatalf("restore beside a twin: exit %d (%s), want 3: %v", code, reason, err)
+	}
+	if b, err := os.ReadFile(logged); err != nil || !milestone.FromBytes("q4.md", b).Filed() {
+		t.Errorf("q4.md is not back in the logbook, filed: %v\n%s", err, b)
+	}
+	if after, _ := os.ReadDir(milestone.Dir(dir)); len(after) != len(before) {
+		t.Errorf("the board's milestone files changed: %d before, %d after", len(before), len(after))
+	}
+	if out, err := runCLI(t, dir, "restore", "q4.md"); err == nil || strings.Contains(err.Error(), "not in the archive") {
+		t.Errorf("a second restore does not find q4.md in the logbook: %v\n%s", err, out)
+	}
+}

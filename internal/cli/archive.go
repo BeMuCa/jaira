@@ -178,9 +178,17 @@ func unfileMilestone(s *ticket.Store, src, dst string) (string, error) {
 	reportMigrated(moved)
 	var twin *milestone.TwinFilesError
 	if errors.As(err, &twin) {
-		// The restored file is one of the two: it goes back to the logbook,
-		// so the refusal leaves the board as it found it.
-		if back := os.Rename(dst, src); back != nil {
+		// The refusal leaves the board as it found it: the restored file goes
+		// back to the logbook whether or not it is one of the two. An
+		// old-format file has been moved to its ID name by now, so it goes
+		// back from there.
+		here := dst
+		for _, m := range moved {
+			if target, ok := strings.CutPrefix(m, filepath.Base(dst)+" -> "); ok {
+				here = filepath.Join(filepath.Dir(dst), target)
+			}
+		}
+		if back := os.Rename(here, src); back != nil {
 			return "", errors.Join(err, back)
 		}
 		return "", fmt.Errorf("%w; %s stays in %s", err, filepath.Base(src), filepath.Dir(src))
