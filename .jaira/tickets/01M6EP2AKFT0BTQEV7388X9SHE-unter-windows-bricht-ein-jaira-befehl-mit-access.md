@@ -1,7 +1,7 @@
 ---
 id: 01M6EP2AKFT0BTQEV7388X9SHE
 title: "Unter Windows bricht ein jaira-Befehl mit 'Access is denied' ab, statt auf eine gerade freigegebene Sperre zu warten"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,13 +22,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T17:49:13Z
-updated-at: 2026-11-22T18:52:36Z
+updated-at: 2026-11-22T18:53:41Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-903238
 claimed-at: 2026-11-22T18:49:04Z
 outcome-what: "Windows-only tests in core/ticket/lock_windows_test.go pin lockFile's wait on a delete-pending lock file: it waits, takes the lock once the old file goes, and gives up with Access is denied at lockTimeout. The fix itself had already landed in 32TTSS."
 outcome-why: The 32TTSS fix had no test of its own; a refactor of lockFile could drop the Windows branch and only a flaky CI run would notice.
 outcome-resolves: "8X9SHE: lock waits on Windows when the lock file is still being deleted - proven by a deterministic test and 20/20 runs of TestRestoreWaitsForTheMilestoneLock on Windows"
+review-summary: none
+review-gaps: "replaced the hand-rolled once flag in deletePending with sync.OnceFunc; no duplicate helper exists (no other FileDispositionInfo/CreateFile use in the repo); nothing dead, nothing on a hot path"
 ---
 
 # Unter Windows bricht ein jaira-Befehl mit 'Access is denied' ab, statt auf eine gerade freigegebene Sperre zu warten
@@ -54,3 +56,4 @@ outcome-resolves: "8X9SHE: lock waits on Windows when the lock file is still bei
 ## Progress
 - **2026-11-22 18:49 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/25712.sock
 - **2026-11-22 18:49 · Alexander Sacharov** — decision: the lock fix itself already landed in bd77914c7 (32TTSS, 16.11, core/ticket/store.go:1645) and its user line shipped in core/release/notes/0.5.14/32TTSS.md:3. What this ticket still owes: a test that pins the Windows wait (none exists) and a stability run on Windows. A test is not client-facing, so no new core/release/notes/8X9SHE.md - DoD 3 is ticked with the 0.5.14 line as proof. Windows test: make the lock file delete-pending deterministically (SetFileInformationByHandle FileDispositionInfo on an open handle, legacy non-POSIX semantics) - os.Remove alone uses POSIX delete on current Windows and frees the name at once, so it would not reproduce the race. Stability run from WSL: GOOS=windows test binary run on the Windows side.
+- **2026-11-22 18:52 · Alexander Sacharov** — critique: considered pulling the busy check into a pure lockBusy(err, goos) helper with a table test on every OS - rejected, it would test the if, not that Windows really answers a delete-pending create with Access is denied; the real-handle test proves both. x/sys/windows is already a dependency (core/session/running_windows.go). The 5 s persistent-denial test runs only on Windows and is the only way to show the deadline with lockTimeout a const.

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 	"unsafe"
@@ -44,13 +45,7 @@ func deletePending(t *testing.T, path string) (release func()) {
 		windows.CloseHandle(h)
 		t.Fatalf("a delete-pending file was not refused with Access is denied: %v", err)
 	}
-	var once bool
-	return func() {
-		if !once {
-			once = true
-			windows.CloseHandle(h)
-		}
-	}
+	return sync.OnceFunc(func() { windows.CloseHandle(h) })
 }
 
 // A lock file that is still being deleted is a busy lock: lockFile waits for
