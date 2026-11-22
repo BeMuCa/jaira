@@ -437,14 +437,23 @@ above named in it — **only if a person invoked this role, or the board says
 lets an agent open it**). On GitHub:
 
 ```bash
-gh pr create --repo <owner/repo> --title "<title>" --body-file <the description you wrote>
+gh pr create --repo <owner/repo> --head "<owner-of-origin>:$(git branch --show-current)" --title "<title>" --body-file <the description you wrote>
 ```
 
 On GitLab:
 
 ```bash
-glab mr create --target-project <owner/repo> --title "<title>" --description "$(cat <the description you wrote>)"
+glab mr create --repo <owner/repo> --head <origin's project path> --title "<title>" --description "$(cat <the description you wrote>)"
 ```
+
+Name the head on both forges, fork or not. `--repo` is only where the request
+goes; the branch lives on `origin`. Without `--head`, `glab` looks for the
+source branch in the target project and, in a fork, does not find it, and `gh`
+guesses the head from the checkout or offers to fork and push. `<origin's
+project path>` is `path_with_namespace` from the `glab repo view` of `origin`
+above — `your-namespace/project`; in a project that is not a fork it is the
+target itself. `glab` 1.114 marks the older `--target-project` deprecated:
+use `--repo`.
 
 Then report the URL.
 
@@ -461,7 +470,7 @@ scripts/pr-round.sh open <owner/repo> <remote> <branch> "<title>" <the descripti
 On GitLab run the gate yourself and the create command only on exit 0:
 
 ```bash
-jaira roles pr-gate <remote>/<branch> && glab mr create --target-project <owner/repo> --title "<title>" --description "$(cat <the description you wrote>)"
+jaira roles pr-gate <remote>/<branch> && glab mr create --repo <owner/repo> --head <origin's project path> --title "<title>" --description "$(cat <the description you wrote>)"
 ```
 
 Exit 3 from either is the board's no — `.jaira/pr` does not say agent, no

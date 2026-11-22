@@ -1,0 +1,1 @@
+- Re-run `jaira roles install --project` (or `--global`) on a GitLab board: `/jaira-role-pr` now opens the merge request with `glab mr create --repo <target> --head <your fork>` instead of the `--target-project` flag glab 1.114 marks deprecated, so a merge request from a fork finds its source branch; the GitHub line names `--head <owner>:<branch>` the same way.
