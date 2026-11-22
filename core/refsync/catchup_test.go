@@ -425,3 +425,37 @@ func TestAHandEditLosesToARefMovedByAnEarlierFetch(t *testing.T) {
 		t.Fatalf("ref holds %v, want %v: the hand edit was written over ada's add", got, want)
 	}
 }
+
+// The catch-up asks the same record as the fetch. A hand edit made in one
+// worktree while the main checkout moves the shared ref — no fetch anywhere —
+// is on a state the ref has left, and the next write there must not put it
+// back over the main checkout's add.
+func TestAHandEditInAnotherWorktreeLosesToTheSharedRef(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	run(t, ada.dir, "git", "commit", "--quiet", "--allow-empty", "-m", "start")
+	ms, err := milestone.Create(ada.store.Root, ada.store, ada.syncer, func([]*milestone.Milestone) (*milestone.Milestone, error) {
+		return milestone.New("q4", 45, time.Now()), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.syncer.Flush(); err != nil {
+		t.Fatal(err)
+	}
+	addTo(t, ada, "q4", tkA)
+	old := worktreeOf(t, ada, "old")
+	fetchAt(t, old) // the file arrives there and agrees with the ref
+	path := filepath.Join(milestone.Dir(old.store.Root), ms.FileName())
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, append(b, []byte("<!-- by hand in old -->\n")...), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	addTo(t, ada, "q4", tkB)
+	addTo(t, old, "q4", tkC)
+	if got, want := refMembers(t, ada, ms.ID), []string{tkA, tkB, tkC}; !slices.Equal(got, want) {
+		t.Fatalf("ref holds %v, want %v: the old worktree's hand edit went over the main checkout's add", got, want)
+	}
+}

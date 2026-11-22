@@ -419,8 +419,7 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 		// ref that did move wins, as it always has — the file is now
 		// behind a teammate's write, and keeping it would put it back over
 		// theirs.
-		if haveErr == nil && milestone.IsID(key) && !bytes.Equal(have, content) &&
-			y.syncedAt(key) == sha && !y.Repo.MilestoneHad(key, have) {
+		if haveErr == nil && milestone.IsID(key) && !bytes.Equal(have, content) && y.keepsHandEdit(key, have, sha) {
 			continue
 		}
 		if haveErr == nil && bytes.Equal(have, content) {
@@ -474,10 +473,10 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 // ever fetching (KWQCYZ).
 //
 // Behind means the file holds a state the ref has carried before and has
-// moved on from — the same test a ticket's file gets (hadBefore). A file that
-// differs from its ref in any other way was edited by hand and is what the
-// write is about to send, so it stays; so does one with a write still queued
-// here. Only files named after their ID are looked at: an old-format file is
+// moved on from — the same test a ticket's file gets (hadBefore) — or an edit
+// made by hand on a state the ref has since moved on from (keepsHandEdit). A
+// hand edit on the tip the ref is still at is what the write is about to
+// send, so it stays; so does a file with a write still queued here. Only files named after their ID are looked at: an old-format file is
 // Migrate's, and a ref without a file on this disk is the fetch's to write.
 func (y *Syncer) CatchUpMilestones(root string) error {
 	if y == nil || y.Usable() != nil {
@@ -493,7 +492,7 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 		}
 		path := filepath.Join(milestone.Dir(root), d.File)
 		have, err := os.ReadFile(path)
-		if err != nil || bytes.Equal(have, content) || !y.Repo.MilestoneHad(d.ID, have) {
+		if err != nil || bytes.Equal(have, content) || y.keepsHandEdit(d.ID, have, sha) {
 			continue
 		}
 		dst := filepath.Join(milestone.Dir(root), file)
@@ -523,6 +522,17 @@ func (y *Syncer) CatchUpMilestones(root string) error {
 		}
 	}
 	return nil
+}
+
+// keepsHandEdit is the one rule for a milestone file that differs from its
+// ref at sha, asked by a fetch and by the catch-up before every write: keep
+// it only when it is an edit made here — bytes the ref never carried — on the
+// state the ref is still at, the tip the file last agreed with. A file that
+// holds an earlier state of the ref fell behind; one edited on a state the
+// ref has moved on from would put that old state back over somebody's write.
+// Both get the ref.
+func (y *Syncer) keepsHandEdit(id string, have []byte, sha string) bool {
+	return y.syncedAt(id) == sha && !y.Repo.MilestoneHad(id, have)
 }
 
 // syncedPath is where this working tree records, per milestone ID, the tip of
@@ -914,9 +924,14 @@ func (y *Syncer) Flush() ([]Report, error) {
 			r = y.rebaseEpic(r)
 		}
 		rep := Report{Result: r}
+		// The tip is read after the whole queue went out, and another
+		// worktree may have moved the ref since: it is recorded only while
+		// it still carries what this one sent.
 		if r.Outcome == outbox.Sent && r.Kind == outbox.KindMilestone {
-			if sha, err := y.Repo.MilestoneSHA(r.ID); err == nil {
-				y.markSynced(r.ID, sha)
+			if e, ok := queued[r.ID]; ok {
+				if _, content, sha, err := y.Repo.ReadMilestone(r.ID); err == nil && string(content) == e.Content {
+					y.markSynced(r.ID, sha)
+				}
 			}
 		}
 		if r.Outcome == outbox.Rejected && r.Kind == outbox.KindMilestone {
