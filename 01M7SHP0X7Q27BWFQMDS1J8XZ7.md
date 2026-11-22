@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T23:05:00Z
+updated-at: 2026-11-22T23:05:11Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -86,3 +86,4 @@ back-count: 1
 - **2026-11-22 23:00 · BeMuCa** — bughunt: done at e68f3d2ab - 3 findings (3 change, 1 of them blocker; 0 pre-existing) in 7 modules, first hunt; concurrency, error paths, input, permissions checked; files: AGENTS.md CLAUDE.md core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/1J8XZ7.md
 - **2026-11-22 23:01 · BeMuCa** — testing: sent back for the hunt's change findings. Blocker: class: a ticket's group is decided by today's board's lanes even when the ticket lives on another board; fix at the cause: group a shown ticket by the lanes of its own board (jaira lanes --board <its board> --json), test with a second board whose terminal lane differs. Also: class: an opening that finds no milestone (ls failed, none) overwrites the remembered choice; fix: only a press writes the choice, an opening only reads it. AGENTS.md/CLAUDE.md drift was in the worktree before this ticket started (left by the setup's jaira 0.6.1), never staged; keep it out of every commit.
 - **2026-11-22 23:04 · BeMuCa** — in-progress round 2: fixed both hunt findings at their cause. (1) shownOf now returns a non-filed ticket's board; showMilestone reads 'jaira lanes --board <b> --json' once per distinct board among them and sets the group with groupIn (terminal=done, agentic or person's=in work, else not started); standOf uses that group before today's lanes. (2) an opening no longer writes overviewMilestone - only a press does; pagedTo treats an unknown id as the first (the one shown), so the first press from a fresh or vanished choice goes to the second. plugin test: 404 pass 0 fail (2 new tests). tsc: hooks have no new errors; tests/board.test.ts gains 5 more of the pre-existing 'MountTarget<terminal, AbovePrompt>' error, one per new $.ui.mount(BAND) - the same types drift every existing BAND mount shows. AGENTS.md/CLAUDE.md drift left unstaged, not this ticket's.
+- **2026-11-22 23:05 · BeMuCa** — critique pass 2 (only the repair, against the two hunt findings): both addressed at their cause - group from the ticket's own board's lanes, and the choice written only by a press. The repair's pagedTo change (unknown id counts as the first, the one shown) keeps paging consistent with what is drawn. No finding.
