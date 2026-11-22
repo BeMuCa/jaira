@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T22:56:05Z
+updated-at: 2026-11-22T22:56:07Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -66,3 +66,4 @@ claimed-at: 2026-11-22T22:43:54Z
 
 ## Progress
 - **2026-11-22 22:47 · BeMuCa** — pre-process, decisions settled (no person needed, disagree at acceptance): (1) data source deviates from the context: 'jaira list --milestone X' on 0.6.1 leaves out logbook tickets (release-0-6-0 has 3 tickets, list --milestone returns 0), so the tab takes the handles from 'jaira milestone ls --json' (milestones[].tickets), lane+title from the 'jaira list --json' the pane already reads, and runs 'jaira show <h> --json' only for the chosen milestone's handles list does not return - show finds logbook tickets (filed_away set) and tickets on other boards. (2) Arrow keys: the cockpit has no key handler; a Pane's arrows move the focus ring, so the selector is two Buttons [ < ] and [ > ] around the name - click, or arrows onto a button and Enter. Paging wraps around. (3) Words in English like the rest of the cockpit: 'x of n done'. (4) Groups: done = terminal lane or filed away (rejected ones too, lane shown as 'rejected', else 'logbook'); in work = agentic lane or a person's lane; everything else (ideas, backlog, todo, blocked, unknown) = not started - blocked sits there as the Queue tab already puts it under 'Put back'. Within a group board lane order. (5) Twins (two milestones of one name): selector shows name-ID; the remembered choice is the milestone ID.
+- **2026-11-22 22:56 · BeMuCa** — in-progress: checked the four categories. Concurrency: paging while jaira show runs only merges per-handle results into overviewFiled, so a late answer for another milestone does no harm; the pane re-derives the chosen milestone with pagedTo(...,0) so an empty atom before the first read still shows the first. Error paths: milestone ls failing (older jaira, exit!=0) gives milestones=null and the tab says so, the other tabs unchanged; a show that fails leaves the row at lane '?' (asked again on the next page there, not cached). Unusual input: no milestones, empty milestone (0 of 0), twins (name-ID), remembered milestone deleted (first). Permissions: n/a, read-only commands. Type check: tsc over the mod has 182 errors before and after this change, all pre-existing (types drift vs Claude Code 2.1.329), none new - compared line by line. claude plugin test . : 402 pass, 0 fail (3 new tests, 4 existing ones updated for the fourth tab).
