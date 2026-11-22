@@ -88,9 +88,14 @@ done
 [ -n "$remote" ] || die 2 "no remote here points at $repo — git remote add upstream <its url>"
 # origin's copy of the branch first: a push somebody made there would make
 # ours fail non-fast-forward after the merge, with nothing said about why.
-if git fetch -q origin "$branch" 2>/dev/null &&
-  ! git merge-base --is-ancestor "refs/remotes/origin/$branch" HEAD; then
-  die 2 "origin's $branch has commits this worktree lacks — git pull origin $branch, then run again; nothing merged or pushed"
+# FETCH_HEAD, not refs/remotes/origin/<branch>: a single-branch clone or a
+# narrow fetch refspec never writes that ref.
+# Kept as a commit: the base's fetch below overwrites FETCH_HEAD.
+origintip=""
+if git fetch -q origin "$branch" 2>/dev/null; then
+  origintip="$(git rev-parse FETCH_HEAD)"
+  git merge-base --is-ancestor "$origintip" HEAD ||
+    die 2 "origin's $branch has commits this worktree lacks — git pull origin $branch, then run again; nothing merged or pushed"
 fi
 git fetch -q "$remote" "$basebranch"
 base="$remote/$basebranch"
@@ -145,7 +150,7 @@ elif ! git diff --cached --quiet; then
   git commit -q -m "chore($id): regenerate ${genpath[*]}"
 fi
 
-if [ "$(git rev-parse HEAD)" != "$(git rev-parse -q --verify "refs/remotes/origin/$branch" || true)" ]; then
+if [ "$(git rev-parse HEAD)" != "$origintip" ]; then
   if ! git push -q origin "HEAD:$branch"; then
     git reset -q --hard "$before"
     die 1 "push to origin's $branch refused — somebody pushed in between; git pull origin $branch, then run again; the local merge is undone"
