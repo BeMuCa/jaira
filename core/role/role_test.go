@@ -1480,3 +1480,46 @@ func TestRoleModels(t *testing.T) {
 		}
 	}
 }
+
+// Worker, dispatcher and bug hunt hand their parent one line — the status
+// line, and a needs-you line above it when something waits for a person —
+// and write the full report onto the ticket; the teamlead reads the details
+// there. A report that grows back into a page fills the teamlead's session,
+// which is what TT3Z11 ended.
+func TestReportsToTheParentAreOneLine(t *testing.T) {
+	t.Parallel()
+	read := func(role string) string {
+		b, err := os.ReadFile(filepath.Join("builtin", role, "SKILL.md"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(b)
+	}
+	for role, note := range map[string]string{
+		"jaira-worker":       `jaira note <id> "report: `,
+		"jaira-dispatcher":   `jaira note <id> "report: `,
+		"jaira-role-bughunt": `jaira note <id> "hunt report: `,
+	} {
+		s := read(role)
+		if !strings.Contains(s, "needs you: <what") {
+			t.Errorf("%s does not name the needs-you line of its report", role)
+		}
+		if !strings.Contains(s, note) {
+			t.Errorf("%s does not write its full report onto the ticket as %s...", role, note)
+		}
+		if strings.Contains(s, "three lines and a status line") || strings.Contains(s, "the three lines and the status line go to the parent") {
+			t.Errorf("%s still sends its three report lines to the parent", role)
+		}
+	}
+	// The hunt's report note must not read as a finding: the testing lane
+	// takes every "bughunt:" note after the last closing line for one.
+	if strings.Contains(read("jaira-role-bughunt"), `"bughunt: report:`) {
+		t.Error("jaira-role-bughunt writes its report as a bughunt: note, which the testing lane reads as a finding")
+	}
+	tl := read("jaira-teamlead")
+	for _, want := range []string{"What a worker sends you is one line, and the details are on the ticket.", "jaira show <id>"} {
+		if !strings.Contains(tl, want) {
+			t.Errorf("jaira-teamlead does not say %q", want)
+		}
+	}
+}

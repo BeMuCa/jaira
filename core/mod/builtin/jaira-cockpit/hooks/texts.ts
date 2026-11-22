@@ -176,6 +176,7 @@ export const filterWords = {
   // own words.
   marker: '[shortened by jaira-cockpit]',
   question: 'question',
+  needsYou: 'needs you',
   fullReport: 'full report',
   // The fields of a worker's status line, as the digest names them.
   commits: 'commits',
