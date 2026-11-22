@@ -24,7 +24,7 @@ related:
   - 01M6PDF2D6RQ8K1T7N0G1MYFKE
 commits: []
 created-at: 2026-11-19T09:19:56Z
-updated-at: 2026-11-22T22:55:30Z
+updated-at: 2026-11-22T22:56:05Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: EE-3NX6GL3-385148
@@ -62,7 +62,7 @@ claimed-at: 2026-11-22T22:43:54Z
 - [x] types/index.d.ts and texts.ts: new state keys and words
 - [x] tests/board.test.ts: fix the tab-label test, add milestone tests (grouping, logbook count, paging wrap, remembered after reopen, ls failure)
 - [x] release note core/release/notes/1J8XZ7.md
-- [ ] gates: tsc/validate of the mod if cheap, claude plugin test once; gofmt/vet/build untouched (no Go change)
+- [x] gates: tsc/validate of the mod if cheap, claude plugin test once; gofmt/vet/build untouched (no Go change)
 
 ## Progress
 - **2026-11-22 22:47 · BeMuCa** — pre-process, decisions settled (no person needed, disagree at acceptance): (1) data source deviates from the context: 'jaira list --milestone X' on 0.6.1 leaves out logbook tickets (release-0-6-0 has 3 tickets, list --milestone returns 0), so the tab takes the handles from 'jaira milestone ls --json' (milestones[].tickets), lane+title from the 'jaira list --json' the pane already reads, and runs 'jaira show <h> --json' only for the chosen milestone's handles list does not return - show finds logbook tickets (filed_away set) and tickets on other boards. (2) Arrow keys: the cockpit has no key handler; a Pane's arrows move the focus ring, so the selector is two Buttons [ < ] and [ > ] around the name - click, or arrows onto a button and Enter. Paging wraps around. (3) Words in English like the rest of the cockpit: 'x of n done'. (4) Groups: done = terminal lane or filed away (rejected ones too, lane shown as 'rejected', else 'logbook'); in work = agentic lane or a person's lane; everything else (ideas, backlog, todo, blocked, unknown) = not started - blocked sits there as the Queue tab already puts it under 'Put back'. Within a group board lane order. (5) Twins (two milestones of one name): selector shows name-ID; the remembered choice is the milestone ID.
