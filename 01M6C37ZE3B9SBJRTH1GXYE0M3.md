@@ -4,7 +4,7 @@ title: Windows-Zip von jaira wird vom Virenscanner gemeldet
 status: backlog
 ready: true
 creator: Alexander Sacharov
-assignee: Alexander Sacharov
+assignee: ""
 goal: "Die Windows-Ausgabe von jaira lässt sich beim Kunden herunterladen und starten, ohne dass ein Virenscanner sie meldet oder in Quarantäne schiebt."
 context: |-
   Was ist falsch:
@@ -18,10 +18,18 @@ definition-of-done: "Ursache ist benannt (Scanner, Fundname, warum das Binary au
 tags:
   - release
 blocked-by: []
-related: []
+related:
+  - 01M7668DV84RT7ZT0A8Y32TTSS
 commits: []
 created-at: 2026-11-01T17:41:46Z
-updated-at: 2026-11-01T17:41:46Z
+updated-at: 2026-11-23T13:16:50Z
+rejected-kind: duplicate
+rejected-why: "same Defender case, 32TTSS done"
+rejected-by: Alexander Sacharov
+rejected-at: "2026-11-23T13:16:50Z"
+rejected-duplicate-of: 01M7668DV84RT7ZT0A8Y32TTSS
+rejected-linked: "true"
+updated-by: Alexander Sacharov
 ---
 
 # Windows-Zip von jaira wird vom Virenscanner gemeldet
