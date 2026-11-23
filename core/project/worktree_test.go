@@ -141,7 +141,7 @@ func TestRememberSkipsTemp(t *testing.T) {
 	if got := Remember(scratch); got != "" {
 		t.Fatalf("Remember(temp board) = %q, want nothing recorded", got)
 	}
-	writeRegistry(t, scratch, keep)
+	writeProjects(t, []Project{{Root: scratch, Name: "repo"}, {Root: keep, Name: "keep"}})
 	if got := roots(Load()); len(got) != 1 || got[0] != canonical(keep) {
 		t.Fatalf("Load() = %v, want only %s", got, keep)
 	}
@@ -188,15 +188,6 @@ func TestLoadFoldsOldWorktreeEntries(t *testing.T) {
 	if got := roots(Load()); len(got) != 1 || got[0] != main {
 		t.Fatalf("Load() = %v, want %s", got, main)
 	}
-}
-
-func writeRegistry(t *testing.T, rootList ...string) {
-	t.Helper()
-	var ps []Project
-	for _, r := range rootList {
-		ps = append(ps, Project{Root: r, Name: filepath.Base(r), LastOpen: "2026-11-01T00:00:00Z"})
-	}
-	writeProjects(t, ps)
 }
 
 func writeProjects(t *testing.T, ps []Project) {

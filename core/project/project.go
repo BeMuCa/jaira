@@ -62,11 +62,12 @@ func Load() []Project {
 		if fi, err := os.Stat(filepath.Join(p.Root, ticket.DirName)); err != nil || !fi.IsDir() {
 			continue
 		}
-		root := Board(p.Root)
+		c := canonical(p.Root)
+		root := mainCheckout(c)
 		if throwaway(root, path) {
 			continue
 		}
-		if root != canonical(p.Root) {
+		if root != c {
 			p.Root, p.Name = root, filepath.Base(root)
 		}
 		if i, ok := at[root]; ok {
