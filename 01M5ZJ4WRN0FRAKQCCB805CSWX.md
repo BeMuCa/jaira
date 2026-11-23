@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:36:05Z
+updated-at: 2026-11-23T01:36:16Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -27,6 +27,7 @@ outcome-what: "spawn.sh prueft MemAvailable vor Worktree und Tab: unter JAIRA_MI
 outcome-why: Drei parallele Go-Builds auf einer 7-GB-WSL stuerzten am 27.10. viermal ab; nichts warnte vor Speicher.
 outcome-resolves: "Kein Worker startet mehr still in eine Maschine, die fuer seinen Build zu wenig freien Speicher hat."
 review-summary: none
+review-gaps: "none: no other MemAvailable/meminfo reader in the repo (grep); nothing orphaned; avail_kb/1024 twice in spawn.sh left, one line apart and only on the refuse path"
 ---
 
 # spawn.sh startet keinen Worker, wenn der freie Speicher nicht fuer einen weiteren Build reicht
