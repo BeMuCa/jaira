@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:13:52Z
+updated-at: 2026-11-23T01:13:55Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
@@ -54,3 +54,4 @@ back-count: 1
 ## Progress
 - **2026-11-23 01:11 · BeMuCa** — Open decisions: none for the person. Settled: skipped_lanes lists every unticked optional lane AHEAD of the current lane up to the terminal lane, not only those between status and next_lane - so a driver in backlog already learns pre-process exists and can tick planning before todo. Empty (never null) when Next has no answer by design (parked, question lane, terminal, unknown lane). Shape: [{lane, option, enable: 'jaira dod <ID> --option <opt>'}]. Computed by lane.Set.SkippedAhead in core/lane/next.go beside Next/OnPath. Brainstorm/planning options not ticked: small, path backlog->todo->in-progress.
 - **2026-11-23 01:13 · BeMuCa** — critique round 1: the key skipped_lanes is taken - create --lane --json puts a []string of jumped lanes into the same ticketJSON payload (internal/cli/tickets.go:406), so one payload could carry two shapes under one key. Rename to optional_lanes_off. Let stand: SkippedAhead repeats Next's 4-line 'parked/question/terminal -> nothing' guard instead of sharing a helper - kept so Next stays untouched; both sit next to each other in core/lane/next.go.
+- **2026-11-23 01:13 · BeMuCa** — in-progress round 2: renamed to unchosen_lanes (the gate already calls an unticked option step 'not chosen', core/gate/gate.go CodeStepNotChosen). create --json keeps its own skipped_lanes untouched.
