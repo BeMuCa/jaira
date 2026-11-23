@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:10:10Z
+updated-at: 2026-11-23T01:11:13Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
@@ -41,4 +41,4 @@ claimed-at: 2026-11-23T01:10:10Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-23 01:11 · BeMuCa** — Open decisions: none for the person. Settled: skipped_lanes lists every unticked optional lane AHEAD of the current lane up to the terminal lane, not only those between status and next_lane - so a driver in backlog already learns pre-process exists and can tick planning before todo. Empty (never null) when Next has no answer by design (parked, question lane, terminal, unknown lane). Shape: [{lane, option, enable: 'jaira dod <ID> --option <opt>'}]. Computed by lane.Set.SkippedAhead in core/lane/next.go beside Next/OnPath. Brainstorm/planning options not ticked: small, path backlog->todo->in-progress.
