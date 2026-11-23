@@ -1,7 +1,7 @@
 ---
 id: 01M82ZBBANXWEKXWDTM1ZZTCWS
 title: "Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts"
-status: testing
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Oeffnet eine Person ein Ticket in human, review oder signoff in der TUI, sieht sie oben in dieser Reihenfolge: So pruefst du (review-check), Was gemacht wurde (outcome what/why), Offene Frage (question, nur wenn eine da ist), die Code-Aenderungen und die DoD mit Proofs. Felder, die der Person bei der Entscheidung nicht helfen, stehen nicht mehr auf dieser Ansicht."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:25:28Z
+updated-at: 2026-11-23T21:25:33Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -31,10 +31,10 @@ review-summary: none
 review-gaps: "round 2: the repair removed the hand-picked details list, gapLines and isBlockerLine (no callers left - grep clean); detailBody now composes header + detailFields, no duplicate renderer. firstNonEmpty, laneFields, sourced, owedRow, fieldRow all still called. Left: the regex mirrors the TS one in hooks/board.ts - two languages, cannot share code; the gaps row inside Details repeats the blocker lines shown on top (the full ticket, by design)."
 test-verdict: "pass: go vet ./... + go test -race -count=1 ./internal/tui RC=0 at 383b42d9e; DoD 1-5 verified; render-only"
 hunt-verdict: "fail: bughunt done at 383b42d9e - change: a label-only blocker line ('**Blocker:**', 'blocker:' with the finding on the next line) loses its row; change edge (note): Details repeat Commits/DoD and show 'Before this can start'"
-round: 2
+round: 3
 back-from: testing
 back-by: lane
-back-count: 1
+back-count: 2
 ---
 
 # Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts
