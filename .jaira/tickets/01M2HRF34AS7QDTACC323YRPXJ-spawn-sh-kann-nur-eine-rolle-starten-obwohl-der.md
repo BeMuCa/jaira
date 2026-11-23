@@ -14,7 +14,7 @@ related:
   - 01M2G9X5HVH29SDS8FAZKSGSKK
 commits: []
 created-at: 2026-09-15T05:26:04Z
-updated-at: 2026-11-23T18:00:00Z
+updated-at: 2026-11-23T18:01:15Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-16863
@@ -22,6 +22,11 @@ claimed-at: 2026-11-23T17:56:21Z
 outcome-what: "spawn.sh nimmt tab_id und pane_id aus 'tab create' und prueft per 'pane get' vor 'pane run' und vor 'send-text', dass die Pane noch im eigenen Tab steht; sonst tippt es nichts, schliesst den eigenen leeren Tab und nennt Pane, Tab und Label. Die come-up-Fehlerzeile nennt jetzt Pane, Tab, Label und Zustand."
 outcome-why: Bei zwei gleichzeitigen Tab-Starts landete die Rolle eines Dispatchers in der Pane des anderen; das Skript glaubte der Pane-Id von vorhin.
 outcome-resolves: "DoD 2, 3, 4, 5 (DoD 1 erledigt/superseded)"
+review-summary: "core/role/builtin/jaira-dispatcher/scripts/spawn.sh:492 prueft erst nach dem Schreiben des Pane-Records; bei der Race steht dann ein Record mit der fremden Pane (p2) unter diesem Ticket/Lane in .git/jaira/panes, den reap.sh spaeter gegen den fremden Tab haelt - die Pruefung vor den Record ziehen: der eigene Tab wird bei Abbruch ohnehin geschlossen, ein Record ist dann unnoetig"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # spawn.sh kann nur eine Rolle starten, obwohl der Prompt zwei verlangt
@@ -30,7 +35,7 @@ outcome-resolves: "DoD 2, 3, 4, 5 (DoD 1 erledigt/superseded)"
 
 - [-] scripts/spawn.sh startet die Rolle, die zur Lane gehoert: fuer testing '/jaira-role-tester <id>', sonst '/jaira-role-lane <id> <lane>'. Nachgestellt, indem beide Lanes einmal wirklich gestartet werden.
 - [x] Die Pane, in die getippt wird, wird nicht aus einem Wert von vorhin geglaubt: ein zweiter Dispatcher, der im selben Moment einen Tab aufmacht, laesst den Lauf nicht mehr in die falsche Vorlage schreiben. Nachgestellt mit zwei gleichzeitigen Starts.
-  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh pane_is_ours (vor pane run und vor send-text); Test core/role/spawnpane_test.go TestSpawnTypesOnlyIntoItsOwnTab (zwei gleichzeitige Starts, Fake-herdr gibt dem ersten die Pane des zweiten; schlaegt auf dem alten spawn.sh fehl)
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh pane_is_ours (vor dem Pane-Record, vor pane run und vor send-text); Test core/role/spawnpane_test.go TestSpawnTypesOnlyIntoItsOwnTab (zwei gleichzeitige Starts, Fake-herdr gibt dem ersten die Pane des zweiten; nur p2 wird gestartet/betippt, nur ein Record; schlaegt auf dem alten spawn.sh fehl)
 - [x] Faellt der Start doch um, sagt das Skript in welcher Vorlage und woran - statt einer Zeile, die nur 'claude did not come up' meldet.
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh pane_is_ours-Meldung 'pane X is not in tab Y (<ticket>/<lane>) ... nothing was typed' + 'claude did not come up in pane X (tab Y, <ticket>/<lane>)...: state'; Test TestSpawnNamesPaneAndTabWhenClaudeDoesNotComeUp
 - [x] Release-Note in core/release/notes/3YRPXJ.md, weil das Skript mit den Rollen ausgeliefert wird.
@@ -63,3 +68,4 @@ DoD 1 ist damit zu eng formuliert ('fuer testing ..., sonst ...'). Wer ihn woert
 - **2026-11-23 17:56 · Alexander Sacharov** — teamlead: Worktree steht auf altem master 5da1f4471 (vor #224). Vor dem ersten Commit 'git merge upstream/master', sonst blockiert Update-Rest in .jaira/lanes, AGENTS.md, CLAUDE.md die Gates.
 - **2026-11-23 17:56 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/48662.sock
 - **2026-11-23 17:57 · Alexander Sacharov** — decision (worker): keine offenen Entscheidungen. Herdr-IDs sind laut 'herdr --skill' stabil, aber eine Pane, die in einen anderen Workspace wandert, bekommt eine neue ID. spawn.sh nimmt deshalb tab_id UND pane_id aus 'tab create' und prueft per 'pane get' (result.pane.tab_id) vor 'pane run' und vor 'send-text', dass die Pane noch im eigenen Tab steht. Passt sie nicht: Abbruch mit Tab, Label und Pane in der Meldung, nichts getippt. Kein Neu-Aufloesen ueber 'pane list': dessen JSON-Form ist hier nicht pruefbar (kein laufender herdr-Server auf dieser Maschine, nur Herdr App/hc), und ein Raten an der Form waere ein neuer Fehler. Unter hc (herdr-hc.sh) ist Pane=Tab, die Pruefung laeuft immer durch. Nachstellung der Race mit Fake-herdr im Go-Test, nicht live.
+- **2026-11-23 18:00 · Alexander Sacharov** — critique: Pane-Check vor den Pane-Record in spawn.sh ziehen - sonst bleibt bei der Race ein Record mit der fremden Pane stehen; Abbruch schliesst den eigenen Tab schon, also braucht er keinen Record. Sonst nichts: zweiter Check vor send-text bleibt (claude laeuft 40 s, so lange kann die Pane wandern); Muster 'pane get | result.pane.tab_id' ist das aus reap.sh/close-tab.sh.

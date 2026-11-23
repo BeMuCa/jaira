@@ -474,6 +474,9 @@ pane_is_ours() {
   "$herdr" tab close "$tab" >/dev/null 2>&1 || true
   return 1
 }
+# Before the record below: a refused pane is somebody else's, and a record of
+# it under this ticket would have reap.sh look after the wrong tab.
+pane_is_ours || exit 1
 
 # Which tab belongs to which ticket, for reap.sh: it closes them once the
 # ticket's pull request is merged, and the pane id printed below is gone from
@@ -489,7 +492,6 @@ if common="$(git -C "$wt" rev-parse --git-common-dir 2>/dev/null)" \
   printf 'pane=%s\nticket=%s\nlane=%s\nworktree=%s\n' "$pane" "$ticket" "$lane" "$wt" \
     > "$gitdir/jaira/panes/$(printf '%s' "$pane" | tr -c 'A-Za-z0-9_.-' '_')"
 fi
-pane_is_ours || exit 1
 
 # <explain> and <discuss> write a few lines for a person, so they start on the
 # chat model 'jaira roles list' names for this board (its .jaira/chat-model,

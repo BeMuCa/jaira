@@ -70,9 +70,10 @@ esac
 	}
 	wg.Wait()
 
-	failed := 0
-	for i := range outs {
+	failed, won := 0, ""
+	for i, lane := range []string{"critique", "optimize"} {
 		if errs[i] == nil {
+			won = lane
 			continue
 		}
 		failed++
@@ -95,6 +96,15 @@ esac
 	}
 	if got := read("closed"); got != "t1" {
 		t.Errorf("tabs closed: %q, want the refused spawn's own t1", got)
+	}
+	// reap.sh's record of p2 belongs to the spawn that started in it, and
+	// the refused spawn left none of its own.
+	recs, _ := filepath.Glob(filepath.Join(root, ".git", "jaira", "panes", "*"))
+	if len(recs) != 1 || filepath.Base(recs[0]) != "p2" {
+		t.Fatalf("pane records %v, want only p2", recs)
+	}
+	if rec, _ := os.ReadFile(recs[0]); !strings.Contains(string(rec), "lane="+won+"\n") {
+		t.Errorf("the record of p2 names another lane than %s:\n%s", won, rec)
 	}
 }
 
