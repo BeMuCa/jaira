@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T22:47:41Z
+updated-at: 2026-11-23T22:51:29Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -91,3 +91,4 @@ review-check: |-
 - **2026-11-23 01:39 · BeMuCa** — testing: class: exit-code collision zwischen spawn.sh und run-lane.sh; example: bughunt note 1 (herdr exit 3 -> run-lane 6, zweiter Tab) und note 2 (20-stellige Grenze -> Pruefung uebersprungen); fix: spawn.sh EXIT-Trap macht jede nicht absichtliche 3 zu 1, run-lane bildet 3->6 und jede andere Nicht-Null auf 1 ab (deckt auch das aeltere 5-Beispiel); Grenze mit mehr als 9 Ziffern -> Exit 2.
 - **2026-11-23 01:39 · BeMuCa** — critique runde 2: nichts. EXIT-Trap statt eigenem Exit-Code, weil DoD 1 Exit 3 vorschreibt; zwei Zeilen, kein Umbau der uebrigen Exits.
 - **2026-11-23 01:41 · BeMuCa** — bughunt: done at 6bc8af7b0 - 0 findings in 2 modules, follow-up hunt (diff since 12cccd2ee: spawn.sh EXIT trap + 9-digit cap, run-lane.sh 3->6 / other->1, release note, hashes; no new files); concurrency, error paths, input, permissions checked; ran: trap extracted to a scratch script - deliberate refusal 3->3, subshell/command-substitution/pipeline 3->1, 5->5, 0->0, SIGTERM->143; files: core/release/notes/05CSWX.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/run-lane.sh core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/main_test.go core/shipped/shipped.sha256
+- **2026-11-23 22:51 · BeMuCa** — Signoff follow-up (Berk 2026-11-23): pr lane exempt from the memory check in spawn.sh; cockpit Give back says 'too little free memory to start a worker - close something and press again' on spawn.sh exit 3 (in the ticket note and toast; the Accept path keeps its stderr text but cannot hit exit 3 now); script test TestSpawnRefusesBelowTheFreeMemoryLimit; SKILL sentences added; DoD 5 reworded and ticked. Not covered by any test: the missing /proc/meminfo path itself (the new test skips where it is missing).
