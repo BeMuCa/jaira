@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:21Z
-updated-at: 2026-11-23T01:24:33Z
+updated-at: 2026-11-23T01:24:36Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-35pv7f
@@ -39,6 +39,14 @@ review-round: 2
 review-verdict-gaps: |-
   note: the hint only offers --after <a,b>. For the first milestone on a board there is nothing to put after, so the right command is --after "" (swimlane top). Fix: add "(or --after \"\" for a swimlane of its own)" to the hint and the release note.
   note: the --json path is not tested for leaving the hint out. A manual run confirms it is left out, because emit returns before the hint line (internal/cli/milestones.go:198). A one-line assertion would pin that.
+review-check: |-
+  1. cd into any scratch git repo that has a jaira board (jaira init).
+  2. Run: jaira milestone create "Round One"  -> 3 lines: Filed "Round One" as "round-one", Milestone "round-one" created..., then: It is in the milestone picker (M), not on the roadmap (L): 'jaira milestone set round-one --after <a,b>' puts it there.
+  3. Run: jaira milestone create top --after ""  -> only the "created" line, no picker/roadmap line.
+  4. Run: jaira milestone create next --after top  -> only the "created" line.
+  5. Run: jaira milestone create js --json  -> plain JSON, no hint text.
+  6. Paste the command from step 2 with top: jaira milestone set round-one --after top  -> "Milestone \"round-one\" updated", exit 0.
+  7. Open the board (jaira), press L  -> round-one now shows on the Milestone Roadmap under top.
 ---
 
 # jaira milestone create ohne --after sagt, dass der Milestone nicht auf der Roadmap steht
