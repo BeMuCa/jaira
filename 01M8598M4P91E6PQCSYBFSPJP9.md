@@ -25,7 +25,7 @@ related: []
 follows: 01M67K72RDJY2N2R2KQGATDG74
 commits: []
 created-at: 2026-11-23T22:43:41Z
-updated-at: 2026-11-23T22:57:08Z
+updated-at: 2026-11-23T22:57:10Z
 updated-by: BeMuCa
 claimed-by: worker-fspjp9
 claimed-at: 2026-11-23T22:56:02Z
@@ -60,4 +60,4 @@ claimed-at: 2026-11-23T22:56:02Z
 - [ ] gofmt, go vet -p 2 on touched packages, targeted tests only, then move to in-progress
 
 ## Progress
-
+- **2026-11-23 22:57 · BeMuCa** — pre-process: agents has no runtime effect in jaira; facts.go left alone because the board note never shows lane agents. Default 1 is set in the parser so show prints 1 for an absent key. Lanes that write (outcome-what, plan) reject agents>1 at load, because N agents in one worktree collide.
