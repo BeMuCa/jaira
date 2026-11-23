@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T15:45:35Z
-updated-at: 2026-11-23T01:48:47Z
+updated-at: 2026-11-23T01:50:24Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-h319tv
@@ -27,7 +27,7 @@ claimed-at: 2026-11-23T01:38:34Z
 outcome-what: "README has a new section '## Jaira PM View - Web only' (after '## Start'): binary-only install lines for sh and PowerShell with JAIRA_NO_ROLES=1, git clone + jaira init + jaira web, when the tickets show up on a fresh clone, a screenshot docs/img/web.png, one sentence each for what works and what does not. 'Web UI' dropped from the 'Not built' row; VS Code extension stays. Release note core/release/notes/H319TV.md."
 outcome-why: "jaira web is meant for people without a coding agent, but nothing told them how to get there, and the README still listed a web UI as deliberately not built."
 outcome-resolves: "All four DoD items; install line read from the script, not executed. Checked: concurrency n/a (docs); error path: web without init exits 1 -> init step included; unusual input: fresh clone without refs -> wait sentence; permissions: drops push, so push access named."
-review-summary: "none"
+review-summary: "Adds a README section '## Jaira PM View - Web only' right after '## Start' (README.md:300-343). It gives an install line for sh and for PowerShell that sets JAIRA_NO_ROLES=1, so only the binary is installed, without skills or cockpit. Then git clone, jaira init, jaira web. It explains that tickets arrive on their own refs, that jaira web fetches them at start, and that you reload if the page opened first; the page also rereads every minute. It adds a screenshot at docs/img/web.png (demo board, no real names) and one sentence each on what the page can do (read tickets, filter, sort tickets into epics, create/edit/close epics, pushed at once) and what it cannot (create, edit or move tickets, notes, acceptance). The Features bullet links to the section (README.md:67-68). 'Web UI' is dropped from the 'Not built' table, so that row now says only 'VS Code extension' (README.md:1247). A one-line release note is in core/release/notes/H319TV.md. Every claim was checked against the code: install.sh:110 and install.ps1:159 read the variable; web.go:273 fetches at start; ReviewPage.svelte:20 refreshes every 60 s; web.go:303-313 only writes epics."
 round: 2
 back-from: critique
 back-by: lane
