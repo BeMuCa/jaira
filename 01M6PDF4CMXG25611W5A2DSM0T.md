@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:27:24Z
+updated-at: 2026-11-23T01:27:26Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -52,7 +52,7 @@ claimed-at: 2026-11-23T01:24:05Z
 - [x] wire it in internal/cli/root.go loadEnv and internal/tui/model.go gateEnv
 - [x] tests: gate (nil/false keeps refusal, true passes), gitrepo (plain dir, repo without remote, subdir of repo)
 - [x] release note core/release/notes/2DSM0T.md
-- [ ] manual: scratch board without git reaches done and logbook; repo without remote still refused
+- [x] manual: scratch board without git reaches done and logbook; repo without remote still refused
 
 ## Progress
 - **2026-11-23 01:25 · BeMuCa** — Reproduced 2026-11-23 on a scratch board in a plain dir (branch build): move to done refused with 'lane "done" requires the commits ...'. Decision (mine, settle-able): 'no repo' = no .git entry in the board root or any parent AND git does not answer true to rev-parse --is-inside-work-tree (or git is not installed). Why both: a git error that is not 'no repo' (dubious ownership, broken config) must never drop the commit rule inside a real repo; a missing git binary alone must not either when a .git is there. Asked lazily, only on the refusal path, so a repo board pays nothing and render paths never call it. Planning option not ticked, so pre-process is skipped; plan written as plan items anyway.
