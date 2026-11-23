@@ -19,9 +19,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T01:12:07Z
-assignee: BeMuCa
-updated-by: BeMuCa
+updated-at: 2026-11-23T20:54:17Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts
@@ -43,4 +43,4 @@ updated-by: BeMuCa
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-23 20:54 · Alexander Sacharov** — Alexander Sacharov took this ticket over from BeMuCa
