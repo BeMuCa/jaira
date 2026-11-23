@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:33:54Z
+updated-at: 2026-11-23T21:33:58Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -28,11 +28,7 @@ outcome-what: "Sign-off screen (signoff and human) shows blocker lines, check, w
 outcome-why: "Berk 2026-11-23: the check sat last under a page of account; rounds 2-3: bughunt found blocker forms hidden or emptied, and human-lane context/notes unreachable."
 outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSignOffKeepsBlockersOnTop (11 forms, 3 label-alone, 5 non-blockers), TestHumanLaneOpensTheDecisionScreen, TestDetailsCarryContextAndNotes; checked: concurrency n/a (render only), error paths n/a, unusual input - blocker forms, label alone, empty fields; permissions n/a"
 review-summary: "none"
-review-gaps: |-
-  note: edge: fix-now: the help screen (view.go renderHelp, the 'a f' row ~line 1789) does not list the new 'i' key - add a row 'i  details on a ticket in human or signoff'
-  note: edge: fix-now: signoff.go:170-174 blockerLines - a label standing alone ('blocker:\n- the limit resets', '**Blocker:**') shows the bare label in the blocker row, not the finding; take the next non-empty line as the text when the rest is empty or only emphasis, and assert the text in signoff_test.go:114-124
-  note: limit: 'i' shows the whole detail pane by design (round-2 decision), so Commits (recorded list only), the DoD and the start checklist appear a second time below the top block
-  note: limit: the agent lane 'review' named in the goal keeps the plain detail view - decision note 21:00 reads the goal as the person lanes human and signoff
+review-gaps: "after review give-back: nextFinding is one helper beside blockerLines, both share gapMarker/gapBlocker - nothing duplicated or orphaned. Left: regex mirrors hooks/board.ts (two languages); Details repeat Commits/DoD (whole detail pane by design)."
 test-verdict: "pass: go vet ./... + go test -race -count=1 ./internal/tui RC=0 at 2880173dd (full race suite RC=0 at 73d06b024); DoD 1-5 verified in the tree; screen exercised in tmux on a scratch board; render-only, writes nothing"
 hunt-verdict: "pass: bughunt done at 2880173dd - 0 blocker, 1 change edge (a label-only blocker row shows the label, finding is behind 'i'; note for the person), 0 pre-existing; round 1 pre-existing quoted-path finding left as note (EH6Z0N's diff code)"
 round: 4
