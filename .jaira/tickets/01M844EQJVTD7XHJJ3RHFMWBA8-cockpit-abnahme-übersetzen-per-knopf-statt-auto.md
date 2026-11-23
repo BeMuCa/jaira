@@ -1,7 +1,7 @@
 ---
 id: 01M844EQJVTD7XHJJ3RHFMWBA8
 title: "Cockpit-Abnahme: Übersetzen per Knopf statt automatisch, alles in einem Aufruf"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: Die Abnahme-Ansicht übersetzt nur noch auf Knopfdruck; ein Druck übersetzt Kopf und alle Notizen auf einmal.
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T12:00:24Z
-updated-at: 2026-11-23T12:13:25Z
+updated-at: 2026-11-23T12:15:06Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-68987
@@ -28,14 +28,12 @@ claimed-at: 2026-11-23T12:01:00Z
 outcome-what: "Acceptance pane translates only on Translate (key t): head and all review notes in one haiku call, kept in the store; a second press or a new opening shows the original. Removed the two automatic calls in readStory, rephrasePrompt/headPrompt replaced by translatePrompt."
 outcome-why: "Every opening with 'language' set made two model calls and the text jumped from original to translation while the person read."
 outcome-resolves: "DoD 1-6: no call without a press, one call per press, store hit without call, no button without language, tests, release note. Checked: concurrency (stale answers after second press/reopen show nothing, mutation-tested), error paths (failed/misfitting answer keeps original, next press asks again), unusual input (no notes -> prompt without notes part; empty goal filtered), permissions (nothing written to the ticket)."
-review-summary: |-
-  core/mod/builtin/jaira-cockpit/hooks/register.tsx:1534 translate() builds the head from s.title/s.goal while the pane draws story_?.title || w.title and story_?.goal || w.goal - a ticket with an empty story goal shows w.goal untranslated; build head from the same expressions the render uses
-  core/mod/builtin/jaira-cockpit/hooks/register.tsx:1531 translate() re-reads settings.json although openAcceptance already put the language into storyAtom - read s.language: the button and the call then agree, one read less
-  core/mod/builtin/jaira-cockpit/hooks/register.tsx:1551 untranslate() fires its atom updates with void, then translate() awaits update(translatingAtom, id) - the null may land after the id; make untranslate async and await both updates
+review-summary: none
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "rephrased() took a prompt builder with one caller - now takes the prompt string (register.tsx translate/rephrased); its comment said notes, now texts. Left: translate() recomputes the light reason with lightOf as the render does - two lines, same inputs, a shared helper would serve two callers in one file only. Old store entries '<id>:head' are not migrated; they age out through storeNewest's 50-ticket cap."
 ---
 
 # Cockpit-Abnahme: Übersetzen per Knopf statt automatisch, alles in einem Aufruf
@@ -71,3 +69,4 @@ back-count: 1
 - **2026-11-23 12:07 · Alexander Sacharov** — in-progress: the old auto-translation ran two calls (notes, '<id>:head'); now translate() builds head+notes and asks once via rephrased() with translatePrompt. Stale-call guard (newest map) checked by mutation: removing it fails 'a call answered after a second press...'. Open risk for the person: whether the 't' hotkey fires while the reason Input has focus is engine-defined (API doc: hotkey works while the pane holds focus, says nothing of Input) - check at acceptance. .jaira/lanes, AGENTS.md, CLAUDE.md were rewritten by jaira on claim (0.6.4 block), not by this ticket: left out of the commit.
 - **2026-11-23 12:08 · Alexander Sacharov** — critique: (1) head texts must use the render's fallbacks (story title/goal || w.title/w.goal); (2) translate takes the language from storyAtom.language, not a second settings read; (3) untranslate awaits its updates so 'translating' cannot be cleared after it was set.
 - **2026-11-23 12:13 · Alexander Sacharov** — in-progress round 2: all three critique findings fixed. Learned: a superseded call's answer is still kept in the store (rephrased() stores before the newest check) - the next press is then a store hit with no call; the race test now asserts that instead of expecting a second call.
+- **2026-11-23 12:13 · Alexander Sacharov** — critique pass 2: the three findings of pass 1 are addressed (head uses the render's fallbacks, language from storyAtom, untranslate awaited); nothing else reopened.

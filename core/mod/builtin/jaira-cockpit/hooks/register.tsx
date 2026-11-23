@@ -1541,7 +1541,7 @@ async function translate($: EngineInterface, w: Waiting): Promise<void> {
   const notes = items.map(x => x.text)
   const texts = [...head, ...notes]
   await update($, translatingAtom, () => w.id)
-  const shown = await rephrased($, REPHRASED_PREFIX + w.id, language, texts, l => translatePrompt(l, head, notes))
+  const shown = await rephrased($, REPHRASED_PREFIX + w.id, language, texts, translatePrompt(language, head, notes))
   if (newest.get(w.id) !== mine) return
   await update($, translatingAtom, x => (x === w.id ? null : x))
   if (shown !== undefined) await update($, rephrasedAtom, r => ({ ...r, [w.id]: Object.fromEntries(texts.map((x, i) => [x, shown[i]!])) }))
@@ -1555,14 +1555,14 @@ async function untranslate($: EngineInterface, id: string): Promise<void> {
   await update($, rephrasedAtom, ({ [id]: _, ...rest }) => rest)
 }
 
-// The notes in that language: kept in the store, or asked of the cheap model
+// The texts in that language: kept in the store, or asked of the cheap model
 // and kept; undefined where the call fails or its answer does not fit.
-async function rephrased($: EngineInterface, key: string, language: string, texts: readonly string[], prompt: (language: string) => string): Promise<string[] | undefined> {
+async function rephrased($: EngineInterface, key: string, language: string, texts: readonly string[], prompt: string): Promise<string[] | undefined> {
   const kept = (await $.store.get(key)) as { language: string; source: string[]; shown: string[] } | undefined
   if (kept?.language === language && kept.source.length === texts.length && kept.source.every((x, i) => x === texts[i])) return kept.shown
   let shown: string[] | undefined
   try {
-    const result = await $.model.complete({ model: 'haiku', prompt: prompt(language), maxTokens: 4000 })
+    const result = await $.model.complete({ model: 'haiku', prompt, maxTokens: 4000 })
     shown = result.isAnswered ? rephrasedOf(result.text, texts.length) : undefined
   } catch {
     return undefined
