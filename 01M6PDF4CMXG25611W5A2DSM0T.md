@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:33:57Z
+updated-at: 2026-11-23T01:34:00Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -75,3 +75,4 @@ back-count: 1
 - **2026-11-23 01:31 · BeMuCa** — Decision for the fix (mine): without git on PATH OutsideRepo answers false - the requirement stays. Reason: without git nothing can tell a repository reached through a symlink, GIT_DIR or GIT_WORK_TREE from a plain directory, and the rule says a missing binary must never drop the requirement. Cost: a solo user with no git installed at all still cannot reach done without --force; jaira's gitrepo package already assumes git on PATH. Also resolve symlinks before the .git walk so a git that fails for another reason (dubious ownership) behind a symlink does not read as 'no repository'.
 - **2026-11-23 01:32 · BeMuCa** — critique round 2: the fix is the smallest that closes the class (path as written vs real path, and a missing git) - early return on !Available, EvalSymlinks before the walk. Nothing else; standing on the round-1 critique note for the gitref.Usable question.
 - **2026-11-23 01:33 · BeMuCa** — bughunt: change: blocker: core/gitrepo/git.go:79 (return !r.IsRepo()) - class: once the .git walk finds nothing, any git failure is read as 'no repository', which is the case the doc comment above OutsideRepo says it refuses; reached by a repository git finds without a .git entry (GIT_DIR / GIT_WORK_TREE in the environment) that git then fails to read (bad config, a killed git); the waiver then drops the commit rule at core/gate/gate.go:372 (done gate) and internal/cli/logbook.go:324 (logbook); example: GIT_DIR=<bare repo with a broken config line> GIT_WORK_TREE=<board dir> -> git rev-parse exits 128, OutsideRepo = true, while a valid GIT_DIR gives false; narrow setup, but the gate passes when it should refuse; ran: scratch probe built against this worktree calling gitrepo.Repo.OutsideRepo (plain dir: true; valid GIT_DIR: false; broken GIT_DIR: true)
+- **2026-11-23 01:34 · BeMuCa** — bughunt: done at 1488c67d8 - 1 finding (1 change, 0 pre-existing) in 1 module, follow-up hunt since 821aa6f78 (diff: core/gitrepo/git.go, core/gitrepo/outside_test.go, core/release/notes/2DSM0T.md; no new files); concurrency, error paths, input, permissions checked; files: core/gate/commits_test.go core/gate/gate.go core/gitrepo/git.go core/gitrepo/outside_test.go core/release/notes/2DSM0T.md internal/cli/logbook.go internal/cli/root.go internal/tui/model.go
