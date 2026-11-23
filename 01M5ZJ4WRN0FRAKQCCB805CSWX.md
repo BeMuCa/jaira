@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:35:37Z
+updated-at: 2026-11-23T01:36:00Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -26,6 +26,7 @@ claimed-at: 2026-11-23T01:32:21Z
 outcome-what: "spawn.sh prueft MemAvailable vor Worktree und Tab: unter JAIRA_MIN_FREE_MB (Default 2048) Exit 3, --force startet trotzdem, ohne /proc/meminfo eine Zeile und Start. run-lane.sh meldet das als Exit 6. Teamlead-, Dispatcher- und Worker-SKILL sagen, was dann zu tun ist."
 outcome-why: Drei parallele Go-Builds auf einer 7-GB-WSL stuerzten am 27.10. viermal ab; nichts warnte vor Speicher.
 outcome-resolves: "Kein Worker startet mehr still in eine Maschine, die fuer seinen Build zu wenig freien Speicher hat."
+review-summary: none
 ---
 
 # spawn.sh startet keinen Worker, wenn der freie Speicher nicht fuer einen weiteren Build reicht
