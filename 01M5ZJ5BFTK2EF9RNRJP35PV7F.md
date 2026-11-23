@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:21Z
-updated-at: 2026-11-23T01:23:13Z
+updated-at: 2026-11-23T01:24:28Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-35pv7f
@@ -24,7 +24,7 @@ claimed-at: 2026-11-23T01:19:53Z
 outcome-what: "milestone create without --after now prints a second line: the milestone is in the picker (M), not on the roadmap (L), and 'jaira milestone set <name> --after <a,b>' puts it there. --after given (also --after \"\") and --json print nothing new. Test assertions added to TestCreateWritesGoalAndAfter; release note added."
 outcome-why: A milestone made without --after went to the M picker only; the person looked on the roadmap and thought it lost (O14). The hint was only in --help.
 outcome-resolves: "DoD 1 (hint with the set --after command) and DoD 2 (release note). Checked: concurrency (no new write, the line prints after the locked write returned), error paths (an error returns before the line), unusual input (normalised name like 'Round Two' -> round-two is the one printed; --after \"\" counts as placed), permissions n/a. go test not run per worker rules."
-review-summary: "none"
+review-summary: "'jaira milestone create <name>' without --after now prints one more stdout line under the 'created' line: the milestone is in the picker (M), not on the roadmap (L), and 'jaira milestone set <name> --after <a,b>' puts it there. The line is skipped when --after was given at all (including --after \"\", which makes a swimlane top) and in --json. It prints the normalised name, so the command can be pasted as-is. A table test in TestCreateWritesGoalAndAfter covers all three --after forms, and core/release/notes/35PV7F.md has one line for it."
 round: 2
 back-from: critique
 back-by: lane
