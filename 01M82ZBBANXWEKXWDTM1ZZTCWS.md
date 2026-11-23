@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:22:20Z
+updated-at: 2026-11-23T21:22:24Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -44,7 +44,7 @@ back-count: 1
 - [x] Die Ansicht in human, review und signoff zeigt oben in dieser Reihenfolge: So pruefst du, Was gemacht wurde, Offene Frage (wenn vorhanden), Code-Aenderungen, DoD mit Proofs
   proof: internal/tui/signoff.go:81-131 signOffBody order; view.go render() via atPersonsLane; tests TestSignOffViewShowsTheDecisionFirst, TestHumanLaneOpensTheDecisionScreen
 - [x] Felder ohne Nutzen fuer die Entscheidung sind von dieser Ansicht entfernt; welche, steht nach dem Brainstorm als Notiz am Ticket
-  proof: decision note 'decisions settled (worker...)' lists them; signoff.go:136-160 details block behind detailsFor; TestSignOffViewShowsTheDecisionFirst hidden list
+  proof: decision note 'decisions settled (worker...)' + testing->in-progress note: behind 'i' is the full detail pane body (detailFields); TestSignOffViewShowsTheDecisionFirst hidden list
 - [x] Ein leeres Pflichtfeld zeigt, welche Lane es haette schreiben muessen
   proof: signoff.go declared() -> owedRow '— owed by <lane>' for check/what/why; TestSignOffShowsOwedFieldsNamingTheLane
 - [x] Release-Notiz in core/release/notes/<ID>.md
