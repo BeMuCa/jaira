@@ -1,7 +1,7 @@
 ---
 id: 01M846QY4DXDWFZV58WSMK8HD2
 title: "Cockpit-Abnahme: Abschnitte optisch trennen, damit der Text schnell lesbar ist"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 goal: "Die Abnahme-Ansicht (Приём) liest sich auf einen Blick: Kopf (Titel, Goal, Done, Why), History, Release note und Review-Notizen sind sichtbar getrennte Blöcke, und innerhalb des Kopfs springt jedes Feld ins Auge."
@@ -18,9 +18,13 @@ tags:
   - acceptance
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 11089bd4d9ee3d5e339f6e78f2f6f70dbfb58a39
+  - 408407f6cdfada7885b5e34e023213c87d335fb7
+  - cb1cf932ea87fb7eaf174e5434ed1ea283a3e37e
+  - 18b976ab8f8e7f0ef45db1c5a726f6d2af156949
 created-at: 2026-11-23T12:40:23Z
-updated-at: 2026-11-23T12:56:07Z
+updated-at: 2026-11-23T13:33:31Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91230
@@ -28,18 +32,18 @@ claimed-at: 2026-11-23T12:40:52Z
 outcome-what: "Acceptance pane: History, Release note and Review notes open with a coloured title and a dim rule; Goal/Done/Why each have a coloured bar and a blank line; history side info (round, age, commits) dim, the DoD/hunt/review line bright; release note lines one per line"
 outcome-why: the pane was one white block; the maintainer skims and could not find Goal or where History ended
 outcome-resolves: "MK8HD2: DoD 1-4, 6; DoD 5 is the maintainer's look at acceptance"
-review-summary: "The Acceptance pane in the cockpit (register.tsx) now draws History, Release note and Review notes as blocks: each opens with a bold title in the theme colour 'claude' and a dim ─ rule cut at the pane edge (section()). Goal, Done and Why each start with a '┃' bar in their own theme colour (suggestion/success/warning) and a blank line above (field()). History lines for round/age and commits/PR are dim, the DoD/bughunt/review line stays bright. Release note lines now stand one per line under their heading instead of joined with ' / '. Only theme keys and dimColor, so light and dark terminals both read it. Tests updated (480 pass), release note and shipped hash added."
+review-summary: "Delta review from 11089bd4d to 408407f6c. section() in register.tsx now takes only a title: the coloured title and the dim rule share one truncated row, and History's id | lane | reviewed-in moved onto its own dim line (key history-where) that wraps instead of being cut. Closes the earlier fix-now; the rest of the change (coloured bar per Goal/Done/Why, dim side info in History, Release note lines one per row under a ruled title, theme keys only) was read whole in round 1 and is unchanged. claude plugin test: 480 pass."
 review-gaps: |-
-  note: edge: fix-now: register.tsx section() puts the History heading's side info (id | lane | reviewed in round N) into the same truncate-end Text as the rule, so on a narrow pane that info is cut off - before this change it wrapped; fix: keep the rule in its own truncated Text after a wrapping title+info Text
-  note: limit: RULE is 240 chars, a pane wider than that shows a shorter rule - harmless
-test-verdict: "pass: claude plugin test . 480/480 (RC=0), claude plugin validate passed (no warning on changed lines), go test ./shipped ./mod ./release green after manifest regen; DoD 1-4,6 checked in register.tsx section()/field()/history + 'the head says what the ticket is for' (colours by key, dimColor per history line, rule after each title); failure path: no release note file -> no Release note block (test 'keeps no release notes'), no review notes -> no notes header; change writes nothing, so no two-writer case; DoD 5 left for the person"
-hunt-verdict: "pass: bughunt done at 11089bd4d, 1 change finding (edge, not a blocker: History heading's side info cut at the pane edge on narrow panes; the light line still names the stale review), 0 pre-existing"
-review-verdict: "accept: DoD 1-4 and 6 are met by the diff and 480 cockpit tests pass; one fix-now edge (History side info truncated); DoD 5 is the person's"
-review-round: 1
+  note: limit: the rule is 240 '─' cut at the pane edge; a pane wider than 240 columns shows a shorter rule (noted by the implementer)
+  note: limit: DoD 5 is the person's to check in a live cockpit; tests check theme keys and dimColor, not real light/dark rendering
+test-verdict: "pass: round 2, changed files register.tsx + board.test.ts: claude plugin test . 480/480 (RC=0), go test ./shipped green after manifest regen; History's id | lane line now its own dim wrapping Text (test 'the head says what the ticket is for' checks it); writes nothing; DoD 5 left for the person"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 2"
+review-verdict: "accept: fix-now answered - History's id/lane/reviewed-in wrap on their own line; no new defects in the delta; 480 tests pass"
+review-round: 2
 review-verdict-gaps: |-
-  note: edge: fix-now: register.tsx section() puts the History heading's side info (id | lane | reviewed in round N) into the same truncate-end Text as the rule, so on a narrow pane that info is cut off - before this change it wrapped; fix: keep the rule in its own truncated Text after a wrapping title+info Text
-  note: limit: RULE is 240 chars, a pane wider than that shows a shorter rule - harmless
-review-check: "1. In a repo with a ticket in signoff, start claude with the branch cockpit: claude --plugin-dir core/mod/builtin/jaira-cockpit  2. In the cockpit band press [Acceptance] on that ticket  3. See: Goal, Done, Why each start with a coloured ┃ bar (three different colours) and a blank line between them  4. See: 'History', 'Release note', 'Review notes - choose for each' each in colour, followed by a dim ──── line to the pane edge  5. See: round/age and commits lines are dim, the 'DoD x/y | bughunt | review' line is bright  6. Switch the terminal to a light theme and repeat 3-5: all still readable  7. DoD 5 (seen by a person): you find Goal, Done, Why and Release note at a glance - tick it yourself"
+  note: limit: the rule is 240 '─' cut at the pane edge; a pane wider than 240 columns shows a shorter rule (noted by the implementer)
+  note: limit: DoD 5 is the person's to check in a live cockpit; tests check theme keys and dimColor, not real light/dark rendering
+review-check: "1. In this worktree start: claude --plugin-dir core/mod/builtin/jaira-cockpit  2. In the cockpit band press Acceptance and open a ticket waiting in signoff (e.g. MK8HD2)  3. Look at the head: Goal, Done and Why each start with a coloured ┃ bar in its own colour, a blank line between them  4. Below: History, Release note and Review notes - choose for each each open with a coloured title and a dim ─── line to the pane edge  5. Under History the line \"<ID> | <lane>\" and the round/commits lines are dim, the \"DoD … | bughunt … | review: …\" line is bright  6. Narrow the terminal: the ID/lane line wraps, nothing after the History title is lost  7. Switch the terminal to a light theme: everything stays readable  8. Seen by a person (DoD 5): you find Goal, Done, Why and Release note at one glance"
 round: 2
 back-from: review
 back-by: lane
@@ -59,7 +63,8 @@ stop-after-fix: "true"
   proof: register.tsx history {dim}; test: round/commits dimColor, DoD line not
 - [x] Hell- und Dunkelmodus des Terminals bleiben lesbar
   proof: only theme keys (claude/suggestion/success/warning) and dimColor, no hex colours: register.tsx section()/field()
-- [ ] seen by a person: der Maintainer findet in der Ansicht Goal, Done, Why und Release note mit einem Blick
+- [x] seen by a person: der Maintainer findet in der Ansicht Goal, Done, Why und Release note mit einem Blick
+  proof: Alex looked at the Acceptance pane and pressed Accept in the cockpit, 23.11.2026
 - [x] Release-Note in core/release/notes/<ID>.md
   proof: core/release/notes/MK8HD2.md
 
@@ -92,3 +97,12 @@ stop-after-fix: "true"
 - **2026-11-23 12:53 · Alexander Sacharov** — review: fix-now: section() in register.tsx truncates the History heading's side info (id | lane | reviewed in) together with the rule; put the rule in its own truncate-end Text so the title+info wraps as before
 - **2026-11-23 12:54 · Alexander Sacharov** — set stop-after-fix=true: fix-now is a few render lines, no lock, no parser
 - **2026-11-23 12:56 · Alexander Sacharov** — fix-now closed: History's id | lane | reviewed-in moved off the rule row onto its own dim wrapping line (register.tsx section() takes only a title now); test checks the line. 480 pass.
+- **2026-11-23 12:56 · Alexander Sacharov** — waiting: review round 2 (fresh agent via run-lane.sh) since 13:56
+- **2026-11-23 12:58 · Alexander Sacharov** — review: done at 408407f6c
+- **2026-11-23 12:59 · Alexander Sacharov** — report: Acceptance pane in blocks - coloured section title + dim rule, coloured bar per Goal/Done/Why, dim side info; one fix-now (History side info wraps) closed | signoff, context 166k of 1000k, cache warm 60 min | DoD 5 open: the maintainer looks at the pane (light and dark); branch not pushed; ticket file modified in worktree, rides with the next commit or logbook
+- **2026-11-23 13:01 · Alexander Sacharov** — hunt report: 0 findings, nothing written to MK8HD2 | read whole: none (no new file); read as a diff since 11089bd4d: core/mod/builtin/jaira-cockpit/hooks/register.tsx (section() without its third argument, all 3 callers checked; new history-where line), core/mod/builtin/jaira-cockpit/tests/board.test.ts, core/shipped/shipped.sha256 (new entry = sha256 of HEAD register.tsx, old hash kept) | nothing left unchecked; ran: claude plugin test . (480 pass, 0 fail)
+- **2026-11-23 13:01 · Alexander Sacharov** — bughunt: done at 408407f6c - 0 findings (0 change, 0 pre-existing) in 3 modules, follow-up hunt of 11089bd4d..408407f6c; concurrency, error paths, input, permissions checked; files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/MK8HD2.md core/shipped/shipped.sha256
+- **2026-11-23 13:29 · Alexander Sacharov** — Accepted from signoff: angenommen:
+- note: limit: the rule is 240 '─' cut at the pane edge; a pane wider than 240 columns shows a shorter rule (noted by the implementer)
+- note: limit: DoD 5 is the person's to check in a live cockpit; tests check theme keys and dimColor, not real light/dark rendering
+- **2026-11-23 13:29 · Alexander Sacharov** — cockpit: accepted by the person, signoff -> done
