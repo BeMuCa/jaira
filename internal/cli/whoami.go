@@ -36,7 +36,8 @@ checkout's owner, who may be somebody else.
 
 A ticket assigned under a name that is not in this list is somebody else's as
 far as the gates are concerned, and moving it will be refused. Add the name to
-the alias file rather than passing --force to every move.
+the alias file rather than passing --force to every move — under JAIRA_USER,
+with 'jaira people alias'.
 
 Inside a board it also prints where tickets go: the remote this board uses and
 where that name came from, the remotes this repository actually has, whether
@@ -56,6 +57,7 @@ before a ticket is written rather than after.`,
 			if g.jsonOut {
 				payload := map[string]any{
 					"identity": me, "aliases": aliases, "alias_file": path,
+					"alias_file_read": !coreidentity.ByEnv(),
 				}
 				if st != nil {
 					payload["board"] = st.Root
