@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ532H7HT1234QSSDWRC0H
 title: "Der Agent-Block sagt, wie man Goal, Kontext und DoD nach dem Anlegen aendert"
-status: review
+status: signoff
 ready: true
 creator: BeMuCa
 goal: "Der Agent-Block in CLAUDE.md nennt jaira set fuer goal und context und einen dokumentierten Weg, einen DoD-Punkt nachzutragen; niemand muss das per Notiz behelfen."
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:13Z
-updated-at: 2026-11-23T01:31:25Z
+updated-at: 2026-11-23T01:31:31Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-dwrc0h
