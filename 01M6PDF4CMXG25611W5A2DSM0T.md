@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:24:49Z
+updated-at: 2026-11-23T01:25:01Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -42,6 +42,8 @@ claimed-at: 2026-11-23T01:24:05Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] gitrepo: OutsideRepo() - true only when no .git in Dir or any parent AND git does not report a work tree
 
 ## Progress
 
