@@ -28,7 +28,8 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-23T23:07:20Z
-updated-at: 2026-11-23T23:07:20Z
+updated-at: 2026-11-23T23:09:38Z
+updated-by: BeMuCa
 ---
 
 # Das Katalog-Repo steht: Aufbau, README zum Einreichen, CI mit lint und index
