@@ -4,7 +4,7 @@ title: "Ein Kollege schaut sich die Jira-Anbindung an, sobald sie gemergt ist"
 status: backlog
 ready: true
 creator: berkc
-assignee: Alexander Sacharov
+assignee: ""
 goal: "Der Kollege, der gerade an jaira web arbeitet, prueft die fertige Jira-Anbindung von berkc gegen seine Arbeit und meldet, was nicht passt."
 context: |-
   Wunsch berkc 05.11.2026: wenn alle Jira-Tickets fertig und gemergt sind, soll der Kollege sie sich ansehen, weil er gerade an jaira web arbeitet.
@@ -22,7 +22,12 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-05T09:28:08Z
-updated-at: 2026-11-05T09:28:08Z
+updated-at: 2026-11-23T13:16:54Z
+rejected-kind: obsolete
+rejected-why: reminder over untouched Jira tickets
+rejected-by: Alexander Sacharov
+rejected-at: "2026-11-23T13:16:54Z"
+updated-by: Alexander Sacharov
 ---
 
 # Ein Kollege schaut sich die Jira-Anbindung an, sobald sie gemergt ist
