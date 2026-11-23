@@ -1,7 +1,7 @@
 ---
 id: 01M82ZBBANXWEKXWDTM1ZZTCWS
 title: "Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Oeffnet eine Person ein Ticket in human, review oder signoff in der TUI, sieht sie oben in dieser Reihenfolge: So pruefst du (review-check), Was gemacht wurde (outcome what/why), Offene Frage (question, nur wenn eine da ist), die Code-Aenderungen und die DoD mit Proofs. Felder, die der Person bei der Entscheidung nicht helfen, stehen nicht mehr auf dieser Ansicht."
@@ -19,14 +19,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:25:33Z
+updated-at: 2026-11-23T21:25:52Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
 claimed-at: 2026-11-23T20:54:57Z
-outcome-what: "Sign-off screen (signoff and human) shows blocker lines from review-gaps, check, what, why, question, commits, DoD with proofs. 'i' appends the full detail pane body (detailFields, split out of detailBody) - problem, resolves, summary, gaps, verdict, context, notes, plan, lane fields. Blocker detection uses the cockpit's MARKER/BLOCKER regexes and drops the label in the row."
-outcome-why: "The check sat last under a page of account (Berk 2026-11-23); round 2: bughunt found '1. blocker:' and '**Blocker**:' hidden behind 'i', and a human-lane ticket losing its context and notes."
-outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSignOffKeepsBlockersOnTop (11 blocker forms, 5 non-blockers), TestHumanLaneOpensTheDecisionScreen, TestDetailsCarryContextAndNotes; checked: concurrency n/a (render only, single-threaded TUI), error paths n/a, unusual input - blocker forms/case/markers/emphasis, empty fields owed rows; permissions n/a"
+outcome-what: "Sign-off screen (signoff and human) shows blocker lines, check, what, why, question, commits, DoD with proofs; 'i' appends the full detail pane body. Blocker detection uses the cockpit's MARKER/BLOCKER regexes; a label standing alone keeps its row as written."
+outcome-why: "Berk 2026-11-23: the check sat last under a page of account; rounds 2-3: bughunt found blocker forms hidden or emptied, and human-lane context/notes unreachable."
+outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSignOffKeepsBlockersOnTop (11 forms, 3 label-alone, 5 non-blockers), TestHumanLaneOpensTheDecisionScreen, TestDetailsCarryContextAndNotes; checked: concurrency n/a (render only), error paths n/a, unusual input - blocker forms, label alone, empty fields; permissions n/a"
 review-summary: none
 review-gaps: "round 2: the repair removed the hand-picked details list, gapLines and isBlockerLine (no callers left - grep clean); detailBody now composes header + detailFields, no duplicate renderer. firstNonEmpty, laneFields, sourced, owedRow, fieldRow all still called. Left: the regex mirrors the TS one in hooks/board.ts - two languages, cannot share code; the gaps row inside Details repeats the blocker lines shown on top (the full ticket, by design)."
 test-verdict: "pass: go vet ./... + go test -race -count=1 ./internal/tui RC=0 at 383b42d9e; DoD 1-5 verified; render-only"
