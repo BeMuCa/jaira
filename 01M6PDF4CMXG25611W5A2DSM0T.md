@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:27:07Z
+updated-at: 2026-11-23T01:27:09Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -33,7 +33,8 @@ claimed-at: 2026-11-23T01:24:05Z
   proof: core/gate/gate.go OutsideRepo waiver in the requires-commits check; core/gitrepo/git.go OutsideRepo; manual: scratch board in plain dir, move to done exit 0 and logbook exit 0 without --force
 - [x] In einem Repo ohne Remote verlangt done weiter Commits
   proof: OutsideRepo is false when a .git exists upward or git sees a work tree; manual: git init without remote, move to done refused with needs_commits; TestOutsideRepo repo cases
-- [ ] Ein Test je Fall
+- [x] Ein Test je Fall
+  proof: TestCommitsWaivedOnlyOutsideARepository (core/gate/commits_test.go), TestOutsideRepo (core/gitrepo/outside_test.go); compiled by go vet, not run (worker rule: no go test)
 - [ ] Release-Notiz in core/release/notes/<ID>.md
 
 ## Options
