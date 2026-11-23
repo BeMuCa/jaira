@@ -74,12 +74,14 @@ are made one by 'jaira people rename', never by taking a name off one of them.`,
 			if err != nil {
 				return err
 			}
+			// nil when nothing changed for a name nobody has: "alias zed zed"
+			// names nobody new, so there is no person to show.
 			p := l.Find(args[0])
 			if g.jsonOut {
 				return emit(cmd.OutOrStdout(), map[string]any{"person": p, "changed": changed})
 			}
 			if !changed {
-				fmt.Fprintf(cmd.OutOrStdout(), "Nothing to change: %s already goes by %s.\n", p.Name, strings.Join(args[1:], ", "))
+				fmt.Fprintf(cmd.OutOrStdout(), "Nothing to change: %s already goes by %s.\n", strings.TrimSpace(args[0]), strings.Join(args[1:], ", "))
 				return nil
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "%s now also goes by %s, on %s.\n", p.Name, strings.Join(args[1:], ", "), gitref.PeopleRef)

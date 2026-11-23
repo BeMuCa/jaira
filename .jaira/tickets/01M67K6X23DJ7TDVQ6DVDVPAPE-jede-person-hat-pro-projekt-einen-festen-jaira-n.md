@@ -1,7 +1,7 @@
 ---
 id: 01M67K6X23DJ7TDVQ6DVDVPAPE
 title: "Jede Person hat pro Projekt einen festen jaira-Namen, einmal abgefragt und lokal gespeichert; er ersetzt Git-Name und Aliasse"
-status: critique
+status: in-progress
 ready: true
 creator: berkc
 assignee: Alexander Sacharov
@@ -21,11 +21,16 @@ related:
   - 01M5MNWJF240306ZVDA41K3RA8
 commits: []
 created-at: 2026-10-30T23:44:36Z
-updated-at: 2026-11-23T19:53:20Z
+updated-at: 2026-11-23T19:53:54Z
 updated-by: Alexander Sacharov
 outcome-what: "Neuer Ref refs/jaira/people (core/people) mit jaira people [alias|rename]; core/identity loest den Handelnden darueber auf; list/next/show/TUI zeigen und filtern unter dem jaira-Namen; snapshot sichert die Liste."
 outcome-why: "Dieselben Menschen standen unter mehreren Namen auf dem Board (BeMuCa/berkc, Alexander Sacharov/alex/AlSa); Filter und Eigentum zerfielen danach."
 outcome-resolves: DVPAPE
+review-summary: "internal/cli/people.go alias: 'jaira people alias zed zed' on an unknown person leaves Find nil and the output dereferences it - print 'nothing to change' without the person instead"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Jede Person hat pro Projekt einen festen jaira-Namen, einmal abgefragt und lokal gespeichert; er ersetzt Git-Name und Aliasse
@@ -71,3 +76,4 @@ outcome-resolves: DVPAPE
 - **2026-11-23 19:42 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/48662.sock
 - **2026-11-23 19:44 · Alexander Sacharov** — decisions (worker, keine offenen fuer die Person): (1) ein Ref refs/jaira/people mit einer Datei 'people', je Zeile '<jaira-name>: alias, alias' - hand-editierbar, diff-lesbar. (2) Schreiben synchron wie refWrite: fetch, mergen, push mit Lease, bei verlorenem Race neu mergen; offline/ohne Remote wird abgelehnt (kein Outbox-Kind - kleiner; nichts geht still verloren, der Befehl scheitert sichtbar). (3) Merge = Vereinigung je Person (case-insensitiv) + Falten: eine Person, deren Name Alias einer anderen ist, geht in dieser auf - so ueberlebt rename ein gleichzeitiges alias auf den alten Namen ohne Basis-Diff. (4) Keine Selbstregistrierung: unbekannter git-Name bleibt git-Name (DoD 6). (5) ~/.jaira/identity bleibt als persoenliche Aliasliste. (6) Anzeige: list/next --assignee, Ticket-JSON/show (assignee, creator) und TUI-Filter/-Anzeige zeigen den jaira-Namen; Ticketdateien bleiben unveraendert. Cockpit 'mine' laeuft ueber whoami-Aliasse, die die Personenliste mit einschliessen. (7) snapshot legt die Datei 'people' neben board/ in den Snapshot-Branch.
 - **2026-11-23 19:53 · Alexander Sacharov** — in-progress: Merge-Funktion bewusst weggelassen - Update wiederholt die Aenderung auf dem neuesten Stand statt Text gegen Text zu mergen; da Fetch die lokalen Refs erzwingt und nur Push-bestaetigte Staende lokal stehen, gibt es keinen Ort, an dem zwei Listen zu mergen waeren. 'jaira people' liest den lokalen Ref ohne Fetch, wie jede andere Leseoperation. TUI: boardPeople ist eine Paket-Variable, weil matches() eine freie Funktion ist, die ~40 Tests mit nil aufrufen.
+- **2026-11-23 19:53 · Alexander Sacharov** — critique: internal/cli/people.go alias - unknown person aliased to its own name returns unchanged with no person; output derefs nil p. Fix: guard nil. Sonst: Form (ein Ref, synchroner Write statt Outbox) bleibt - siehe decisions-Note (2).

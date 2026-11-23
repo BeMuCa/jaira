@@ -140,6 +140,15 @@ func TestPeopleRefusals(t *testing.T) {
 			t.Errorf("%v: exit %d, want %d (%v)", c.args, code, c.code, err)
 		}
 	}
+	// Naming nobody new is not an error and writes nothing either.
+	for _, args := range [][]string{{"people", "alias", "zed", "ZED"}, {"people", "alias", "ada", "al"}} {
+		if out, err := runCLI(t, ada, args...); err != nil || !strings.Contains(out, "Nothing to change") {
+			t.Errorf("%v: %v\n%s", args, err, out)
+		}
+	}
+	if out, err := runCLI(t, ada, "people", "--json", "alias", "zed", "zed"); err != nil || !strings.Contains(out, `"changed": false`) {
+		t.Errorf("json: %v\n%s", err, out)
+	}
 	if gitOut(t, ada, "rev-parse", gitref.PeopleRef) != before {
 		t.Error("a refused write changed the list")
 	}
