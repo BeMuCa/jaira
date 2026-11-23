@@ -6,7 +6,7 @@
 // `$` lives there.
 
 import type { ElementTable } from 'claude-code'
-import { clockOf, COLORS, durationOf, HATS, HISTORY_DAYS, slotOf, SPINNER, stoneOf, stoneSize, workerKey, type Event, type Overview, type Row, type Worker } from './overview.ts'
+import { clockOf, COLORS, durationOf, HATS, HISTORY_DAYS, passes, slotOf, SPINNER, stoneOf, stoneSize, workerKey, type Event, type Filter, type Overview, type Row, type Worker } from './overview.ts'
 import { overviewWords as w } from './texts.ts'
 
 const SEP = ' | '
@@ -177,8 +177,9 @@ function workerLines(Text: ElementTable['Text'], scene: WorkersScene, workers: W
 // another, and shifts every column after it.
 const KIND_SIGN: Record<Event['kind'], string> = { created: '🆕', parked: '🔙' }
 
-// `people`: the names the Log is filtered to, `lanes` the lanes; empty shows all.
-type OverviewState = { tab: OverviewTab; folded: Record<string, boolean>; people: string[]; lanes: string[] }
+// `people`: the names the Log is filtered to, `lanes` the lanes, each chosen
+// and left out; both empty shows all.
+type OverviewState = { tab: OverviewTab; folded: Record<string, boolean>; people: Filter; lanes: Filter }
 type OverviewActions = {
   close: () => void
   tab: (tab: OverviewTab) => void
@@ -243,31 +244,42 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
     section('parked', w.parked, view.parked),
   ]
   // The Log filters to the people chosen and to the lanes chosen — the lane a
-  // ticket stands in now — several of each at once, as `u` does on the board;
-  // both filters hold together, and a day left with nothing drops out.
+  // ticket stands in now — several of each at once, as `u` does on the board,
+  // and leaves out the ones left out; both rows hold together, and a day left
+  // with nothing drops out.
   const events = view.history.flatMap(d => d.events)
-  // A button for every value in today's events and for every value chosen: a
-  // chosen lane or person with no event left (the ticket moved on, the events
-  // aged out) keeps its button, so the filter it sets can still be undone.
-  const names = [...new Set([...events.map(ev => ev.who), ...state.people].filter(Boolean))].sort()
-  const present = new Set([...events.map(ev => ev.lane), ...state.lanes].filter(Boolean))
+  // A button for every value in today's events and for every value chosen or
+  // left out: one with no event left (the ticket moved on, the events aged
+  // out) keeps its button, so the filter it sets can still be undone.
+  const set = (f: Filter) => [...f.only, ...f.not]
+  const names = [...new Set([...events.map(ev => ev.who), ...set(state.people)].filter(Boolean))].sort()
+  const present = new Set([...events.map(ev => ev.lane), ...set(state.lanes)].filter(Boolean))
   // Board order; a lane the board no longer names (or a view kept from before
   // lanes were read) goes last, so no event is left without its button.
   const order = view.lanes ?? []
   const laneIds = [...order.filter(l => present.has(l)), ...[...present].filter(l => !order.includes(l)).sort()]
-  const chosen = (ev: Event) =>
-    (state.people.length === 0 || state.people.includes(ev.who)) && (state.lanes.length === 0 || state.lanes.includes(ev.lane))
+  const chosen = (ev: Event) => passes(state.people, ev.who) && passes(state.lanes, ev.lane)
   const days = view.history.map(d => ({ ...d, events: d.events.filter(chosen) })).filter(d => d.events.length > 0)
-  const filterRow = (key: string, prefix: string, allKey: string, picked: string[], all: () => void, items: string[], pick: (id: string) => void, look: (id: string) => string | undefined) => (
-    <Box key={key} flexDirection="row" flexWrap="wrap" columnGap={2} marginTop={1}>
-      <Button key={allKey} label={w.everybody} variant={picked.length === 0 ? 'primary' : undefined} dimColor={picked.length !== 0} onPress={all} />
-      {items.map(id => (
-        <Button key={`${prefix}-${id}`} label={id} variant={picked.includes(id) ? 'primary' : undefined} dimColor={!picked.includes(id)} onPress={() => pick(id)}>
-          <Text color={look(id)}>{id}</Text>
-        </Button>
-      ))}
-    </Box>
-  )
+  // A chip cycles on each press: off (dimmed), chosen (primary), left out
+  // (`✕ name` in the theme's error colour), off again. All is lit only while
+  // its row neither chooses nor leaves out anything, and clears both.
+  const filterRow = (key: string, prefix: string, allKey: string, f: Filter, all: () => void, items: string[], pick: (id: string) => void, look: (id: string) => string | undefined) => {
+    const idle = f.only.length === 0 && f.not.length === 0
+    return (
+      <Box key={key} flexDirection="row" flexWrap="wrap" columnGap={2} marginTop={1}>
+        <Button key={allKey} label={w.everybody} variant={idle ? 'primary' : undefined} dimColor={!idle} onPress={all} />
+        {items.map(id => {
+          const out = f.not.includes(id)
+          const label = out ? `✕ ${id}` : id
+          return (
+            <Button key={`${prefix}-${id}`} label={label} variant={f.only.includes(id) ? 'primary' : undefined} dimColor={!out && !f.only.includes(id)} onPress={() => pick(id)}>
+              <Text color={out ? 'error' : look(id)}>{label}</Text>
+            </Button>
+          )
+        })}
+      </Box>
+    )
+  }
   const log = [
     filterRow('people', 'overview-person', 'overview-people-all', state.people, act.everybody, names, act.person, personColor),
     filterRow('lanes', 'overview-lane', 'overview-lanes-all', state.lanes, act.allLanes, laneIds, act.lane, () => undefined),

@@ -199,6 +199,24 @@ export function durationOf(ms: number): string {
   return `${Math.floor(min / 60)}h${two(min % 60)}`
 }
 
+// One filter row of the Log, people or lanes: the values chosen and the values
+// left out. Both empty: the row filters nothing.
+export type Filter = { only: string[]; not: string[] }
+export const NO_FILTER: Filter = { only: [], not: [] }
+
+// A chip's next state on a press: off, then chosen, then left out, then off.
+export function cycled(f: Filter, x: string): Filter {
+  if (f.only.includes(x)) return { only: f.only.filter(y => y !== x), not: [...f.not, x] }
+  if (f.not.includes(x)) return { only: f.only, not: f.not.filter(y => y !== x) }
+  return { only: [...f.only, x], not: f.not }
+}
+
+// Whether a value passes a row: one of the chosen, where any are, and none of
+// those left out.
+export function passes(f: Filter, x: string): boolean {
+  return (f.only.length === 0 || f.only.includes(x)) && !f.not.includes(x)
+}
+
 // The colours a person's name in the Log and a ticket's figures wear. ANSI
 // names, apart from the group colours, which the terminal's own scheme
 // keeps readable.

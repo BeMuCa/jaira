@@ -3844,6 +3844,7 @@ describe('the overview', () => {
     expect((await pane.find({ key: 'overview-person-Berk' }))?.props.variant).toBe('primary')
     await pane.press({ key: 'overview-person-Carla' })
     expect(await handles()).toEqual(['B1B1B1', 'C1C1C1'])
+    // A second press leaves Berk out: Carla's stays.
     await pane.press({ key: 'overview-person-Berk' })
     expect(await handles()).toEqual(['C1C1C1'])
     await pane.press({ key: 'overview-close' })
@@ -3884,6 +3885,7 @@ describe('the overview', () => {
     // Both filters hold at once: blocked or signoff, and Alex's.
     await pane.press({ key: 'overview-person-Alex' })
     expect(await handles()).toEqual(['S1S1S1'])
+    // signoff pressed again is left out: blocked is Berk's, so nothing stays.
     await pane.press({ key: 'overview-lane-signoff' })
     expect(await handles()).toEqual([])
     expect(await pane.find({ type: 'Text', text: 'none' })).toBeDefined()
@@ -3892,7 +3894,7 @@ describe('the overview', () => {
     expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBe('primary')
   })
 
-  test('a lane or person chosen with no event left keeps its button, and pressing it clears the filter', async ($, on) => {
+  test('a lane or person chosen with no event left keeps its button, and pressing it on clears the filter', async ($, on) => {
     const w = world(on)
     w.tickets = [
       { handle: 'S1S1S1', title: 'judged', status: 'signoff', creator: 'Alex', created_at: ago(0.03), updated_at: ago(0.03) },
@@ -3916,6 +3918,11 @@ describe('the overview', () => {
     expect(await handles()).toEqual([])
     expect((await pane.find({ key: 'overview-lane-signoff' }))?.props.variant).toBe('primary')
     expect((await pane.find({ key: 'overview-person-Alex' }))?.props.variant).toBe('primary')
+    // Left out, the buttons stay, so the next press can still clear them.
+    await pane.press({ key: 'overview-lane-signoff' })
+    await pane.press({ key: 'overview-person-Alex' })
+    expect((await pane.find({ key: 'overview-lane-signoff' }))?.props.label).toBe('✕ signoff')
+    expect((await pane.find({ key: 'overview-person-Alex' }))?.props.label).toBe('✕ Alex')
     await pane.press({ key: 'overview-lane-signoff' })
     await pane.press({ key: 'overview-person-Alex' })
     expect(await handles()).toEqual(['S1S1S1'])
@@ -3923,6 +3930,115 @@ describe('the overview', () => {
     expect(await pane.find({ key: 'overview-lane-signoff' })).toBeUndefined()
     expect(await pane.find({ key: 'overview-person-Alex' })).toBeUndefined()
     expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBe('primary')
+  })
+
+  test('a chip cycles off, chosen, left out and off again, and shows when it is left out', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'A1A1A1', title: 'by Alex', status: 'backlog', creator: 'Alex', updated_by: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'B1B1B1', title: 'by Berk', status: 'backlog', creator: 'Berk', updated_by: 'Berk', created_at: ago(0.02), updated_at: ago(0.02) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const handles = async () => (await pane.findAll({ type: 'Text', text: LOG_LINE })).map(x => x.text.replace(LOG_LINE, '').slice(0, 6))
+    const chip = async () => {
+      const p = (await pane.find({ key: 'overview-person-Berk' }))!.props as { label: string; variant?: string; dimColor?: boolean }
+      return { label: p.label, variant: p.variant ?? null, dimColor: p.dimColor ?? false }
+    }
+    expect(await chip()).toEqual({ label: 'Berk', variant: null, dimColor: true })
+    await pane.press({ key: 'overview-person-Berk' })
+    expect(await chip()).toEqual({ label: 'Berk', variant: 'primary', dimColor: false })
+    expect(await handles()).toEqual(['B1B1B1'])
+    await pane.press({ key: 'overview-person-Berk' })
+    expect(await chip()).toEqual({ label: '✕ Berk', variant: null, dimColor: false })
+    expect((await pane.find({ type: 'Text', text: '✕ Berk' }))?.props.color).toBe('error')
+    expect(await handles()).toEqual(['A1A1A1'])
+    await pane.press({ key: 'overview-person-Berk' })
+    expect(await chip()).toEqual({ label: 'Berk', variant: null, dimColor: true })
+    expect(await handles()).toEqual(['A1A1A1', 'B1B1B1'])
+  })
+
+  test('left out alone, the Log shows everything else, several left out at once', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'N1N1N1', title: 'new', status: 'backlog', creator: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'B1B1B1', title: 'stuck', status: 'blocked', creator: 'Berk', blocked_reason: 'x', created_at: ago(0.02), updated_at: ago(0.02) },
+      { handle: 'S1S1S1', title: 'judged', status: 'signoff', creator: 'Alex', created_at: ago(0.03), updated_at: ago(0.03) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const handles = async () => (await pane.findAll({ type: 'Text', text: LOG_LINE })).map(x => x.text.replace(LOG_LINE, '').slice(0, 6))
+    const out = async (key: string) => {
+      await pane.press({ key })
+      await pane.press({ key })
+    }
+    await out('overview-lane-signoff')
+    expect(await handles()).toEqual(['N1N1N1', 'B1B1B1'])
+    await out('overview-lane-blocked')
+    expect(await handles()).toEqual(['N1N1N1'])
+    // All is not lit while anything is left out.
+    expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBeUndefined()
+  })
+
+  test('chosen and left out together, across both rows: what is chosen and not left out', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'N1N1N1', title: 'new', status: 'backlog', creator: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'B1B1B1', title: 'stuck', status: 'blocked', creator: 'Berk', blocked_reason: 'x', created_at: ago(0.02), updated_at: ago(0.02) },
+      { handle: 'S1S1S1', title: 'judged', status: 'signoff', creator: 'Alex', created_at: ago(0.03), updated_at: ago(0.03) },
+      { handle: 'C1C1C1', title: 'by Carla', status: 'signoff', creator: 'Carla', created_at: ago(0.04), updated_at: ago(0.04) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const handles = async () => (await pane.findAll({ type: 'Text', text: LOG_LINE })).map(x => x.text.replace(LOG_LINE, '').slice(0, 6))
+    // Not Carla, but signoff and backlog: Alex's two.
+    await pane.press({ key: 'overview-person-Carla' })
+    await pane.press({ key: 'overview-person-Carla' })
+    await pane.press({ key: 'overview-lane-signoff' })
+    await pane.press({ key: 'overview-lane-backlog' })
+    expect(await handles()).toEqual(['N1N1N1', 'S1S1S1'])
+    // Alex chosen too, and backlog left out in the same row as signoff chosen.
+    await pane.press({ key: 'overview-person-Alex' })
+    await pane.press({ key: 'overview-lane-backlog' })
+    expect(await handles()).toEqual(['S1S1S1'])
+  })
+
+  test('All clears its row of chosen and left out alike and is lit only then; the other row stays', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'N1N1N1', title: 'new', status: 'backlog', creator: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'B1B1B1', title: 'stuck', status: 'blocked', creator: 'Berk', blocked_reason: 'x', created_at: ago(0.02), updated_at: ago(0.02) },
+      { handle: 'S1S1S1', title: 'judged', status: 'signoff', creator: 'Alex', created_at: ago(0.03), updated_at: ago(0.03) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const handles = async () => (await pane.findAll({ type: 'Text', text: LOG_LINE })).map(x => x.text.replace(LOG_LINE, '').slice(0, 6))
+    const lit = async (key: string) => (await pane.find({ key }))?.props.variant === 'primary'
+    await pane.press({ key: 'overview-person-Berk' })
+    await pane.press({ key: 'overview-person-Berk' })
+    await pane.press({ key: 'overview-lane-signoff' })
+    await pane.press({ key: 'overview-lane-backlog' })
+    await pane.press({ key: 'overview-lane-backlog' })
+    expect(await handles()).toEqual(['S1S1S1'])
+    expect(await lit('overview-lanes-all')).toBe(false)
+    expect(await lit('overview-people-all')).toBe(false)
+    await pane.press({ key: 'overview-lanes-all' })
+    expect(await lit('overview-lanes-all')).toBe(true)
+    expect((await pane.find({ key: 'overview-lane-backlog' }))?.props.label).toBe('backlog')
+    // Berk stays left out: the people row was not cleared.
+    expect(await handles()).toEqual(['N1N1N1', 'S1S1S1'])
+    expect(await lit('overview-people-all')).toBe(false)
+    await pane.press({ key: 'overview-people-all' })
+    expect(await lit('overview-people-all')).toBe(true)
+    expect(await handles()).toEqual(['N1N1N1', 'B1B1B1', 'S1S1S1'])
   })
 
   test('the top row is one line of buttons alike — the tabs on the left, Close at the right — and the open tab is the one highlighted', async ($, on) => {
