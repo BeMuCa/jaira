@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:27:22Z
+updated-at: 2026-11-23T01:27:24Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -51,7 +51,7 @@ claimed-at: 2026-11-23T01:24:05Z
 - [x] gate.Env: lazy OutsideRepo func; requires-commits refusal skipped only when derive found nothing and OutsideRepo() is true
 - [x] wire it in internal/cli/root.go loadEnv and internal/tui/model.go gateEnv
 - [x] tests: gate (nil/false keeps refusal, true passes), gitrepo (plain dir, repo without remote, subdir of repo)
-- [ ] release note core/release/notes/2DSM0T.md
+- [x] release note core/release/notes/2DSM0T.md
 - [ ] manual: scratch board without git reaches done and logbook; repo without remote still refused
 
 ## Progress
