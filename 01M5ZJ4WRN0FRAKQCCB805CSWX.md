@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:39:59Z
+updated-at: 2026-11-23T01:40:12Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -28,7 +28,7 @@ outcome-why: Drei parallele Go-Builds auf einer 7-GB-WSL stuerzten am 27.10. vie
 outcome-resolves: "Kein Worker startet mehr still in eine Maschine, die fuer seinen Build zu wenig freien Speicher hat."
 review-summary: none
 review-gaps: "none: round 2 adds a trap and two mappings, nothing duplicated or orphaned; own unreleased hashes from 12cccd2 replaced in shipped.sha256 rather than piling up"
-test-verdict: "pass: go vet + go build ./... green; go test not run by house rule (main session runs the race suite before the PR), shellcheck not installed. DoD 1/2/4 verified on the committed spawn.sh: its check block cut out and sourced against fake meminfo files - 976 MB free -> exit 3 with message, force=1 -> starts, 4000 MB -> starts, missing file and no MemAvailable line -> one stderr line and starts, JAIRA_MIN_FREE_MB=0 -> starts, =abc -> exit 2, lane discuss -> not checked; against the real /proc/meminfo (2640 MB): default starts, limit 4000 refuses with 3. run-lane.sh copy with a stub spawn.sh: spawn 3 -> run-lane 6, spawn 1 -> 1. DoD 3 read in jaira-teamlead/SKILL.md. Not run: spawn.sh itself end to end (opens Herdr tabs, refused) - the --force flag parsing is read, not executed. Writes nothing, so no two-writer case. DoD 5 (macOS/Git Bash) left for the person. shipped.sha256 carries the new hashes of all five changed shipped files."
+test-verdict: "pass: round 2 over 12cccd2..6bc8af7: go vet + go build ./... green (go test not run, house rule). Extracted check of the committed spawn.sh (trap included): 976 MB -> 3, force -> 0, missing meminfo / no MemAvailable -> one line + 0, limit 0 -> 0, 20-digit limit -> 2, 9-digit limit -> 3, abc -> 2, discuss -> 0, a later command failing with 3 -> 1, with 5 -> 5. run-lane.sh copy with stub spawn: 3->6, 4->1, 5->1, 2->1. spawn.sh not run end to end (opens tabs). DoD 5 left for the person."
 hunt-verdict: "fail: bughunt done at 12cccd2ee, 2 change: run-lane read any spawn.sh exit 3 (e.g. herdr after the tab exists) as 'nothing started' -> second tab; huge JAIRA_MIN_FREE_MB skipped the check"
 round: 2
 back-from: testing
