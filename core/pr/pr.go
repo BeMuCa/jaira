@@ -140,7 +140,17 @@ func connect(run Run, look func(string) (string, error), dir string) (forge, ori
 	if _, err := look(tool); err != nil {
 		return "", "", nil, fmt.Errorf("%w: %s is not installed", ErrNoTool, tool)
 	}
+	// gh asks github.com unless told otherwise: on GitHub Enterprise the
+	// repository goes as host/owner/repo and every gh api call carries
+	// --hostname, or the answer is "Could not resolve to a Repository".
+	host := ""
+	if forge == "github" {
+		origin, host = ghRepo(origin)
+	}
 	call = func(args ...string) ([]byte, error) {
+		if host != "" && len(args) > 0 && args[0] == "api" {
+			args = append([]string{"api", "--hostname", host}, args[1:]...)
+		}
 		out, err := run(dir, tool, args...)
 		if err != nil {
 			return nil, classify(tool, err)
