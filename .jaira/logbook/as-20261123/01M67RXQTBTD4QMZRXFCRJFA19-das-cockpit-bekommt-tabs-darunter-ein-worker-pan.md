@@ -1,7 +1,7 @@
 ---
 id: 01M67RXQTBTD4QMZRXFCRJFA19
 title: "Das Cockpit bekommt Tabs, darunter ein Worker-Panel: je Agent ein Icon, sein Ticket, seine Lane und ob er festhaengt"
-status: testing
+status: done
 ready: true
 creator: berkc
 assignee: Alexander Sacharov
@@ -17,25 +17,30 @@ tags:
 blocked-by: []
 related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
-commits: []
+commits:
+  - 7584a4bde5586b40d3c6fe28929bd60db343e954
+  - 425bde8e02e5e0d1964127a1b2d7835cc2c2d5c4
+  - 5ccdfc0bd35fe4b713747455a04b7fdc3dfa168b
 created-at: 2026-10-31T01:24:27Z
-updated-at: 2026-11-23T19:51:56Z
+updated-at: 2026-11-23T20:17:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-40650
 claimed-at: 2026-11-23T19:41:00Z
 outcome-what: "Worker-Tab und workers-Tool zeigen 'waits for approval' ('!' in warning), wenn Herdr fuer den Agenten-Tab agent_status=blocked meldet; Kopfzeile zaehlt solche Agenten weiter"
 outcome-why: Ein Agent am Freigabe-Dialog sah aus wie ein ruhender und fiel aus der Zaehlung
 outcome-resolves: "DoD 2-4: vierter Zustand im Worker-Tab, im workers-Tool, Release-Notiz"
-review-summary: "none"
-review-gaps: "none: one-line type fix, nothing to remove"
-test-verdict: "pass: claude plugin test 522 pass/0 fail (RC=0), go test core/mod core/release RC=0, shipped-history --check ok; DoD 2-4 in tree verified (overview.ts:154, overview-pane.tsx:132, sessions.ts:151, notes/RJFA19.md) and by 4 new tests; live: hc get liefert status.state (working in this tab), 'blocked' is in hc's vocabulary and herdr-hc.sh passes it through tab list unchanged - a real approval dialog was not provoked (would need a refused permission prompt); failure path: herdr tab list failing leaves tabs [] (unchanged); change writes nothing"
-hunt-verdict: "pass: bughunt done at 7584a4bde, 0 blocker; 1 change edge (types/index.d.ts:20 Worker.state ohne 'blocked', note), 1 pre-existing same subject (register.tsx:1790 Give back in blocked tab, note for the person)"
-review-verdict: "accept: alle drei DoD-Punkte erfuellt und getestet (claude plugin test 522/522); ein fix-now am Typvertrag, kein Blocker"
-review-round: 1
+review-summary: "Delta-Review ab 7584a4bde (Runde 2): 425bde8e0 ergaenzt im oeffentlichen Typ Worker (types/index.d.ts:20) den Zustand 'blocked', sodass der Vertrag wieder hooks/overview.ts:122 spiegelt - damit ist der einzige fix-now der ersten Review geschlossen. Die Aenderung insgesamt: liefert Herdr fuer den Tab eines Agenten agent_status=blocked (offener Freigabe-Dialog), zeigt der Workers-Tab ein gelbes '!' und 'waits for approval' (schlaegt working und question), /cockpit workers und das workers-Tool sagen 'waits for approval: answer the dialog in its tab', die Kopfzeile zaehlt solche Tabs weiter als laufend und ein Discuss/Explain-Tab wird dann nicht abgeraeumt."
+review-gaps: |-
+  note: elsewhere: register.tsx:1790 - Give back prueft nur agent_status working; ein Worker-Tab am Freigabe-Dialog (blocked) bekommt bei warmem Cache backMessage+Enter in den Dialog getippt, bei kaltem wird der Tab geschlossen und neu gestartet; vor diesem Ticket (05a8d99fc, QTQW15), braucht eigene Entscheidung - new ticket
+  note: limit: Subagenten liefern keinen Freigabe-Status (WORKING=pending/running/waiting), der Zustand gilt nur fuer Herdr-Tabs
+test-verdict: "pass: round 2, claude plugin test 522/0 (RC=0) on the type fix; types/index.d.ts:20 now lists 'blocked' like overview.ts:122"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 2"
+review-verdict: "accept: alle DoD-Punkte erfuellt, der fix-now aus Runde 1 ist geschlossen, 522/522 Plugin-Tests gruen; keine Defekte in der Delta-Zeile"
+review-round: 2
 review-verdict-gaps: |-
-  note: edge: fix-now: core/mod/builtin/jaira-cockpit/types/index.d.ts:20 - der Worker-Typ, der laut Kommentar hooks/overview.ts spiegelt, erlaubt state nur working|idle|question; 'blocked' ergaenzen (eine Zeile, kein neues Verhalten)
-  note: elsewhere: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1790 - Give back behandelt nur 'working' als Agent im Zug; bei einem blocked Worker-Tab mit warmem Cache tippt es backMessage plus Enter in den offenen Freigabe-Dialog, bei kaltem schliesst es den Tab mitten im Zug; vor diesem Ticket da (05a8d99fc, QTQW15), braucht eine eigene Entscheidung - neues Ticket
-review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test  2. erwartet: 522 pass, 0 fail, darunter 'an agent held at an approval dialog waits for approval', 'a worker held at an approval dialog says so instead of a next round', 'an agent held at an approval dialog is still in its turn and counts'  3. live (Herdr noetig): einen Worker per spawn.sh starten und ihn einen Bash-Befehl ausfuehren lassen, der eine Freigabe verlangt; Dialog NICHT beantworten  4. im Cockpit den Overview-Tab Workers oeffnen: die Figur des Tickets traegt ein gelbes '!', die Zeile sagt 'waits for approval'  5. /cockpit workers eingeben: die Zeile des Tickets endet auf 'waits for approval: answer the dialog in its tab'  6. Dialog beantworten: '!' wird zum Spinner, Text 'working'"
+  note: elsewhere: register.tsx:1790 - Give back prueft nur agent_status working; ein Worker-Tab am Freigabe-Dialog (blocked) bekommt bei warmem Cache backMessage+Enter in den Dialog getippt, bei kaltem wird der Tab geschlossen und neu gestartet; vor diesem Ticket (05a8d99fc, QTQW15), braucht eigene Entscheidung - new ticket
+  note: limit: Subagenten liefern keinen Freigabe-Status (WORKING=pending/running/waiting), der Zustand gilt nur fuer Herdr-Tabs
+review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  2. du siehst '522 pass, 0 fail', darunter 'an agent held at an approval dialog waits for approval' und 'a worker held at an approval dialog says so instead of a next round'  3. Live (mit Herdr): starte einen Worker per spawn.sh, lass ihn einen Bash-Befehl ausfuehren, der eine Freigabe braucht  4. im Cockpit Overview -> Tab Workers: die Zeile des Tickets zeigt 'waits for approval' in Gelb, an der Figur ein gelbes '!'  5. /cockpit workers zeigt fuer das Ticket 'waits for approval: answer the dialog in its tab'"
 round: 2
 back-from: review
 back-by: lane
@@ -81,3 +86,11 @@ stop-after-fix: "true"
 - **2026-11-23 19:49 · Alexander Sacharov** — review: done at 7584a4bde
 - **2026-11-23 19:49 · Alexander Sacharov** — review: fix-now: types/index.d.ts:20 Worker.state um 'blocked' ergaenzen (spiegelt hooks/overview.ts:122)
 - **2026-11-23 19:50 · Alexander Sacharov** — fix-now geschlossen: types/index.d.ts:20 Worker.state um 'blocked' ergaenzt (1 Zeile). stop-after-fix=true von mir gesetzt (Fix < 50 Zeilen, kein Lock/Parser). 'elsewhere'-Notiz (Give back register.tsx:1790) bleibt Zeile fuer die Person.
+- **2026-11-23 19:52 · Alexander Sacharov** — waiting: review round 2 (new fresh agent via run-lane.sh) since 20:52
+- **2026-11-23 19:54 · Alexander Sacharov** — review: done at 425bde8e0
+- **2026-11-23 19:54 · Alexander Sacharov** — report: Worker-Tab + /cockpit workers zeigen 'waits for approval' (!) bei Herdr blocked; Kopfzeile zaehlt solche Tabs | signoff, context unknown | offen fuer die Person: Give back in blocked Tab (register.tsx:1790, pre-existing, eigenes Ticket?); Live-Check mit echtem Dialog nicht gemacht
+- **2026-11-23 20:11 · Alexander Sacharov** — Accepted from signoff: angenommen:
+- note: limit: Subagenten liefern keinen Freigabe-Status (WORKING=pending/running/waiting), der Zustand gilt nur fuer Herdr-Tabs
+- note: elsewhere: register.tsx:1790 - Give back prueft nur agent_status working; ein Worker-Tab am Freigabe-Dialog (blocked) bekommt bei warmem Cache backMessage+Enter in den Dialog getippt, bei kaltem wird der Tab geschlossen und neu gestartet; vor diesem Ticket (05a8d99fc, QTQW15), braucht eigene Entscheidung - new ticket
+- **2026-11-23 20:11 · Alexander Sacharov** — cockpit: accepted by the person, signoff -> done
+- **2026-11-23 20:15 · Alexander Sacharov** — pr-role: push stopped at step 3. go test ./... -race fails in core/role TestEveryInstalledFileIsAShippedVersion: core/shipped/shipped.sha256 lacks the hashes of the 7 changed cockpit files (board.ts, overview-pane.tsx, overview.ts, register.tsx, sessions.ts, texts.ts, types/index.d.ts). Nothing pushed. Options: 1) (recommended) run scripts/shipped-history.sh --write, commit as fix(RJFA19) with the ticket, rerun the suite, push and open the PR; 2) give the ticket back to in-progress for a worker to fix.
