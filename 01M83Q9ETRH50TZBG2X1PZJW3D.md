@@ -1,7 +1,7 @@
 ---
 id: 01M83Q9ETRH50TZBG2X1PZJW3D
 title: "TUI lässt sich mit der Maus bedienen: Karten anklicken, mit dem Rad scrollen, Knöpfe und Reiter klicken"
-status: backlog
+status: ideas
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,8 +20,12 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T08:10:20Z
-updated-at: 2026-11-23T08:10:29Z
+updated-at: 2026-11-23T08:10:32Z
 updated-by: Alexander Sacharov
+round: 2
+back-from: backlog
+back-by: person
+back-count: 1
 ---
 
 # TUI lässt sich mit der Maus bedienen: Karten anklicken, mit dem Rad scrollen, Knöpfe und Reiter klicken
