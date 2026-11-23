@@ -18,9 +18,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:24:03Z
+updated-at: 2026-11-23T01:24:05Z
 assignee: BeMuCa
 updated-by: BeMuCa
+claimed-by: worker-2dsm0t
+claimed-at: 2026-11-23T01:24:05Z
 ---
 
 # Ein Board ohne Git-Repo schiebt Tickets nach done, ohne Commits zu verlangen
