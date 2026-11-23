@@ -1,7 +1,7 @@
 ---
 id: 01M6EEZYHN2T31ANZAWRH319TV
 title: "README: Abschnitt 'Jaira PM View - Web only' fuer Leute ohne Coding-Agent"
-status: critique
+status: optimize
 ready: true
 creator: BeMuCa
 goal: "Die README hat einen eigenen Abschnitt, mit dem jemand ohne Agent und ohne Terminal-Board in fuenf Minuten jaira web auf einem geklonten Repo laufen hat: Install-Zeile ohne Rollen/Cockpit, jaira web, ein Screenshot, was man dort kann und was nicht; die Zeile 'Web UI' in der Tabelle 'Not built' ist weg."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T15:45:35Z
-updated-at: 2026-11-23T01:46:17Z
+updated-at: 2026-11-23T01:46:20Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-h319tv
