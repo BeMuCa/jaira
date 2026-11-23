@@ -136,3 +136,34 @@ func spawnWith(t *testing.T, herdr string) (root string, spawn func(lane string)
 		return cmd
 	}
 }
+
+// A 'pane get' that fails is no race: the spawn stops without typing, and the
+// tab - where claude may already run - stays standing.
+func TestSpawnKeepsItsTabWhenHerdrDoesNotAnswer(t *testing.T) {
+	state := t.TempDir()
+	_, spawn := spawnWith(t, `#!/usr/bin/env bash
+s="`+state+`"
+case "$1 $2" in
+  "tab create") echo '{"result":{"tab":{"tab_id":"t1"},"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")
+    echo x >> "$s/gets"
+    # The first two answer, the one before send-text does not.
+    [ "$(wc -l < "$s/gets" | tr -d ' ')" -le 2 ] || exit 1
+    echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
+  "pane send-text") echo "$3" >> "$s/sent" ;;
+  "tab close") echo "$3" >> "$s/closed" ;;
+esac
+`)
+	out, err := spawn("critique").CombinedOutput()
+	if err == nil {
+		t.Fatalf("spawn.sh succeeded although herdr did not answer:\n%s", out)
+	}
+	if !strings.Contains(string(out), "could not check pane p1 of tab t1") {
+		t.Errorf("the failure is not reported as an unanswered check:\n%s", out)
+	}
+	for _, f := range []string{"sent", "closed"} {
+		if _, err := os.Stat(filepath.Join(state, f)); err == nil {
+			t.Errorf("herdr saw a %s call after its 'pane get' failed", f)
+		}
+	}
+}

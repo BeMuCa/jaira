@@ -467,7 +467,13 @@ pane_is_ours() {
   local pt
   pt="$("$herdr" pane get "$pane" 2>/dev/null | jaira json get result.pane.tab_id --default "" 2>/dev/null || true)"
   [ "$pt" = "$tab" ] && return 0
-  echo "spawn.sh: pane $pane is not in tab $tab ($ticket/$lane) any more but in '${pt:-no tab}'" \
+  # Herdr did not answer: that says nothing about a race, and the tab may
+  # already run our claude - leave it standing and stop.
+  if [ -z "$pt" ]; then
+    echo "spawn.sh: could not check pane $pane of tab $tab ($ticket/$lane): 'herdr pane get' gave no tab - nothing was typed, look at that tab" >&2
+    return 1
+  fi
+  echo "spawn.sh: pane $pane is not in tab $tab ($ticket/$lane) any more but in '$pt'" \
        "- another tab was opened at the same moment; nothing was typed, start this lane again" >&2
   # The tab is ours and nothing of ours runs in it any more: close it, so
   # no empty tab is left standing for somebody to wonder about.
