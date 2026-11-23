@@ -634,7 +634,7 @@ describe('waiting for you', () => {
     expect(texts[0]).toBe('● red: 1 blocker in the review (+4 more)')
     const title = texts.indexOf('cache key')
     expect(title).toBeGreaterThan(0)
-    expect(texts.slice(title, title + 2)).toEqual(['cache key', 'Goal: Two branches never share a cache entry.'])
+    expect(texts.slice(title, title + 2)).toEqual(['cache key', '┃ Goal: Two branches never share a cache entry.'])
     for (const text of ['? keep the old key?', '🔴 blocker: the key ignores the branch', '🟡 note: a test is missing', '🟡 note: a comment is stale']) {
       expect(texts).toContain(text)
     }
@@ -5007,7 +5007,7 @@ describe('review notes as a person reads them', () => {
     const asked = JSON.parse(w.prompts[0]!.slice(w.prompts[0]!.lastIndexOf('\n') + 1)) as string[]
     expect(asked.slice(0, 4)).toEqual(['cache key', 'a key per branch', 'the key names the branch', 'two branches shared one'])
     expect(asked.slice(-4)).toEqual(noteList)
-    for (const text of ['ключ кэша', 'Goal: ключ на ветку', 'Done: ключ называет ветку', 'Why: две ветки делили один', `🔴 ${ru[0]}`]) expect(all).toContain(text)
+    for (const text of ['ключ кэша', '┃ Goal: ключ на ветку', '┃ Done: ключ называет ветку', '┃ Why: две ветки делили один', `🔴 ${ru[0]}`]) expect(all).toContain(text)
     expect((await pane.find({ key: 'translate-MG677R' }))?.text).toContain('Original')
     await pane.press({ key: 'translate-MG677R' })
     const back = (await pane.findAll({ type: 'Text' })).map(x => x.text)
@@ -5023,9 +5023,9 @@ describe('review notes as a person reads them', () => {
     w.translations = { ...dictionary(ru), 'a key per branch': 'ключ на ветку' }
     await startSession($)
     const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
-    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Goal: a key per branch')
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('┃ Goal: a key per branch')
     await pane.press({ key: 'translate-MG677R' })
-    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Goal: ключ на ветку')
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('┃ Goal: ключ на ветку')
   })
 
   test('Give back shows the notes translated and writes the originals onto the ticket', async ($, on) => {
@@ -5474,13 +5474,28 @@ describe('the Acceptance pane', () => {
     await w.clock.settle()
     const all = await texts(pane)
     expect(all).toContain('cache key')
-    expect(all).toContain('Goal: Two branches never share a cache entry.')
-    expect(all).toContain('Done: the key names the branch')
-    expect(all).toContain('Why: two branches shared one entry')
+    expect(all).toContain('┃ Goal: Two branches never share a cache entry.')
+    expect(all).toContain('┃ Done: the key names the branch')
+    expect(all).toContain('┃ Why: two branches shared one entry')
     expect(all).toContain('round 2 | back 1x from signoff | 3 days')
     expect(all).toContain('DoD 2/2 (1 superseded) | bughunt ✓ on HEAD | review: accept')
     expect(all).toContain('2 commits, 2 files | pull request exists')
-    expect(all).toContain('Release note: Press Acceptance to decide a ticket.')
+    expect(all).toContain('Press Acceptance to decide a ticket.')
+    // MK8HD2: each block opens with its title and a rule; each head field
+    // has its own colour; what the ticket went through is dim, where it
+    // stands is not.
+    for (const title of ['History', 'Release note', 'Review notes - choose for each']) expect(all.some(x => x.startsWith(title) && x.endsWith('───'))).toBe(true)
+    const colour = async (key: string) => JSON.stringify(await pane.find({ key }))
+    expect(await colour('goal')).toContain('"color":"suggestion"')
+    expect(await colour('what')).toContain('"color":"success"')
+    expect(await colour('why')).toContain('"color":"warning"')
+    const dim = async (text: string) => (await pane.find({ type: 'Text', text }))?.props.dimColor
+    expect(await dim('round 2 | back 1x from signoff | 3 days')).toBe(true)
+    // Where it stands wraps on a line of its own under the title, never cut
+    // with the rule.
+    expect(await dim('MG677R | signoff')).toBe(true)
+    expect(await dim('2 commits, 2 files | pull request exists')).toBe(true)
+    expect(await dim('DoD 2/2 (1 superseded) | bughunt ✓ on HEAD | review: accept')).toBeFalsy()
     // The light follows the marks: one 🟡 note makes it yellow.
     expect(all[0]).toBe('● yellow: 1 review note to weigh')
     // Looked up from the ticket's own worktree, without a fetch.
@@ -5614,7 +5629,7 @@ describe('the Acceptance pane', () => {
     await startSession($)
     const all = await texts(await acceptancePane($, await $.ui.mount(BAND), 'MG677R'))
     await w.clock.settle()
-    expect(all.some(x => x.startsWith('Release note:'))).toBe(false)
+    expect(all.some(x => x.startsWith('Release note'))).toBe(false)
   })
 
   test('the pull request is asked once in five minutes, however often the pane opens', async ($, on) => {
