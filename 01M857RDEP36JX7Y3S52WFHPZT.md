@@ -18,7 +18,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T22:17:22Z
-updated-at: 2026-11-23T22:17:22Z
+updated-at: 2026-11-23T22:17:30Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # Der Lane-Verlauf eines Boards ist als Graph zu sehen und einzustellen: Lanes als Knoten, Uebergaenge und Loops als Kanten, je Lane Agent, Modell und Anzahl Agenten
