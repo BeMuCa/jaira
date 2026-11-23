@@ -16,7 +16,7 @@ import {
 } from './filter.ts'
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
-import { COLORS, HATS, overviewOf, pickOf, stoneOf, workerKey, workersOf } from './overview.ts'
+import { COLORS, cycled, HATS, NO_FILTER, overviewOf, pickOf, stoneOf, workerKey, workersOf } from './overview.ts'
 import { drawOverview, headRow, type OverviewTab } from './overview-pane.tsx'
 import {
   backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
@@ -70,8 +70,8 @@ const busyAtom = atom({ plugin: 'jaira-cockpit', key: 'busy' } as const, {})
 const overviewAtom = atom({ plugin: 'jaira-cockpit', key: 'overview' } as const, null)
 const overviewTabAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewTab' } as const, 'queue')
 const overviewFoldedAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewFolded' } as const, {})
-const overviewPeopleAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewPeople' } as const, [])
-const overviewLanesAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewLanes' } as const, [])
+const overviewPeopleAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewPeopleFilter' } as const, NO_FILTER)
+const overviewLanesAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewLanesFilter' } as const, NO_FILTER)
 const releaseAtom = atom({ plugin: 'jaira-cockpit', key: 'release' } as const, null)
 const upgradeAtom = atom({ plugin: 'jaira-cockpit', key: 'upgrade' } as const, null)
 const workersAtom = atom({ plugin: 'jaira-cockpit', key: 'workers' } as const, null)
@@ -110,8 +110,10 @@ const READ_FRAMES = 20
 const OVERVIEW_ROWS = 1
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
-// A filter's choice with one item pressed: out if it was in, in if it was not.
-const toggled = (chosen: string[], x: string) => (chosen.includes(x) ? chosen.filter(y => y !== x) : [...chosen, x])
+// The Acceptance pane's block rule, longer than any pane is wide and cut at
+// its edge, and the bar before each head field (MK8HD2).
+const RULE = '─'.repeat(240)
+const BAR = '┃ '
 // A pane left with nothing to show (its ticket gone from the board, its state
 // cleared) keeps its head: [ Close ] closes it as in every other state.
 const nothingPane = ({ Box, Button, Text }: Pick<ElementTable, 'Box' | 'Button' | 'Text'>, head: string, close: { key: string; onPress: () => void }) => (
@@ -2343,11 +2345,30 @@ export const register: Register = (on, options) => {
     // A choice's button: the chosen one bold in its colour, the others dim.
     const CHOICES: [GapItem['choice'], string, 'success' | 'error' | 'suggestion'][] = [['accept', t.choiceOk, 'success'], ['now', t.choiceFix, 'error'], ['later', t.choiceTicket, 'suggestion']]
     const story_ = s?.story
-    const history = [
-      ...(story_ !== undefined ? [[t.round(story_.round), ...(story_.back !== undefined ? [t.backFrom(story_.back.count, story_.back.from)] : []), ...(story_.created !== undefined ? [t.age(now - story_.created)] : [])].join(SEP)] : []),
-      [...(story_ !== undefined && story_.dod.total > 0 ? [t.dodCount(story_.dod.done, story_.dod.total, story_.dod.superseded)] : []), t.huntOnHead(hunt?.state ?? ''), t.review(w.verdict)].join(SEP),
-      ...((s?.commits?.commits ?? 0) > 0 || s?.pr ? [[...((s?.commits?.commits ?? 0) > 0 ? [t.commitsFiles(s!.commits!.commits, s!.commits!.files)] : []), ...(s?.pr ? [t.prOpen] : [])].join(SEP)] : []),
+    // What the ticket went through is side information, drawn dim; the line
+    // that says where it stands - DoD, bug hunt, review - stays bright.
+    const history: { line: string; dim: boolean }[] = [
+      ...(story_ !== undefined ? [{ line: [t.round(story_.round), ...(story_.back !== undefined ? [t.backFrom(story_.back.count, story_.back.from)] : []), ...(story_.created !== undefined ? [t.age(now - story_.created)] : [])].join(SEP), dim: true }] : []),
+      { line: [...(story_ !== undefined && story_.dod.total > 0 ? [t.dodCount(story_.dod.done, story_.dod.total, story_.dod.superseded)] : []), t.huntOnHead(hunt?.state ?? ''), t.review(w.verdict)].join(SEP), dim: false },
+      ...((s?.commits?.commits ?? 0) > 0 || s?.pr ? [{ line: [...((s?.commits?.commits ?? 0) > 0 ? [t.commitsFiles(s!.commits!.commits, s!.commits!.files)] : []), ...(s?.pr ? [t.prOpen] : [])].join(SEP), dim: true }] : []),
     ]
+    // MK8HD2: the pane reads in blocks, for a reader who skims. Each block
+    // opens with its title in colour and a dim rule to the pane's edge (the
+    // engine draws a Box's border on all four sides or none, so the rule is
+    // text, cut where the pane ends); each head field starts with a bar in
+    // its own colour. Theme keys only, so a light terminal reads it too.
+    // The title alone shares the row with the rule: what would follow it on
+    // that row goes on a line of its own, where it wraps instead of being cut.
+    const section = (key: string, title: string) => (
+      <Box key={key} marginTop={1}>
+        <Text wrap="truncate-end"><Text bold color="claude">{title}</Text><Text dimColor>{` ${RULE}`}</Text></Text>
+      </Box>
+    )
+    const field = (key: string, label: string, colour: 'suggestion' | 'success' | 'warning', text: string) => (
+      <Box key={key} marginTop={1}>
+        <Text wrap="wrap"><Text bold color={colour}>{`${BAR}${label}`}</Text> {text}</Text>
+      </Box>
+    )
     return (
       <Box flexDirection="column">
         {headRow({ Box, Button }, 'acceptance-head', { key: 'acceptance-close', label: t.close, onPress: () => closeAcceptance($) })}
@@ -2356,14 +2377,16 @@ export const register: Register = (on, options) => {
           : {first === undefined ? t.lightAccept : tr(t.lightReason(first))}{light.reasons.length > 1 ? t.lightMore(light.reasons.length - 1) : ''}
         </Text>
         <Text key="title" bold wrap="wrap">{tr(story_?.title || w.title)}</Text>
-        {(story_?.goal || w.goal) ? <Text key="goal" wrap="wrap"><Text bold>{t.goal}</Text> {tr(story_?.goal || w.goal)}</Text> : null}
-        {story_?.what ? <Text key="what" wrap="wrap"><Text bold>{t.done}</Text> {tr(story_.what)}</Text> : null}
-        {story_?.why ? <Text key="why" wrap="wrap"><Text bold>{t.why}</Text> {tr(story_.why)}</Text> : null}
+        {(story_?.goal || w.goal) ? field('goal', t.goal, 'suggestion', tr(story_?.goal || w.goal)) : null}
+        {story_?.what ? field('what', t.done, 'success', tr(story_.what)) : null}
+        {story_?.why ? field('why', t.why, 'warning', tr(story_.why)) : null}
         {w.question !== '' ? <Text key="question" color="warning" wrap="wrap">? {w.question}</Text> : null}
-        <Box marginTop={1}><Text bold>{t.historyHeading}</Text><Text dimColor wrap="wrap">{`${SEP}${w.id}${SEP}${w.lane}${w.reviewedIn !== undefined ? `${SEP}${t.reviewedIn(w.reviewedIn)}` : ''}`}</Text></Box>
-        {history.map((line, i) => <Text key={`history-${i}`} wrap="wrap">{line}</Text>)}
-        {(s?.release.length ?? 0) > 0 ? <Text key="release" wrap="wrap"><Text bold>{t.releaseNote}</Text> {s!.release.join(' / ')}</Text> : null}
-        {items.length > 0 ? <Box marginTop={1}><Text bold>{t.notesChoose}</Text></Box> : null}
+        {section('history-head', t.historyHeading)}
+        <Text key="history-where" dimColor wrap="wrap">{[w.id, w.lane, ...(w.reviewedIn !== undefined ? [t.reviewedIn(w.reviewedIn)] : [])].join(SEP)}</Text>
+        {history.map(({ line, dim }, i) => <Text key={`history-${i}`} wrap="wrap" dimColor={dim}>{line}</Text>)}
+        {(s?.release.length ?? 0) > 0 ? section('release-head', t.releaseNote) : null}
+        {(s?.release ?? []).map((line, i) => <Text key={`release-${i}`} wrap="wrap">{line}</Text>)}
+        {items.length > 0 ? section('notes-head', t.notesChoose) : null}
         {!w.findingsKnown ? <Text dimColor wrap="wrap">{t.notesNotKept}</Text> : null}
         {items.map((x, i) => (
           <Box key={`note-${w.id}-${i}`} flexDirection="column" marginTop={i > 0 ? 1 : 0}>
@@ -2529,10 +2552,10 @@ export const register: Register = (on, options) => {
       },
       tab: tab => void showTab($, tab),
       fold: key => void update($, overviewFoldedAtom, f => ({ ...f, [key]: !f[key] })),
-      person: name => void update($, overviewPeopleAtom, p => toggled(p, name)),
-      everybody: () => void update($, overviewPeopleAtom, () => []),
-      lane: id => void update($, overviewLanesAtom, l => toggled(l, id)),
-      allLanes: () => void update($, overviewLanesAtom, () => []),
+      person: name => void update($, overviewPeopleAtom, p => cycled(p, name)),
+      everybody: () => void update($, overviewPeopleAtom, () => NO_FILTER),
+      lane: id => void update($, overviewLanesAtom, l => cycled(l, id)),
+      allLanes: () => void update($, overviewLanesAtom, () => NO_FILTER),
     }, {
       workers: await read($, workersAtom),
       colors: await read($, workersColorsAtom),

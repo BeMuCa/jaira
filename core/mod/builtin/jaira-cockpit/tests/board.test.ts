@@ -634,7 +634,7 @@ describe('waiting for you', () => {
     expect(texts[0]).toBe('● red: 1 blocker in the review (+4 more)')
     const title = texts.indexOf('cache key')
     expect(title).toBeGreaterThan(0)
-    expect(texts.slice(title, title + 2)).toEqual(['cache key', 'Goal: Two branches never share a cache entry.'])
+    expect(texts.slice(title, title + 2)).toEqual(['cache key', '┃ Goal: Two branches never share a cache entry.'])
     for (const text of ['? keep the old key?', '🔴 blocker: the key ignores the branch', '🟡 note: a test is missing', '🟡 note: a comment is stale']) {
       expect(texts).toContain(text)
     }
@@ -3856,6 +3856,7 @@ describe('the overview', () => {
     expect((await pane.find({ key: 'overview-person-Berk' }))?.props.variant).toBe('primary')
     await pane.press({ key: 'overview-person-Carla' })
     expect(await handles()).toEqual(['B1B1B1', 'C1C1C1'])
+    // A second press leaves Berk out: Carla's stays.
     await pane.press({ key: 'overview-person-Berk' })
     expect(await handles()).toEqual(['C1C1C1'])
     await pane.press({ key: 'overview-close' })
@@ -3896,6 +3897,7 @@ describe('the overview', () => {
     // Both filters hold at once: blocked or signoff, and Alex's.
     await pane.press({ key: 'overview-person-Alex' })
     expect(await handles()).toEqual(['S1S1S1'])
+    // signoff pressed again is left out: blocked is Berk's, so nothing stays.
     await pane.press({ key: 'overview-lane-signoff' })
     expect(await handles()).toEqual([])
     expect(await pane.find({ type: 'Text', text: 'none' })).toBeDefined()
@@ -3904,7 +3906,7 @@ describe('the overview', () => {
     expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBe('primary')
   })
 
-  test('a lane or person chosen with no event left keeps its button, and pressing it clears the filter', async ($, on) => {
+  test('a lane or person chosen with no event left keeps its button, and pressing it on clears the filter', async ($, on) => {
     const w = world(on)
     w.tickets = [
       { handle: 'S1S1S1', title: 'judged', status: 'signoff', creator: 'Alex', created_at: ago(0.03), updated_at: ago(0.03) },
@@ -3928,6 +3930,11 @@ describe('the overview', () => {
     expect(await handles()).toEqual([])
     expect((await pane.find({ key: 'overview-lane-signoff' }))?.props.variant).toBe('primary')
     expect((await pane.find({ key: 'overview-person-Alex' }))?.props.variant).toBe('primary')
+    // Left out, the buttons stay, so the next press can still clear them.
+    await pane.press({ key: 'overview-lane-signoff' })
+    await pane.press({ key: 'overview-person-Alex' })
+    expect((await pane.find({ key: 'overview-lane-signoff' }))?.props.label).toBe('✕ signoff')
+    expect((await pane.find({ key: 'overview-person-Alex' }))?.props.label).toBe('✕ Alex')
     await pane.press({ key: 'overview-lane-signoff' })
     await pane.press({ key: 'overview-person-Alex' })
     expect(await handles()).toEqual(['S1S1S1'])
@@ -3935,6 +3942,115 @@ describe('the overview', () => {
     expect(await pane.find({ key: 'overview-lane-signoff' })).toBeUndefined()
     expect(await pane.find({ key: 'overview-person-Alex' })).toBeUndefined()
     expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBe('primary')
+  })
+
+  test('a chip cycles off, chosen, left out and off again, and shows when it is left out', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'A1A1A1', title: 'by Alex', status: 'backlog', creator: 'Alex', updated_by: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'B1B1B1', title: 'by Berk', status: 'backlog', creator: 'Berk', updated_by: 'Berk', created_at: ago(0.02), updated_at: ago(0.02) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const handles = async () => (await pane.findAll({ type: 'Text', text: LOG_LINE })).map(x => x.text.replace(LOG_LINE, '').slice(0, 6))
+    const chip = async () => {
+      const p = (await pane.find({ key: 'overview-person-Berk' }))!.props as { label: string; variant?: string; dimColor?: boolean }
+      return { label: p.label, variant: p.variant ?? null, dimColor: p.dimColor ?? false }
+    }
+    expect(await chip()).toEqual({ label: 'Berk', variant: null, dimColor: true })
+    await pane.press({ key: 'overview-person-Berk' })
+    expect(await chip()).toEqual({ label: 'Berk', variant: 'primary', dimColor: false })
+    expect(await handles()).toEqual(['B1B1B1'])
+    await pane.press({ key: 'overview-person-Berk' })
+    expect(await chip()).toEqual({ label: '✕ Berk', variant: null, dimColor: false })
+    expect((await pane.find({ type: 'Text', text: '✕ Berk' }))?.props.color).toBe('error')
+    expect(await handles()).toEqual(['A1A1A1'])
+    await pane.press({ key: 'overview-person-Berk' })
+    expect(await chip()).toEqual({ label: 'Berk', variant: null, dimColor: true })
+    expect(await handles()).toEqual(['A1A1A1', 'B1B1B1'])
+  })
+
+  test('left out alone, the Log shows everything else, several left out at once', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'N1N1N1', title: 'new', status: 'backlog', creator: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'B1B1B1', title: 'stuck', status: 'blocked', creator: 'Berk', blocked_reason: 'x', created_at: ago(0.02), updated_at: ago(0.02) },
+      { handle: 'S1S1S1', title: 'judged', status: 'signoff', creator: 'Alex', created_at: ago(0.03), updated_at: ago(0.03) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const handles = async () => (await pane.findAll({ type: 'Text', text: LOG_LINE })).map(x => x.text.replace(LOG_LINE, '').slice(0, 6))
+    const out = async (key: string) => {
+      await pane.press({ key })
+      await pane.press({ key })
+    }
+    await out('overview-lane-signoff')
+    expect(await handles()).toEqual(['N1N1N1', 'B1B1B1'])
+    await out('overview-lane-blocked')
+    expect(await handles()).toEqual(['N1N1N1'])
+    // All is not lit while anything is left out.
+    expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBeUndefined()
+  })
+
+  test('chosen and left out together, across both rows: what is chosen and not left out', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'N1N1N1', title: 'new', status: 'backlog', creator: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'B1B1B1', title: 'stuck', status: 'blocked', creator: 'Berk', blocked_reason: 'x', created_at: ago(0.02), updated_at: ago(0.02) },
+      { handle: 'S1S1S1', title: 'judged', status: 'signoff', creator: 'Alex', created_at: ago(0.03), updated_at: ago(0.03) },
+      { handle: 'C1C1C1', title: 'by Carla', status: 'signoff', creator: 'Carla', created_at: ago(0.04), updated_at: ago(0.04) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const handles = async () => (await pane.findAll({ type: 'Text', text: LOG_LINE })).map(x => x.text.replace(LOG_LINE, '').slice(0, 6))
+    // Not Carla, but signoff and backlog: Alex's two.
+    await pane.press({ key: 'overview-person-Carla' })
+    await pane.press({ key: 'overview-person-Carla' })
+    await pane.press({ key: 'overview-lane-signoff' })
+    await pane.press({ key: 'overview-lane-backlog' })
+    expect(await handles()).toEqual(['N1N1N1', 'S1S1S1'])
+    // Alex chosen too, and backlog left out in the same row as signoff chosen.
+    await pane.press({ key: 'overview-person-Alex' })
+    await pane.press({ key: 'overview-lane-backlog' })
+    expect(await handles()).toEqual(['S1S1S1'])
+  })
+
+  test('All clears its row of chosen and left out alike and is lit only then; the other row stays', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'N1N1N1', title: 'new', status: 'backlog', creator: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'B1B1B1', title: 'stuck', status: 'blocked', creator: 'Berk', blocked_reason: 'x', created_at: ago(0.02), updated_at: ago(0.02) },
+      { handle: 'S1S1S1', title: 'judged', status: 'signoff', creator: 'Alex', created_at: ago(0.03), updated_at: ago(0.03) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const handles = async () => (await pane.findAll({ type: 'Text', text: LOG_LINE })).map(x => x.text.replace(LOG_LINE, '').slice(0, 6))
+    const lit = async (key: string) => (await pane.find({ key }))?.props.variant === 'primary'
+    await pane.press({ key: 'overview-person-Berk' })
+    await pane.press({ key: 'overview-person-Berk' })
+    await pane.press({ key: 'overview-lane-signoff' })
+    await pane.press({ key: 'overview-lane-backlog' })
+    await pane.press({ key: 'overview-lane-backlog' })
+    expect(await handles()).toEqual(['S1S1S1'])
+    expect(await lit('overview-lanes-all')).toBe(false)
+    expect(await lit('overview-people-all')).toBe(false)
+    await pane.press({ key: 'overview-lanes-all' })
+    expect(await lit('overview-lanes-all')).toBe(true)
+    expect((await pane.find({ key: 'overview-lane-backlog' }))?.props.label).toBe('backlog')
+    // Berk stays left out: the people row was not cleared.
+    expect(await handles()).toEqual(['N1N1N1', 'S1S1S1'])
+    expect(await lit('overview-people-all')).toBe(false)
+    await pane.press({ key: 'overview-people-all' })
+    expect(await lit('overview-people-all')).toBe(true)
+    expect(await handles()).toEqual(['N1N1N1', 'B1B1B1', 'S1S1S1'])
   })
 
   test('the top row is one line of buttons alike — the tabs on the left, Close at the right — and the open tab is the one highlighted', async ($, on) => {
@@ -4891,7 +5007,7 @@ describe('review notes as a person reads them', () => {
     const asked = JSON.parse(w.prompts[0]!.slice(w.prompts[0]!.lastIndexOf('\n') + 1)) as string[]
     expect(asked.slice(0, 4)).toEqual(['cache key', 'a key per branch', 'the key names the branch', 'two branches shared one'])
     expect(asked.slice(-4)).toEqual(noteList)
-    for (const text of ['ключ кэша', 'Goal: ключ на ветку', 'Done: ключ называет ветку', 'Why: две ветки делили один', `🔴 ${ru[0]}`]) expect(all).toContain(text)
+    for (const text of ['ключ кэша', '┃ Goal: ключ на ветку', '┃ Done: ключ называет ветку', '┃ Why: две ветки делили один', `🔴 ${ru[0]}`]) expect(all).toContain(text)
     expect((await pane.find({ key: 'translate-MG677R' }))?.text).toContain('Original')
     await pane.press({ key: 'translate-MG677R' })
     const back = (await pane.findAll({ type: 'Text' })).map(x => x.text)
@@ -4907,9 +5023,9 @@ describe('review notes as a person reads them', () => {
     w.translations = { ...dictionary(ru), 'a key per branch': 'ключ на ветку' }
     await startSession($)
     const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
-    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Goal: a key per branch')
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('┃ Goal: a key per branch')
     await pane.press({ key: 'translate-MG677R' })
-    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Goal: ключ на ветку')
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('┃ Goal: ключ на ветку')
   })
 
   test('Give back shows the notes translated and writes the originals onto the ticket', async ($, on) => {
@@ -5358,13 +5474,28 @@ describe('the Acceptance pane', () => {
     await w.clock.settle()
     const all = await texts(pane)
     expect(all).toContain('cache key')
-    expect(all).toContain('Goal: Two branches never share a cache entry.')
-    expect(all).toContain('Done: the key names the branch')
-    expect(all).toContain('Why: two branches shared one entry')
+    expect(all).toContain('┃ Goal: Two branches never share a cache entry.')
+    expect(all).toContain('┃ Done: the key names the branch')
+    expect(all).toContain('┃ Why: two branches shared one entry')
     expect(all).toContain('round 2 | back 1x from signoff | 3 days')
     expect(all).toContain('DoD 2/2 (1 superseded) | bughunt ✓ on HEAD | review: accept')
     expect(all).toContain('2 commits, 2 files | pull request exists')
-    expect(all).toContain('Release note: Press Acceptance to decide a ticket.')
+    expect(all).toContain('Press Acceptance to decide a ticket.')
+    // MK8HD2: each block opens with its title and a rule; each head field
+    // has its own colour; what the ticket went through is dim, where it
+    // stands is not.
+    for (const title of ['History', 'Release note', 'Review notes - choose for each']) expect(all.some(x => x.startsWith(title) && x.endsWith('───'))).toBe(true)
+    const colour = async (key: string) => JSON.stringify(await pane.find({ key }))
+    expect(await colour('goal')).toContain('"color":"suggestion"')
+    expect(await colour('what')).toContain('"color":"success"')
+    expect(await colour('why')).toContain('"color":"warning"')
+    const dim = async (text: string) => (await pane.find({ type: 'Text', text }))?.props.dimColor
+    expect(await dim('round 2 | back 1x from signoff | 3 days')).toBe(true)
+    // Where it stands wraps on a line of its own under the title, never cut
+    // with the rule.
+    expect(await dim('MG677R | signoff')).toBe(true)
+    expect(await dim('2 commits, 2 files | pull request exists')).toBe(true)
+    expect(await dim('DoD 2/2 (1 superseded) | bughunt ✓ on HEAD | review: accept')).toBeFalsy()
     // The light follows the marks: one 🟡 note makes it yellow.
     expect(all[0]).toBe('● yellow: 1 review note to weigh')
     // Looked up from the ticket's own worktree, without a fetch.
@@ -5498,7 +5629,7 @@ describe('the Acceptance pane', () => {
     await startSession($)
     const all = await texts(await acceptancePane($, await $.ui.mount(BAND), 'MG677R'))
     await w.clock.settle()
-    expect(all.some(x => x.startsWith('Release note:'))).toBe(false)
+    expect(all.some(x => x.startsWith('Release note'))).toBe(false)
   })
 
   test('the pull request is asked once in five minutes, however often the pane opens', async ($, on) => {
