@@ -1784,6 +1784,24 @@ func renameOver(tmp, path string) error {
 	return err
 }
 
+// ReadAtomic is the read half of WriteAtomic. On Windows an open of a file
+// that a rename is replacing at that moment fails - a sharing violation or
+// Access is denied - although the old or the new file is a millisecond away.
+// It is tried again there with renameOver's backoff, for any error but a
+// missing file; everywhere else, and for a missing file, the first answer
+// stands.
+func ReadAtomic(path string) ([]byte, error) {
+	b, err := os.ReadFile(path)
+	if runtime.GOOS != "windows" {
+		return b, err
+	}
+	for wait := 5 * time.Millisecond; err != nil && !errors.Is(err, os.ErrNotExist) && wait <= 640*time.Millisecond; wait *= 2 {
+		time.Sleep(wait)
+		b, err = os.ReadFile(path)
+	}
+	return b, err
+}
+
 // Save writes a ticket that the caller already mutated, without taking a lock.
 // Used by the merge driver, which runs single-threaded under git.
 func (s *Store) Save(t *Ticket) error { return WriteAtomic(t.Path, t.doc.Bytes()) }

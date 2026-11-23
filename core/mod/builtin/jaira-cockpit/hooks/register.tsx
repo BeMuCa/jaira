@@ -4,7 +4,7 @@ import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
   acceptTreeFor, branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, ghRepoOf, hasPullRequest, onHost, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
-  offeredRelease, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
+  offeredRelease, parse, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
   clipLines, commitsOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenItemsOf, seenProof, seenToTick, type SeenItem, standOf, storyOf, translatePrompt,
   IN_TURN, type Action, type Agent, type GapItem, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
 } from './board.ts'
@@ -1783,6 +1783,15 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   const tabs = await run($, [bin, 'tab', 'list'], dir)
   const tab = tabs?.exitCode === 0 ? carrierTab(tabsOf(tabs.stdout), id) : undefined
   const record = carrierOf(await readRecords($), id)
+  // A worker at an approval dialog is never typed into: the text would land
+  // in the dialog and the Enter would answer it for the person, unseen.
+  // spawn.sh refuses the same pane for the same reason. Nor is it replaced:
+  // the old one would still hang at its dialog beside a new one.
+  const atDialog = async (where: string) => {
+    await handedTo('none', `the old worker waits at an approval dialog in ${where}; no Enter pressed, no second worker started`, `${where} waits at an approval dialog: answer it there, then type the decision into it`)
+    return say($, t.workerBlocked(id, where))
+  }
+  if (tab?.agent_status === 'blocked') return atDialog(`tab ${tab.label}`)
   // A worker at work is never replaced: closing its tab would end it in the
   // middle of a step, and a new one beside it is the second worker this
   // press must never make. It gets the decision typed in like any old
@@ -1793,11 +1802,22 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
     : chooseWorker({ ...(record ? { record } : {}), tabAlive: tab !== undefined, now: await $.clock.now(), share })
   let why = choice.why
   if (choice.reuse && record) {
+    // The keys go to the recorded pane, which need not be the tab above,
+    // and a dialog can open in the second before the Enter: Herdr is asked
+    // about that pane itself, before the text and again before the Enter.
+    if (await paneBlocked($, bin, record.pane, dir)) return atDialog(`pane ${record.pane}`)
     // The pane may have gone since the tab list: only text that arrived
     // counts as handed to the old worker.
     const sent = await run($, [bin, 'pane', 'send-text', record.pane, backMessage(id, lane, reason)], dir)
     if (sent?.exitCode === 0) {
       await $.clock.sleep(1000)
+      // The text has arrived either way: Herdr App's hc send pressed Enter
+      // with it, plain Herdr holds it in the input under the dialog. So it
+      // is the old worker's, and only the Enter is left to the person.
+      if (await paneBlocked($, bin, record.pane, dir)) {
+        await handedTo('old', `${why}; a dialog opened before the Enter, none pressed`, `${tab?.label ?? `${id}/worker`} (pane ${record.pane}) at an approval dialog: answer it, then press Enter there if the decision still waits in its input`)
+        return say($, t.dialogBeforeEnter(id, record.pane))
+      }
       await run($, [bin, 'pane', 'send-keys', record.pane, 'enter'], dir)
       return handedTo('old', why, `${tab?.label ?? `${id}/worker`} (pane ${record.pane})`)
     }
@@ -1822,6 +1842,14 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   const where = `${place.why}; ${started.parentWhy}`
   if (started.ok) return handedTo('new', `${why}; ${where}`, `${id}/worker (${started.pane ? `pane ${started.pane}, ` : ''}on ${place.branch ?? 'a new branch'})`)
   await handedTo('none', `${why}; ${where}; spawn.sh failed: ${started.err.slice(-160)}`)
+}
+
+// Herdr's own word on one pane, as spawn.sh reads it: blocked is its state
+// for an approval dialog. A pane it cannot read is not called blocked; the
+// send-text after it finds out whether the pane is still there.
+async function paneBlocked($: EngineInterface, bin: string, pane: string, dir: string): Promise<boolean> {
+  const got = await run($, [bin, 'pane', 'get', pane], dir)
+  return got?.exitCode === 0 && parse<{ result?: { pane?: { agent_status?: string } } }>(got.stdout)?.result?.pane?.agent_status === 'blocked'
 }
 
 // Where a new worker for a ticket starts, and what spawn.sh is handed for
