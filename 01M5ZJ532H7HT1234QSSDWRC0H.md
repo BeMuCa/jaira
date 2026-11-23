@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:13Z
-updated-at: 2026-11-23T01:28:08Z
+updated-at: 2026-11-23T01:28:10Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-dwrc0h
@@ -47,3 +47,4 @@ claimed-at: 2026-11-23T01:25:43Z
 
 ## Progress
 - **2026-11-23 01:26 · BeMuCa** — Keine offene Entscheidung. Geklaert aus dem Code: DoD-Punkt nachtragen = 'jaira dod <id> --add <text>' (gibt es schon, haengt im richtigen Abschnitt an, Nummern bleiben); kein neuer Befehl, kein 'set definition-of-done --append' (definition_of_done ist nur der erste Punkt, waere der falsche Weg). Umformulieren = 'jaira dod <id> <n> --text'. Fehlend: Satz im Agent-Block (core/board/announce.go), Verweis in 'create --help', ein Test dass --add die Nummern und den Proof bestehender Punkte laesst.
+- **2026-11-23 01:28 · BeMuCa** — Bullet in den Abschnitt 'Capturing' gesetzt, nicht unter 'Working a ticket': feat/hpfd7d aendert die Milestone-Zeilen weiter unten im selben Block, so bleibt der Merge konfliktfrei. CLAUDE.md/AGENTS.md nur um diese 5 Zeilen ergaenzt, gegen 'jaira init' auf einem Scratch-Board verglichen (identisch). Beispiel set goal=... context=... und dod --add auf dem Scratch-Board von Hand ausprobiert. Test nicht gelaufen (go test in dieser Session verboten).
