@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:30:43Z
+updated-at: 2026-11-23T21:30:48Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -27,7 +27,7 @@ claimed-at: 2026-11-23T21:30:43Z
 outcome-what: "Sign-off screen (signoff and human) shows blocker lines, check, what, why, question, commits, DoD with proofs; 'i' appends the full detail pane body. Blocker detection uses the cockpit's MARKER/BLOCKER regexes; a label standing alone keeps its row as written."
 outcome-why: "Berk 2026-11-23: the check sat last under a page of account; rounds 2-3: bughunt found blocker forms hidden or emptied, and human-lane context/notes unreachable."
 outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSignOffKeepsBlockersOnTop (11 forms, 3 label-alone, 5 non-blockers), TestHumanLaneOpensTheDecisionScreen, TestDetailsCarryContextAndNotes; checked: concurrency n/a (render only), error paths n/a, unusual input - blocker forms, label alone, empty fields; permissions n/a"
-review-summary: none
+review-summary: "In human and signoff the TUI now opens a decision screen (signoff.go signOffBody): a blocker row from review-gaps (cockpit's MARKER/BLOCKER reading, prefix stripped), then check, what, why, the question if set, the derived Commits/diff and the DoD with proofs. Problem, resolves, summary, verdict, gaps, tags and lane fields left the screen; 'i' appends the whole detail pane body (detailFields, split out of detailBody) below it. atPersonsLane (RequiresHumanExit||RequiresQuestion) replaces the lane test in diffPaneShown and picks the screen in render(); accept/follow-up stay signoff-only. The agent lane 'review' keeps the plain detail view (decision note). EH6Z0N's diff pane comes in through the stack merge f03f8598b and is judged on its own ticket."
 review-gaps: "round 3: nothing to remove - the fallback is 3 lines inside blockerLines. Earlier rounds: hand-picked details list, gapLines, isBlockerLine removed; regex mirrors hooks/board.ts (two languages). Left: Details repeat Commits/DoD (whole detail pane by design)."
 test-verdict: "pass: go vet ./... + go test -race -count=1 ./internal/tui RC=0 at 2880173dd (full race suite RC=0 at 73d06b024); DoD 1-5 verified in the tree; screen exercised in tmux on a scratch board; render-only, writes nothing"
 hunt-verdict: "pass: bughunt done at 2880173dd - 0 blocker, 1 change edge (a label-only blocker row shows the label, finding is behind 'i'; note for the person), 0 pre-existing; round 1 pre-existing quoted-path finding left as note (EH6Z0N's diff code)"
