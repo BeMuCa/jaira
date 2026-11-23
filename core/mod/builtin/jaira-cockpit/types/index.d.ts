@@ -91,11 +91,12 @@ declare module 'claude-code' {
       overview: Overview | null
       // The Overview pane's tab, its folded sections and the people its Log
       // is filtered to — chosen and left out, per row — kept for the session
-      // across closing and opening it.
+      // across closing and opening it. New keys, not overviewPeople/Lanes:
+      // those held string[] in older builds and may survive a hot reload.
       overviewTab: 'queue' | 'log' | 'workers'
       overviewFolded: Record<string, boolean>
-      overviewPeople: { only: string[]; not: string[] }
-      overviewLanes: { only: string[]; not: string[] }
+      overviewPeopleFilter: { only: string[]; not: string[] }
+      overviewLanesFilter: { only: string[]; not: string[] }
       // The Workers tab: its agents, read while it is open; each ticket's
       // colour and hat, kept while it stays on the board; when each agent
       // (<id>/<kind>) was first seen; the first line of each ticket's last
