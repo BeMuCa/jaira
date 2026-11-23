@@ -570,20 +570,26 @@ async function ownTree($: EngineInterface, b: { dir: string; repo: string }, id:
 // copy names the file pulled into the main checkout, the one leave() removes.
 type Here = { ok: true; dir: string; copy?: string; leave: () => Promise<void> } | { ok: false; why: string }
 
-// carried: Accept's press, which also takes the worktree of the branch the
-// ticket's commits ride on where it has none of its own (acceptTreeFor), and
-// refuses where several branches could be that one.
-async function ticketHere($: EngineInterface, b: { dir: string; repo: string }, id: string, carried = false): Promise<Here> {
+// carriedTo: Accept's press and the lane it moves to. Where the ticket has no
+// worktree of its own and a commit of its own lies beyond the main
+// checkout's HEAD, it takes the worktree of the branch the ticket's commits
+// ride on (acceptTreeFor), and refuses where several branches could be that
+// one. A HEAD that reaches all of them needs no carrier: the move runs in
+// the main checkout, as before, however many branches carry the slug.
+async function ticketHere($: EngineInterface, b: { dir: string; repo: string }, id: string, carriedTo?: string): Promise<Here> {
   const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
   const porcelain = trees?.exitCode === 0 ? trees.stdout : ''
   let own = ownTreeFor(porcelain, id)
-  if (own === undefined && carried) {
+  if (own === undefined && carriedTo !== undefined) {
     // Counted against the main checkout's HEAD, not the default branch: only
     // commits the move there cannot reach send it elsewhere, and in a fork
     // whose master lags every later branch holds a merged ticket's commit.
-    const place = acceptTreeFor(porcelain, id, await ticketBranch($, b, id, porcelain, 'HEAD', branchesFor(porcelain, id).base ?? ''))
-    if ('ambiguous' in place) return { ok: false, why: t.acceptAmbiguous(id, place.ambiguous) }
-    own = place.dir
+    const beyond = await run($, ['git', 'log', '--branches', '--not', 'HEAD', '--format=%H %s'], b.repo)
+    if (beyond?.exitCode === 0 && commitNaming(beyond.stdout, id) !== undefined) {
+      const place = acceptTreeFor(porcelain, id, await ticketBranch($, b, id, porcelain, 'HEAD', branchesFor(porcelain, id).base ?? ''))
+      if ('ambiguous' in place) return { ok: false, why: t.acceptAmbiguous(id, place.ambiguous, carriedTo) }
+      own = place.dir
+    }
   }
   const dir = own ?? b.repo
   const stays: Here = { ok: true, dir, leave: async () => {} }
@@ -673,7 +679,7 @@ type Refused = (why: string) => Promise<void>
 
 async function accept($: EngineInterface, w: Waiting, after?: (dir: string) => Promise<void>, refused?: Refused): Promise<boolean> {
   if (!board || w.acceptTo === null) return false
-  const here = await ticketHere($, board, w.id, true)
+  const here = await ticketHere($, board, w.id, w.acceptTo)
   if (!here.ok) {
     await fail($, `${t.accept} ${w.id}`, here.why)
     return false

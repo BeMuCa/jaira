@@ -104,7 +104,7 @@ export const t = {
   // Two named after the ticket, or several holding its newest commit: both
   // are 'could each be its branch', and the line says only that.
   branchAmbiguous: (id: string, branches: string[]) => `${branches.join(' and ')} could each be ${id}'s branch and none is its worktree's: no branch picked for it - start its worker or pull request on the right one by hand`,
-  acceptAmbiguous: (id: string, branches: string[]) => `${branches.join(' and ')} could each carry ${id}'s commits and none is its worktree's: nothing moved - run 'jaira move ${id} --to done --force' in the right one's worktree`,
+  acceptAmbiguous: (id: string, branches: string[], to: string) => `${branches.join(' and ')} could each carry ${id}'s commits and none is its worktree's: nothing moved - check out the right one and run 'jaira move ${id} --to ${to} --force' there`,
   acceptNoteLost: (id: string, why: string) => `${id} accepted; the note saying so was not written: ${oneLine(why).slice(0, 120)}`,
   toSessionGivenBack: (id: string, from: string, who: 'old' | 'new' | 'none', reason: string, worker: string) =>
     `jaira-cockpit: ${id} given back: ${inLine(reason, 120)}, worker ${who === 'none' ? worker || "none (the ticket's note says why)" : `${who === 'old' ? 'that carried it' : 'new'} ${worker}`} (Person, Cockpit; ${from} -> in-progress)`,

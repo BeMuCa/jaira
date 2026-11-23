@@ -1716,10 +1716,9 @@ describe('after Accept', () => {
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await pressAccept($, ui, 'ZZ99ZZ', w)
-    // Asked twice: once where Accept moves it — no worktree on that branch,
-    // so the main checkout as before — and once for the pull request.
-    const list = ['git', 'branch', '--list', '--format=%(refname:short)', '*/zz99zz', '@/repo']
-    expect(ran(w, 'git', 'branch')).toEqual([list, list])
+    // No commit of its own beyond the main checkout's HEAD: Accept looks for
+    // no carrier and moves there, as before; only the pull request asks.
+    expect(ran(w, 'git', 'branch')).toEqual([['git', 'branch', '--list', '--format=%(refname:short)', '*/zz99zz', '@/repo']])
     expect(ran(w, 'jaira', 'move', 'ZZ99ZZ', '--to', 'done', '--force').map(r => r.at(-1))).toEqual(['@/repo'])
     expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'upstream/main..feat/zz99zz', '@/repo']])
     expect(ran(w, 'git', 'worktree', 'add')).toEqual([['git', 'worktree', 'add', '/.worktrees/repo-zz99zz', 'feat/zz99zz', '@/repo']])
@@ -1769,9 +1768,11 @@ describe('after Accept', () => {
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await pressAccept($, ui, 'ZZ99ZZ', w)
-    // Once against the main checkout's HEAD, where Accept moves it, and once
+    // Against the main checkout's HEAD where Accept moves it — whether a
+    // commit of its own lies beyond, then which branch holds it — and once
     // against the target, for the pull request.
     expect(ran(w, 'git', 'log', '--branches')).toEqual([
+      ['git', 'log', '--branches', '--not', 'HEAD', '--format=%H %s', '@/repo'],
       ['git', 'log', '--branches', '--not', 'HEAD', '--format=%H %s', '@/repo'],
       ['git', 'log', '--branches', '--not', 'upstream/main', '--format=%H %s', '@/repo'],
     ])
@@ -1801,7 +1802,19 @@ describe('after Accept', () => {
     expect(ran(w, 'jaira', 'move', 'ZZ99ZZ', '--to', 'done')).toEqual([])
     expect(ran(w, 'jaira', 'pull', 'ZZ99ZZ')).toEqual([])
     const pane = await $.ui.mount(MESSAGE('Accept ZZ99ZZ failed'))
-    expect(await pane.find({ type: 'Text', text: /feat\/mg677r and wip could each carry ZZ99ZZ's commits.*nothing moved/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /feat\/mg677r and wip could each carry ZZ99ZZ's commits.*nothing moved - check out the right one and run 'jaira move ZZ99ZZ --to done --force' there/ })).toBeDefined()
+  })
+
+  // Two branches named after it, both merged: the main checkout reaches every
+  // commit of its own, so no carrier is asked for and nothing is ambiguous.
+  test('branches named after it but nothing of its own beyond HEAD: Accept moves in the main checkout', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }]
+    w.branches = ['feat/zz99zz', 'fix/zz99zz']
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await pressAccept($, ui, 'ZZ99ZZ', w)
+    expect(ran(w, 'jaira', 'move', 'ZZ99ZZ', '--to', 'done', '--force').map(r => r.at(-1))).toEqual(['@/repo'])
   })
 
   test('a ticket named only beside others in a subject has no commit of its own: no branch, no pull request (Alex, QTQW15)', async ($, on) => {
