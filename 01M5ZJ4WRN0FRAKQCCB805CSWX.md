@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:33:13Z
+updated-at: 2026-11-23T01:33:15Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -32,6 +32,7 @@ claimed-at: 2026-11-23T01:32:21Z
 - [ ] spawn.sh lehnt mit Exit 3 und Meldung ab, wenn MemAvailable unter der Grenze liegt; --force startet trotzdem
 - [ ] Die Grenze ist eine Variable am Kopf von spawn.sh mit Kommentar, warum der Default so ist
 - [ ] jaira-teamlead/SKILL.md sagt, was der Teamlead tut, wenn spawn.sh ablehnt
+- [ ] Ohne /proc/meminfo oder ohne MemAvailable (macOS, Git Bash) ueberspringt spawn.sh die Pruefung mit einer Zeile auf stderr und startet; nie ein Abbruch
 
 ## Options
 
