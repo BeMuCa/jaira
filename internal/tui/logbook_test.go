@@ -184,15 +184,15 @@ func TestSettingsEditsLogbookDays(t *testing.T) {
 	m.key(key("j"))
 	m.key(key("j"))
 	m.key(key("enter"))
-	if !m.settingsScreen.editing {
+	if m.settingsScreen.open == "" {
 		t.Fatal("enter on the logbook row did not open the number")
 	}
 	m.key(key("backspace"))
 	m.key(key("backspace"))
 	m.key(key("3"))
 	m.key(key("enter"))
-	if m.mode != modeSettings || m.settingsScreen.editing {
-		t.Fatalf("after saving: mode %v, editing %v", m.mode, m.settingsScreen.editing)
+	if m.mode != modeSettings || m.settingsScreen.open != "" {
+		t.Fatalf("after saving: mode %v, open %q", m.mode, m.settingsScreen.open)
 	}
 	if got := settings.Load().LogbookWindow(); got != 3 {
 		t.Errorf("settings.json logbook-days = %d, want 3", got)

@@ -326,14 +326,14 @@ func TestSettingsTypesTheEditorAndIDE(t *testing.T) {
 		m.key(key(string(c)))
 	}
 	m.Update(tea.PasteMsg{Content: " --clean"})
-	if got := row(); !strings.Contains(got, "Editor (E)  [nvim --clean_]") {
+	if got := row(); !strings.Contains(got, "Editor  [nvim --clean_]") {
 		t.Fatalf("the editor row does not show what was typed:\n%s", got)
 	}
 	m.key(key("enter"))
 	if got := settings.Load().Editor; got != "nvim --clean" {
 		t.Fatalf("settings.json editor = %q, want %q", got, "nvim --clean")
 	}
-	if got := row(); !strings.Contains(got, "Editor (E)  nvim --clean") {
+	if got := row(); !strings.Contains(got, "Editor  nvim --clean") {
 		t.Fatalf("after save, the editor row does not show the value:\n%s", got)
 	}
 
@@ -344,8 +344,8 @@ func TestSettingsTypesTheEditorAndIDE(t *testing.T) {
 	}
 	m.Update(tea.PasteMsg{Content: "x"})
 	m.key(key("esc"))
-	if m.settingsScreen.typing != "" || settings.Load().IDE != "" {
-		t.Fatalf("esc did not leave the IDE as it was: typing=%q ide=%q", m.settingsScreen.typing, settings.Load().IDE)
+	if m.settingsScreen.open != "" || settings.Load().IDE != "" {
+		t.Fatalf("esc did not leave the IDE as it was: open=%q ide=%q", m.settingsScreen.open, settings.Load().IDE)
 	}
 
 	m.key(key("enter"))

@@ -198,15 +198,6 @@ func TestOpeningAnotherTicketResetsDiffScroll(t *testing.T) {
 	}
 }
 
-// ideInstalled says the IDE's program is on the PATH for one test, so 'o' starts
-// it through openInCode instead of falling back to the editor.
-func ideInstalled(t *testing.T) {
-	t.Helper()
-	orig := lookIDE
-	lookIDE = func(name string) (string, error) { return name, nil }
-	t.Cleanup(func() { lookIDE = orig })
-}
-
 func TestOKeyOpensFileAtLine(t *testing.T) {
 	var gotDir string
 	var gotArgv []string
@@ -216,7 +207,6 @@ func TestOKeyOpensFileAtLine(t *testing.T) {
 		return nil
 	}
 	t.Cleanup(func() { openInCode = orig })
-	ideInstalled(t)
 
 	m := diffModel(t, 160, "signoff")
 	m.diffDir = "/repo/worktree"
@@ -238,7 +228,6 @@ func TestOKeyOnABlankRowOpensTheFileBelow(t *testing.T) {
 		return nil
 	}
 	t.Cleanup(func() { openInCode = orig })
-	ideInstalled(t)
 
 	m := diffModel(t, 160, "signoff")
 	m.diffDir = "/repo/worktree"
@@ -271,7 +260,6 @@ func TestOKeyConfirmsInTheDiffTitleWithoutAModal(t *testing.T) {
 	orig := openInCode
 	openInCode = func(string, []string) error { return nil }
 	t.Cleanup(func() { openInCode = orig })
-	ideInstalled(t)
 
 	m := diffModel(t, 160, "signoff")
 	m.diffDir = "/repo/worktree"
@@ -617,12 +605,16 @@ func TestIDECommandFillsTheTemplate(t *testing.T) {
 }
 
 // An IDE that is not installed must not be started: 'o' opens the file in the
-// editor instead, and the diff title says which program was missing.
+// editor instead, and the diff title says which program was missing. The
+// missing program is reported by openInCode as exec.ErrNotFound, the way
+// exec.Cmd.Start reports it.
 func TestOKeyFallsBackToTheEditorWhenTheIDEIsMissing(t *testing.T) {
 	orig := openInCode
-	openInCode = func(string, []string) error {
-		t.Error("an IDE that is not installed was started")
-		return nil
+	openInCode = func(_ string, argv []string) error {
+		if argv[0] != "definitely-not-installed-xyz" {
+			t.Errorf("started %q, want the missing IDE", argv[0])
+		}
+		return &exec.Error{Name: argv[0], Err: exec.ErrNotFound}
 	}
 	t.Cleanup(func() { openInCode = orig })
 

@@ -1608,13 +1608,10 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case modeSettings:
-		if m.settingsScreen.typing != "" {
-			switch s {
-			case "enter", "esc", "backspace":
-				m.settingsScreen.textKey(s)
-			default:
-				m.insertText(k.Text)
-			}
+		// While a value is open for typing, only enter, esc and backspace are keys;
+		// every other key is typed text.
+		if m.settingsScreen.open != "" && s != "enter" && s != "esc" && s != "backspace" {
+			m.insertText(k.Text)
 			return m, nil
 		}
 		switch action := m.settingsScreen.key(s); action {

@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
 	"image/color"
 	"os/exec"
@@ -55,10 +56,6 @@ var openInCode = func(dir string, argv []string) error {
 	go cmd.Wait()
 	return nil
 }
-
-// lookIDE finds the IDE's program on the PATH. A package variable so tests can
-// say it is installed without installing anything.
-var lookIDE = exec.LookPath
 
 // ideCommand is the command that opens file at line with the IDE template. The
 // template is split into fields before {file} and {line} are filled in, so a
@@ -403,14 +400,15 @@ func (m *Model) openDiffRow() tea.Cmd {
 	r := m.diffRows[m.diffTarget()]
 	cur := settings.Load()
 	argv := ideCommand(cur.IDETemplate(), r.path, r.line)
-	if _, err := lookIDE(argv[0]); err != nil {
+	err := openInCode(m.diffDir, argv)
+	if errors.Is(err, exec.ErrNotFound) {
 		editor, _ := editorChoice(cur)
 		cmd := exec.Command(editor[0], append(editor[1:], r.path)...)
 		cmd.Dir = m.diffDir
 		m.diffOpened = argv[0] + " not found — opened in " + editor[0]
 		return tea.ExecProcess(cmd, func(err error) tea.Msg { return diffEditorDoneMsg{err} })
 	}
-	if err := openInCode(m.diffDir, argv); err != nil {
+	if err != nil {
 		m.notify(err.Error(), true)
 		return nil
 	}

@@ -76,8 +76,8 @@ var settingsEntries = []settingsEntry{
 		action: settingsActionLanguage,
 	},
 	{
-		name:   "Editor (E)",
-		desc:   "the editor E opens a ticket in, with its arguments ('nvim', 'code --wait'); jaira waits until it exits. enter types it, enter saves, an empty value means VISUAL, EDITOR, then git's core.editor",
+		name:   "Editor",
+		desc:   "the editor jaira opens every file in: E on a ticket, lane and board files, with its arguments ('nvim', 'code --wait'); jaira waits until it exits. enter types it, enter saves, an empty value means VISUAL, EDITOR, then git's core.editor",
 		action: settingsActionEditor,
 	},
 	{
@@ -94,13 +94,14 @@ var settingsEntries = []settingsEntry{
 type settingsScreen struct {
 	idx int
 
-	// days is logbook-days as settings.json has it now; editing is set while
-	// the number is open for typing, buf holding what has been typed so far
-	// and err what was wrong with the last attempt to save it.
-	days    int
-	editing bool
-	buf     string
-	err     string
+	// days is logbook-days as settings.json has it now. open is the action of
+	// the row whose value is open for typing, "" when none; buf is what has been
+	// typed into it so far and err what was wrong with the last attempt to save
+	// it.
+	days int
+	open string
+	buf  string
+	err  string
 
 	// dispatch is the dispatch setting as settings.json has it now, and
 	// dispatchErr what went wrong saving the last switch.
@@ -124,14 +125,9 @@ type settingsScreen struct {
 
 	// editor and ide are the two settings as settings.json has them now, "" for
 	// the default; editorNow is the editor that applies when editor is "", and
-	// where it comes from. typing is the action of the row whose value is open
-	// for typing, "" when none; typed is what has been typed so far and textErr
-	// what went wrong saving it.
+	// where it comes from.
 	editor, ide string
 	editorNow   string
-	typing      string
-	typed       string
-	textErr     string
 }
 
 func newSettingsScreen(root string) *settingsScreen {
@@ -153,42 +149,54 @@ func (s *settingsScreen) readText(cur settings.Settings) {
 // openText opens the editor or IDE row for typing, with the value settings.json
 // has for it now.
 func (s *settingsScreen) openText(action string) {
-	s.typing, s.typed, s.textErr = action, s.editor, ""
+	s.open, s.buf, s.err = action, s.editor, ""
 	if action == settingsActionIDE {
-		s.typed = s.ide
+		s.buf = s.ide
 	}
 }
 
-// textKey drives the value while it is open for typing: enter saves it, esc
-// leaves it as it was and backspace takes one character back. The characters
-// themselves come through addText.
-func (s *settingsScreen) textKey(k string) string {
+// openKey drives the value while a row is open for typing: digits or text
+// arrive through addText, backspace takes one back, esc leaves the value as it
+// was and enter saves it.
+func (s *settingsScreen) openKey(k string) string {
 	switch k {
 	case "esc":
-		s.typing, s.typed, s.textErr = "", "", ""
+		s.open, s.buf, s.err = "", "", ""
 	case "backspace":
-		if r := []rune(s.typed); len(r) > 0 {
-			s.typed = string(r[:len(r)-1])
+		if r := []rune(s.buf); len(r) > 0 {
+			s.buf = string(r[:len(r)-1])
 		}
 	case "enter":
+		if s.open == settingsActionLogbookDays {
+			return s.saveDays()
+		}
 		return s.saveText()
 	}
 	return settingsActionNone
 }
 
-// addText types text into the open value, a key's character or a paste, on one
+// addText types text into the open value, a key's character or a paste. The
+// number of logbook days takes digits only, four at most; the rest takes one
 // line. It does nothing when no value is open.
 func (s *settingsScreen) addText(text string) {
-	if s.typing != "" {
-		s.typed += foldToOneLine(text)
+	switch s.open {
+	case "":
+	case settingsActionLogbookDays:
+		for _, c := range text {
+			if c >= '0' && c <= '9' && len(s.buf) < 4 {
+				s.buf += string(c)
+			}
+		}
+	default:
+		s.buf += foldToOneLine(text)
 	}
 }
 
-// saveText writes the open value through settings.Update, like every write of
-// this screen. The value stays open when the write fails, so nothing typed is
-// lost.
+// saveText writes the open editor or IDE value through settings.Update, like
+// every write of this screen. The value stays open when the write fails, so
+// nothing typed is lost.
 func (s *settingsScreen) saveText() string {
-	action, value := s.typing, strings.TrimSpace(s.typed)
+	action, value := s.open, strings.TrimSpace(s.buf)
 	now, err := settings.Update(func(cur *settings.Settings) {
 		if action == settingsActionIDE {
 			cur.IDE = value
@@ -197,14 +205,31 @@ func (s *settingsScreen) saveText() string {
 		}
 	})
 	if err != nil {
-		s.textErr = err.Error()
+		s.err = err.Error()
 		return settingsActionNone
 	}
 	// None, not returned: nothing on the board shows these, and the diff pane and
 	// the ticket editor read them when they open.
 	s.readText(now)
-	s.typing, s.typed, s.textErr = "", "", ""
+	s.open, s.buf, s.err = "", "", ""
 	return settingsActionNone
+}
+
+// saveDays writes the open logbook-days value through settings.Update, so
+// nothing else in settings.json — a remote, a hook — is written back from a
+// copy older than the edit, or wiped where the file does not parse.
+func (s *settingsScreen) saveDays() string {
+	n, err := strconv.Atoi(s.buf)
+	if err != nil || n < 0 {
+		s.err = "a number of days, 0 or more"
+		return settingsActionNone
+	}
+	if _, err := settings.Update(func(cur *settings.Settings) { cur.LogbookDays = &n }); err != nil {
+		s.err = err.Error()
+		return settingsActionNone
+	}
+	s.days, s.open, s.buf, s.err = n, "", "", ""
+	return settingsActionSaved
 }
 
 // readChatModel takes the board's chat model and the one that applies from
@@ -240,7 +265,7 @@ func (s *settingsScreen) stepChatModel() string {
 	if s.root == "" {
 		return settingsActionNone
 	}
-	// Read again rather than trusting chatBoard, for the same reason editKey
+	// Read again rather than trusting chatBoard, for the same reason saveDays
 	// reads settings.json again: the file may have changed since S opened.
 	next := stepAfter(settings.ChatModelChoices, settings.BoardChatModel(s.root))
 	if err := settings.SetBoardChatModel(s.root, next); err != nil {
@@ -302,44 +327,12 @@ func (s *settingsScreen) switchDispatch() string {
 	return settingsActionNone
 }
 
-// editKey drives the number while it is open: digits type, backspace takes
-// one back, enter saves and esc leaves it as it was. Saving goes through
-// settings.Update, so nothing else in it — a remote, a hook — is written back
-// from a copy older than the edit, or wiped where the file does not parse.
-func (s *settingsScreen) editKey(k string) string {
-	switch k {
-	case "esc":
-		s.editing, s.buf, s.err = false, "", ""
-	case "backspace":
-		if s.buf != "" {
-			s.buf = s.buf[:len(s.buf)-1]
-		}
-	case "enter":
-		n, err := strconv.Atoi(s.buf)
-		if err != nil || n < 0 {
-			s.err = "a number of days, 0 or more"
-			return settingsActionNone
-		}
-		if _, err := settings.Update(func(cur *settings.Settings) { cur.LogbookDays = &n }); err != nil {
-			s.err = err.Error()
-			return settingsActionNone
-		}
-		s.days, s.editing, s.buf, s.err = n, false, "", ""
-		return settingsActionSaved
-	default:
-		if len(k) == 1 && k[0] >= '0' && k[0] <= '9' && len(s.buf) < 4 {
-			s.buf += k
-		}
-	}
-	return settingsActionNone
-}
-
 // key drives the screen. It reports settingsActionBack when esc/q finish the
 // screen, the action of the highlighted entry when enter opens it, or
 // settingsActionNone when the key only moved the cursor.
 func (s *settingsScreen) key(k string) string {
-	if s.editing {
-		return s.editKey(k)
+	if s.open != "" {
+		return s.openKey(k)
 	}
 	switch k {
 	case "esc", "q":
@@ -370,7 +363,7 @@ func (s *settingsScreen) key(k string) string {
 		if a != settingsActionLogbookDays {
 			return a
 		}
-		s.editing, s.buf, s.err = true, strconv.Itoa(s.days), ""
+		s.open, s.buf, s.err = settingsActionLogbookDays, strconv.Itoa(s.days), ""
 	}
 	return settingsActionNone
 }
@@ -409,7 +402,7 @@ func (s *settingsScreen) render(width, height int) string {
 		}
 		sb.WriteString(truncate(lead+name, w) + "\n")
 		sb.WriteString(styMeta.Render("      "+wrap(e.desc, max(10, w-6), 6)) + "\n")
-		if e.action == settingsActionLogbookDays && s.err != "" {
+		if e.action == s.open && s.err != "" {
 			sb.WriteString(styErr.Render("      "+s.err) + "\n")
 		}
 		if e.action == settingsActionDispatch && s.dispatchErr != "" {
@@ -421,16 +414,14 @@ func (s *settingsScreen) render(width, height int) string {
 		if e.action == settingsActionLanguage && s.languageErr != "" {
 			sb.WriteString(styErr.Render("      "+s.languageErr) + "\n")
 		}
-		if e.action == s.typing && s.textErr != "" {
-			sb.WriteString(styErr.Render("      "+s.textErr) + "\n")
-		}
 	}
 
 	hints := []string{"enter open", "esc back"}
-	if s.editing {
+	switch s.open {
+	case "":
+	case settingsActionLogbookDays:
 		hints = []string{"0-9 days", "enter save", "esc cancel"}
-	}
-	if s.typing != "" {
+	default:
 		hints = []string{"type", "enter save", "esc cancel"}
 	}
 	for _, l := range wrapHints(hints, max(1, w)) {
@@ -443,7 +434,7 @@ func (s *settingsScreen) render(width, height int) string {
 // it is open, otherwise what settings.json says, in words.
 func (s *settingsScreen) logbookValue() string {
 	switch {
-	case s.editing:
+	case s.open == settingsActionLogbookDays:
 		return stySelected.Render("[" + s.buf + "_]")
 	case s.days == 0:
 		return styMeta.Render("off")
@@ -456,8 +447,8 @@ func (s *settingsScreen) logbookValue() string {
 // open, otherwise what settings.json says, and for an empty one the default in
 // words.
 func (s *settingsScreen) textValue(action string) string {
-	if s.typing == action {
-		return stySelected.Render("[" + s.typed + "_]")
+	if s.open == action {
+		return stySelected.Render("[" + s.buf + "_]")
 	}
 	set, def := s.editor, "default — "+s.editorNow
 	if action == settingsActionIDE {

@@ -21,10 +21,21 @@ related: []
 follows: 01M67RYAXEZG7QD2XJ37EH6Z0N
 commits: []
 created-at: 2026-11-23T22:49:30Z
-updated-at: 2026-11-23T23:09:30Z
+updated-at: 2026-11-23T23:15:14Z
 updated-by: berkc
 claimed-by: "w-4bn68f"
-claimed-at: 2026-11-23T23:02:03Z
+claimed-at: 2026-11-23T23:11:44Z
+outcome-what: "S has two new rows: Editor (E) and IDE (o in the diff). Editor is the command E opens a ticket with; IDE is a template with {file} and {line} that o starts, default code -g {file}:{line}. Both are stored as editor and ide in settings.json and typed in place. o falls back to the editor, without a line, when the IDE program is missing, and the diff title says so."
+outcome-why: "o was hard-wired to VS Code and E to VISUAL, EDITOR or git core.editor with no way to see or change either; people without VS Code or with another IDE could not open a diff line."
+outcome-resolves: "Editor and IDE configurable in settings with the old defaults kept; template fill keeps paths with spaces as one argument; missing IDE falls back to the editor with a title message; tests for template, default, fallback and the settings rows; release note 4BN68F.md. Pending: person check of the TUI (dod item 6)."
+review-summary: |-
+  internal/tui/diffpane.go openDiffRow: lookIDE (new package var + test seam) duplicates what openInCode already learns - exec.Command(...).Start() returns an *exec.Error wrapping exec.ErrNotFound for a missing program; drop lookIDE, call openInCode first and take the editor fallback on errors.Is(err, exec.ErrNotFound), tests fake that error through the existing openInCode recorder
+  internal/tui/settings.go settingsScreen: typing/typed/textErr + textKey are a second open-for-typing state beside the logbook row's editing/buf/err + editKey (same esc/backspace/enter shape, two error fields, two flags that can both be set); keep one: an open-row action string + buf + err, esc/backspace shared, enter saving per action, digits-only filter kept for logbook-days; model.go routes k.Text while that one state is open
+  internal/tui/settings.go settingsEntries "Editor (E)" desc and core/release/notes/4BN68F.md line 1 say the setting is the editor E opens a ticket in, but editorCommand also serves lanes.go:571,588 and defaultboard.go:143 (lane and board files) - name the row "Editor" and say in desc and release note that it is the editor jaira opens every file in (E, lane and board files)
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Editor fuer E und IDE fuer o im Diff sind in den Settings einstellbar
@@ -36,9 +47,9 @@ claimed-at: 2026-11-23T23:02:03Z
 - [x] In den Settings gibt es 'ide' als Vorlage mit {file} und {line}, Default 'code -g {file}:{line}'; o im Diff-Pane startet genau diese Vorlage
   proof: core/settings/settings.go IDETemplate + DefaultIDE; internal/tui/diffpane.go openDiffRow + ideCommand; internal/tui/diffpane_test.go TestIDECommandFillsTheTemplate, TestOKeyOpensFileAtLine; core/settings/settings_test.go TestIDETemplateIsTheDefaultWhenUnset
 - [x] Ist das Programm der ide-Vorlage nicht installiert, oeffnet o die Datei im Editor und sagt das in der Titelzeile
-  proof: internal/tui/diffpane.go openDiffRow lookIDE branch (tea.ExecProcess editor, diffOpened 'not found — opened in'); internal/tui/diffpane_test.go TestOKeyFallsBackToTheEditorWhenTheIDEIsMissing
+  proof: internal/tui/diffpane.go openDiffRow (openInCode error errors.Is exec.ErrNotFound -> tea.ExecProcess editor, diffOpened 'not found — opened in'); internal/tui/diffpane_test.go TestOKeyFallsBackToTheEditorWhenTheIDEIsMissing
 - [x] Beide Eintraege sind auf dem Settings-Screen S sichtbar und aenderbar
-  proof: internal/tui/settings.go settingsEntries 'Editor (E)' and 'IDE (o in the diff)', openText/saveText/textValue; internal/tui/model.go modeSettings typing route; internal/tui/settings_test.go TestSettingsTypesTheEditorAndIDE
+  proof: internal/tui/settings.go settingsEntries 'Editor' and 'IDE (o in the diff)', openText/saveText/textValue; internal/tui/model.go modeSettings open route; internal/tui/settings_test.go TestSettingsTypesTheEditorAndIDE
 - [x] Tests decken Vorlage, Default und Rueckfall ab; Release-Note-Zeile in core/release/notes/<ID>.md
   proof: internal/tui/settings_test.go TestSettingsTypesTheEditorAndIDE; internal/tui/diffpane_test.go TestIDECommandFillsTheTemplate, TestOKeyFallsBackToTheEditorWhenTheIDEIsMissing; internal/tui/external_test.go TestEditorInSettingsWinsOverTheEnvironment; core/release/notes/4BN68F.md
 - [ ] seen by a person: in the TUI, S shows Editor and IDE rows; typing a template there and pressing o in the diff pane of a signoff ticket opens that IDE at the line; with a missing program the file opens in the editor and the diff title says so
@@ -68,3 +79,8 @@ claimed-at: 2026-11-23T23:02:03Z
 - **2026-11-23 22:57 · berkc** — waiting: in-progress (Haiku subagent) since 23:57
 - **2026-11-23 23:01 · berkc** — worker released its own claim so the in-progress agent can claim it (first Haiku agent refused to claim over the worker's claim)
 - **2026-11-23 23:01 · berkc** — claim identity: jaira falls back to host-PPID, which differs per bash call/agent; the worker and its lane agents share JAIRA_SESSION_ID=w-4bn68f
+- **2026-11-23 23:09 · berkc** — Not in git: (a) editorCommand now calls editorChoice(settings.Load()) which also returns the source word for the Editor row; every caller of editorCommand (E on a ticket, lanes.go, defaultboard.go) now honours the settings editor, not only E. (b) ide fallback runs through tea.ExecProcess with cmd.Dir = diff worktree and the relative path, like the old code; its exit error comes back as diffEditorDoneMsg and is shown, not dropped. (c) openInCode seam now takes argv; new package var lookIDE = exec.LookPath is the test seam for installed/not installed. (d) Dead end: newTestModel sets its own JAIRA_HOME, so a test that writes settings before diffModel/newTestModel writes to the wrong file; write after. (e) Settings screen: Editor and IDE rows type in place (typing field, route in model.go key modeSettings, paste via insertText modeSettings); enter saves via settings.Update, esc cancels, empty saves default. (f) Limit as pre-process 7: after the fallback editor exits the diff is not reloaded. (g) Checked: gofmt clean; go build, go vet, go test ./internal/tui ./core/settings -count=1 all exit 0. Board warned 'set up by an older version of jaira - run jaira update' on every call; not acted on (not in scope).
+- **2026-11-23 23:11 · berkc** — critique round 1 (sent back): internal/tui/diffpane.go openDiffRow: lookIDE (new package var + test seam) duplicates what openInCode already learns - exec.Command(...).Start() returns an *exec.Error wrapping exec.ErrNotFound for a missing program; drop lookIDE, call openInCode first and take the editor fallback on errors.Is(err, exec.ErrNotFound), tests fake that error through the existing openInCode recorder
+internal/tui/settings.go settingsScreen: typing/typed/textErr + textKey are a second open-for-typing state beside the logbook row's editing/buf/err + editKey (same esc/backspace/enter shape, two error fields, two flags that can both be set); keep one: an open-row action string + buf + err, esc/backspace shared, enter saving per action, digits-only filter kept for logbook-days; model.go routes k.Text while that one state is open
+internal/tui/settings.go settingsEntries "Editor (E)" desc and core/release/notes/4BN68F.md line 1 say the setting is the editor E opens a ticket in, but editorCommand also serves lanes.go:571,588 and defaultboard.go:143 (lane and board files) - name the row "Editor" and say in desc and release note that it is the editor jaira opens every file in (E, lane and board files)
+Let stand: editorChoice returning a source word (pre-process decision 5, settings row shows effective value + source); fallback editor without +line (pre-process decision 4); IDETemplate/DefaultIDE in core/settings mirrors PythonCommand; diffEditorDoneMsg as its own msg (notify only); model.go routing typed chars via k.Text/insertText rather than settingsScreen.key is needed because key() only sees the key name; diff not reloaded after fallback editor (pre-process 7, accepted limit). Diff is 511 lines, so critique and optimize stay two lanes.
