@@ -143,12 +143,6 @@ let totals: Totals = emptyTotals()
 let turn = 0
 // The person's message of the turn running, for the threads.
 let personSaid: string | undefined
-// The answers picked in the 'Waiting for you' pane, on their way in. They
-// are the person's, but the engine runs no hook of this mod on what the mod
-// submits itself, so personSaid never sees them: the first turn that ends
-// with no person's prompt of its own takes the oldest, and is filed under it
-// - a question asked back shows in the pane again.
-const picked: string[] = []
 let threads: Thread[] = []
 // The Explain and Discuss chats this session opened, by their tab's label
 // (`<id>/explain`), with when: the tab goes once the chat has done its part.
@@ -1973,6 +1967,9 @@ async function fileTurn($: EngineInterface, human: string, answer: string): Prom
   for (const id of ids) {
     const shown = await run($, ['jaira', 'show', id, '--json'], b.dir)
     const title = shown?.exitCode === 0 ? titleOf(shown.stdout) : undefined
+    // No answer at all - a timeout - is tried again after the next turn;
+    // an answer without a title is not.
+    if (shown === undefined) continue
     threads = titled(threads, id, title ?? '')
   }
   await keepThreads($)
@@ -2004,10 +2001,11 @@ async function openAsks($: EngineInterface): Promise<void> {
 // A pick is the person's answer: sent into the session as their message -
 // queued behind a turn still running, never waiting for it - and the
 // question leaves the list at once rather than after the next filing.
+// The turn it starts is not filed: the engine runs no hook of this mod on
+// what the mod submits itself, and hands back no answer for it, so nothing
+// tells that turn apart from an agent's (1M3X77, a known limit).
 async function answerAsk($: EngineInterface, a: Ask, choice: string): Promise<void> {
-  const line = answerLine(a, choice)
-  picked.push(line)
-  void $.prompt.submit({ text: line })
+  void $.prompt.submit({ text: answerLine(a, choice) })
   threads = answerThread(threads, a.thread, turn)
   await keepThreads($)
   if (asksOf(threads).length === 0) await $.ui.close({ id: ASKS })
@@ -2201,7 +2199,7 @@ export const register: Register = (on, options) => {
     if (await carries($)) return result
     await refreshCache($)
     await refreshBoard($)
-    const human = personSaid ?? picked.shift()
+    const human = personSaid
     personSaid = undefined
     if (human !== undefined && e.answer !== '') $.clock.after(0, () => void fileTurn($, human, e.answer))
     return result

@@ -3624,13 +3624,6 @@ describe('open questions with their ticket and options (1M3X77)', () => {
     expect(await (await $.ui.mount(BAND)).find({ key: 'asks' })).toBeUndefined()
     await pane.unmount()
     expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('No question is waiting for you.')
-    // The pick is the person's turn: a question asked back is filed and listed.
-    const calls = w.modelCalls
-    w.model = '{"thread": 1, "title": "Release", "line": "ja", "ticket": null, "question": "Und wann?", "options": ["heute", "morgen"], "answered": [1]}'
-    await answer($, 'Gut. Und wann?')
-    await w.clock.settle()
-    expect(w.modelCalls).toBe(calls + 1)
-    expect(await (await $.ui.mount(BAND)).find({ key: 'asks' })).toBeDefined()
   })
 
   test('a ticket jaira has no title for is asked about once, and the thread\'s title stands in', async ($, on) => {
