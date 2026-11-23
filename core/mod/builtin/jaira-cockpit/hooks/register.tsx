@@ -574,10 +574,10 @@ type Here = { ok: true; dir: string; copy?: string; leave: () => Promise<void> }
 // ticket's commits ride on where it has none of its own (acceptTreeFor), and
 // refuses where several branches could be that one.
 async function ticketHere($: EngineInterface, b: { dir: string; repo: string }, id: string, carried = false): Promise<Here> {
-  let own = await ownTree($, b, id)
+  const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
+  const porcelain = trees?.exitCode === 0 ? trees.stdout : ''
+  let own = ownTreeFor(porcelain, id)
   if (own === undefined && carried) {
-    const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
-    const porcelain = trees?.exitCode === 0 ? trees.stdout : ''
     // Counted against the main checkout's HEAD, not the default branch: only
     // commits the move there cannot reach send it elsewhere, and in a fork
     // whose master lags every later branch holds a merged ticket's commit.

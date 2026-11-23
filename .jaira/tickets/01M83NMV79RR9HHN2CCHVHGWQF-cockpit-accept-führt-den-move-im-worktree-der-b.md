@@ -18,13 +18,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T07:41:36Z
-updated-at: 2026-11-23T07:52:26Z
+updated-at: 2026-11-23T07:54:09Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-70439
 claimed-at: 2026-11-23T07:42:00Z
 outcome-what: "Cockpit-Accept fuehrt den Move im Worktree der Branch aus, die die Commits des Tickets traegt (acceptTreeFor + ticketHere carried); mehrdeutig: kein Move, Kandidaten genannt. jaira move --to done nennt Branches mit Commits der ID, die HEAD nicht erreicht (gitrepo.BranchesNamingTicket, gate.Env.CommitsElsewhere)."
 outcome-why: "Accept lief immer im Haupt-Checkout und fand Commits auf anders benannten Branches (Nachbesserung auf feat/<anderes-ticket>) nicht; die Meldung sagte nur 'commit it', obwohl committet war."
 outcome-resolves: "VHGWQF: Accept-Fehler 'git has none for <ID>' bei Arbeit auf fremder Branch"
+review-summary: "core/mod/builtin/jaira-cockpit/hooks/register.tsx ticketHere: on Accept's path git worktree list runs twice (ownTree, then again for the carrier) although acceptTreeFor already checks the own tree first - read the porcelain once and let acceptTreeFor decide"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Cockpit-Accept führt den Move im Worktree der Branch aus, die die Commits des Tickets trägt, auch wenn ihr Name nicht die Ticket-ID ist
@@ -54,3 +59,4 @@ outcome-resolves: "VHGWQF: Accept-Fehler 'git has none for <ID>' bei Arbeit auf 
 - **2026-11-23 07:43 · Alexander Sacharov** — Ursache: accept() -> ticketHere() sucht nur den Worktree mit dem Ticket-Slug (ownTreeFor); die QTQW15-Carrier-Wahl (ticketBranch) nutzen nur PR-Schritt und Give back. Und Go CommitsForTicket sucht nur 'git log' ab HEAD. Offene Entscheidungen: keine. decision: Carrier-Branch ohne Worktree -> Move wie bisher im Haupt-Checkout (kein neuer Worktree durch Accept), die Go-Meldung nennt dann die Branch (DoD 3). Mehrdeutig -> kein Move, Meldung nennt Kandidaten. Nur Accept bekommt die Carrier-Wahl, andere Presses (note, give back) bleiben wie sie sind.
 - **2026-11-23 07:44 · Alexander Sacharov** — Go-Teil fertig: gitrepo.BranchesNamingTicket (git log --branches --not HEAD --grep, dann ein 'git branch --contains' mit allen shas), gate.Env.CommitsElsewhere haengt '. Commits naming X sit on <branches>: run the move in that branch's worktree, or merge it first' an. Als naechstes Cockpit: ticketHere fuer Accept mit Carrier-Wahl.
 - **2026-11-23 07:52 · Alexander Sacharov** — decision: Basis fuer die Carrier-Suche bei Accept ist HEAD des Haupt-Checkouts, nicht origin-default: nur Commits, die der Move dort nicht erreicht, schicken ihn woanders hin; in einem Fork mit altem master haette sonst jede spaetere Branch den Commit eines gemergten Tickets und Accept waere mehrdeutig verweigert. Der Ticket-File landet dann im Worktree der Carrier-Branch und bleibt dort (wie von Hand).
+- **2026-11-23 07:52 · Alexander Sacharov** — critique: ticketHere liest git worktree list bei Accept zweimal (ownTree + Carrier); einmal lesen, acceptTreeFor entscheidet own-tree zuerst. Sonst nichts: Go-Meldung nutzt namesTicket wie DeriveCommits (Body inklusive) - bewusst gleich wie die Go-Seite, das Cockpit bleibt bei commitNaming (nur eigener Scope, QTQW15).
