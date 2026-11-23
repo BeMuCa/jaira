@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:15:48Z
+updated-at: 2026-11-23T21:17:44Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -69,3 +69,4 @@ review-gaps: "duplication: searched core/ and internal/ for a review-gaps prefix
 - **2026-11-23 21:00 · Alexander Sacharov** — decisions settled (worker, no person needed): (1) 'human, review und signoff' = the lanes a person owns, human and signoff, the same predicate EH6Z0N's diffPaneShown uses (RequiresHumanExit||RequiresQuestion); the agent lane 'review' keeps the plain detail view - EH6Z0N's title 'human review und signoff' names the human lane, not the review lane. Today a ticket in human shows renderDetail; it now gets this view too, but a/f (accept, follow-up) stay signoff-only. (2) Top of the view: blocker lines from review-gaps, check, what, why, question (only when set), Commits/diff, DoD with proofs. (3) DoD 2 list - moved behind 'i' details: problem (goal/context), resolves, summary, verdict, all of review-gaps, tags, and the board's own lane fields (laneFields). Labels stay English like the rest of the TUI. (4) An empty check/what/why keeps its row as '— owed by <lane>' (existing owedRow wording, same on every screen).
 - **2026-11-23 21:09 · Alexander Sacharov** — waiting: full go vet + go test ./internal/tui ./internal/cli ./core/... (bg task bqbdbt649) since 22:09
 - **2026-11-23 21:14 · Alexander Sacharov** — critique (pass 1, whole diff f03f8598b..0cfce40a2): simpler shape - none; the order lives in one function and atPersonsLane replaces the copy of the lane test that was in diffPaneShown. Fit - gapLines is the first parser of review-gaps prefixes in Go (grep for blocker:/fix-now:/note: in core and internal found none), so no existing helper to reuse. Speculative - none. Let stand: hint for human lane reuses detailHints (same keys as the detail view there, a/f stay signoff-only); the gaps row behind 'i' is skipped when review-gaps holds only blocker lines (they are on top already). review-summary=none.
+- **2026-11-23 21:17 · Alexander Sacharov** — testing: function pass on a scratch board (jaira board, tmux 120x45, ticket in signoff with review-gaps 'blocker: resets on restart / note: wording'): screen shows blocker, check, what, why, DoD; 'i' adds Details with problem, resolves, summary, gaps (only the note line), verdict. testing: note: edge: the blocker row reads 'blocker      blocker: resets on restart' - label and line prefix repeat the word; fix: strip the prefix in the top row. waiting: race suite (bg) and bug hunter (subagent) since 22:17
