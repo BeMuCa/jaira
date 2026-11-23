@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ532H7HT1234QSSDWRC0H
 title: "Der Agent-Block sagt, wie man Goal, Kontext und DoD nach dem Anlegen aendert"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Der Agent-Block in CLAUDE.md nennt jaira set fuer goal und context und einen dokumentierten Weg, einen DoD-Punkt nachzutragen; niemand muss das per Notiz behelfen."
@@ -18,11 +18,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:13Z
-updated-at: 2026-11-23T01:28:10Z
+updated-at: 2026-11-23T01:28:20Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-dwrc0h
 claimed-at: 2026-11-23T01:25:43Z
+outcome-what: "Agent-Block (announce.go, CLAUDE.md, AGENTS.md) nennt jaira set goal=/context= und jaira dod --add/--text fuer Aenderungen nach dem Anlegen; create --help verweist darauf; Test fuer dod --add mit stabilen Nummern und Proofs; Release-Note."
+outcome-why: "Agenten hielten Goal/DoD nach dem Anlegen fuer unveraenderlich und behalfen sich mit Notizen, weil der Agent-Block die vorhandenen Befehle nicht nannte."
+outcome-resolves: "Alle drei DoD-Punkte; kein neuer Befehl noetig. Vier Kategorien: keine neue Logik, nur Text und ein Test; Nebenlaeufigkeit/Fehlerpfade/Rechte unveraendert, unuebliche Eingabe (Leerzeichen im set-Wert) auf Scratch-Board geprueft."
 ---
 
 # Der Agent-Block sagt, wie man Goal, Kontext und DoD nach dem Anlegen aendert
