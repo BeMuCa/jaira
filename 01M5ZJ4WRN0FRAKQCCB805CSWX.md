@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:39:49Z
+updated-at: 2026-11-23T01:39:52Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -68,3 +68,4 @@ back-count: 1
 - **2026-11-23 01:38 · BeMuCa** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:123-127 - class: JAIRA_MIN_FREE_MB is checked for digits only, not for size; a value bash cannot hold as an integer makes [ -gt 0 ] fail with 'integer expression expected', the if is false and the memory check is skipped instead of refused (exit 2 like a non-number). example: JAIRA_MIN_FREE_MB=99999999999999999999 -> spawn.sh goes on to create the tab and start claude with 2694 MB free. Edge, not a blocker. ran: JAIRA_MIN_FREE_MB=99999999999999999999 spawn.sh --no-worktree tst001 TST001 critique <scratch repo> with a stub herdr (reached 'pane run')
 - **2026-11-23 01:38 · BeMuCa** — bughunt: done at 12cccd2ee - 2 findings (2 change, 0 pre-existing) in 2 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/05CSWX.md core/role/builtin/jaira-dispatcher/SKILL.md core/role/builtin/jaira-dispatcher/scripts/run-lane.sh core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/main_test.go core/shipped/shipped.sha256
 - **2026-11-23 01:39 · BeMuCa** — testing: class: exit-code collision zwischen spawn.sh und run-lane.sh; example: bughunt note 1 (herdr exit 3 -> run-lane 6, zweiter Tab) und note 2 (20-stellige Grenze -> Pruefung uebersprungen); fix: spawn.sh EXIT-Trap macht jede nicht absichtliche 3 zu 1, run-lane bildet 3->6 und jede andere Nicht-Null auf 1 ab (deckt auch das aeltere 5-Beispiel); Grenze mit mehr als 9 Ziffern -> Exit 2.
+- **2026-11-23 01:39 · BeMuCa** — critique runde 2: nichts. EXIT-Trap statt eigenem Exit-Code, weil DoD 1 Exit 3 vorschreibt; zwei Zeilen, kein Umbau der uebrigen Exits.
