@@ -633,9 +633,19 @@ func TestCreateWritesGoalAndAfter(t *testing.T) {
 			t.Fatalf("create: %v\n%s", err, out)
 		}
 		want := "'jaira milestone set " + c.args[0] + " --after <a,b>'"
+		if c.hint && !strings.Contains(out, `'--after ""'`) {
+			t.Errorf("hint must name --after \"\" for the first milestone\n%s", out)
+		}
 		if got := strings.Contains(out, "not on the roadmap") && strings.Contains(out, want); got != c.hint {
 			t.Errorf("create %v: roadmap hint shown = %v, want %v\n%s", c.args, got, c.hint, out)
 		}
+	}
+	out, err := runCLI(t, dir, "milestone", "create", "jsonly", "--json")
+	if err != nil {
+		t.Fatalf("create --json: %v\n%s", err, out)
+	}
+	if strings.Contains(out, "not on the roadmap") {
+		t.Errorf("--json must not print the roadmap hint\n%s", out)
 	}
 	api, _ := milestone.Load(dir, "api")
 	if api.Goal != "Version 0.4: out" || !api.Placed || len(api.After) != 0 {

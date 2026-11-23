@@ -204,7 +204,7 @@ a milestone on this board, and the arrows may not form a loop.`,
 			fmt.Fprintf(w, "Milestone %q created with %d ticket(s): %s\n",
 				name, len(ms.Members()), ms.Path(s.Root))
 			if !cmd.Flags().Changed("after") {
-				fmt.Fprintf(w, "It is in the milestone picker (M), not on the roadmap (L): 'jaira milestone set %s --after <a,b>' puts it there.\n", name)
+				fmt.Fprintf(w, "It is in the milestone picker (M), not on the roadmap (L): 'jaira milestone set %s --after <a,b>' puts it there; the first milestone has nothing to follow, so '--after \"\"' makes it a swimlane of its own.\n", name)
 			}
 			return nil
 		},
