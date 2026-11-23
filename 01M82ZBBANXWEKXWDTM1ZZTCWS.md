@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:38:06Z
+updated-at: 2026-11-23T21:38:10Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -28,7 +28,11 @@ outcome-what: "Sign-off screen (signoff and human) shows blocker lines, check, w
 outcome-why: "Berk 2026-11-23: the check sat last under a page of account; rounds 2-3: bughunt found blocker forms hidden or emptied, and human-lane context/notes unreachable."
 outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSignOffKeepsBlockersOnTop (11 forms, 3 label-alone, 5 non-blockers), TestHumanLaneOpensTheDecisionScreen, TestDetailsCarryContextAndNotes; checked: concurrency n/a (render only), error paths n/a, unusual input - blocker forms, label alone, empty fields; permissions n/a"
 review-summary: "Delta review from 2880173dd to f0b0e438b. Both fix-now items of the first review are answered: the help screen now has an 'a f i' row naming 'i' (view.go renderHelp), and a blocker label with nothing after it (or only leftover emphasis) now shows the next non-empty line as its finding, list marker dropped, unless that line is another blocker label; with no next line the label stays as written (signoff.go blockerLines/nextFinding). The test asserts the shown text for 5 inputs. go vet and go test ./internal/tui pass."
-review-gaps: "after review give-back: nextFinding is one helper beside blockerLines, both share gapMarker/gapBlocker - nothing duplicated or orphaned. Left: regex mirrors hooks/board.ts (two languages); Details repeat Commits/DoD (whole detail pane by design)."
+review-gaps: |-
+  note: edge: signoff.go:174 blockerLines trims * _ ` from both ends of the finding, so a finding that ends in code or emphasis is cut: 'blocker: run `go test`' shows 'run `go test', '**blocker:** leaks to **stderr**' shows 'leaks to **stderr'; fix: strings.TrimLeft (only the emphasis left over after the label), plus a test with a trailing backtick
+  note: edge: signoff.go:188 nextFinding takes whatever line comes next - a heading, 'none', an edge of another kind, only the first item of a list (bughunt 21:35); the smaller design is to drop nextFinding and show a lone label as written, as the cockpit does, with the whole gaps behind 'i'. That reverses the first review's fix-now, so it is the person's call
+  note: limit: 'i' shows the whole detail pane, so Commits (recorded list only), DoD and 'Before this can start' repeat below the top block - chosen in round 2 to keep one renderer
+  note: elsewhere: internal/tui/diffpane.go:106-112,202-210 keep quoted non-ASCII paths from git show --patch (core/gitrepo/git.go:149 lacks core.quotePath=false); there before this change (EH6Z0N)
 test-verdict: "pass: go vet ./... + go test -race -count=1 ./... RC=0 at f0b0e438b; DoD 1-5 verified in the tree; screen exercised in tmux earlier, help row checked by TestHelpExplainsEveryCardMark; render-only, writes nothing"
 hunt-verdict: "pass: bughunt done at f0b0e438b - 0 blocker, 1 change edge (lone blocker label takes the next line whatever it is; note for the person), 0 pre-existing"
 round: 4
