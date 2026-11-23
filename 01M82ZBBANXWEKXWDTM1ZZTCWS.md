@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:33:33Z
+updated-at: 2026-11-23T21:33:46Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -27,7 +27,7 @@ claimed-at: 2026-11-23T21:30:43Z
 outcome-what: "Sign-off screen (signoff and human) shows blocker lines, check, what, why, question, commits, DoD with proofs; 'i' appends the full detail pane body. Blocker detection uses the cockpit's MARKER/BLOCKER regexes; a label standing alone keeps its row as written."
 outcome-why: "Berk 2026-11-23: the check sat last under a page of account; rounds 2-3: bughunt found blocker forms hidden or emptied, and human-lane context/notes unreachable."
 outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSignOffKeepsBlockersOnTop (11 forms, 3 label-alone, 5 non-blockers), TestHumanLaneOpensTheDecisionScreen, TestDetailsCarryContextAndNotes; checked: concurrency n/a (render only), error paths n/a, unusual input - blocker forms, label alone, empty fields; permissions n/a"
-review-summary: "In human and signoff the TUI now opens a decision screen (signoff.go signOffBody): a blocker row from review-gaps (cockpit's MARKER/BLOCKER reading, prefix stripped), then check, what, why, the question if set, the derived Commits/diff and the DoD with proofs. Problem, resolves, summary, verdict, gaps, tags and lane fields left the screen; 'i' appends the whole detail pane body (detailFields, split out of detailBody) below it. atPersonsLane (RequiresHumanExit||RequiresQuestion) replaces the lane test in diffPaneShown and picks the screen in render(); accept/follow-up stay signoff-only. The agent lane 'review' keeps the plain detail view (decision note). EH6Z0N's diff pane comes in through the stack merge f03f8598b and is judged on its own ticket."
+review-summary: "none"
 review-gaps: |-
   note: edge: fix-now: the help screen (view.go renderHelp, the 'a f' row ~line 1789) does not list the new 'i' key - add a row 'i  details on a ticket in human or signoff'
   note: edge: fix-now: signoff.go:170-174 blockerLines - a label standing alone ('blocker:\n- the limit resets', '**Blocker:**') shows the bare label in the blocker row, not the finding; take the next non-empty line as the text when the rest is empty or only emphasis, and assert the text in signoff_test.go:114-124
