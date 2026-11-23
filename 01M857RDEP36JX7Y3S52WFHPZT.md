@@ -23,7 +23,7 @@ related:
   - 01M58G28438KJJD3YDGM2B4KC9
 commits: []
 created-at: 2026-11-23T22:17:22Z
-updated-at: 2026-11-23T22:17:32Z
+updated-at: 2026-11-23T22:39:25Z
 assignee: BeMuCa
 updated-by: BeMuCa
 ---
@@ -47,4 +47,4 @@ updated-by: BeMuCa
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-23 22:39 · BeMuCa** — Berk 2026-11-23: die heutige Compact View (Taste v) wird zu dieser Board-Visualisierung umgebaut statt eine neue Ansicht zu bauen. Sie soll zeigen: Fan-out (N Agenten in einer Lane, ATDG74), wie zwei Boards in einer Join-Lane Infos austauschen oder diskutieren (YTE87T), mehrere Worker, die dasselbe Board parallel durchlaufen, mit ihren Worktrees gebuendelt - damit man alle Staende auf einem Board sieht. Milestone lane-graph; Fable als Teamlead, Haiku-Agenten setzen um.
