@@ -1,8 +1,8 @@
 ---
 id: 01M84KJD20SF7R9EAADAES625B
 title: "Alles Geteilte auf Refs: Team-Version, Tags, Lanes, Milestones, Logbuch - im Repo nur der Ticket-Schnappschuss im PR"
-status: backlog
-ready: false
+status: ideas
+ready: true
 creator: Alexander Sacharov
 goal: "Zwischen Teammitgliedern wird nur über refs/jaira/* geteilt; Dateien unter .jaira/ im Repo gibt es nur noch als Schnappschuss des Tickets im PR. Ein Versions-Wächter auf einem Ref hält alle auf derselben jaira-Version."
 context: |-
@@ -23,9 +23,13 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T16:24:33Z
-updated-at: 2026-11-23T16:24:48Z
+updated-at: 2026-11-23T16:24:51Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
+round: 2
+back-from: backlog
+back-by: person
+back-count: 1
 ---
 
 # Alles Geteilte auf Refs: Team-Version, Tags, Lanes, Milestones, Logbuch - im Repo nur der Ticket-Schnappschuss im PR
