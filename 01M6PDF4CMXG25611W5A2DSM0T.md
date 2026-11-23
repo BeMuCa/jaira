@@ -1,7 +1,7 @@
 ---
 id: 01M6PDF4CMXG25611W5A2DSM0T
 title: "Ein Board ohne Git-Repo schiebt Tickets nach done, ohne Commits zu verlangen"
-status: testing
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Liegt das Board in keinem Git-Repository, verlangt die Lane done keine Commits; in einem Repository bleibt die Regel wie heute."
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:34:35Z
+updated-at: 2026-11-23T01:34:38Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -30,10 +30,10 @@ review-summary: none
 review-gaps: "none: round 2 added an early return and one EvalSymlinks call; the trailing !Available() it replaced is gone, nothing orphaned, no duplicate symlink-resolve helper in core/gitrepo"
 test-verdict: "fail: bughunt round 2 change blocker - OutsideRepo reads any git failure after an empty .git walk (GIT_DIR with a broken config) as 'no repository'; vet/build rc=0"
 hunt-verdict: "fail: 1 change blocker (core/gitrepo/git.go:79 return !r.IsRepo())"
-round: 2
+round: 3
 back-from: testing
 back-by: lane
-back-count: 1
+back-count: 2
 ---
 
 # Ein Board ohne Git-Repo schiebt Tickets nach done, ohne Commits zu verlangen
