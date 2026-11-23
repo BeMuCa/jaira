@@ -462,27 +462,38 @@ tab="$(jaira json get result.tab.tab_id --default "" <<<"$created" 2>/dev/null |
 # other one's pane (3YRPXJ). Before anything is typed, the pane must still sit
 # in the tab this script made; otherwise stop, name both, and type nothing.
 # A Herdr that names no tab on create leaves nothing to compare against.
+record=""
 pane_is_ours() {
   [ -n "$tab" ] || return 0
   local pt
   pt="$("$herdr" pane get "$pane" 2>/dev/null | jaira json get result.pane.tab_id --default "" 2>/dev/null || true)"
   [ "$pt" = "$tab" ] && return 0
-  # Herdr did not answer: that says nothing about a race, and the tab may
-  # already run our claude - leave it standing and stop.
   if [ -z "$pt" ]; then
-    echo "spawn.sh: could not check pane $pane of tab $tab ($ticket/$lane): 'herdr pane get' gave no tab - nothing was typed, look at that tab" >&2
+    # Herdr did not answer: that says nothing about a race. Before 'pane run'
+    # nothing of ours runs in the tab and reap.sh has no record of it, so it
+    # is closed rather than left empty for nobody to reap; after it, claude
+    # may already run there - leave it standing.
+    if [ "${1:-}" = early ]; then
+      echo "spawn.sh: could not check pane $pane of tab $tab ($ticket/$lane): 'herdr pane get' gave no tab - nothing was typed, the empty tab is closed; start this lane again" >&2
+      "$herdr" tab close "$tab" >/dev/null 2>&1 || true
+    else
+      echo "spawn.sh: could not check pane $pane of tab $tab ($ticket/$lane): 'herdr pane get' gave no tab - nothing was typed, look at that tab" >&2
+    fi
     return 1
   fi
   echo "spawn.sh: pane $pane is not in tab $tab ($ticket/$lane) any more but in '$pt'" \
        "- another tab was opened at the same moment; nothing was typed, start this lane again" >&2
   # The tab is ours and nothing of ours runs in it any more: close it, so
-  # no empty tab is left standing for somebody to wonder about.
+  # no empty tab is left standing for somebody to wonder about. The pane is
+  # somebody else's: a record of it under this ticket would have reap.sh
+  # close their tab.
   "$herdr" tab close "$tab" >/dev/null 2>&1 || true
+  [ -z "${record:-}" ] || rm -f "$record"
   return 1
 }
 # Before the record below: a refused pane is somebody else's, and a record of
 # it under this ticket would have reap.sh look after the wrong tab.
-pane_is_ours || exit 1
+pane_is_ours early || exit 1
 
 # Which tab belongs to which ticket, for reap.sh: it closes them once the
 # ticket's pull request is merged, and the pane id printed below is gone from
@@ -495,8 +506,8 @@ pane_is_ours || exit 1
 if common="$(git -C "$wt" rev-parse --git-common-dir 2>/dev/null)" \
   && gitdir="$(cd "$wt" && cd "$common" && pwd)"; then
   mkdir -p "$gitdir/jaira/panes"
-  printf 'pane=%s\nticket=%s\nlane=%s\nworktree=%s\n' "$pane" "$ticket" "$lane" "$wt" \
-    > "$gitdir/jaira/panes/$(printf '%s' "$pane" | tr -c 'A-Za-z0-9_.-' '_')"
+  record="$gitdir/jaira/panes/$(printf '%s' "$pane" | tr -c 'A-Za-z0-9_.-' '_')"
+  printf 'pane=%s\nticket=%s\nlane=%s\nworktree=%s\n' "$pane" "$ticket" "$lane" "$wt" > "$record"
 fi
 
 # <explain> and <discuss> write a few lines for a person, so they start on the
@@ -573,7 +584,9 @@ esac
 # The state hook reports idle a few seconds after startup.
 for _ in $(seq 20); do
   sleep "${JAIRA_SPAWN_PAUSE:-2}"
-  pj="$("$herdr" pane get "$pane")"
+  # set -e would end the script on a failed get, without a word: an
+  # unanswered get falls through to the come-up line below instead.
+  pj="$("$herdr" pane get "$pane" 2>/dev/null)" || { st=""; continue; }
   st="$(jaira json get result.pane.agent --default - <<<"$pj") $(jaira json get result.pane.agent_status --default - <<<"$pj")"
   case "$st" in claude\ idle|claude\ done) break ;; esac
 done

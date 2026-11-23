@@ -167,3 +167,60 @@ esac
 		}
 	}
 }
+
+// Each 'pane get' after the first ones fails or names another tab, in the
+// three places spawn.sh asks: the check before the record, the come-up loop
+// and the check before send-text. Every one stops with a line that says
+// where and why, types nothing, and leaves neither an empty tab nobody reaps
+// nor a record that names a pane which is not ours.
+func TestSpawnStopsCleanlyWhenAPaneGetGoesWrong(t *testing.T) {
+	for _, c := range []struct {
+		name    string
+		answer  string // what 'pane get' number $n prints; exit 1 when empty
+		want    string
+		closed  string
+		records int
+	}{
+		{"first check unanswered", ``, "the empty tab is closed", "t1", 0},
+		{"come-up loop unanswered", `[ "$n" -le 1 ] && echo "$ok"`, "claude did not come up in pane p1 (tab t1, AB12CD/critique) after the wait: state 'none'", "", 1},
+		{"late check finds another tab", `if [ "$n" -le 2 ]; then echo "$ok"; else echo '{"result":{"pane":{"tab_id":"t9"}}}'; fi`, "pane p1 is not in tab t1 (AB12CD/critique) any more but in 't9'", "t1", 0},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			state := t.TempDir()
+			answer := c.answer
+			if answer == "" {
+				answer = "false"
+			}
+			root, spawn := spawnWith(t, `#!/usr/bin/env bash
+s="`+state+`"
+ok='{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}'
+case "$1 $2" in
+  "tab create") echo '{"result":{"tab":{"tab_id":"t1"},"root_pane":{"pane_id":"p1"}}}' ;;
+  "pane get")
+    echo x >> "$s/gets"; n=$(wc -l < "$s/gets" | tr -d ' ')
+    `+answer+` || exit 1 ;;
+  "pane send-text") echo "$3" >> "$s/sent" ;;
+  "tab close") echo "$3" >> "$s/closed" ;;
+esac
+`)
+			out, err := spawn("critique").CombinedOutput()
+			if err == nil {
+				t.Fatalf("spawn.sh succeeded:\n%s", out)
+			}
+			if !strings.Contains(string(out), c.want) {
+				t.Errorf("the failure does not say %q:\n%s", c.want, out)
+			}
+			if _, err := os.Stat(filepath.Join(state, "sent")); err == nil {
+				t.Errorf("a role was typed although the spawn failed")
+			}
+			closed, _ := os.ReadFile(filepath.Join(state, "closed"))
+			if got := strings.TrimSpace(string(closed)); got != c.closed {
+				t.Errorf("tabs closed: %q, want %q", got, c.closed)
+			}
+			recs, _ := filepath.Glob(filepath.Join(root, ".git", "jaira", "panes", "*"))
+			if len(recs) != c.records {
+				t.Errorf("pane records %v, want %d", recs, c.records)
+			}
+		})
+	}
+}
