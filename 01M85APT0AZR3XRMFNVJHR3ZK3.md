@@ -1,7 +1,7 @@
 ---
 id: 01M85APT0AZR3XRMFNVJHR3ZK3
 title: "Marktplatz fuer Lanes und Boards: fuenf Entscheidungen, bevor gebaut wird"
-status: backlog
+status: human
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -16,8 +16,9 @@ related:
   - 01M5GFAV1C3DV9NWZFXC4G07X9
 commits: []
 created-at: 2026-11-23T23:08:55Z
-updated-at: 2026-11-23T23:09:32Z
+updated-at: 2026-11-23T23:09:51Z
 updated-by: BeMuCa
+question: "Marktplatz fuer Lanes und Boards - fuenf Entscheidungen (Optionen und Kosten im Kontext): 1) Wo liegt der Katalog: a) neues Repo BeMuCa/jaira-extensions, b) im Plugin-Katalog panda-bobr/jaira-releases neben plugins.json, c) bleibt in BeMuCa/jaira/lanes? Empfehlung b, sonst a. 2) Wer mergt Beitraege? Empfehlung Berk und Alex. 3) Darf ein Agent allein uebernehmen? Empfehlung nein, --yes ist Sache einer Person. 4) Einreichen ueber die Website: vorbelegter GitHub-Link oder Portal mit Server? Empfehlung Link. 5) script:-Lanes im oeffentlichen Katalog nie, und Skills verteilt jaira nicht selbst - einverstanden?"
 ---
 
 # Marktplatz fuer Lanes und Boards: fuenf Entscheidungen, bevor gebaut wird
