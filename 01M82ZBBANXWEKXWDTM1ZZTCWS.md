@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:27:47Z
+updated-at: 2026-11-23T21:27:51Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -30,7 +30,7 @@ outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSign
 review-summary: none
 review-gaps: "round 3: nothing to remove - the fallback is 3 lines inside blockerLines. Earlier rounds: hand-picked details list, gapLines, isBlockerLine removed; regex mirrors hooks/board.ts (two languages). Left: Details repeat Commits/DoD (whole detail pane by design)."
 test-verdict: "pass: go vet ./... + go test -race -count=1 ./internal/tui RC=0 at 2880173dd (full race suite RC=0 at 73d06b024); DoD 1-5 verified in the tree; screen exercised in tmux on a scratch board; render-only, writes nothing"
-hunt-verdict: "fail: bughunt done at 383b42d9e - change: a label-only blocker line ('**Blocker:**', 'blocker:' with the finding on the next line) loses its row; change edge (note): Details repeat Commits/DoD and show 'Before this can start'"
+hunt-verdict: "pass: bughunt done at 2880173dd - 0 blocker, 1 change edge (a label-only blocker row shows the label, finding is behind 'i'; note for the person), 0 pre-existing; round 1 pre-existing quoted-path finding left as note (EH6Z0N's diff code)"
 round: 3
 back-from: testing
 back-by: lane
