@@ -362,6 +362,7 @@ func loadBoardEnv(s *ticket.Store, board string) (gate.Env, []*ticket.Ticket, er
 	// filed.
 	ix := link.Build(s, lanes, all)
 	return gate.Env{
+		People:    peopleList(),
 		Lanes:     lanes,
 		All:       all,
 		Satisfied: ix.Satisfied,

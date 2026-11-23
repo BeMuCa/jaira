@@ -1,4 +1,4 @@
 - Run `jaira people alias <name> <git-name|email>` once per extra name a teammate has (e.g. `jaira people alias berkc BeMuCa`): the board then shows, filters and writes one jaira name per person, shared with everybody on `refs/jaira/people`.
 - Use `jaira people rename <old> <new>` to change the name a person is shown under; old tickets follow without being rewritten, and `list --assignee`/`next --assignee` find them under either name.
-- `jaira list`, `show` and the board now print a ticket's assignee and creator under the person's jaira name, not the name stored in the file, once the people list knows them.
+- `jaira list`, `show`, `jaira web`, the board and the refusals of `move` and `pull` now name a ticket's assignee, creator and last editor under the person's jaira name, not the name stored in the file; progress notes keep the name they were written under.
 - `jaira snapshot` now backs up the people list as `people` beside `board/` in the snapshot branch.

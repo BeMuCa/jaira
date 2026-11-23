@@ -10,8 +10,10 @@ import (
 	"time"
 
 	"github.com/BeMuCa/jaira/core/epic"
+	coreidentity "github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/link"
+	"github.com/BeMuCa/jaira/core/people"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/BeMuCa/jaira/core/web"
 )
@@ -134,12 +136,15 @@ func (w *webSource) Unassigned(everything bool) ([]web.Ticket, error) {
 // ticket is read for its frontmatter only, as the link index reads it.
 func (w *webSource) cards(all []*ticket.Ticket, ix *link.Index) map[string]web.Ticket {
 	out := make(map[string]web.Ticket, len(all))
+	// Read on every listing, not once: the server runs for hours, and a
+	// teammate's 'jaira people rename' arrives with any fetch in between.
+	who := coreidentity.People(w.s.Root)
 	for _, t := range all {
 		place := link.PlaceBoard
 		if t.ReadOnly {
 			place = link.PlaceRef
 		}
-		c := card(t, place)
+		c := card(t, place, who)
 		c.Done = ix.Satisfied(t.ID)
 		out[t.ID] = c
 	}
@@ -152,7 +157,7 @@ func (w *webSource) cards(all []*ticket.Ticket, ix *link.Index) map[string]web.T
 			continue
 		}
 		place := link.PlaceOf(path)
-		c := card(t, place)
+		c := card(t, place, who)
 		c.Done = ix.Satisfied(id)
 		if place == link.PlaceLogbook {
 			c.FiledAt, _ = ticket.LogbookFolderDay(filepath.Base(filepath.Dir(path)), time.Local)
@@ -164,11 +169,13 @@ func (w *webSource) cards(all []*ticket.Ticket, ix *link.Index) map[string]web.T
 	return out
 }
 
-func card(t *ticket.Ticket, place link.Place) web.Ticket {
+// card is one ticket as the page lists it, its people under the jaira names
+// who gives them.
+func card(t *ticket.Ticket, place link.Place, who *people.List) web.Ticket {
 	return web.Ticket{
 		ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Direct: true,
 		Place: string(place), Goal: t.Goal, Tags: t.Tags,
-		Creator: t.Creator, Assignee: t.Assignee, UpdatedBy: t.UpdatedBy,
+		Creator: who.Canonical(t.Creator), Assignee: who.Canonical(t.Assignee), UpdatedBy: who.Canonical(t.UpdatedBy),
 		CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt, BehindRef: t.BehindRef,
 	}
 }

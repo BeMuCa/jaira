@@ -56,6 +56,12 @@ type Syncer struct {
 	// hold a second opinion.
 	IsMine func(assignee string) bool
 
+	// Name is the name a person stored on a ref is reported under: the jaira
+	// name the board's people list gives them, so a refusal says "Robert has
+	// it" where 'jaira list' shows Robert. nil reports names as stored. A
+	// function for the same reason IsMine is one.
+	Name func(stored string) string
+
 	// SeenPath records which ref SHA was last reported for each ticket, so
 	// being handed a ticket is announced once instead of on every fetch.
 	SeenPath string
@@ -1072,7 +1078,16 @@ func (y *Syncer) winner(id string) (*Winner, error) {
 			*f.dst = v
 		}
 	}
+	w.Assignee, w.UpdatedBy = y.name(w.Assignee), y.name(w.UpdatedBy)
 	return w, nil
+}
+
+// name is who as Name reports them.
+func (y *Syncer) name(who string) string {
+	if y.Name == nil || who == "" {
+		return who
+	}
+	return y.Name(who)
 }
 
 // Arrival is a ticket as the ref now has it, seen from this clone.
@@ -1153,6 +1168,7 @@ func (y *Syncer) Incoming() ([]Arrival, error) {
 		if y.IsMine != nil {
 			a.Mine = y.IsMine(a.Assignee)
 		}
+		a.Assignee = y.name(a.Assignee)
 		a.Local = y.hasLocal(id)
 		out = append(out, a)
 	}

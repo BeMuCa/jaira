@@ -230,3 +230,56 @@ func TestARejectedMilestoneFlushKeepsTheLocalEdit(t *testing.T) {
 		t.Errorf("the merged edit did not reach the remote (%v):\n%s", err, content)
 	}
 }
+
+// A teammate's rename arrives with the board's background fetch: the open
+// board then shows and acts under the new names without being restarted.
+func TestTheBoardFetchBringsInThePeopleList(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	t.Setenv("JAIRA_USER", "")
+	root := t.TempDir()
+	t.Setenv("JAIRA_HOME", filepath.Join(root, "home"))
+	bare := filepath.Join(root, "board.git")
+	run(t, root, "git", "init", "--bare", "--quiet", bare)
+	clone := filepath.Join(root, "bob")
+	run(t, root, "git", "clone", "--quiet", bare, clone)
+	run(t, clone, "git", "config", "user.name", "bob")
+	run(t, clone, "git", "config", "user.email", "bob@example.test")
+	s, err := ticket.At(clone)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Init(); err != nil {
+		t.Fatal(err)
+	}
+	y := refsync.New(s, "origin", "bob")
+	s.Recorder, s.Source = y, y
+	m, err := New(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.me != "bob" {
+		t.Fatalf("before: me = %q", m.me)
+	}
+
+	// Somebody else names bob, straight on the remote.
+	other := filepath.Join(root, "ada")
+	run(t, root, "git", "clone", "--quiet", bare, other)
+	adaRepo := &gitref.Repo{Dir: other, Remote: "origin", AuthorName: "ada", AuthorEmail: "ada@example.test"}
+	if _, err := adaRepo.WritePeople([]byte("Robert: bob\n"), ""); err != nil {
+		t.Fatal(err)
+	}
+
+	msg := fetchRefs(y)()
+	if got, ok := msg.(refFetchedMsg); !ok || got.err != nil {
+		t.Fatalf("background run: %#v", msg)
+	}
+	m.Update(msg)
+	if m.me != "Robert" || s.Actor != "Robert" || !m.isMe("bob") {
+		t.Fatalf("after the fetch: me = %q, actor = %q", m.me, s.Actor)
+	}
+	if boardPeople.Load().Canonical("BOB") != "Robert" {
+		t.Fatal("the board's people list was not read again")
+	}
+}

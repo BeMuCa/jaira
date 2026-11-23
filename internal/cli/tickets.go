@@ -958,7 +958,7 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kid
 	}
 	row("assignee", shownName(t.Assignee))
 	row("creator", shownName(t.Creator))
-	row("updated by", t.UpdatedBy)
+	row("updated by", shownName(t.UpdatedBy))
 	row("executed", t.ExecutedBy)
 	row("tier", t.ModelTier)
 	// Next to the tier because it is the same kind of statement: how this
@@ -1813,7 +1813,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"next_lane":  nextLaneID(t, lanes),
 		"created_at": nonZero(t.CreatedAt),
 		"updated_at": nonZero(t.UpdatedAt),
-		"updated_by": t.UpdatedBy,
+		"updated_by": shownName(t.UpdatedBy),
 	}
 }
 

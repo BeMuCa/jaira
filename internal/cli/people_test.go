@@ -101,6 +101,12 @@ func TestPeopleTravelBetweenClonesAndRenameOldTickets(t *testing.T) {
 		t.Errorf("the ticket file was rewritten:\n%s", raw)
 	}
 
+	// Somebody else's pull is refused under the name she goes by now.
+	out, err = runCLI(t, grace, "pull", h)
+	if err == nil || !strings.Contains(err.Error()+out, "Ada Lovelace") {
+		t.Errorf("the refusal does not name the jaira name: %v\n%s", err, out)
+	}
+
 	// A new write by ada carries her jaira name.
 	if out, err := runAndSend(t, ada, "create", "new work"); err != nil {
 		t.Fatalf("create: %v\n%s", err, out)

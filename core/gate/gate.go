@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/people"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -156,6 +157,11 @@ func (r Request) isActor(who string) bool {
 // Env is the surrounding state a decision needs.
 type Env struct {
 	Lanes *lane.Set
+
+	// People is the board's people list. A refusal names a person under the
+	// jaira name the list gives them, the name 'jaira list' shows; nil names
+	// them as the ticket stores them.
+	People *people.List
 	// All is every ticket, used to evaluate blockers. Only id and status are read.
 	All []*ticket.Ticket
 
@@ -262,7 +268,7 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 				Code: CodeNotOwner,
 				Message: fmt.Sprintf(
 					"%s belongs to %s — ask them, take it over with 'jaira set %s assignee=<you>', or override with --force",
-					ticket.Handle(t.ID), owner, ticket.Handle(t.ID)),
+					ticket.Handle(t.ID), env.People.Canonical(owner), ticket.Handle(t.ID)),
 			})
 		}
 	}

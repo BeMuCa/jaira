@@ -27,7 +27,7 @@ func (m *Model) openUsers() {
 		for _, name := range []string{t.Assignee, t.Creator} {
 			// One row per person, under the name they go by now: a picker
 			// listing "BeMuCa" and "berkc" side by side offers one human twice.
-			name = boardPeople.Canonical(name)
+			name = boardPeople.Load().Canonical(name)
 			k := strings.ToLower(name)
 			if name == "" || seen[k] {
 				continue
