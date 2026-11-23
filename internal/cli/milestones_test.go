@@ -618,14 +618,24 @@ func TestRestoreWaitsForTheMilestoneLock(t *testing.T) {
 
 func TestCreateWritesGoalAndAfter(t *testing.T) {
 	dir := emptyStore(t)
-	if out, err := runCLI(t, dir, "milestone", "create", "api", "--goal", "Version 0.4: out", "--after", ""); err != nil {
-		t.Fatalf("create: %v\n%s", err, out)
-	}
-	if out, err := runCLI(t, dir, "milestone", "create", "ui", "--after", "api"); err != nil {
-		t.Fatalf("create: %v\n%s", err, out)
-	}
-	if out, err := runCLI(t, dir, "milestone", "create", "plain"); err != nil {
-		t.Fatalf("create: %v\n%s", err, out)
+	// Only a milestone created without --after is told it is off the roadmap
+	// and how to put it on; --after "" places it as a swimlane top.
+	for _, c := range []struct {
+		args []string
+		hint bool
+	}{
+		{[]string{"api", "--goal", "Version 0.4: out", "--after", ""}, false},
+		{[]string{"ui", "--after", "api"}, false},
+		{[]string{"plain"}, true},
+	} {
+		out, err := runCLI(t, dir, append([]string{"milestone", "create"}, c.args...)...)
+		if err != nil {
+			t.Fatalf("create: %v\n%s", err, out)
+		}
+		want := "'jaira milestone set " + c.args[0] + " --after <a,b>'"
+		if got := strings.Contains(out, "not on the roadmap") && strings.Contains(out, want); got != c.hint {
+			t.Errorf("create %v: roadmap hint shown = %v, want %v\n%s", c.args, got, c.hint, out)
+		}
 	}
 	api, _ := milestone.Load(dir, "api")
 	if api.Goal != "Version 0.4: out" || !api.Placed || len(api.After) != 0 {
