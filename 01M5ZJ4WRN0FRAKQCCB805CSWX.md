@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:39:54Z
+updated-at: 2026-11-23T01:39:56Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -27,7 +27,7 @@ outcome-what: "spawn.sh prueft MemAvailable vor Worktree und Tab: unter JAIRA_MI
 outcome-why: Drei parallele Go-Builds auf einer 7-GB-WSL stuerzten am 27.10. viermal ab; nichts warnte vor Speicher.
 outcome-resolves: "Kein Worker startet mehr still in eine Maschine, die fuer seinen Build zu wenig freien Speicher hat."
 review-summary: none
-review-gaps: "none: no other MemAvailable/meminfo reader in the repo (grep); nothing orphaned; avail_kb/1024 twice in spawn.sh left, one line apart and only on the refuse path"
+review-gaps: "none: round 2 adds a trap and two mappings, nothing duplicated or orphaned; own unreleased hashes from 12cccd2 replaced in shipped.sha256 rather than piling up"
 test-verdict: "pass: go vet + go build ./... green; go test not run by house rule (main session runs the race suite before the PR), shellcheck not installed. DoD 1/2/4 verified on the committed spawn.sh: its check block cut out and sourced against fake meminfo files - 976 MB free -> exit 3 with message, force=1 -> starts, 4000 MB -> starts, missing file and no MemAvailable line -> one stderr line and starts, JAIRA_MIN_FREE_MB=0 -> starts, =abc -> exit 2, lane discuss -> not checked; against the real /proc/meminfo (2640 MB): default starts, limit 4000 refuses with 3. run-lane.sh copy with a stub spawn.sh: spawn 3 -> run-lane 6, spawn 1 -> 1. DoD 3 read in jaira-teamlead/SKILL.md. Not run: spawn.sh itself end to end (opens Herdr tabs, refused) - the --force flag parsing is read, not executed. Writes nothing, so no two-writer case. DoD 5 (macOS/Git Bash) left for the person. shipped.sha256 carries the new hashes of all five changed shipped files."
 hunt-verdict: "fail: bughunt done at 12cccd2ee, 2 change: run-lane read any spawn.sh exit 3 (e.g. herdr after the tab exists) as 'nothing started' -> second tab; huge JAIRA_MIN_FREE_MB skipped the check"
 round: 2
