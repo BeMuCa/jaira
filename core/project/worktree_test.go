@@ -1,12 +1,15 @@
 package project
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"os/exec"
-	"strconv"
-	"sync"
 	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
+	"sync"
 	"testing"
 )
 
@@ -259,3 +262,144 @@ func TestTrees(t *testing.T) {
 		t.Errorf("Trees(worktree) = %v, want only itself", got)
 	}
 }
+
+// TestRememberKeepsBrokenList: a projects.json that does not parse is copied
+// aside before Remember replaces it, once, with one line on Stderr; a second
+// broken file does not overwrite the first copy.
+func TestRememberKeepsBrokenList(t *testing.T) {
+	base := isolate(t)
+	var out bytes.Buffer
+	old := Stderr
+	Stderr = &out
+	t.Cleanup(func() { Stderr = old })
+
+	path := projectsPath()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	broken := []byte(`[{"root": "/a", "name": "a",}]`)
+	if err := os.WriteFile(path, broken, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	b := mkBoard(t, filepath.Join(base, "b"))
+	if _, err := Remember(b); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(path + ".broken")
+	if err != nil || !bytes.Equal(got, broken) {
+		t.Fatalf("projects.json.broken = %q, %v; want the broken file", got, err)
+	}
+	if !strings.Contains(out.String(), path+".broken") || strings.Count(out.String(), "\n") != 1 {
+		t.Fatalf("stderr = %q; want one line naming the copy", out.String())
+	}
+	if ps := Load(); len(ps) != 1 || ps[0].Root != Board(b) {
+		t.Fatalf("Load() = %+v; want a new list with the board just opened", ps)
+	}
+
+	out.Reset()
+	if _, err := Remember(b); err != nil {
+		t.Fatal(err)
+	}
+	if out.Len() != 0 {
+		t.Fatalf("a readable list printed %q", out.String())
+	}
+
+	second := []byte("{not json")
+	if err := os.WriteFile(path, second, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Remember(b); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := os.ReadFile(path + ".broken"); !bytes.Equal(got, broken) {
+		t.Fatalf("the first copy was overwritten: %q", got)
+	}
+	matches, _ := filepath.Glob(path + ".broken-*")
+	if len(matches) != 1 {
+		t.Fatalf("second copy: %v; want one timestamped file", matches)
+	}
+	if got, _ := os.ReadFile(matches[0]); !bytes.Equal(got, second) {
+		t.Fatalf("second copy = %q", got)
+	}
+}
+
+// TestRememberMissingOrEmptyListIsQuiet: no file and an empty file are the
+// first start, not a broken list - no copy, no message.
+func TestRememberMissingOrEmptyListIsQuiet(t *testing.T) {
+	for _, content := range []*string{nil, ptr(""), ptr(" \n")} {
+		base := isolate(t)
+		var out bytes.Buffer
+		old := Stderr
+		Stderr = &out
+		path := projectsPath()
+		if content != nil {
+			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(path, []byte(*content), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		b := mkBoard(t, filepath.Join(base, "b"))
+		_, err := Remember(b)
+		Stderr = old
+		if err != nil {
+			t.Fatal(err)
+		}
+		if out.Len() != 0 {
+			t.Errorf("content %v: stderr = %q", content, out.String())
+		}
+		if m, _ := filepath.Glob(path + ".broken*"); len(m) != 0 {
+			t.Errorf("content %v: copy made: %v", content, m)
+		}
+		if len(Load()) != 1 {
+			t.Errorf("content %v: board not recorded", content)
+		}
+	}
+}
+
+// TestRememberLeavesUnreadableList: a projects.json that is there but cannot
+// be read is not replaced - Remember returns an error and writes nothing. A
+// directory stands in for any read error (permissions do not stop root).
+func TestRememberLeavesUnreadableList(t *testing.T) {
+	base := isolate(t)
+	path := projectsPath()
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	b := mkBoard(t, filepath.Join(base, "b"))
+	if _, err := Remember(b); err == nil {
+		t.Fatal("Remember over an unreadable projects.json returned no error")
+	}
+	if fi, err := os.Stat(path); err != nil || !fi.IsDir() {
+		t.Fatalf("projects.json was replaced: %v", err)
+	}
+}
+
+// TestRememberLeavesPermissionDeniedList: the case the directory above cannot
+// show, because a rename over a directory fails anyway - a file with no read
+// permission, which rename would replace.
+func TestRememberLeavesPermissionDeniedList(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("permission bits do not stop this reader")
+	}
+	base := isolate(t)
+	path := projectsPath()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(`[]`), 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(path, 0o644) })
+	b := mkBoard(t, filepath.Join(base, "b"))
+	if _, err := Remember(b); err == nil {
+		t.Fatal("Remember over an unreadable projects.json returned no error")
+	}
+	os.Chmod(path, 0o644)
+	if got, _ := os.ReadFile(path); string(got) != "[]" {
+		t.Fatalf("projects.json was replaced: %q", got)
+	}
+}
+
+func ptr(s string) *string { return &s }
