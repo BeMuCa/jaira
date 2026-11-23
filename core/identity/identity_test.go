@@ -248,6 +248,37 @@ func TestCurrentIsTheJairaNameThePeopleListGives(t *testing.T) {
 	}
 }
 
+// Under JAIRA_USER only that name and the people list's names for it mean me:
+// git's email and the alias file are the checkout owner's, and grace must not
+// see the owner's tickets as hers.
+func TestAliasesUnderJairaUserLeaveOutTheOwnersNames(t *testing.T) {
+	dir := t.TempDir()
+	home := t.TempDir()
+	t.Setenv("JAIRA_HOME", home)
+	gitInit(t, dir, "BeMuCa", "berk@example.test")
+	if err := os.WriteFile(filepath.Join(home, "identity"), []byte("berk.c@partner.example\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	list := filepath.Join(dir, "people")
+	if err := os.WriteFile(list, []byte("grace: grace@example.test\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	commit := strings.TrimSpace(gitOut(t, dir, "commit-tree", strings.TrimSpace(gitOut(t, dir, "write-tree-for", list)), "-m", "people"))
+	gitOut(t, dir, "update-ref", "refs/jaira/people", commit)
+	t.Setenv("JAIRA_USER", "grace")
+
+	for _, owner := range []string{"berk@example.test", "BeMuCa", "berk.c@partner.example"} {
+		if IsMe(dir, owner) {
+			t.Errorf("%q reads as grace: %v", owner, Aliases(dir))
+		}
+	}
+	for _, mine := range []string{"grace", "GRACE@example.test"} {
+		if !IsMe(dir, mine) {
+			t.Errorf("%q is not grace: %v", mine, Aliases(dir))
+		}
+	}
+}
+
 // gitOut runs git in dir; "write-tree-for <file>" is shorthand for a tree that
 // holds that one file under the name "people".
 func gitOut(t *testing.T, dir string, args ...string) string {

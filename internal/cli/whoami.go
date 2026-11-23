@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -30,7 +31,9 @@ func newWhoamiCmd() *cobra.Command {
 		Short: "Show the identity jaira acts as, and the state of this board",
 		Long: `Prints the name jaira attributes work to, followed by every other string it
 treats as the same person: git's user.email as well as user.name, plus anything
-listed in the alias file.
+listed in the alias file. With JAIRA_USER set, only that name and its names
+in the board's people list count: git's email and the alias file belong to the
+checkout's owner, who may be somebody else.
 
 A ticket assigned under a name that is not in this list is somebody else's as
 far as the gates are concerned, and moving it will be refused. Add the name to
@@ -82,6 +85,9 @@ before a ticket is written rather than after.`,
 					continue // the canonical name, already printed above
 				}
 				fmt.Fprintf(w, "Also me:     %s\n", a)
+			}
+			if path != "" && strings.TrimSpace(os.Getenv("JAIRA_USER")) != "" {
+				path += " (not read under JAIRA_USER)"
 			}
 			fmt.Fprintf(w, "Alias file:  %s\n", dash(path))
 			if st == nil {

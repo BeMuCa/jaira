@@ -159,9 +159,15 @@ func AliasesPath() string {
 // Every name the board's people list gives this person is included too, and
 // git's own user.name when the list renamed it: a ticket written under any of
 // them is this person's.
+//
+// JAIRA_USER, when set, narrows this to that name and the people list's names
+// for it. git's email and the alias file belong to whoever configured this
+// checkout and machine; under JAIRA_USER the one acting may be somebody else,
+// whose list --mine must not show the owner's tickets.
 func Aliases(dir string) []string {
 	list, rawName, email := People(dir), raw(dir), gitConfig(dir, "user.email")
 	me := currentIn(list, rawName, email)
+	byEnv := strings.TrimSpace(os.Getenv("JAIRA_USER")) != ""
 	out := []string{me}
 	add := func(v string) {
 		v = strings.TrimSpace(v)
@@ -179,6 +185,9 @@ func Aliases(dir string) []string {
 		add(n)
 	}
 	add(rawName)
+	if byEnv {
+		return out
+	}
 	add(email)
 	if p := AliasesPath(); p != "" {
 		if raw, err := os.ReadFile(p); err == nil {
