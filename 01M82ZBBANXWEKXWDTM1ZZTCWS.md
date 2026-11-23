@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:38:29Z
+updated-at: 2026-11-23T21:38:55Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -118,3 +118,4 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-zztcws && go run ./cmd
 - **2026-11-23 21:36 · Alexander Sacharov** — testing: note: edge: the lone-label heuristic (review fix-now) keeps producing edges (heading, 'none', other kind, only first of a list). Smaller design if the person wants it: drop nextFinding and show a lone label as written, like the cockpit, which never reads the next line - the full gaps are behind 'i'. Not done here: it reverses the reviewer's fix-now.
 - **2026-11-23 21:36 · Alexander Sacharov** — waiting: fresh review agent #2 (run-lane.sh) since 22:36
 - **2026-11-23 21:38 · Alexander Sacharov** — review: done at f0b0e438b
+- **2026-11-23 21:38 · Alexander Sacharov** — report: sign-off screen (signoff+human) leads with blocker, check, what, why, question, commits, DoD; 'i' shows the whole ticket; stacked on EH6Z0N, merge after it | signoff, context unknown | 4 review notes for the person: trailing `/** trimmed off a blocker text (small fix: TrimLeft), lone-label next-line heuristic (smaller design: drop nextFinding - reverses review 1's fix-now, person's call), Details repeat Commits/DoD, quoted non-ASCII paths in EH6Z0N's diff pane; branch not pushed
