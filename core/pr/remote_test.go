@@ -44,6 +44,8 @@ func TestReadGitHubEnterprise(t *testing.T) {
 	}{
 		{"alice@ghe.example.com:team/app.git", "gh repo view ghe.example.com/team/app ", "gh api --hostname ghe.example.com graphql"},
 		{"git@github.com:me/jaira.git", "gh repo view git@github.com:me/jaira.git ", "gh api graphql"},
+		{"ssh://git@ssh.github.com:443/me/jaira.git", "gh repo view ssh://git@ssh.github.com:443/me/jaira.git ", "gh api graphql"},
+		{"https://www.GitHub.com/me/jaira", "gh repo view https://www.GitHub.com/me/jaira ", "gh api graphql"},
 	} {
 		f := &fake{rules: []rule{
 			{key: ghOrigin, out: c.origin + "\n"},
@@ -55,7 +57,7 @@ func TestReadGitHubEnterprise(t *testing.T) {
 			t.Fatalf("%s: %v", c.origin, err)
 		}
 		calls := strings.Join(f.calls, "\n")
-		if !strings.Contains(calls, c.view) || !strings.Contains(calls, c.api) {
+		if !strings.Contains(calls, c.view) || !strings.Contains(calls, c.api) || (c.api == "gh api graphql" && strings.Contains(calls, "--hostname")) {
 			t.Fatalf("%s: want %q and %q in\n%s", c.origin, c.view, c.api, calls)
 		}
 		f.calls = nil

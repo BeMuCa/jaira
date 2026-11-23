@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { acceptTreeFor, carrierFor, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, rephrasePrompt, snapshotOf, storyOf, type Waiting } from '../hooks/board.ts'
+import { acceptTreeFor, carrierFor, ghRepoOf, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, rephrasePrompt, snapshotOf, storyOf, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -5603,6 +5603,22 @@ describe('parseRemote', () => {
   for (const [url, want] of cases) {
     test(url, () => {
       expect(parseRemote(url)).toEqual(want)
+    })
+  }
+})
+
+// A host gh takes for github.com goes to gh as it is, with no host of its own.
+describe('ghRepoOf', () => {
+  const cases: [string, { repo: string; host?: string }][] = [
+    ['alice@ghe.example.com:team/app.git', { repo: 'ghe.example.com/team/app', host: 'ghe.example.com' }],
+    ['git@github.com:me/jaira.git', { repo: 'git@github.com:me/jaira.git' }],
+    ['ssh://git@ssh.github.com:443/me/jaira.git', { repo: 'ssh://git@ssh.github.com:443/me/jaira.git' }],
+    ['https://www.GitHub.com/me/jaira', { repo: 'https://www.GitHub.com/me/jaira' }],
+    ['/srv/git/app.git', { repo: '/srv/git/app.git' }],
+  ]
+  for (const [url, want] of cases) {
+    test(url, () => {
+      expect(ghRepoOf(url)).toEqual(want)
     })
   }
 })

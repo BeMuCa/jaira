@@ -62,7 +62,9 @@ func parseRemote(raw string) (remote, bool) {
 // a URL that cannot be taken apart, go as they are: gh reads those itself.
 func ghRepo(origin string) (repo, host string) {
 	r, ok := parseRemote(origin)
-	if !ok || r.Host == "github.com" || r.Host == "www.github.com" {
+	// Every *.github.com is github.com to gh — ssh.github.com is its SSH over
+	// port 443 — and api.<that host> does not exist.
+	if !ok || r.Host == "github.com" || strings.HasSuffix(r.Host, ".github.com") {
 		return origin, ""
 	}
 	return r.Host + "/" + r.Repo, r.Host

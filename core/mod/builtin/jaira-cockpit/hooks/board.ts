@@ -726,11 +726,11 @@ export function parseRemote(raw: string): { host: string; repo: string } | undef
 // How gh is told the repository of origin: on a host other than github.com
 // as host/owner/repo — gh's own [HOST/]OWNER/REPO, which `gh repo view` and
 // --repo both take — with that host, which the answers' owner/repo then
-// carry again. github.com, and a URL that cannot be taken apart, go as they
-// are: gh reads those itself.
+// carry again. github.com — every *.github.com, ssh.github.com among them —
+// and a URL that cannot be taken apart, go as they are: gh reads those itself.
 export function ghRepoOf(originUrl: string): { repo: string; host?: string } {
   const r = parseRemote(originUrl)
-  return r === undefined || r.host === 'github.com' || r.host === 'www.github.com' ? { repo: originUrl } : { repo: `${r.host}/${r.repo}`, host: r.host }
+  return r === undefined || r.host === 'github.com' || r.host.endsWith('.github.com') ? { repo: originUrl } : { repo: `${r.host}/${r.repo}`, host: r.host }
 }
 
 // owner/repo as gh is to be told it on host.
