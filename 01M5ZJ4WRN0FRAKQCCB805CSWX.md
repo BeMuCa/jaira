@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T22:47:36Z
+updated-at: 2026-11-23T22:47:41Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -69,7 +69,7 @@ review-check: |-
 - [x] Ohne /proc/meminfo oder ohne MemAvailable (macOS, Git Bash) ueberspringt spawn.sh die Pruefung mit einer Zeile auf stderr und startet; nie ein Abbruch
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:134; extracted check with missing file and with no MemAvailable line -> one stderr line, rc=0
 - [x] Ohne /proc/meminfo (macOS, Git Bash) laeuft spawn.sh ohne Abbruch weiter; Berk 2026-11-23: muss nicht von einer Person gesehen werden
-  proof: core/role/role_test.go TestSpawnRefusesBelowTheFreeMemoryLimit (skips only where /proc/meminfo is missing); no-MemAvailable path: spawn.sh:134, tested by extraction earlier
+  proof: spawn.sh:134 prints one stderr line and goes on (checked on extracted block); TestSpawnRefusesBelowTheFreeMemoryLimit covers the check around it, and skips itself where /proc/meminfo is missing
 
 ## Options
 
