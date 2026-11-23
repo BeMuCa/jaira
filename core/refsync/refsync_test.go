@@ -705,8 +705,8 @@ func TestATicketTakenOffTheBoardElsewhereIsReportedHere(t *testing.T) {
 	if _, err := grace.syncer.Incoming(); err != nil {
 		t.Fatalf("grace fetch: %v", err)
 	}
-	if d := grace.syncer.Departed(); len(d) != 0 {
-		t.Fatalf("nothing has left the board yet: %+v", d)
+	if d, err := grace.syncer.Departed(); err != nil || len(d) != 0 {
+		t.Fatalf("nothing has left the board yet: %+v, %v", d, err)
 	}
 
 	// Ada takes it over and files it away. Filing does NOT remove the ref —
@@ -739,7 +739,10 @@ func TestATicketTakenOffTheBoardElsewhereIsReportedHere(t *testing.T) {
 	if _, err := grace.syncer.Incoming(); err != nil {
 		t.Fatalf("grace re-fetch: %v", err)
 	}
-	departed := grace.syncer.Departed()
+	departed, err := grace.syncer.Departed()
+	if err != nil {
+		t.Fatalf("departed: %v", err)
+	}
 	if len(departed) != 1 || departed[0].ID != id {
 		t.Fatalf("the ticket that left the board was not reported: %+v", departed)
 	}
@@ -751,13 +754,48 @@ func TestATicketTakenOffTheBoardElsewhereIsReportedHere(t *testing.T) {
 	if _, err := grace.syncer.Incoming(); err != nil {
 		t.Fatalf("grace third fetch: %v", err)
 	}
-	if d := grace.syncer.Departed(); len(d) != 1 {
-		t.Errorf("the report went silent on the next fetch: %+v", d)
+	if d, err := grace.syncer.Departed(); err != nil || len(d) != 1 {
+		t.Errorf("the report went silent on the next fetch: %+v, %v", d, err)
 	}
 	// And once it is dealt with, it stops being reported.
 	grace.syncer.ForgetDeparted(id)
-	if d := grace.syncer.Departed(); len(d) != 0 {
-		t.Errorf("still reported after being dealt with: %+v", d)
+	if d, err := grace.syncer.Departed(); err != nil || len(d) != 0 {
+		t.Errorf("still reported after being dealt with: %+v, %v", d, err)
+	}
+}
+
+// Listing the refs can fail for a moment — a lock, a broken packed-refs. Read
+// as "no refs", that failure would report every ticket this clone has ever
+// seen as taken off the board elsewhere. It has to come back as an error, and
+// the seen record has to survive it so the report is right again afterwards.
+func TestDepartedReportsAFailedRefListingAsAnErrorNotAsDepartures(t *testing.T) {
+	ada, grace, _ := twoSides(t)
+	id := fileOnRef(t, ada, "still on the board")
+	if _, err := grace.syncer.Pull(id, false); err != nil {
+		t.Fatalf("grace pull: %v", err)
+	}
+	if _, err := grace.syncer.Incoming(); err != nil {
+		t.Fatalf("grace fetch: %v", err)
+	}
+
+	packed := filepath.Join(grace.dir, ".git", "packed-refs")
+	before, _ := os.ReadFile(packed) // absent is fine
+	if err := os.WriteFile(packed, append(append([]byte{}, before...), []byte("not a ref line\n")...), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	d, err := grace.syncer.Departed()
+	if err == nil {
+		t.Fatalf("a failed ref listing was not reported as an error; departures: %+v", d)
+	}
+	if len(d) != 0 {
+		t.Errorf("a failed ref listing reported departures: %+v", d)
+	}
+
+	if err := os.WriteFile(packed, before, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if d, err := grace.syncer.Departed(); err != nil || len(d) != 0 {
+		t.Errorf("after the listing works again: %+v, %v", d, err)
 	}
 }
 
