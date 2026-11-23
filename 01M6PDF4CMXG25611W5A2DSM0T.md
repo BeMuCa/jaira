@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:36:58Z
+updated-at: 2026-11-23T01:37:24Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -28,7 +28,7 @@ outcome-why: "Solo users without a repository could never finish a ticket: the d
 outcome-resolves: "2DSM0T: gate.Env.OutsideRepo backed by gitrepo.Repo.OutsideRepo - true only when git is on PATH, no .git above the symlink-resolved path, and git itself fails with 'not a git repository' (LC_ALL=C); wired in CLI and TUI; logbook drops the hand-record hint there. Rounds 2-3 closed the hunts' blockers (symlink + missing git; a git failure read as no repo). Checked: concurrency n/a (read-only probe; two parallel moves both landed); error paths - any stat/git/symlink error keeps the rule; input - relative, symlinked, subdir paths, German locale; permissions - an unreadable parent counts as 'maybe a repo'."
 review-summary: none
 review-gaps: "none: round 3 replaced the IsRepo call with one exec (own, for LC_ALL=C and stderr - see critique note); IsRepo keeps its other callers (internal/cli/share.go, internal/cli/update.go), nothing orphaned"
-test-verdict: "fail: bughunt round 2 change blocker - OutsideRepo reads any git failure after an empty .git walk (GIT_DIR with a broken config) as 'no repository'; vet/build rc=0"
+test-verdict: "fail: bughunt round 3 change blocker - a repo named via GIT_DIR that git cannot open (chmod 000, missing HEAD, path gone) is reported as 'not a git repository: <path>' and OutsideRepo answers true; vet/build rc=0, all scratch-board cases otherwise as intended"
 hunt-verdict: "fail: 1 change blocker (core/gitrepo/git.go:79 return !r.IsRepo())"
 round: 3
 back-from: testing
