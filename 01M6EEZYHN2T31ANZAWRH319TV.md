@@ -19,9 +19,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T15:45:35Z
-updated-at: 2026-11-23T01:38:22Z
+updated-at: 2026-11-23T01:38:34Z
 assignee: BeMuCa
 updated-by: BeMuCa
+claimed-by: worker-h319tv
+claimed-at: 2026-11-23T01:38:34Z
 ---
 
 # README: Abschnitt 'Jaira PM View - Web only' fuer Leute ohne Coding-Agent
