@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T16:24:33Z
-updated-at: 2026-11-23T16:30:42Z
+updated-at: 2026-11-23T16:30:44Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 round: 2
@@ -42,6 +42,8 @@ back-count: 1
 - [ ] jaira update schreibt keine Dateien mehr ins Repo
 - [ ] Migration: ein Befehl hebt ein bestehendes Board auf Refs, ohne Verlust
 - [ ] Release-Note in core/release/notes/<ID>.md
+- [ ] jaira snapshot sichert alle refs/jaira/* (Tickets, Missionen/Epics, Milestones, Tags, Lanes, Logbuch, Archiv, config) in den Snapshot-Branch, nicht nur Tickets; ein frischer Klon stellt daraus das ganze Board wieder her
+- [ ] Die Regel, wann snapshot einen Ticket-Ref löscht (heute: Ticket liegt im Logbuch/Archiv eines Landing-Branches), funktioniert weiter, wenn Logbuch und Archiv auf Refs liegen
 
 ## Options
 
