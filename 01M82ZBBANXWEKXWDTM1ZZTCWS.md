@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:19:40Z
+updated-at: 2026-11-23T21:20:23Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -29,6 +29,7 @@ outcome-why: The check sat last under a page of account that does not help the d
 outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSignOffKeepsBlockersOnTop, TestHumanLaneOpensTheDecisionScreen; checked: concurrency n/a (render only), error paths n/a, unusual input - gaps with list markers/case/indent and only-blocker gaps, empty fields owed rows; permissions n/a"
 review-summary: none
 review-gaps: "duplication: searched core/ and internal/ for a review-gaps prefix parser (blocker:/fix-now:/note:) - none, gapLines stays; atPersonsLane removed the copy of the lane test in diffPaneShown. dead code: none orphaned - firstNonEmpty still used 3 times, laneFields/owedRow/fieldRow still called from the details block. fluff: fixed view.go:134 comment that still said 'human checkpoint' for the wider predicate; left the banner/hint locals. cost: render-only, gapLines splits one short string per render - left."
+test-verdict: "pass: go vet + go test -race -count=1 ./... RC=0; DoD 1-5 verified in the tree; screen exercised in tmux on a scratch board (blocker on top, 'i' details); render-only, writes nothing"
 ---
 
 # Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts
