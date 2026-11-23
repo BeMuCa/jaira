@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:21Z
-updated-at: 2026-11-23T22:43:01Z
+updated-at: 2026-11-23T22:43:03Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-35pv7f
@@ -72,3 +72,4 @@ review-check: |-
 - **2026-11-23 01:21 · BeMuCa** — critique: core/release/notes/35PV7F.md:1 says 'read the second line', but with a normalised name ('Round Two') a 'Filed ... as ...' line comes first and the hint is the third; say 'the line under the created line' instead. Rest let stand: one if-block after the existing created line is the smallest shape, stdout matches the other create output, the TUI create path (internal/tui/layer.go createMilestone) always places on the roadmap so it has no sibling.
 - **2026-11-23 01:22 · BeMuCa** — bughunt: done at 46f276515 - 0 findings (0 change, 0 pre-existing) in 1 module (internal/cli milestone create), first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/35PV7F.md internal/cli/milestones.go internal/cli/milestones_test.go
 - **2026-11-23 22:40 · BeMuCa** — Signoff follow-up (Berk 2026-11-23): hint now also names --after "" for the first milestone, release note updated, test asserts --json prints no hint. Commit fee432111
+- **2026-11-23 22:43 · BeMuCa** — Berk accepted in the chat 2026-11-23 ('35PV7F annehmen, L279 erweitern davor und L280 auch umsetzen'); follow-up fee432111 done first; Claude executed the move.
