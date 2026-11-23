@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:26:03Z
+updated-at: 2026-11-23T21:26:08Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -89,3 +89,4 @@ back-count: 2
 - **2026-11-23 21:24 · Alexander Sacharov** — hunt report: 2 findings, both change, neither a blocker, as notes on ZZTCWS | read as a diff since 73d06b024: internal/tui/signoff.go signoff_test.go tags_test.go view.go (detailFields read whole); no new files | not checked: how the cockpit renders a blocker with no text (only that it counts as one); the per-render git exec for the stat is older than this change and was not looked at further
 - **2026-11-23 21:24 · Alexander Sacharov** — bughunt: done at 383b42d9e - 2 findings (2 change, 0 pre-existing) in 4 modules, follow-up hunt since 73d06b024; concurrency, error paths, input, permissions checked; files: core/release/notes/ZZTCWS.md internal/tui/diffpane.go internal/tui/diffpane_test.go internal/tui/model.go internal/tui/owed_test.go internal/tui/signoff.go internal/tui/signoff_test.go internal/tui/tags_test.go internal/tui/view.go
 - **2026-11-23 21:25 · Alexander Sacharov** — testing -> in-progress (round 3): fix - a blocker line whose label stands alone keeps its row, shown as written (no empty string). Let stand as a note for the person: Details repeat the Commits block (recorded list only, the detail pane's own pre-existing behaviour), the DoD and 'Before this can start' - it is the whole detail pane by design; filtering it would bring back a second renderer (the smaller design chosen in round 2).
+- **2026-11-23 21:26 · Alexander Sacharov** — critique+optimize (pass 3, one pass - 20 lines since 383b42d9e): label-alone blocker keeps its row as written - addressed (blockerLines falls back to the line, 3 cases tested). Nothing to simplify or remove. review-summary=none.
