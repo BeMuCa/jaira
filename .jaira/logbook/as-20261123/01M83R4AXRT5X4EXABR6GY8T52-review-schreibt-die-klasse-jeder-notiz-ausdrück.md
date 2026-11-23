@@ -1,7 +1,7 @@
 ---
 id: 01M83R4AXRT5X4EXABR6GY8T52
 title: "Review schreibt die Klasse jeder Notiz ausdrücklich, und Cockpit, Abnahme und Teamlead lesen dieselbe Klasse"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -16,33 +16,35 @@ tags:
   - cockpit
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 5e9a470fe6d8c9c9b8e614c52fce9d4f19df8f8b
+  - 911822f3c94787ac28b55f175d4589f134ddfee9
+  - ad97b249c01d90ad524b6ec40a0ebf8e42dd4cf5
+  - dd448069e77ea6f1abf818d06f38bbd0eeec414d
 created-at: 2026-11-23T08:25:01Z
-updated-at: 2026-11-23T08:51:41Z
+updated-at: 2026-11-23T09:04:26Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27805
 claimed-at: 2026-11-23T08:25:28Z
 outcome-what: "review lane writes note: edge:/limit:/elsewhere: beside blocker:; cockpit classOf reads that word for the Acceptance pane and the light; signoff/teamlead skills name the same four words"
 outcome-why: "the cockpit showed every non-blocker note as yellow while the teamlead classed them by meaning, so both showed different colours for the same notes"
 outcome-resolves: "teamlead, signoff table and cockpit show one class per note; limit/elsewhere notes no longer turn the light yellow"
-review-summary: "Full review of 5e9a470..ad97b24 (first review). The review lane (40-review.md) now asks for one of four classes per finding: 'blocker:', 'note: edge:', 'note: limit:', 'note: elsewhere:' (fix-now becomes 'note: edge: fix-now:'); testing writes 'testing: note: edge:'. In the cockpit, classOf() reads the class a finding states; gapItems uses it ahead of the Explain note's positional classes (older 'pre-existing:'/'fix-now:' marks and unmarked notes still follow Explain, then mark, else edge), and lightOf on the band counts only edge notes as yellow, so limit/elsewhere no longer turn the light yellow. followTitle strips one class word and one older mark. Signoff and teamlead SKILLs use the same four words and say a stated word is not to be re-marked. noteclass_test.go pins the words across lane and roles; board.test.ts tables cover classOf, gapItems, lightOf, followTitle. Release note and shipped.sha256 added."
+review-summary: "Delta review from ad97b249c to dd448069e: rephrasePrompt (board.ts) now drops a leading edge:/limit:/elsewhere:/fix-now: as well as blocker:/note:/pre-existing:, and both Explain prompts (cockpit texts.ts, dispatcher spawn.sh) tell the model that a note stating its class keeps it (blocker: -> [blocker], note: edge: -> [small edge], note: limit: -> [known limit], note: elsewhere: -> [not this ticket]); shipped.sha256 carries the new hashes of all three files. Both fix-now findings of the previous review are answered; nothing else changed in code."
 round: 4
 back-from: review
 back-by: lane
 back-count: 1
 review-gaps: |-
-  note: edge: fix-now: board.ts:1036 rephrasePrompt tells the model to drop a leading "blocker:", "note:" or "pre-existing:" but not the new "edge:", "limit:", "elsewhere:" - a rephrased note in the Acceptance pane can keep "edge:" in front of a mark that already says it; add the three words to that line
-  note: edge: fix-now: texts.ts:228 and jaira-dispatcher/scripts/spawn.sh:597 (Explain prompt) still let the model class every note itself and do not say that a line already starting with blocker: / note: edge|limit|elsewhere: keeps that class - the pane now shows the stated class while the Explain text beside it can name another; add one sentence to both prompts
-  note: elsewhere: go test ./role fails locally with TestEveryInstalledFileIsAShippedVersion because the untracked core/mod/builtin/jaira-cockpit/node_modules/.vite/... results.json is embedded as an installed file - not from this change, node_modules is not gitignored; clean CI checkout is unaffected
-test-verdict: "pass: round 2 - cockpit 'claude plugin test' 472/472 RC=0 and go test core/role core/lane core/shipped RC=0 after ad97b249c; followTitle cases (Limit:/Edge:/pre-existing) in tests/board.test.ts; DoD 1-4 unchanged and verified in round 1; change writes nothing"
-hunt-verdict: "pass: bughunt done at ad97b249c, 0 change, 0 pre-existing (round 1's followTitle finding fixed in ad97b249c)"
-review-verdict: "accept: all four DoD items hold in the diff; no blocker. Two fix-now edges (rephrase and Explain prompts do not know the new class words) go back once."
-review-round: 3
+  note: edge: no test pins the new class sentence in the Explain prompts or the new words in rephrasePrompt - a tests/board.test.ts expect(t.…explain…).toContain('note: edge: [small edge]') would keep the cockpit and spawn.sh wording from drifting apart
+  note: elsewhere: AGENTS.md, CLAUDE.md and .jaira/lanes/{critique,in-progress,review,testing}.md are modified and uncommitted in this worktree - the 0.6.2 jaira block/lane refresh, not this ticket; leave them out of its commits
+test-verdict: "pass: delta dd448069e - cockpit 'claude plugin test' 472/472 RC=0, go test core/role core/shipped RC=0, bash -n spawn.sh ok; prompt text only, writes nothing"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 4"
+review-verdict: "accept: delta from ad97b249c answers both fix-now findings; hashes in shipped.sha256 match HEAD; go test ./shipped ./role ./lane ok; no blocker"
+review-round: 4
 review-verdict-gaps: |-
-  note: edge: fix-now: board.ts:1036 rephrasePrompt tells the model to drop a leading "blocker:", "note:" or "pre-existing:" but not the new "edge:", "limit:", "elsewhere:" - a rephrased note in the Acceptance pane can keep "edge:" in front of a mark that already says it; add the three words to that line
-  note: edge: fix-now: texts.ts:228 and jaira-dispatcher/scripts/spawn.sh:597 (Explain prompt) still let the model class every note itself and do not say that a line already starting with blocker: / note: edge|limit|elsewhere: keeps that class - the pane now shows the stated class while the Explain text beside it can name another; add one sentence to both prompts
-  note: elsewhere: go test ./role fails locally with TestEveryInstalledFileIsAShippedVersion because the untracked core/mod/builtin/jaira-cockpit/node_modules/.vite/... results.json is embedded as an installed file - not from this change, node_modules is not gitignored; clean CI checkout is unaffected
-review-check: "1. cd core && go test ./role -run TestReviewSignoffAndTeamleadShareTheFourNoteClasses ./lane ./shipped - all ok  2. cd core/mod/builtin/jaira-cockpit && claude plugin test - 472 pass, including 'gapItems reads the class each finding states'  3. open core/lane/builtin/40-review.md, section 2 - you see blocker / note: edge / note: limit / note: elsewhere  4. in the cockpit, a signoff ticket whose review-gaps holds only 'note: limit: ...' shows a green light and a ⚪ row in the Acceptance pane"
+  note: edge: no test pins the new class sentence in the Explain prompts or the new words in rephrasePrompt - a tests/board.test.ts expect(t.…explain…).toContain('note: edge: [small edge]') would keep the cockpit and spawn.sh wording from drifting apart
+  note: elsewhere: AGENTS.md, CLAUDE.md and .jaira/lanes/{critique,in-progress,review,testing}.md are modified and uncommitted in this worktree - the 0.6.2 jaira block/lane refresh, not this ticket; leave them out of its commits
+review-check: "1. cd core && go test ./role -run TestReviewSignoffAndTeamleadShareTheFourNoteClasses -> ok  2. go test ./shipped -> ok (every shipped file hash is listed)  3. in the cockpit, open a signoff ticket whose review-gaps has a line 'note: limit: ...' -> its light is white (⚪), 'note: elsewhere: ...' -> blue (🔵), 'note: edge: ...' -> yellow (🟡)  4. press Explain on it -> the explain note puts that line under [known limit] / [not this ticket] / [small edge]"
 stop-after-fix: "true"
 ---
 
@@ -88,3 +90,9 @@ stop-after-fix: "true"
 - **2026-11-23 08:49 · Alexander Sacharov** — review: done at ad97b249c
 - **2026-11-23 08:49 · Alexander Sacharov** — review: fix-now: (1) board.ts rephrasePrompt: add edge:/limit:/elsewhere: to the 'Drop a leading' line; (2) texts.ts:228 + jaira-dispatcher/scripts/spawn.sh:597 Explain prompt: a note that already starts with blocker:/note: edge|limit|elsewhere: keeps that class - one sentence each; update shipped.sha256 for changed shipped files
 - **2026-11-23 08:49 · Alexander Sacharov** — worker: stop-after-fix=true set for the fix-now round (two prompt sentences, no lock, no parser). Removed core/mod/builtin/jaira-cockpit/node_modules - left untracked by my own 'claude plugin test' runs, the cause of the review's elsewhere note.
+- **2026-11-23 08:51 · Alexander Sacharov** — critique: fix-now round - dd448069e adds the class words to rephrasePrompt and one sentence to both Explain prompts (texts.ts, spawn.sh), the two review fix-now notes; nothing else; optimize in the same pass: nothing to remove
+- **2026-11-23 08:52 · Alexander Sacharov** — waiting: second review (new fresh agent via run-lane.sh) since 09:52
+- **2026-11-23 08:53 · Alexander Sacharov** — review: done at dd448069e
+- **2026-11-23 08:54 · Alexander Sacharov** — report: review notes carry blocker:/note: edge|limit|elsewhere:; cockpit classOf colours pane+light by that word; signoff/teamlead/Explain/rephrase use the same four words | signoff, context 184k of 1000k, cache warm 60 min | open for the person: 2 review notes (edge: no test pins the Explain/rephrase wording; elsewhere: uncommitted 0.6.2 jaira-block/lane refresh in worktree); branch pushed, PR not opened
+- **2026-11-23 08:56 · Alexander Sacharov** — hunt report: 0 findings (0 change), nothing written as bughunt notes | read as diff since ad97b249c: core/mod/builtin/jaira-cockpit/hooks/board.ts (rephrasePrompt, checked against classOf/gapItems/followTitle), core/shipped/shipped.sha256 (new hashes match the three files at HEAD); read whole as new to the list: core/mod/builtin/jaira-cockpit/hooks/texts.ts, core/role/builtin/jaira-dispatcher/scripts/spawn.sh (change is prompt text only; bash -n ok); ran: claude plugin test . (472 pass, 0 fail) | not checked: how a model actually follows the reworded explain/rephrase prompts - needs a live run
+- **2026-11-23 08:56 · Alexander Sacharov** — bughunt: done at dd448069e - 0 findings (0 change, 0 pre-existing) in 12 modules, follow-up hunt since ad97b249c; concurrency, error paths, input, permissions checked; files: core/lane/builtin/27-testing.md core/lane/builtin/40-review.md core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/GY8T52.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/builtin/jaira-role-signoff/SKILL.md core/role/builtin/jaira-teamlead/SKILL.md core/role/builtin/jaira-worker/SKILL.md core/role/noteclass_test.go core/shipped/shipped.sha256
