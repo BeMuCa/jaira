@@ -6,7 +6,7 @@ import {
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
   clipLines, commitsOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenItemsOf, seenProof, seenToTick, type SeenItem, standOf, storyOf, translatePrompt,
-  type Action, type Agent, type GapItem, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
+  IN_TURN, type Action, type Agent, type GapItem, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest, reportLine } from './digest.ts'
@@ -438,7 +438,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
       continue
     }
     const tab = open.find(x => x.label === label)
-    if (tab?.agent_status === 'working') continue
+    if (IN_TURN.has(tab?.agent_status ?? '')) continue
     const from = since - (since % 60_000)
     const note = await noteOn($, board.dir, id, kind === 'explain' ? 'explain' : 'decision')
     const fresh = note !== undefined && note.at >= from ? note : undefined

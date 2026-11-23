@@ -3259,6 +3259,17 @@ describe('the workers of the board', () => {
     ])
   })
 
+  test('a worker held at an approval dialog says so instead of a next round', async ($, on) => {
+    const w = world(on, { herdr: true, store: {
+      'session:a': record('a', 'T8QS1Y', { lastAnswerAt: 1_000_000 - 20 * 60_000, tokens: 120_000, updatedAt: 1_000_000 - 20 * 60_000 }),
+    } })
+    w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'blocked' }]
+    await startSession($)
+    const text = (await $.command.run(typed('workers'))).text
+    expect(text).toContain('T8QS1Y · in-progress · worker · context 120k of 1000k · cache 40 min left · waits for approval: answer the dialog in its tab')
+    expect(String((await $.tool.call({ tool: 'mcp__jaira-cockpit__workers' })).result)).toContain('waits for approval: answer the dialog in its tab')
+  })
+
   test('a cold worker waiting on a person is still listed, with a new worker for its next round', async ($, on) => {
     const w = world(on, { herdr: true, store: {
       'session:a': record('a', 'MG677R', { lastAnswerAt: 1_000_000 - 70 * 60_000, tokens: 80_000, updatedAt: 1_000_000 - 70 * 60_000 }),
@@ -3432,6 +3443,16 @@ describe('the head line, in the band\'s frame', () => {
     ]
     await startSession($)
     expect(await headLine($)).toBe('2 worker | 1 review | 2 waiting for you | 5h 34%')
+  })
+
+  test('an agent held at an approval dialog is still in its turn and counts', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tabs = [
+      { tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'blocked' },
+      { tab_id: 'w1:t2', label: 'MG677R/review', agent_status: 'blocked' },
+    ]
+    await startSession($)
+    expect(await headLine($)).toBe('1 worker | 1 review | 2 waiting for you | 5h 34%')
   })
 
   test('a worker tab left open after its turn is no worker', async ($, on) => {
@@ -4194,6 +4215,24 @@ describe('the workers tab', () => {
     expect(lines[1]).toContain('waits for an answer')
     expect(lines.join('\n')).not.toContain('K7P2QX')
   })
+
+  // Herdr's `blocked` is an approval dialog open in the agent's tab: it holds
+  // the agent whatever else is true, an open question included.
+  for (const question of ['', 'which one?']) {
+    test(`an agent held at an approval dialog waits for approval, its mark a '!'${question ? ', over an open question' : ''}`, async ($, on) => {
+      const w = world(on, { herdr: true })
+      w.tickets = [{ ...WORKING, assignee: 'Alex', question }]
+      w.tabs = [{ tab_id: 'w1:t1', label: 'T8QS1Y/worker', agent_status: 'blocked' }]
+      await startSession($)
+      const pane = await workersTab($)
+      const lines = await linesOf(pane)
+      expect(lines).toHaveLength(1)
+      expect(lines[0]).toMatch(/^T8QS1Y {2}in-progress {2}worker {2}waits for approval /)
+      const picture = await pictureOf(pane)
+      expect(picture.some(l => l.includes('!'))).toBe(true)
+      expect(picture.some(l => /[?z]/.test(l.replace(/\d+ open/, '')))).toBe(false)
+    })
+  }
 
   test('only tickets with an open question and nobody on them: nobody on the board', async ($, on) => {
     const w = world(on, { herdr: true })
