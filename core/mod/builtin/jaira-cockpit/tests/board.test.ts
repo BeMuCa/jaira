@@ -5331,6 +5331,9 @@ describe('the Acceptance pane', () => {
     expect(await colour('why')).toContain('"color":"warning"')
     const dim = async (text: string) => (await pane.find({ type: 'Text', text }))?.props.dimColor
     expect(await dim('round 2 | back 1x from signoff | 3 days')).toBe(true)
+    // Where it stands wraps on a line of its own under the title, never cut
+    // with the rule.
+    expect(await dim('MG677R | signoff')).toBe(true)
     expect(await dim('2 commits, 2 files | pull request exists')).toBe(true)
     expect(await dim('DoD 2/2 (1 superseded) | bughunt ✓ on HEAD | review: accept')).toBeFalsy()
     // The light follows the marks: one 🟡 note makes it yellow.

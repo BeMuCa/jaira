@@ -2334,9 +2334,11 @@ export const register: Register = (on, options) => {
     // engine draws a Box's border on all four sides or none, so the rule is
     // text, cut where the pane ends); each head field starts with a bar in
     // its own colour. Theme keys only, so a light terminal reads it too.
-    const section = (key: string, title: string, after = '') => (
+    // The title alone shares the row with the rule: what would follow it on
+    // that row goes on a line of its own, where it wraps instead of being cut.
+    const section = (key: string, title: string) => (
       <Box key={key} marginTop={1}>
-        <Text wrap="truncate-end"><Text bold color="claude">{title}</Text><Text dimColor>{`${after} ${RULE}`}</Text></Text>
+        <Text wrap="truncate-end"><Text bold color="claude">{title}</Text><Text dimColor>{` ${RULE}`}</Text></Text>
       </Box>
     )
     const field = (key: string, label: string, colour: 'suggestion' | 'success' | 'warning', text: string) => (
@@ -2356,7 +2358,8 @@ export const register: Register = (on, options) => {
         {story_?.what ? field('what', t.done, 'success', tr(story_.what)) : null}
         {story_?.why ? field('why', t.why, 'warning', tr(story_.why)) : null}
         {w.question !== '' ? <Text key="question" color="warning" wrap="wrap">? {w.question}</Text> : null}
-        {section('history-head', t.historyHeading, `${SEP}${w.id}${SEP}${w.lane}${w.reviewedIn !== undefined ? `${SEP}${t.reviewedIn(w.reviewedIn)}` : ''}`)}
+        {section('history-head', t.historyHeading)}
+        <Text key="history-where" dimColor wrap="wrap">{[w.id, w.lane, ...(w.reviewedIn !== undefined ? [t.reviewedIn(w.reviewedIn)] : [])].join(SEP)}</Text>
         {history.map(({ line, dim }, i) => <Text key={`history-${i}`} wrap="wrap" dimColor={dim}>{line}</Text>)}
         {(s?.release.length ?? 0) > 0 ? section('release-head', t.releaseNote) : null}
         {(s?.release ?? []).map((line, i) => <Text key={`release-${i}`} wrap="wrap">{line}</Text>)}
