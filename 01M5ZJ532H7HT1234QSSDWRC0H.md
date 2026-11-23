@@ -18,7 +18,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:13Z
-updated-at: 2026-10-27T20:52:13Z
+updated-at: 2026-11-23T01:25:36Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # Der Agent-Block sagt, wie man Goal, Kontext und DoD nach dem Anlegen aendert
