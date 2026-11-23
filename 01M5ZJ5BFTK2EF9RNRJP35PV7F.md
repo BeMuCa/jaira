@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:21Z
-updated-at: 2026-11-23T01:24:43Z
+updated-at: 2026-11-23T22:40:52Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-35pv7f
@@ -71,3 +71,4 @@ review-check: |-
 - **2026-11-23 01:20 · BeMuCa** — Checked branch build 37e27ef69: 'milestone create q1' without --after prints only 'Milestone "q1" created with 0 ticket(s): <path>' — no roadmap hint, so the change is needed (not a reject). Decisions settled without the person: hint goes to stdout as a second line after the created line, only when --after was not given at all (--after "" does put it on the roadmap as a swimlane top); --json output unchanged (no message field to add to); the hint names the milestone by its name — create refuses a name already on the board, so the name is unique there.
 - **2026-11-23 01:21 · BeMuCa** — critique: core/release/notes/35PV7F.md:1 says 'read the second line', but with a normalised name ('Round Two') a 'Filed ... as ...' line comes first and the hint is the third; say 'the line under the created line' instead. Rest let stand: one if-block after the existing created line is the smallest shape, stdout matches the other create output, the TUI create path (internal/tui/layer.go createMilestone) always places on the roadmap so it has no sibling.
 - **2026-11-23 01:22 · BeMuCa** — bughunt: done at 46f276515 - 0 findings (0 change, 0 pre-existing) in 1 module (internal/cli milestone create), first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/35PV7F.md internal/cli/milestones.go internal/cli/milestones_test.go
+- **2026-11-23 22:40 · BeMuCa** — Signoff follow-up (Berk 2026-11-23): hint now also names --after "" for the first milestone, release note updated, test asserts --json prints no hint. Commit fee432111
