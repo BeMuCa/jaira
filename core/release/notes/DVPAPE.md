@@ -3,3 +3,4 @@
 - `jaira list`, `show`, `jaira web`, the board and the refusals of `move` and `pull` now name a ticket's assignee, creator and last editor under the person's jaira name, not the name stored in the file; progress notes keep the name they were written under.
 - `jaira snapshot` now backs up the people list as `people` beside `board/` in the snapshot branch.
 - `jaira create --assignee` and `jaira set <id> assignee=` now store the person's jaira name when you type one of their aliases, so the ticket file names the same person the board shows.
+- A running `jaira web` now writes under the name the people list gives you at the moment of each change, and the page rereads the board within ten seconds of every fetch, so a teammate's `jaira people alias` or `rename` shows without restarting or reloading it.

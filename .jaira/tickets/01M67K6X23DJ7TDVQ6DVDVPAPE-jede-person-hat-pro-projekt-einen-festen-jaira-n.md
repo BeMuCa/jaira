@@ -21,35 +21,29 @@ related:
   - 01M5MNWJF240306ZVDA41K3RA8
 commits: []
 created-at: 2026-10-30T23:44:36Z
-updated-at: 2026-11-23T20:35:00Z
+updated-at: 2026-11-23T20:47:44Z
 updated-by: Alexander Sacharov
-outcome-what: "create --assignee and set assignee= store the jaira name of the person an alias names"
-outcome-why: "signoff give-back: the file stored the alias literally while the board showed the jaira name"
-outcome-resolves: "edge note: set assignee=BeMuCa stored BeMuCa"
-review-summary: "Full review of b6335d5..37a51cd (6 commits). New ref refs/jaira/people carries one file 'people', a line per person '<jaira name>: alias, alias'; core/people parses, finds (case-insensitive), aliases and renames, and Update writes it by fetch, apply the change to the newest list, push with lease, redo the change on a lost race (4 tries, then 'run it again'). core/identity resolves the actor through that list by git user.name, or by user.email only when JAIRA_USER is unset, so creator/assignee/claims/notes/ref commits get the jaira name. Readers never rewrite tickets: list/next --assignee, show/JSON, the gate's 'belongs to' refusal, refsync refusals and announcements, jaira web and the TUI show and filter stored names through Canonical/Same. New commands 'jaira people', 'people alias', 'people rename' with exit codes 2/3/5. jaira snapshot puts the people blob beside board/. Old DoD 1-3 (local per-project setting, web prompt) were replaced by Alex's decision note and are struck out, not skipped."
-round: 5
+outcome-what: "jaira web schreibt unter dem aktuellen jaira-Namen (actAsNow vor jeder Schreibaktion) und die Seite liest nach jedem Fetch neu"
+outcome-why: "Rueckgabe aus signoff: Namen im Web sollen reaktiv sein"
+outcome-resolves: "Limit 'jaira web handelt unter dem Namen vom Start' fuer web aufgehoben; TUI bleibt wie angenommen"
+review-summary: "delta review from 37a51cd47: create --assignee and set assignee= now pass the typed name through peopleList().Canonical, so an alias (e.g. BeMuCa) is stored as the person's jaira name; an unknown or empty name stays as typed (trimmed); TestAssigneeIsStoredUnderTheJairaName checks the ref file for both paths; release note line added. Closes the signoff give-back edge."
+round: 6
 back-from: signoff
 back-by: person
 back-count: 1
 review-gaps: |-
-  note: edge: 'jaira set <id> assignee=BeMuCa' stores the alias literally (checked: file says BeMuCa, list shows berk) - display is right, but the file does not carry the jaira name; fix: run the assignee value through peopleList().Canonical in set/create --assignee
-  note: limit: an open TUI and a running 'jaira web' keep acting under the name read at open; only the displayed list refreshes after a fetch (model.go refreshPeople note)
-  note: limit: progress-note authors and executed_by keep the name they were written under; the release note says so
-  note: elsewhere: core/identity Aliases adds git user.email even when JAIRA_USER names someone else, so IsMe under JAIRA_USER=grace counts the checkout owner's email-assigned tickets as grace's; same on master, before this change
-  note: elsewhere: core/refsync/refsync.go Departed drops the Repo.List error and reads it as no refs (found by the bug hunt, before this change)
-test-verdict: "pass (round 3): full suite with -race RC=0, vet + windows vet green; DoD 4-9 re-verified; binary on scratch board: JAIRA_USER=grace with git email listed for berkc acts as grace, without JAIRA_USER acts as berkc; earlier rounds: parallel aliases both land, remote gone exit 3 nothing written"
-hunt-verdict: "pass: round 3 hunt at 37a51cd47, 0 findings in 13 modules; round 2 pre-existing (refsync Departed drops Repo.List error) left as note for the person"
-claimed-by: DESKTOP-RFTCH11-22903
-claimed-at: 2026-11-23T20:31:01Z
-review-verdict: "accept: DoD 4-9 met and tested (go test of people, identity, snapshot, gate, refsync, cli, tui green); hand run confirms alias, rename, list --assignee across old names, owner refusal under the new name, JAIRA_USER winning over git email; no blocker"
-review-round: 4
+  note: elsewhere: internal/cli/sync.go:182 stores a Claude Code task owner as assignee without Canonical - an agent task owner, not a typed person name; new ticket if it should resolve too
+  note: limit: open TUI/jaira web act under the name read at open, note authors keep their written name (accepted at signoff)
+test-verdict: "pass: go vet (linux+windows), go test ./... green at 4c2ddaf8b; TestAssigneeIsStoredUnderTheJairaName covers create --assignee GH and set assignee=gh -> file stores 'grace'"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 5"
+claimed-by: DESKTOP-RFTCH11-64758
+claimed-at: 2026-11-23T20:42:04Z
+review-verdict: "accept: give-back edge closed in tickets.go create/set; test green; no blocker in the delta"
+review-round: 5
 review-verdict-gaps: |-
-  note: edge: 'jaira set <id> assignee=BeMuCa' stores the alias literally (checked: file says BeMuCa, list shows berk) - display is right, but the file does not carry the jaira name; fix: run the assignee value through peopleList().Canonical in set/create --assignee
-  note: limit: an open TUI and a running 'jaira web' keep acting under the name read at open; only the displayed list refreshes after a fetch (model.go refreshPeople note)
-  note: limit: progress-note authors and executed_by keep the name they were written under; the release note says so
-  note: elsewhere: core/identity Aliases adds git user.email even when JAIRA_USER names someone else, so IsMe under JAIRA_USER=grace counts the checkout owner's email-assigned tickets as grace's; same on master, before this change
-  note: elsewhere: core/refsync/refsync.go Departed drops the Repo.List error and reads it as no refs (found by the bug hunt, before this change)
-review-check: "1. In a clone with a remote and a shared board: jaira people alias berkc BeMuCa  -> 'berkc now also goes by BeMuCa'  2. jaira people  -> 'berkc — also BeMuCa'  3. git config user.name BeMuCa; jaira whoami  -> 'Acting as: berkc'  4. jaira set <id> assignee=BeMuCa; jaira list --assignee berkc  -> the ticket is listed under berkc  5. jaira people rename berkc berk; jaira list  -> the same ticket now shows berk, its file still says BeMuCa  6. JAIRA_USER=grace jaira move <id> --to todo  -> refused 'belongs to berk'  7. JAIRA_USER=grace jaira whoami  -> 'Acting as: grace'  8. jaira snapshot; git ls-tree jaira/board  -> a 'people' file beside board/"
+  note: elsewhere: internal/cli/sync.go:182 stores a Claude Code task owner as assignee without Canonical - an agent task owner, not a typed person name; new ticket if it should resolve too
+  note: limit: open TUI/jaira web act under the name read at open, note authors keep their written name (accepted at signoff)
+review-check: "1. cd into a jaira checkout with a remote  2. jaira people alias <you> TestAlias  3. jaira create 'probe' --assignee TestAlias  4. jaira show <new id> --json | grep assignee -> your jaira name, not TestAlias  5. jaira set <id> assignee=testalias, then git show refs/jaira/tickets/<ULID>:<ULID>.md | grep assignee -> your jaira name  6. or: go test ./internal/cli -run TestAssigneeIsStoredUnderTheJairaName"
 stop-after-fix: "true"
 ---
 
@@ -72,6 +66,8 @@ stop-after-fix: "true"
   proof: internal/cli/people.go newPeopleRenameCmd; shownName in tickets.go, peopleList().Same in list/next; tui boardPeople; cockpit mine via whoami aliases; TestPeopleTravelBetweenClonesAndRenameOldTickets
 - [x] jaira snapshot sichert den people-Ref mit (siehe ES625B: Backup aller refs/jaira/*)
   proof: core/snapshot/snapshot.go PeopleFile; TestASnapshotHoldsThePeopleList
+- [x] jaira web reagiert auf Namensaenderungen: Schreiben unter dem aktuellen jaira-Namen, Seite liest nach jedem Fetch neu; Test
+  proof: internal/cli/web_source.go actAsNow; core/web/ui/src/pages/review/ui/ReviewPage.svelte heartbeat; TestWebWritesUnderTheNameThePeopleListGivesNow
 
 ## Options
 
@@ -127,3 +123,15 @@ angenommen:
 - **2026-11-23 20:30 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown); branch feat/dvpape is the ticket's worktree's, worktree /home/alex/projects/.worktrees/jaira-dvpape; reports to uds:/run/user/1000/cc-socks/48662.sock, the ticket's parent session
 - **2026-11-23 20:31 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/48662.sock
 - **2026-11-23 20:34 · Alexander Sacharov** — in-progress (give-back signoff): create --assignee und set assignee= speichern den jaira-Namen (peopleList().Canonical); Test TestAssigneeIsStoredUnderTheJairaName. stop-after-fix=true gesetzt: Fix < 20 Zeilen, kein Lock, kein Parser.
+- **2026-11-23 20:35 · Alexander Sacharov** — waiting: fresh review lane (run-lane.sh herdr tab) since 21:35
+- **2026-11-23 20:37 · Alexander Sacharov** — review: done at 4c2ddaf8b
+- **2026-11-23 20:37 · Alexander Sacharov** — report: create --assignee / set assignee= store the jaira name (4c2ddaf8b) | signoff, context unknown | 2 review notes (sync.go task owner not canonicalised - elsewhere; TUI/web act under name from open - limit); branch not pushed
+- **2026-11-23 20:41 · Alexander Sacharov** — Given back from signoff: beheben:
+- note: limit: open TUI/jaira web act under the name read at open, note authors keep their written name (accepted at signoff)
+dazu: надо чтобы web обновлял имена реактивно. такое возможно?
+angenommen:
+- note: elsewhere: internal/cli/sync.go:182 stores a Claude Code task owner as assignee without Canonical - an agent task owner, not a typed person name; new ticket if it should resolve too
+- **2026-11-23 20:41 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown); branch feat/dvpape is the ticket's worktree's, worktree /home/alex/projects/.worktrees/jaira-dvpape; reports to uds:/run/user/1000/cc-socks/48662.sock, the ticket's parent session
+- **2026-11-23 20:42 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/48662.sock
+- **2026-11-23 20:43 · Alexander Sacharov** — in-progress (give-back 2, web reaktiv): Anzeige in jaira web las die Liste schon pro Abruf; offen war (a) Schreiben unter dem Namen vom Start und (b) Seite liest erst im 60s-Takt neu. Plan: webSource loest vor jedem Schreiben neu auf, wer handelt (s.Actor, refs.Actor, peopleCache), hinter einem Mutex; Seite laedt neu, sobald /api/sync einen neuen last_fetch meldet (Heartbeat 10s). TUI bleibt wie angenommen.
+- **2026-11-23 20:47 · Alexander Sacharov** — in-progress: stop-after-fix=true gesetzt - Fix ~50 Zeilen (Go 18 + Svelte 6 + Test), kein neuer Lock (vorhandener webSource-Mutex), kein Parser. Gates: go vet, go test ./..., -race TestWeb*, npm build/test, shipped-history gruen.

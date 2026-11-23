@@ -617,3 +617,33 @@ func TestWebEditsAnEpicsExternalKeys(t *testing.T) {
 		t.Fatalf("a hand-written non-link = %+v; want it as text without a link", x)
 	}
 }
+
+// A page left open for hours writes as the person the board names now: an
+// alias that arrived after the server started is what its next write uses,
+// in the store and in the ref syncer alike.
+func TestWebWritesUnderTheNameThePeopleListGivesNow(t *testing.T) {
+	t.Setenv("JAIRA_USER", "")
+	ada, _ := twoBoards(t)
+	g.dir = ada
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := (&web.Server{Source: newWebSource(s), Push: webPush}).Handler()
+	if s.Actor != "ada" {
+		t.Fatalf("before the alias the page acts as %q, want ada", s.Actor)
+	}
+	syncer := refs // runCLI below opens a store of its own and replaces refs
+
+	if out, err := runCLI(t, ada, "people", "alias", "Ada Lovelace", "ada"); err != nil {
+		t.Fatalf("alias: %v\n%s", err, out)
+	}
+	refs = syncer
+	g.dir = ada
+	if w := webDo(t, h, "POST", "/api/epics", `{"name":"later"}`); w.Code != 200 {
+		t.Fatalf("create: %d %s", w.Code, w.Body)
+	}
+	if s.Actor != "Ada Lovelace" || refs.Actor != "Ada Lovelace" {
+		t.Errorf("after the alias the page writes as store %q, syncer %q; want Ada Lovelace for both", s.Actor, refs.Actor)
+	}
+}

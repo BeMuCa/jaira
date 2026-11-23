@@ -30,6 +30,19 @@ type webSource struct {
 
 func newWebSource(s *ticket.Store) *webSource { return &webSource{s: s} }
 
+// actAsNow settles who a write from the page is made as, again for each one:
+// the server runs for hours, and a 'jaira people alias' or 'rename' a fetch
+// brought in since it started names the person differently now. The store,
+// the ref syncer and the names its messages print all follow, so one write
+// never carries two names. Called with w.mu held.
+func (w *webSource) actAsNow() {
+	peopleCache = nil
+	w.s.Actor = identity()
+	if refs != nil {
+		refs.Actor = w.s.Actor
+	}
+}
+
 // signoff is the lane whose tickets the epic's progress counts apart: finished,
 // waiting for a person to accept them. A board without it counts none.
 const signoff = "signoff"
@@ -274,6 +287,7 @@ func (w *webSource) Lanes() ([]web.Lane, error) {
 func (w *webSource) CreateEpic(raw, title, description string) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	w.actAsNow()
 	name, _, err := epic.NormalizeName(raw)
 	if err != nil {
 		return fmt.Errorf("%w: %v", web.ErrInvalid, err)
@@ -292,6 +306,7 @@ func (w *webSource) CreateEpic(raw, title, description string) error {
 func (w *webSource) SetEpic(name string, edit web.EpicEdit) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	w.actAsNow()
 	p := epic.Patch{Title: edit.Title, Description: edit.Description, Body: edit.Body, DropExternal: edit.DropExternal}
 	for _, raw := range edit.AddExternal {
 		x, err := epic.ParseExternal(raw)
@@ -324,6 +339,7 @@ func (w *webSource) SetEpic(name string, edit web.EpicEdit) error {
 func (w *webSource) Assign(name, from, id string, force bool) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	w.actAsNow()
 	t, err := w.load(id)
 	if err != nil {
 		return err
@@ -345,6 +361,7 @@ func (w *webSource) Assign(name, from, id string, force bool) error {
 func (w *webSource) Unassign(name, id string) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	w.actAsNow()
 	t, err := w.load(id)
 	if err != nil {
 		return err
@@ -388,6 +405,7 @@ func (w *webSource) assign(name, id string, add, force bool) error {
 func (w *webSource) SetClosed(name string, closed, force bool) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	w.actAsNow()
 	var err error
 	if closed {
 		var ix *link.Index
