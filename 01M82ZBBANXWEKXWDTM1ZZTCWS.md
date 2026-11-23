@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:30:58Z
+updated-at: 2026-11-23T21:31:02Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -46,6 +46,7 @@ review-verdict-gaps: |-
   note: edge: fix-now: signoff.go:170-174 blockerLines - a label standing alone ('blocker:\n- the limit resets', '**Blocker:**') shows the bare label in the blocker row, not the finding; take the next non-empty line as the text when the rest is empty or only emphasis, and assert the text in signoff_test.go:114-124
   note: limit: 'i' shows the whole detail pane by design (round-2 decision), so Commits (recorded list only), the DoD and the start checklist appear a second time below the top block
   note: limit: the agent lane 'review' named in the goal keeps the plain detail view - decision note 21:00 reads the goal as the person lanes human and signoff
+review-check: "1. go build -o /tmp/jaira-zz ./cmd/jaira  2. in a scratch repo: jaira init, jaira create 'Test' --goal g --context c --dod d, then move the ticket to signoff (--force where refused)  3. jaira set <id> review-check='step one' review-gaps=$'blocker: resets on restart\\nnote: edge: wording'  4. run /tmp/jaira-zz, open the ticket with enter: top reads 'blocker  resets on restart', then check, what, why, Commits, Definition of Done - no summary/verdict/gaps/problem rows  5. press i: a 'Details' block appears below with goal, context, gaps (both lines), verdict, notes  6. press i again: it closes  7. jaira set <id> question='ok?' and move the ticket to human: the same screen opens, banner says 'waiting on your answer', the question row shows, a/f do nothing"
 ---
 
 # Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts
