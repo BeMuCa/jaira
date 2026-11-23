@@ -1,7 +1,7 @@
 ---
 id: 01M6PDF4CMXG25611W5A2DSM0T
 title: "Ein Board ohne Git-Repo schiebt Tickets nach done, ohne Commits zu verlangen"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Liegt das Board in keinem Git-Repository, verlangt die Lane done keine Commits; in einem Repository bleibt die Regel wie heute."
@@ -18,14 +18,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:32:13Z
+updated-at: 2026-11-23T01:32:36Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
 claimed-at: 2026-11-23T01:24:05Z
-outcome-what: "A board that lives in no git repository moves tickets into done and the logbook without commits; inside a repository, remote or not, done still requires them."
-outcome-why: "Solo users without a repository could never finish a ticket: the done gate demanded commits that cannot exist, and its advice (--commits, jaira set commits=) was meaningless there."
-outcome-resolves: "2DSM0T: gate.Env.OutsideRepo (lazy, asked only on the refusal path) backed by gitrepo.Repo.OutsideRepo - true only when no .git in the root or any parent and git does not see a work tree; wired in CLI loadEnv and TUI gateEnv; logbook no longer prints the hand-record hint outside git. Checked: concurrency n/a (read-only probe); error paths - a stat or git error counts as 'in a repo' so the rule never drops by accident; git missing - .git walk alone decides; relative dir made absolute."
+outcome-what: "A board that lives in no git repository moves tickets into done and the logbook without commits, provided git is installed; inside a repository, remote or not, done still requires them."
+outcome-why: "Solo users without a repository could never finish a ticket: the done gate demanded commits that cannot exist. Round 2: the bug hunt showed a symlinked repo with git missing read as 'no repository'."
+outcome-resolves: "2DSM0T: gate.Env.OutsideRepo backed by gitrepo.Repo.OutsideRepo - true only when git is on PATH, no .git above the symlink-resolved path and git sees no work tree; wired in CLI and TUI; logbook drops the hand-record hint there. Round 2 fixed the hunt's blocker (EvalSymlinks; no git -> keep the rule). Checked: concurrency n/a (read-only probe; two parallel moves both landed); error paths - any stat/git/symlink error keeps the rule; input - relative, symlinked, subdir paths; permissions - unreadable parent counts as 'maybe a repo'."
 review-summary: none
 review-gaps: "none: duplication - no other .git walk in the tree (only core/ticket/store.go names .git, for a different purpose); gitref.Usable kept separate on purpose (critique note). Dead code - nothing orphaned. Fluff - the one-line comments at the two wiring sites match their neighbours' style, kept. Cost - OutsideRepo runs only on the refusal path and at logbook with zero commits."
 test-verdict: "fail: bughunt change blocker - OutsideRepo reads a symlinked repo path with git missing as 'no repository' and waives commits inside a real repo; own passes were green (vet/build rc=0, scratch boards behaved)"
@@ -73,3 +73,4 @@ back-count: 1
 - **2026-11-23 01:30 · BeMuCa** — bughunt: change: blocker: core/gitrepo/git.go:57-71 (OutsideRepo) - class: the repository test is lexical (filepath.Abs keeps symlinks, the .git walk follows the path as written) and its only fallback, !Available() || !IsRepo(), answers true whenever git is missing, so a repository the walk cannot see reads as 'no repository' and the requires-commits gate (core/gate/gate.go:372) is waived inside a real repo - the opposite of the function's own doc (a missing binary must not drop the requirement); same pattern reached from internal/cli/root.go:365, internal/tui/model.go:2069 and the logbook hint at internal/cli/logbook.go:324; example: board at ~/link -> repo/sub (git init'ed repo), git not on PATH: 'jaira move <id> --to done' exit 0, ticket in done with commits: [] - the same repo via its real path refuses with needs_commits, exit 3; fix direction: resolve the path with filepath.EvalSymlinks before the walk (and keep refusing when git is missing and the answer is unsure); ran: scratch board, PATH without git, symlinked cwd (exit 0) vs real path (exit 3)
 - **2026-11-23 01:30 · BeMuCa** — bughunt: done at 821aa6f78 - 1 finding (1 change, 0 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/gate/commits_test.go core/gate/gate.go core/gitrepo/git.go core/gitrepo/outside_test.go core/release/notes/2DSM0T.md internal/cli/logbook.go internal/cli/root.go internal/tui/model.go
 - **2026-11-23 01:31 · BeMuCa** — Decision for the fix (mine): without git on PATH OutsideRepo answers false - the requirement stays. Reason: without git nothing can tell a repository reached through a symlink, GIT_DIR or GIT_WORK_TREE from a plain directory, and the rule says a missing binary must never drop the requirement. Cost: a solo user with no git installed at all still cannot reach done without --force; jaira's gitrepo package already assumes git on PATH. Also resolve symlinks before the .git walk so a git that fails for another reason (dubious ownership) behind a symlink does not read as 'no repository'.
+- **2026-11-23 01:32 · BeMuCa** — critique round 2: the fix is the smallest that closes the class (path as written vs real path, and a missing git) - early return on !Available, EvalSymlinks before the walk. Nothing else; standing on the round-1 critique note for the gitref.Usable question.
