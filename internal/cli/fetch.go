@@ -95,7 +95,7 @@ notifications are turned off in ~/.jaira/settings.json ("notify-off": true).`,
 				return err
 			}
 			reportConflicts(ms.Conflicts)
-			departed := refs.Departed()
+			departed := departedHere(cmd.ErrOrStderr())
 			stranded := strandedHere()
 			var twins []milestone.Twin
 			if all, err := milestone.LoadAll(s.Root); err == nil {
@@ -242,6 +242,19 @@ func announceArrivals(arrivals []refsync.Arrival) {
 // strandedHere lists tickets finished on this machine that have not arrived in
 // any landing branch. Resolved the same way the snapshot run resolves it, so
 // the report and the reaping can never disagree about what counts as landed.
+// departedHere is refs.Departed for a command that reports it beside other
+// things: a failure to list the refs is said on errw and leaves the report
+// empty. It never stands in for "nothing departed" silently, and it never
+// fails the command, whose other reports are still right.
+func departedHere(errw io.Writer) []refsync.Departure {
+	departed, err := refs.Departed()
+	if err != nil {
+		fmt.Fprintf(errw, "jaira: warning: could not check for tickets taken off the board elsewhere: %v\n", err)
+		return nil
+	}
+	return departed
+}
+
 func strandedHere() []refsync.Stranded {
 	set := settings.Load()
 	return refs.Stranded(set.Landing(refs.Repo.Remote, refs.Repo.RemoteHead), set.LandingGraceInterval())

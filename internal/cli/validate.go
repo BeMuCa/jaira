@@ -98,7 +98,7 @@ because capture is meant to be cheap. Use --strict to fail on those too.`,
 			// it is still here. Reported by validate as well as by fetch,
 			// because this is the one check somebody runs when the board looks
 			// wrong and they do not know why.
-			departed := refs.Departed()
+			departed := departedHere(cmd.ErrOrStderr())
 			stranded := strandedHere()
 
 			if g.jsonOut {

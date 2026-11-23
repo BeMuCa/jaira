@@ -1,0 +1,1 @@
+- `jaira fetch` and `jaira validate` no longer report every ticket as "left the board elsewhere" when listing the ticket refs fails for a moment; they print a warning on stderr instead — run the command again once git is free.

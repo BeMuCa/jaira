@@ -184,10 +184,12 @@ func fileOnlyCount(s *ticket.Store, onRefs bool) int {
 	onRef := map[string]bool{}
 	if onRefs {
 		ids, err := refs.Repo.List()
-		if err == nil {
-			for _, id := range ids {
-				onRef[id] = true
-			}
+		if err != nil {
+			// Read as "no refs", every file here would count as file-only.
+			return 0
+		}
+		for _, id := range ids {
+			onRef[id] = true
 		}
 	}
 	n := 0

@@ -1966,19 +1966,25 @@ type Departure struct {
 // Nothing is moved. Which of the two is right is a question for the person, and
 // a tool that guessed would sometimes reopen finished work; the caller reports
 // this and names the command that settles it.
-func (y *Syncer) Departed() []Departure {
+//
+// A failure to list the refs is an error, never an empty list: read as "no
+// refs", a passing git hiccup (a lock, a broken ref) would report every ticket
+// this clone has seen as gone.
+func (y *Syncer) Departed() ([]Departure, error) {
 	if y == nil || y.Store == nil || y.Usable() != nil {
-		return nil
+		return nil, nil
 	}
 	seen := y.loadSeen()
 	if len(seen) == 0 {
-		return nil
+		return nil, nil
 	}
-	present := map[string]bool{}
-	if ids, err := y.Repo.List(); err == nil {
-		for _, id := range ids {
-			present[id] = true
-		}
+	ids, err := y.Repo.List()
+	if err != nil {
+		return nil, fmt.Errorf("listing ticket refs: %w", err)
+	}
+	present := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		present[id] = true
 	}
 	var out []Departure
 	for id := range seen {
@@ -1996,7 +2002,7 @@ func (y *Syncer) Departed() []Departure {
 		out = append(out, d)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
-	return out
+	return out, nil
 }
 
 // ForgetDeparted drops a ticket from the seen record, so it stops being
