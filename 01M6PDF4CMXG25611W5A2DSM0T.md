@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:27:26Z
+updated-at: 2026-11-23T01:27:28Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -56,3 +56,4 @@ claimed-at: 2026-11-23T01:24:05Z
 
 ## Progress
 - **2026-11-23 01:25 · BeMuCa** — Reproduced 2026-11-23 on a scratch board in a plain dir (branch build): move to done refused with 'lane "done" requires the commits ...'. Decision (mine, settle-able): 'no repo' = no .git entry in the board root or any parent AND git does not answer true to rev-parse --is-inside-work-tree (or git is not installed). Why both: a git error that is not 'no repo' (dubious ownership, broken config) must never drop the commit rule inside a real repo; a missing git binary alone must not either when a .git is there. Asked lazily, only on the refusal path, so a repo board pays nothing and render paths never call it. Planning option not ticked, so pre-process is skipped; plan written as plan items anyway.
+- **2026-11-23 01:27 · BeMuCa** — Sibling found and fixed in the same change: 'jaira logbook' printed 'Record them by hand with jaira set <id> commits=<sha>' on a git-less board - the same pointless advice. Now silent there (internal/cli/logbook.go). Ownership refusal in manual tests was unrelated: identity falls back to $USER, so the scratch tests set JAIRA_USER. Tests written but not run here (house rule); the main session runs go test.
