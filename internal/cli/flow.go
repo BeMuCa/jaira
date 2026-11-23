@@ -401,7 +401,7 @@ skipping this command.`,
 				if laneFilter != "" && t.Status != laneFilter {
 					continue
 				}
-				if assigneeFilter != "" && !strings.EqualFold(t.Assignee, assigneeFilter) {
+				if assigneeFilter != "" && !peopleList().Same(t.Assignee, assigneeFilter) {
 					continue
 				}
 				if !gate.Actionable(env, t) {

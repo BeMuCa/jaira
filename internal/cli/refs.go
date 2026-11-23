@@ -39,6 +39,7 @@ func attachRefs(s *ticket.Store) {
 	refs.IsMine = func(assignee string) bool {
 		return assignee != "" && coreidentity.IsMe(s.Root, assignee)
 	}
+	refs.Name = shownName
 	s.Recorder = refs
 	// And the same syncer supplies what the board can see without having a
 	// file for it, so list, next and show are never half a board.
