@@ -46,8 +46,8 @@ func newWebSource(s *ticket.Store) *webSource {
 // actAsNow settles who a write from the page is made as, again for each one:
 // the server runs for hours, and a 'jaira people alias' or 'rename' a fetch
 // brought in since it started names the person differently now. The store and
-// the ref syncer both follow, so one write never carries two names. Called
-// with w.mu held.
+// the ref syncer, the author of its ref commits included, follow, so one
+// write never carries two names. Called with w.mu held.
 func (w *webSource) actAsNow() {
 	who := identity()
 	w.pushing.Lock()
@@ -55,6 +55,7 @@ func (w *webSource) actAsNow() {
 	w.s.Actor = who
 	if refs != nil {
 		refs.Actor = who
+		refs.Repo.AuthorName = who
 	}
 }
 

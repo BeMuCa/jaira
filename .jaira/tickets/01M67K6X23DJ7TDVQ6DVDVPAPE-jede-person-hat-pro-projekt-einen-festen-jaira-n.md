@@ -21,19 +21,19 @@ related:
   - 01M5MNWJF240306ZVDA41K3RA8
 commits: []
 created-at: 2026-10-30T23:44:36Z
-updated-at: 2026-11-23T20:57:15Z
+updated-at: 2026-11-23T21:00:03Z
 updated-by: Alexander Sacharov
 outcome-what: "jaira web schreibt unter dem aktuellen jaira-Namen (actAsNow vor jeder Schreibaktion) und die Seite liest nach jedem Fetch neu"
 outcome-why: "Rueckgabe aus signoff: Namen im Web sollen reaktiv sein"
 outcome-resolves: "Limit 'jaira web handelt unter dem Namen vom Start' fuer web aufgehoben; TUI bleibt wie angenommen"
 review-summary: "none"
-round: 8
+round: 9
 back-from: testing
 back-by: lane
-back-count: 1
-review-gaps: "none - considered: refs.Name fresh lookup mirrors cards() (same coreidentity.People call, kept: web must not share the command cache); no dead code; refs.Name per call costs one git show only when Flush reports a lost race (rare)"
-test-verdict: "pass: go vet (linux+windows), go test ./... green at 4c2ddaf8b; TestAssigneeIsStoredUnderTheJairaName covers create --assignee GH and set assignee=gh -> file stores 'grace'"
-hunt-verdict: "pass: stop-after-fix, no hunt in round 5"
+back-count: 2
+review-gaps: "none - push() is a 3-line wrapper kept on purpose: it carries the lock webPush must not take for the CLI"
+test-verdict: "fail: suite green (go test -race ./... RC=0, npm test 25/25), DoD verified; but e2e on a scratch board with a bare remote: after 'jaira people alias \"Ada Lovelace\" ada' under a running jaira web, the epic ref commit was still authored 'ada' - refs.Repo.AuthorName stays the name from open"
+hunt-verdict: "pass: bughunt done at cb2fef7de, 0 change, 0 pre-existing"
 claimed-by: DESKTOP-RFTCH11-64758
 claimed-at: 2026-11-23T20:42:04Z
 review-verdict: "accept: give-back edge closed in tickets.go create/set; test green; no blocker in the delta"
@@ -141,3 +141,8 @@ angenommen:
 - **2026-11-23 20:53 · Alexander Sacharov** — hunt report: 2 findings, both change (no blocker), as bughunt notes on DVPAPE | follow-up hunt from 37a51cd47: tickets.go, web_source.go, people_test.go, release note, ReviewPage.svelte read as a diff plus surrounding functions (refsync Actor/Name/Flush paths, people.Canonical, web.Server push/fetch, root.go identity/peopleList); web_test.go, built dist bundle and index.html read as new files | the ReviewPage first-fetch miss was confirmed by reading only, not in a browser; set assignee= --append folding two names into one value predates this change and was left alone
 - **2026-11-23 20:53 · Alexander Sacharov** — bughunt: done at ed8a1c18b - 2 findings (2 change, 0 pre-existing) in 31 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: README.md core/gate/gate.go core/gate/gate_test.go core/gitref/gitref.go core/identity/identity.go core/identity/identity_test.go core/people/people.go core/people/people_test.go core/people/store.go core/refsync/refsync.go core/release/notes/DVPAPE.md core/snapshot/snapshot.go core/snapshot/snapshot_test.go core/web/ui/dist/assets/index-DUl1hCu-.js core/web/ui/dist/index.html core/web/ui/src/pages/review/ui/ReviewPage.svelte docs/COMMANDS.md internal/cli/flow.go internal/cli/people.go internal/cli/people_test.go internal/cli/refs.go internal/cli/root.go internal/cli/tickets.go internal/cli/web_source.go internal/cli/web_test.go internal/tui/lanefocus.go internal/tui/model.go internal/tui/refs.go internal/tui/refs_test.go internal/tui/users.go internal/tui/view.go
 - **2026-11-23 20:57 · Alexander Sacharov** — in-progress (bughunt round 4): (1) actAsNow setzt Actor unter webSource.pushing, das auch der Push der Seite (src.push statt webPush) haelt - Flush liest Actor nie mehr waehrend er geaendert wird; identity() laeuft vor dem Lock. Kein eigener Race-Test: der Lesepfad (rebaseEpic) braucht einen verweigerten Push, der Jaeger hat ihn mit einem Wegwerftest gezeigt; Absicherung ist das Lock. (2) Heartbeat laedt auch nach dem ersten Fetch neu (Vergleich ohne 'fetched'-Bedingung).
+- **2026-11-23 20:57 · Alexander Sacharov** — critique pass 3: beide Jaeger-Findings beantwortet (cb2fef7de); jeder Aufruf von Server.Push geht ueber src.push (write und Loop), Actor-Schreiber nur actAsNow unter pushing. Nichts weiter.
+- **2026-11-23 20:57 · Alexander Sacharov** — waiting: bug hunt round 5 (background subagent) since 21:57
+- **2026-11-23 20:58 · Alexander Sacharov** — hunt report: 0 findings (0 change), nothing written besides this report | read whole: internal/cli/web.go (new to the list), core/web/ui/dist/assets/index-BppOAc_B.js (build output of ReviewPage.svelte, not read line by line); read as diff since ed8a1c18b: internal/cli/web_source.go, core/web/ui/src/pages/review/ui/ReviewPage.svelte, core/web/ui/dist/index.html | checked: lock order mu->pushing in actAsNow vs pushing-only in push (webPush never takes mu, no deadlock), Actor written only in actAsNow under pushing and root.go at startup, last_fetch is omitzero so the heartbeat does not reload before a first fetch; ran: go test -race -count=3 -run Web ./internal/cli/ ./core/web/ (ok); not checked: the minified bundle against its source
+- **2026-11-23 20:59 · Alexander Sacharov** — bughunt: done at cb2fef7de - 0 findings (0 change, 0 pre-existing) in 6 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: README.md core/gate/gate.go core/gate/gate_test.go core/gitref/gitref.go core/identity/identity.go core/identity/identity_test.go core/people/people.go core/people/people_test.go core/people/store.go core/refsync/refsync.go core/release/notes/DVPAPE.md core/snapshot/snapshot.go core/snapshot/snapshot_test.go core/web/ui/dist/assets/index-BppOAc_B.js core/web/ui/dist/index.html core/web/ui/src/pages/review/ui/ReviewPage.svelte docs/COMMANDS.md internal/cli/flow.go internal/cli/people.go internal/cli/people_test.go internal/cli/refs.go internal/cli/root.go internal/cli/tickets.go internal/cli/web.go internal/cli/web_source.go internal/cli/web_test.go internal/tui/lanefocus.go internal/tui/model.go internal/tui/refs.go internal/tui/refs_test.go internal/tui/users.go internal/tui/view.go
+- **2026-11-23 20:59 · Alexander Sacharov** — testing: e2e fand - Ref-Commit-Autor (gitref.Repo.AuthorName) blieb beim Namen vom Start. Fix: actAsNow setzt refs.Repo.AuthorName mit; Test prueft Autor des Epic-Ref-Commits (scheitert ohne Fix).

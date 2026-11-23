@@ -646,4 +646,7 @@ func TestWebWritesUnderTheNameThePeopleListGivesNow(t *testing.T) {
 	if s.Actor != "Ada Lovelace" || refs.Actor != "Ada Lovelace" {
 		t.Errorf("after the alias the page writes as store %q, syncer %q; want Ada Lovelace for both", s.Actor, refs.Actor)
 	}
+	if author := gitOut(t, ada, "log", "-1", "--format=%an", "refs/jaira/epics/later"); strings.TrimSpace(author) != "Ada Lovelace" {
+		t.Errorf("the epic's ref commit is authored by %q, want Ada Lovelace", author)
+	}
 }
