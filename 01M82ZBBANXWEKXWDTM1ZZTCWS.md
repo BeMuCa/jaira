@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:24:30Z
+updated-at: 2026-11-23T21:24:34Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -85,3 +85,4 @@ back-count: 1
 - **2026-11-23 21:22 · Alexander Sacharov** — critique (pass 2, reads only the hunt findings and their repair 383b42d9e): blocker class - blockerLines ports the cockpit's MARKER+BLOCKER regexes (board.ts:340-345), 11 forms tested - addressed; human-lane context/notes - 'i' now appends detailFields, the detail pane body split out of detailBody (one renderer, no second list) - addressed. Nothing new. review-summary=none.
 - **2026-11-23 21:23 · Alexander Sacharov** — waiting: round-2 bughunt (subagent) and race run of internal/tui (bg) since 22:23
 - **2026-11-23 21:24 · Alexander Sacharov** — bughunt: change: internal/tui/signoff.go:162 (blockerLines) - class: a blocker label with no text after it on its own line is matched and then dropped as an empty string, so the sign-off screen shows no blocker row while the cockpit (hooks/board.ts BLOCKER) counts the line as a blocker and colours the ticket red; the old gapLines showed such a line as is, so this is a regression from 383b42d9e; example: review-gaps '**Blocker:**' or 'blocker:\n- the limit resets on restart' -> blockerLines returns '' and no blocker row appears above the check; with 'blocker: a\nblocker:\nblocker: b' the row gets an empty line in between; ran: scratch go test calling blockerLines + renderSignOff (row absent)
+- **2026-11-23 21:24 · Alexander Sacharov** — bughunt: change: internal/tui/signoff.go:144 -> view.go:1327 detailFields - class: 'i' now adds the whole detail pane to the sign-off screen, including blocks that contradict what the screen already shows above it: a Commits block built from the recorded commits: list only (view.go:1475, the snapshot the comment at signoff.go:100 calls misleading) under the derived list, 'Before this can start: goal, context, assignee' (view.go:1483, missing()) on a ticket waiting for acceptance, and the DoD list a second time; example: Commits [0123abc], derived [0123abc 4567def] -> the top block lists 2 commits, the 'Details' block lists 1; ran: scratch go test, render after 'i' (Commits x2, DoD x2, start warning shown)
