@@ -1,7 +1,7 @@
 ---
 id: 01M6PDF4CMXG25611W5A2DSM0T
 title: "Ein Board ohne Git-Repo schiebt Tickets nach done, ohne Commits zu verlangen"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Liegt das Board in keinem Git-Repository, verlangt die Lane done keine Commits; in einem Repository bleibt die Regel wie heute."
@@ -18,14 +18,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:35:22Z
+updated-at: 2026-11-23T01:35:45Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
 claimed-at: 2026-11-23T01:24:05Z
 outcome-what: "A board that lives in no git repository moves tickets into done and the logbook without commits, provided git is installed; inside a repository, remote or not, done still requires them."
 outcome-why: "Solo users without a repository could never finish a ticket: the done gate demanded commits that cannot exist. Round 2: the bug hunt showed a symlinked repo with git missing read as 'no repository'."
-outcome-resolves: "2DSM0T: gate.Env.OutsideRepo backed by gitrepo.Repo.OutsideRepo - true only when git is on PATH, no .git above the symlink-resolved path and git sees no work tree; wired in CLI and TUI; logbook drops the hand-record hint there. Round 2 fixed the hunt's blocker (EvalSymlinks; no git -> keep the rule). Checked: concurrency n/a (read-only probe; two parallel moves both landed); error paths - any stat/git/symlink error keeps the rule; input - relative, symlinked, subdir paths; permissions - unreadable parent counts as 'maybe a repo'."
+outcome-resolves: "2DSM0T: gate.Env.OutsideRepo backed by gitrepo.Repo.OutsideRepo - true only when git is on PATH, no .git above the symlink-resolved path, and git itself fails with 'not a git repository' (LC_ALL=C); wired in CLI and TUI; logbook drops the hand-record hint there. Rounds 2-3 closed the hunts' blockers (symlink + missing git; a git failure read as no repo). Checked: concurrency n/a (read-only probe; two parallel moves both landed); error paths - any stat/git/symlink error keeps the rule; input - relative, symlinked, subdir paths, German locale; permissions - an unreadable parent counts as 'maybe a repo'."
 review-summary: none
 review-gaps: "none: round 2 added an early return and one EvalSymlinks call; the trailing !Available() it replaced is gone, nothing orphaned, no duplicate symlink-resolve helper in core/gitrepo"
 test-verdict: "fail: bughunt round 2 change blocker - OutsideRepo reads any git failure after an empty .git walk (GIT_DIR with a broken config) as 'no repository'; vet/build rc=0"
