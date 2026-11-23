@@ -34,7 +34,10 @@ no hint where to look:
 this lane's payload (`jaira show <handle> --for-lane testing --json`) and
 `round` above 1: start no hunt this round, run your passes over what changed
 since the last hunt, and write
-`hunt-verdict="pass: stop-after-fix, no hunt in round <n>"`. Off — the default
+`hunt-verdict="pass: stop-after-fix, no hunt in round <n>"` — unless that
+change touches locking or a parser (file locks, reading a file format,
+parsing command output): there the hunt runs, opt-out or not, because a
+small fix in either is where a new defect hides. Off — the default
 — the hunt runs every round, over the diff since the last one.
 
 It changes nothing and moves nothing; it leaves one `bughunt:` note per
@@ -114,7 +117,7 @@ gate or an unmet definition-of-done item is a wrong result under any rule. Anyth
 a missing guard that breaks nothing yet, a test that covers the example but
 not its neighbour — rides along in the note of a round that goes back anyway.
 Otherwise it is a note on the ticket for the review and the person
-(`jaira note <handle> "testing: note: <class; example; fix>"`, the hunter's own
+(`jaira note <handle> "testing: note: edge: <class; example; fix>"`, the hunter's own
 note where it came from the hunt), counted in a verdict that still passes; it
 alone never starts a round.
 
@@ -141,8 +144,9 @@ alone never starts a round.
   optimize, and back here — until you have nothing left to find. A round after
   a fix tests and hunts only what changed since the last hunt — the commit in
   its `bughunt: done at <commit>` line: pass 1 runs the tests that cover the files
-  `git diff --name-only <commit>` touches, and passes 2 and 3 and the hunt
-  read only that diff, so the loop ends; the whole suite ran in the first
+  `git diff --name-only <commit>` touches and the new files
+  `git ls-files --others --exclude-standard` lists (a diff does not show a
+  file nobody added yet), and passes 2 and 3 and the hunt read only those, so the loop ends; the whole suite ran in the first
   round and runs again in CI. When that commit is not an ancestor of `HEAD`
   (`git merge-base --is-ancestor <commit> HEAD` exits non-zero — the branch
   was rebased; the old commit may still exist, but a diff against it lists

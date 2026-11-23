@@ -54,30 +54,47 @@ Write four things, in this order:
        jaira set <handle> review-summary="streamed the writer instead of buffering the whole export"
 
 2. `review-gaps` — what is missing or unconvincing, one finding per line, and
-   every line starts with what kind of finding it is:
+   every line starts with its class, exactly one of four, in these words:
 
    - `blocker:` — the diff breaks a definition-of-done item, or ships what
      the ticket's `blocker_rule` names (this lane's payload; by default a
      wrong result, data loss, a crash, a security hole) — whether it was
      written here or came along with copied or moved code. Nothing else is a
      blocker.
-   - `note:` — everything else: a simpler form, a missing test of something
-     that works, a neighbouring fault, a "would be nice". Name the class and
-     the fix in the line, so whoever carries the ticket can close a small edge
-     of this change in the same round instead of handing it to the person. A
-     fault that was there before this change and lies outside its scope is
-     `note: pre-existing: <what and where>`.
+   - `note: edge:` — a real gap in this change that one short round closes:
+     a missing guard, a test of the neighbouring case, a simpler form. Name
+     the class and the fix in the line, so whoever carries the ticket can
+     close it in the same round instead of handing it to the person.
+   - `note: limit:` — a boundary this ticket draws on purpose and says so;
+     no work follows from it.
+   - `note: elsewhere:` — not this change's: a fault that was there before
+     it, or another ticket's subject. Say where — the file and line, the
+     ticket id, or "new ticket".
+
+   The person's acceptance pane, the signoff role and the teamlead colour a
+   note by this word alone: 🔴 blocker, 🟡 edge, ⚪ limit, 🔵 elsewhere. A
+   note without one is shown as an edge, whatever its sentence says. Wording
+   alone — a comment, a name, a sentence that could read better — is never a
+   blocker and never an edge: leave it out, or write it as a limit.
+
+   Mark every edge you can close in a few lines, with no new behaviour, as
+   `note: edge: fix-now:`; an edge that needs a new rule, a new flag or a
+   design choice stays a plain `note: edge:`. A fix-now note is not sent to
+   the person: the work goes back once to close it (see the end of this
+   prompt). A review marks fix-now only when the ticket's notes carry no
+   earlier `review: fix-now:` line; after one, every review — delta or full —
+   writes plain notes, so the round for fix-now happens at most once.
 
    If you found nothing, write `none` explicitly — an empty field means nobody
    looked, and "none" is you saying you looked and found nothing.
 
        jaira set <handle> review-gaps="none"
-       jaira set <handle> review-gaps="note: the export test covers 1MB, not 40MB"
+       jaira set <handle> review-gaps="note: edge: the export test covers 1MB, not 40MB"
 
    Two findings are two lines, never one line joined with `;` — each line is
    read on its own, and a joined pair is read as one finding:
 
-       jaira set <handle> review-gaps=$'blocker: DoD 2 - an empty export still writes a header\nnote: the export test covers 1MB, not 40MB'
+       jaira set <handle> review-gaps=$'blocker: DoD 2 - an empty export still writes a header\nnote: edge: the export test covers 1MB, not 40MB\nnote: elsewhere: load.go:41 accepts an empty file, there before this change'
 
    Ask yourself specifically:
    - Does the diff actually satisfy the definition of done? If not, what is missing?
@@ -120,18 +137,40 @@ Write four things, in this order:
    is a legitimate answer ("go test ./auth -run TestSameSite covers it; there is
    no UI path"). "Review the diff" is not.
 
+**A delta review, after a small fix round.** When the ticket's notes carry
+an earlier `review: done at <commit>` line, that commit is an ancestor of
+`HEAD` (`git merge-base --is-ancestor <commit> HEAD`), and `git diff
+--shortstat <commit> -- :/ ':(exclude,top).jaira'` counts fewer than 50 changed
+lines, and no file outside `.jaira/` is untracked (`git ls-files --others
+--exclude-standard -- :/ ':(exclude,top).jaira'` prints nothing — `--shortstat`
+does not count a new file nobody added yet), read only that
+diff: check that each finding of the previous review is answered, and look
+along the four lines above at the lines that changed and the functions they
+sit in — not at the rest of the change, which the previous review already
+read whole. A diff that touches locking or a parser (file locks, reading a
+file format, parsing command output) gets the full review, whatever its
+size. Say in `review-summary` that it was a delta review and from which
+commit.
+
 Judge against the definition of done and against the code it ships. `none`
 is an answer you have to earn: write it only after you have read the touched
 modules whole and looked along all four lines above — then a change that meets
 its criteria and ships no defect has no blocker, however much you could add to
 it.
 
+Before you move, close the review with a note naming the commit you judged
+(`git rev-parse --short HEAD`): `jaira note <id> "review: done at <commit>"`.
+The next review reads its delta from there.
+
 Then move the ticket on. A blocker sends it back to the lane the work was done
 in (`in-progress` on the default board), with the reason in a note that
 starts `review:` (`jaira note <id> "review: <blocker>"`), written last before
 the move, so the implementer reading the ticket later sees it in the trail
 rather than only in a field the next review overwrites, and counts the return
-for this lane. Without a
-blocker it goes on to the person, notes and all. You are not the last word: a
+for this lane. No blocker but `fix-now` notes: the verdict stays `accept`,
+and the ticket goes back to the lane the work was done in all the same, with
+a note that starts `review: fix-now:` listing them — a move back is free, and
+the edges are closed before the person ever sees them. Without either it
+goes on to the person, notes and all. You are not the last word: a
 person reads your verdict alongside the implementer's account and decides. Say
 plainly when you are unsure rather than rounding up to approval.
