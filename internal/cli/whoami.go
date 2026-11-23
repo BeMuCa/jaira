@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 
@@ -49,7 +50,7 @@ before a ticket is written rather than after.`,
 
 			// A store is a bonus, never a requirement: whoami has always
 			// answered outside a board and must keep doing so.
-			st := boardState()
+			st := boardState(cmd.ErrOrStderr())
 
 			if g.jsonOut {
 				payload := map[string]any{
@@ -129,7 +130,7 @@ func plural(n int, word string) string {
 }
 
 // boardState collects the four facts, or nil when there is no board here.
-func boardState() *boardGit {
+func boardState(errw io.Writer) *boardGit {
 	s, err := openStore()
 	if err != nil {
 		return nil
@@ -163,7 +164,7 @@ func boardState() *boardGit {
 	} else {
 		st.RefMode = true
 	}
-	st.FileOnly = fileOnlyCount(s, st.RefMode)
+	st.FileOnly = fileOnlyCount(s, st.RefMode, errw)
 	return st
 }
 
@@ -176,7 +177,7 @@ func boardState() *boardGit {
 // onRefs comes from the caller rather than being asked for again: boardState
 // has just decided it, and one command answering "does this board carry tickets
 // on refs" twice is one command that can answer it two ways.
-func fileOnlyCount(s *ticket.Store, onRefs bool) int {
+func fileOnlyCount(s *ticket.Store, onRefs bool, errw io.Writer) int {
 	paths, err := s.Paths()
 	if err != nil {
 		return 0
@@ -184,10 +185,15 @@ func fileOnlyCount(s *ticket.Store, onRefs bool) int {
 	onRef := map[string]bool{}
 	if onRefs {
 		ids, err := refs.Repo.List()
-		if err == nil {
-			for _, id := range ids {
-				onRef[id] = true
-			}
+		if err != nil {
+			// Read as "no refs", every file here would count as file-only.
+			// The count reads 0 then, and the warning is what says it is not
+			// a real answer.
+			fmt.Fprintf(errw, "jaira: warning: could not count the tickets that are on no ref: %v\n", err)
+			return 0
+		}
+		for _, id := range ids {
+			onRef[id] = true
 		}
 	}
 	n := 0
