@@ -108,6 +108,9 @@ export type Agent = { description: string; name?: string; status: string }
 export const PERSONS_TABS = new Set(['explain', 'discuss'])
 // A subagent at work: running a turn, about to, or held on its own work.
 export const WORKING = new Set(['pending', 'running', 'waiting'])
+// A Herdr tab whose agent is in its turn: at work, or held at an approval
+// dialog (`blocked`) that ends only when a person answers it.
+export const IN_TURN = new Set(['working', 'blocked'])
 
 // The tickets waiting in a lane a person owns: those of the person this
 // session is (`me`, their name and aliases from `jaira whoami`) or of nobody,
@@ -166,10 +169,10 @@ export function snapshotOf(
   const ids = tickets.map(t => t.handle)
   const fresh = lanes.filter(l => l.agentic && l.context === 'fresh').map(l => l.id)
   // A worker's tab stays open after its turn, for Give back: only one whose
-  // agent is working counts.
+  // agent is in its turn counts — working, or held at an approval dialog.
   for (const { label, agent_status } of tabs) {
     const [id = '', lane = ''] = label.split('/')
-    if (agent_status !== 'working' || !ids.includes(id) || lane === '' || PERSONS_TABS.has(lane)) continue
+    if (!IN_TURN.has(agent_status ?? '') || !ids.includes(id) || lane === '' || PERSONS_TABS.has(lane)) continue
     if (fresh.includes(lane)) counts.review++
     else counts.worker++
   }

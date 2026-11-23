@@ -1,0 +1,1 @@
+- An agent whose Herdr tab waits at an approval dialog now shows a `!` and "waits for approval" on the cockpit's Workers tab, and `/cockpit workers` says "answer the dialog in its tab" for it: go to that tab and answer the dialog.
