@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:27:57Z
+updated-at: 2026-11-23T01:28:13Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -27,6 +27,7 @@ outcome-what: "A board that lives in no git repository moves tickets into done a
 outcome-why: "Solo users without a repository could never finish a ticket: the done gate demanded commits that cannot exist, and its advice (--commits, jaira set commits=) was meaningless there."
 outcome-resolves: "2DSM0T: gate.Env.OutsideRepo (lazy, asked only on the refusal path) backed by gitrepo.Repo.OutsideRepo - true only when no .git in the root or any parent and git does not see a work tree; wired in CLI loadEnv and TUI gateEnv; logbook no longer prints the hand-record hint outside git. Checked: concurrency n/a (read-only probe); error paths - a stat or git error counts as 'in a repo' so the rule never drops by accident; git missing - .git walk alone decides; relative dir made absolute."
 review-summary: none
+review-gaps: "none: duplication - no other .git walk in the tree (only core/ticket/store.go names .git, for a different purpose); gitref.Usable kept separate on purpose (critique note). Dead code - nothing orphaned. Fluff - the one-line comments at the two wiring sites match their neighbours' style, kept. Cost - OutsideRepo runs only on the refusal path and at logbook with zero commits."
 ---
 
 # Ein Board ohne Git-Repo schiebt Tickets nach done, ohne Commits zu verlangen
