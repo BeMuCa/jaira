@@ -571,11 +571,11 @@ async function ownTree($: EngineInterface, b: { dir: string; repo: string }, id:
 type Here = { ok: true; dir: string; copy?: string; leave: () => Promise<void> } | { ok: false; why: string }
 
 // carriedTo: Accept's press and the lane it moves to. Where the ticket has no
-// worktree of its own and a commit of its own lies beyond the main
-// checkout's HEAD, it takes the worktree of the branch the ticket's commits
-// ride on (acceptTreeFor), and refuses where several branches could be that
-// one. A HEAD that reaches all of them needs no carrier: the move runs in
-// the main checkout, as before, however many branches carry the slug.
+// worktree of its own and its newest commit of its own lies beyond the main
+// checkout's HEAD, it takes the worktree of the one branch holding that
+// commit (acceptTreeFor), and refuses where several do. Branches named after
+// the ticket play no part: only where the commit is decides. A HEAD that
+// reaches all of them needs no carrier: the move runs in the main checkout.
 async function ticketHere($: EngineInterface, b: { dir: string; repo: string }, id: string, carriedTo?: string): Promise<Here> {
   const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
   const porcelain = trees?.exitCode === 0 ? trees.stdout : ''
@@ -585,8 +585,11 @@ async function ticketHere($: EngineInterface, b: { dir: string; repo: string }, 
     // commits the move there cannot reach send it elsewhere, and in a fork
     // whose master lags every later branch holds a merged ticket's commit.
     const beyond = await run($, ['git', 'log', '--branches', '--not', 'HEAD', '--format=%H %s'], b.repo)
-    if (beyond?.exitCode === 0 && commitNaming(beyond.stdout, id) !== undefined) {
-      const place = acceptTreeFor(porcelain, id, await ticketBranch($, b, id, porcelain, 'HEAD', branchesFor(porcelain, id).base ?? ''))
+    const sha = beyond?.exitCode === 0 ? commitNaming(beyond.stdout, id) : undefined
+    if (sha !== undefined) {
+      const held = await run($, ['git', 'branch', '--contains', sha, '--format=%(refname:short)'], b.repo)
+      const base = branchesFor(porcelain, id).base ?? ''
+      const place = acceptTreeFor(porcelain, id, carrierFor({ base, ...(held?.exitCode === 0 ? { holders: held.stdout } : {}) }))
       if ('ambiguous' in place) return { ok: false, why: t.acceptAmbiguous(id, place.ambiguous, carriedTo) }
       own = place.dir
     }

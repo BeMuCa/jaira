@@ -1768,11 +1768,9 @@ describe('after Accept', () => {
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await pressAccept($, ui, 'ZZ99ZZ', w)
-    // Against the main checkout's HEAD where Accept moves it — whether a
-    // commit of its own lies beyond, then which branch holds it — and once
+    // Once against the main checkout's HEAD, where Accept moves it, and once
     // against the target, for the pull request.
     expect(ran(w, 'git', 'log', '--branches')).toEqual([
-      ['git', 'log', '--branches', '--not', 'HEAD', '--format=%H %s', '@/repo'],
       ['git', 'log', '--branches', '--not', 'HEAD', '--format=%H %s', '@/repo'],
       ['git', 'log', '--branches', '--not', 'upstream/main', '--format=%H %s', '@/repo'],
     ])
@@ -1803,6 +1801,20 @@ describe('after Accept', () => {
     expect(ran(w, 'jaira', 'pull', 'ZZ99ZZ')).toEqual([])
     const pane = await $.ui.mount(MESSAGE('Accept ZZ99ZZ failed'))
     expect(await pane.find({ type: 'Text', text: /feat\/mg677r and wip could each carry ZZ99ZZ's commits.*nothing moved - check out the right one and run 'jaira move ZZ99ZZ --to done --force' there/ })).toBeDefined()
+  })
+
+  // Branches named after it decide nothing: a merged feat/ and a fix/ kept
+  // beside it, while its newest own commit sits on another ticket's branch.
+  test('branches named after it do not pick the carrier: the branch holding its commit does', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.tickets = [{ ...SIGNOFF, handle: 'ZZ99ZZ' }, { ...WORKING, handle: 'MG677R', status: 'done' }]
+    w.branches = ['feat/zz99zz', 'fix/zz99zz']
+    w.branchCommits = [{ sha: 'abc123', subject: 'fix(ZZ99ZZ): on the other branch' }]
+    w.holders = ['feat/mg677r']
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await pressAccept($, ui, 'ZZ99ZZ', w)
+    expect(ran(w, 'jaira', 'move', 'ZZ99ZZ', '--to', 'done', '--force').map(r => r.at(-1))).toEqual(['@/.worktrees/repo-mg677r'])
   })
 
   // Two branches named after it, both merged: the main checkout reaches every

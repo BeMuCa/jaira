@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T07:41:36Z
-updated-at: 2026-11-23T07:59:30Z
+updated-at: 2026-11-23T08:04:22Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-70439
 claimed-at: 2026-11-23T07:42:00Z
@@ -26,13 +26,13 @@ outcome-what: "Cockpit-Accept fuehrt den Move im Worktree der Branch aus, die di
 outcome-why: "Accept lief immer im Haupt-Checkout und fand Commits auf anders benannten Branches (Nachbesserung auf feat/<anderes-ticket>) nicht; die Meldung sagte nur 'commit it', obwohl committet war."
 outcome-resolves: "VHGWQF: Accept-Fehler 'git has none for <ID>' bei Arbeit auf fremder Branch"
 review-summary: "none"
-round: 3
+round: 4
 back-from: testing
 back-by: lane
-back-count: 1
-review-gaps: "none: no other git --contains/--branches helper in Go (grep core internal); cockpit reuses ticketBranch/carrierFor/worktreeOfBranch/ownTreeFor rather than a second branch search; ownTree still has its caller ticketDir"
-test-verdict: "fail: suite green, but bughunt found 2 change defects (name ambiguity refuses an Accept HEAD already covers; acceptAmbiguous hardcodes done)"
-hunt-verdict: "fail: 2 change findings at f82525665, see bughunt notes"
+back-count: 2
+review-gaps: "none: fix reuses commitNaming/ticketBranch/acceptTreeFor; carried boolean replaced by the target lane (no dead parameter left); nothing orphaned"
+test-verdict: "pass: round 2 - go build ok, core/gate + core/gitrepo green (rc=0), cockpit 475/475 incl. new 'branches named after it but nothing of its own beyond HEAD' (moves in @/repo) and ambiguous text with the target lane; Go side unchanged since round 1 (-race green there); DoD 1-4 proofs still name existing tests"
+hunt-verdict: "fail: 1 change finding at 3e2816243 (carrier picked by slug name, not by the branch holding the commit)"
 ---
 
 # Cockpit-Accept führt den Move im Worktree der Branch aus, die die Commits des Tickets trägt, auch wenn ihr Name nicht die Ticket-ID ist
@@ -69,3 +69,9 @@ hunt-verdict: "fail: 2 change findings at f82525665, see bughunt notes"
 - **2026-11-23 07:56 · Alexander Sacharov** — hunt report: 2 findings, both change, no blocker, notes on VHGWQF | read whole: register.tsx ticketHere/accept/accepting/ticketBranch/workPlace path, board.ts worktree/carrier helpers (ownTreeFor, branchesFor, worktreeOfBranch, carrierFor, acceptTreeFor, holdersOf, commitNaming), texts.ts, core/gitrepo/derive.go, core/gate/gate.go CheckAdvance commits branch + onBranches, internal/cli/root.go loadBoardEnv, internal/tui/model.go gateEnv + signoff.go accept; .jaira/lanes/*, AGENTS.md, CLAUDE.md are regenerated text, read as diff | not run: the cockpit engine path end to end (needs a live Claude Code engine); the 64-commit cap in BranchesNamingTicket can leave a branch unnamed that holds only older commits - incomplete hint text only, not reported
 - **2026-11-23 07:56 · Alexander Sacharov** — bughunt: done at f82525665 - 2 findings (2 change, 0 pre-existing) in 8 modules, first hunt; concurrency, error paths, input, permissions checked; files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/gate/commits_test.go core/gate/gate.go core/gitrepo/derive.go core/gitrepo/derive_test.go core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/VHGWQF.md core/shipped/shipped.sha256 internal/cli/root.go internal/tui/model.go
 - **2026-11-23 07:57 · Alexander Sacharov** — fix plan: carried path asks first whether commits of the ticket's own exist outside HEAD (git log --branches --not HEAD + commitNaming); none -> main checkout, no carrier search at all. acceptAmbiguous gets the target lane and no longer assumes a worktree.
+- **2026-11-23 07:59 · Alexander Sacharov** — critique round 2: let stand - the pre-check 'git log --branches --not HEAD' repeats once inside ticketBranch when a commit lies beyond HEAD; folding it in would change ticketBranch's name-first order, which is QTQW15's rule for Give back. One extra git log on Accept only.
+- **2026-11-23 08:00 · Alexander Sacharov** — waiting: bug hunt round 2 (background agent) since 09:00
+- **2026-11-23 08:00 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:587-590 (ticketHere) with register.tsx:1776-1781 (ticketBranch) and board.ts:584-586 (carrierFor) - class: the gate checks that some own commit lies beyond HEAD, but the carrier is then picked among every branch named after the slug, not among the branches that hold that commit; examples: (a) feat/<slug> merged into master and kept, fix/<slug> carries a new fix(<ID>) commit -> Accept refuses as ambiguous although only fix/<slug> is beyond HEAD; (b) feat/<slug> merged and kept, the new own commit sits on another branch -> the merged feat/<slug> is taken as carrier (its worktree, or the main checkout when it has none), so the move does not run where the commit is; not a blocker: the outcome is the old refusal or the old main-checkout move, not a new wrong move; read
+- **2026-11-23 08:00 · Alexander Sacharov** — hunt report: 1 finding, 1 change (edge, not a blocker), note on VHGWQF | read as a diff since f82525665: register.tsx (ticketHere and ticketBranch read whole), texts.ts, board.test.ts, board.ts carrierFor/acceptTreeFor/commitNaming as context, lane prompts and AGENTS.md/CLAUDE.md (prose, regenerated block), shipped.sha256 | not run: the cockpit test suite (no runner in this worktree); finding confirmed by reading the call path
+- **2026-11-23 08:01 · Alexander Sacharov** — bughunt: done at 3e2816243 - 1 finding (1 change, 0 pre-existing) in 8 modules, follow-up hunt since f82525665; concurrency, error paths, input, permissions checked; files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/gate/commits_test.go core/gate/gate.go core/gitrepo/derive.go core/gitrepo/derive_test.go core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/VHGWQF.md core/shipped/shipped.sha256 internal/cli/root.go internal/tui/model.go
+- **2026-11-23 08:01 · Alexander Sacharov** — decision: smaller design after 2 hunt rounds on the same rule - Accept no longer uses ticketBranch's name-first order; it takes only the branches holding the newest own commit beyond HEAD (git branch --contains), one -> its worktree, several -> named. Slug-named branches play no part (own worktree already caught by ownTreeFor).
