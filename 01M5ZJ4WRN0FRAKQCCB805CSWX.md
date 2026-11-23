@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:41:39Z
+updated-at: 2026-11-23T01:43:52Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -26,7 +26,7 @@ claimed-at: 2026-11-23T01:32:21Z
 outcome-what: "spawn.sh prueft MemAvailable vor Worktree und Tab: unter JAIRA_MIN_FREE_MB (Default 2048) Exit 3, --force startet trotzdem, ohne /proc/meminfo eine Zeile und Start. run-lane.sh meldet das als Exit 6. Teamlead-, Dispatcher- und Worker-SKILL sagen, was dann zu tun ist."
 outcome-why: Drei parallele Go-Builds auf einer 7-GB-WSL stuerzten am 27.10. viermal ab; nichts warnte vor Speicher.
 outcome-resolves: "Kein Worker startet mehr still in eine Maschine, die fuer seinen Build zu wenig freien Speicher hat."
-review-summary: none
+review-summary: "spawn.sh now reads MemAvailable from /proc/meminfo before it makes a worktree or a tab. Below JAIRA_MIN_FREE_MB (default 2048, set at the top of the file with the reason; 0 turns it off; not a number or more than 9 digits is exit 2) it prints how much is free and exits 3. --force starts anyway, and the person chats explain and discuss are never checked. Where /proc/meminfo or its MemAvailable line is missing it prints 'free memory not checked' and carries on. An EXIT trap turns any other exit 3 inside spawn.sh into 1, so 3 always means this refusal. run-lane.sh used to pass spawn.sh's exit code straight through, but its own 3, 4 and 5 already mean worker states. It now turns spawn's 3 into a new 6 (nothing started, wait and run again) and every other spawn failure into 1. The teamlead, dispatcher and worker SKILLs say what to do in each case, the core/role script tests switch the check off, and there is a release note and new shipped hashes."
 review-gaps: "none: round 2 adds a trap and two mappings, nothing duplicated or orphaned; own unreleased hashes from 12cccd2 replaced in shipped.sha256 rather than piling up"
 test-verdict: "pass: round 2 over 12cccd2..6bc8af7: go vet + go build ./... green (go test not run, house rule). Extracted check of the committed spawn.sh (trap included): 976 MB -> 3, force -> 0, missing meminfo / no MemAvailable -> one line + 0, limit 0 -> 0, 20-digit limit -> 2, 9-digit limit -> 3, abc -> 2, discuss -> 0, a later command failing with 3 -> 1, with 5 -> 5. run-lane.sh copy with stub spawn: 3->6, 4->1, 5->1, 2->1. spawn.sh not run end to end (opens tabs). DoD 5 left for the person."
 hunt-verdict: "pass: bughunt done at 6bc8af7b0, 0 findings; round 1's 2 change findings fixed in 6bc8af7"
