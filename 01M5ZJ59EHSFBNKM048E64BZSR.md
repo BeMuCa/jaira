@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:16:39Z
+updated-at: 2026-11-23T01:16:42Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
@@ -31,6 +31,7 @@ back-by: lane
 back-count: 1
 review-gaps: "removed the nil-lanes guard in unchosenLanesJSON (ticketJSON already calls lanes.Get first, nil cannot reach it); dropped the blocked/question exclusions from UnchosenAhead's lane test (no lane is both optional and parking/question - speculative); renamed SkippedAhead to UnchosenAhead to match the field. Left: the 4-line current-lane guard repeated from Next (critique round 1 let it stand); gate.skipped (core/gate/gate.go:823) is the same option predicate but private to gate and a per-lane test, not a walk - not worth a shared export"
 test-verdict: "pass: gofmt clean, go vet (internal/cli, core/lane, core/board) and go build ./... RC=0; go test NOT run by house rule tonight (main session runs the race suite before the PR) - TestTicketJSONNamesTheUnchosenOptionalLanes unexecuted; DoD 1-3 verified in tree at 25217204c; scratch board: backlog lists brainstorm+pre-process with enable lines, dod --option planning drops pre-process and next_lane from todo becomes pre-process, blocked ticket gives [] and next_lane empty; unknown id exits 5; the change writes nothing, so no two-writer case"
+hunt-verdict: "pass: bughunt done at 25217204c, 1 change (unquoted option name in enable - edge on custom lanes with spaced option names, note for the person), 0 pre-existing"
 ---
 
 # jaira show nennt die optionalen Lanes, an denen next_lane vorbeigeht
