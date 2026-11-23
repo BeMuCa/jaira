@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:23:09Z
+updated-at: 2026-11-23T21:23:16Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -83,3 +83,4 @@ back-count: 1
 - **2026-11-23 21:19 · Alexander Sacharov** — bughunt: done at 73d06b024 - 3 findings (2 change, 1 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/ZZTCWS.md internal/tui/diffpane.go internal/tui/diffpane_test.go internal/tui/model.go internal/tui/owed_test.go internal/tui/signoff.go internal/tui/signoff_test.go internal/tui/tags_test.go internal/tui/view.go
 - **2026-11-23 21:20 · Alexander Sacharov** — testing -> in-progress. fix plan: (1) blocker detection ports the cockpit's MARKER + BLOCKER regexes (core/mod/builtin/jaira-cockpit/hooks/board.ts:340-345) so TUI and cockpit agree on what a blocker is; strip the 'blocker:' prefix in the top row (testing edge). (2) smaller design for the details: 'i' shows the full detail pane body (detailBody without its header) instead of a hand-picked list - context, notes, plan, follows, everything detailBody has, for human and signoff alike; drops the custom details code.
 - **2026-11-23 21:22 · Alexander Sacharov** — critique (pass 2, reads only the hunt findings and their repair 383b42d9e): blocker class - blockerLines ports the cockpit's MARKER+BLOCKER regexes (board.ts:340-345), 11 forms tested - addressed; human-lane context/notes - 'i' now appends detailFields, the detail pane body split out of detailBody (one renderer, no second list) - addressed. Nothing new. review-summary=none.
+- **2026-11-23 21:23 · Alexander Sacharov** — waiting: round-2 bughunt (subagent) and race run of internal/tui (bg) since 22:23
