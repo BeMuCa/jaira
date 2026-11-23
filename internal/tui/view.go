@@ -13,6 +13,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/gitrepo"
 	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/session"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -174,6 +175,10 @@ func (m *Model) render() string {
 	case modeReject:
 		if m.returnTo == modeDetail && m.detail != nil {
 			return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), m.rejectPrompt()+" · esc cancel")
+		}
+	case modeSendBack:
+		if m.sendingBack != nil && m.sendingBack.back == modeDetail && m.detail != nil {
+			return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), m.sendBackPrompt()+" · esc cancel")
 		}
 	case modeDropBoard:
 		if m.drop != nil {
@@ -788,7 +793,7 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 	// never who. Your own changes are not marked: the marker is about the other
 	// person, and one that fired on everything would be read as decoration.
 	if !m.isMe(t.UpdatedBy) && strings.TrimSpace(t.UpdatedBy) != "" {
-		flags = append(flags, styAsks.Render("✎ "+truncate(t.UpdatedBy, 10)))
+		flags = append(flags, styAsks.Render("✎ "+truncate(boardPeople.Load().Canonical(t.UpdatedBy), 10)))
 	}
 	// On its ref and not on this disk. It is shown like any other card, and
 	// deliberately so — hiding a ticket somebody assigned you would make the
@@ -831,10 +836,11 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 		// board can hold teammates' claims, and whose lane a card sits in is
 		// exactly what you scan for before touching it. @ plus colour, so the
 		// state never rests on colour alone.
-		if strings.EqualFold(t.Assignee, m.me) {
-			meta += styMeta.Render(" " + truncate(t.Assignee, max(3, w-14)))
+		who := boardPeople.Load().Canonical(t.Assignee)
+		if boardPeople.Load().Same(t.Assignee, m.me) {
+			meta += styMeta.Render(" " + truncate(who, max(3, w-14)))
 		} else {
-			meta += styWarn.Render(" @" + truncate(t.Assignee, max(3, w-15)))
+			meta += styWarn.Render(" @" + truncate(who, max(3, w-15)))
 		}
 	}
 
@@ -1079,6 +1085,9 @@ func (m *Model) statusBar() string {
 	}
 	if m.mode == modeReject {
 		return truncate(m.rejectPrompt(), m.width)
+	}
+	if m.mode == modeSendBack {
+		return truncate(m.sendBackPrompt(), m.width)
 	}
 
 	// Hints are dropped from the right as the terminal narrows, rather than
@@ -1331,8 +1340,8 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 	} else {
 		row("lane", t.Status)
 	}
-	row("assignee", t.Assignee)
-	row("creator", t.Creator)
+	row("assignee", boardPeople.Load().Canonical(t.Assignee))
+	row("creator", boardPeople.Load().Canonical(t.Creator))
 	// A ticket that sat in a lane for three weeks and one touched an hour ago look
 	// identical without this. The board is read to answer "where does this stand",
 	// and how long it has stood there is part of that answer — especially for a
@@ -1600,7 +1609,18 @@ func (g *gitStat) of(shas []string) (string, error) {
 	// Every sha, not the first: the heading over this block says "Commits",
 	// and a five-commit ticket whose stat shows one misrepresents the change
 	// more politely than the plain sha list ever would.
-	args := append([]string{"-C", g.root, "show", "--stat=120", "--format=%h %s"}, shas...)
+	// Only commit ids reach git: commits: is hand-editable, and an entry such
+	// as "--output=<path>" would be read as an option (see gitrepo.IsSHA).
+	args := []string{"-C", g.root, "show", "--stat=120", "--format=%h %s"}
+	n := len(args)
+	for _, sha := range shas {
+		if gitrepo.IsSHA(sha) {
+			args = append(args, sha)
+		}
+	}
+	if len(args) == n {
+		return "", nil
+	}
 	out, err := exec.Command("git", args...).Output()
 	if err != nil {
 		return "", err
@@ -1714,7 +1734,7 @@ func (m *Model) renderProjects() string {
 			name = stySelected.Render(name)
 		}
 		cur := ""
-		if p.Root == m.store.Root {
+		if p.Root == m.projectRoot {
 			cur = styMeta.Render("  (current)")
 		}
 		b.WriteString(marker + name + cur + "\n")

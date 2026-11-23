@@ -55,6 +55,14 @@ def check(data):
         for lane in ("next_lane", "return_lane"):
             if not t.get(lane):
                 errors.append(f"ticket {t['id']}: no {lane}; read it off the board")
+        # Missing means none: a set written before the key existed still
+        # reads back. Present but malformed stops here, before the person
+        # marks a page whose read-back would then fail.
+        p = t.get("person", [])
+        if not isinstance(p, list) or not all(
+                isinstance(x, dict) and type(x.get("n")) is int and isinstance(x.get("text"), str) for x in p):
+            errors.append(f"ticket {t['id']}: person must be a list of {{\"n\": <.dod_items[].n>, \"text\": ...}}, "
+                          f"the open 'seen by a person:' items; got {json.dumps(p, ensure_ascii=False)}")
     seen, covered, in_blocks = set(), set(), set()
     for b in data["blocks"]:
         for tid in b["tickets"]:
@@ -83,12 +91,18 @@ def check(data):
     return errors
 
 
-def page(data_path, out_path):
-    data = load(data_path)
+def load_checked(path):
+    """data.json, or exit 1 with what check() found: no command runs on bad data."""
+    data = load(path)
     errors = check(data)
     if errors:
         print("\n".join(errors), file=sys.stderr)
         sys.exit(1)
+    return data
+
+
+def page(data_path, out_path):
+    data = load_checked(data_path)
     blob = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
     tpl = (HERE / "template.html").read_text(encoding="utf-8")
     Path(out_path).write_text(tpl.replace("__TITLE__", html.escape(data["title"])).replace("__DATA__", blob), encoding="utf-8")
@@ -127,7 +141,7 @@ def state(data, db):
 
 
 def plan(data_path, db_path):
-    data, db = load(data_path), load(db_path)
+    data, db = load_checked(data_path), load(db_path)
     st = state(data, db)
     results, comments, notes = db.get("results", {}), db.get("comments", {}), db.get("notes", {})
     T = {t["id"]: t for t in data["tickets"]}
@@ -137,7 +151,13 @@ def plan(data_path, db_path):
         comment = said(comments, tid)
         if s["verdict"] == "accept":
             print(f"# {tid}: accepted - every step ok")
-            print(f"jaira move {tid} --to {t['next_lane']} --force")
+            # --force passes an unticked definition of done; an item only a
+            # person ticks is handed to them before the move, never run here.
+            seen = t.get("person", [])
+            for p in seen:
+                print(f"# {tid}: for the person - {p['text']}")
+            ticks = "".join(f"jaira dod {tid} {p['n']} --done --proof {shlex.quote('<what I saw, where>')} && " for p in seen)
+            print(f"{ticks}jaira move {tid} --to {t['next_lane']} --force" + ("   # the person runs this line" if seen else ""))
             if comment:
                 print(f"jaira note {tid} {shlex.quote(f'acceptance (round {rnd}), accepted: {comment}')}")
         elif s["verdict"] == "fail":
@@ -181,20 +201,23 @@ REPORT = {
     "de": {"title": "Abnahmeprotokoll", "accepted": "Angenommen", "not": "Nicht angenommen", "open": "Offen", "step": "Schritt",
            "saw": "Gesehen", "expected": "Erwartet", "decision": "Entscheidung", "return": "zurück ins Ticket", "new-bug": "neuer Fehler",
            "step-k": "Schritt war falsch", "asked": "Rückfrage", "comment": "Kommentar", "note": "Bemerkung zum Block", "written": "Stand",
-           "machine": "Maschinelle Prüfung rot", "none": "keine"},
+           "machine": "Maschinelle Prüfung rot", "none": "keine",
+           "person": "Von einer Person anzusehen"},
     "en": {"title": "Acceptance record", "accepted": "Accepted", "not": "Not accepted", "open": "Open", "step": "Step",
            "saw": "Seen", "expected": "Expected", "decision": "Decision", "return": "back into the ticket", "new-bug": "new bug",
            "step-k": "the step was wrong", "asked": "asked the person", "comment": "Comment", "note": "Note on the block", "written": "As of",
-           "machine": "Machine check failed", "none": "none"},
+           "machine": "Machine check failed", "none": "none",
+           "person": "For a person to see"},
     "ru": {"title": "Протокол приёмки", "accepted": "Принято", "not": "Не принято", "open": "Не решено", "step": "Шаг",
            "saw": "Увидено", "expected": "Ожидалось", "decision": "Решение", "return": "возврат в тикет", "new-bug": "новый баг",
            "step-k": "шаг был неверным", "asked": "вопрос к человеку", "comment": "Комментарий", "note": "Заметка к блоку", "written": "На момент",
-           "machine": "Машинная проверка упала", "none": "нет"},
+           "machine": "Машинная проверка упала", "none": "нет",
+           "person": "Посмотреть человеку"},
 }
 
 
 def report(data_path, db_path, decisions_path, html_path, md_path):
-    data, db = load(data_path), load(db_path)
+    data, db = load_checked(data_path), load(db_path)
     decisions = load(decisions_path)
     st = state(data, db)
     results, comments, notes = db.get("results", {}), db.get("comments", {}), db.get("notes", {})
@@ -209,6 +232,13 @@ def report(data_path, db_path, decisions_path, html_path, md_path):
         for key, label in (("accept", R["accepted"]), ("fail", R["not"]), ("", R["open"])):
             md.append(f"**{label}** ({len(groups[key])})")
             md += [f"- `{tid}` {T[tid]['title']}" for tid in groups[key]] or [f"- {R['none']}"]
+            md.append("")
+        # The open items only a person ticks: an accepted ticket still waits
+        # for them, and the record is where the person reads that.
+        seen = [(tid, p) for tid in b["tickets"] for p in T[tid].get("person", [])]
+        if seen:
+            md.append(f"**{R['person']}** ({len(seen)})")
+            md += [f"- `{tid}` {p['n']}. {p['text']}" for tid, p in seen]
             md.append("")
         for tid in groups["fail"]:
             md.append(f"### {tid} · {T[tid]['title']}")

@@ -28,6 +28,7 @@
 package epic
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"regexp"
@@ -794,6 +795,9 @@ type Ticket struct {
 	// Direct is true for a member line, false for a ticket that counts
 	// because it follows on from one (follows: or parent:).
 	Direct bool `json:"direct"`
+	// Via is, for a follow-up, the member it is counted through: the line
+	// that would have to go to take it out of the epic. Empty for a member.
+	Via string `json:"via,omitempty"`
 }
 
 // Progress is how far an epic is.
@@ -813,11 +817,11 @@ type Progress struct {
 // would always be behind.
 func Count(e *Epic, ix *link.Index) Progress {
 	members := e.Members()
-	ids := Covered(members, ix)
+	ids, via := covered(members, ix)
 	p := Progress{Tickets: make([]Ticket, 0, len(ids))}
 	for _, id := range ids {
 		ref, _ := ix.Lookup(id)
-		t := Ticket{ID: id, Title: ref.Title, Lane: ref.Lane, Done: ix.Satisfied(id), Direct: slices.Contains(members, id)}
+		t := Ticket{ID: id, Title: ref.Title, Lane: ref.Lane, Done: ix.Satisfied(id), Direct: slices.Contains(members, id), Via: via[id]}
 		if t.Done {
 			p.Done++
 		}
@@ -831,6 +835,13 @@ func Count(e *Epic, ix *link.Index) Progress {
 // of them, transitively, members first in their order, follow-ups after in id
 // order.
 func Covered(members []string, ix *link.Index) []string {
+	ids, _ := covered(members, ix)
+	return ids
+}
+
+// covered is Covered, and for every follow-up the member it was reached
+// from. A follow-up two members both reach is counted through the first.
+func covered(members []string, ix *link.Index) ([]string, map[string]string) {
 	kids := map[string][]string{}
 	for _, t := range ix.All() {
 		for _, up := range []string{t.Follows, t.Parent} {
@@ -840,6 +851,7 @@ func Covered(members []string, ix *link.Index) []string {
 		}
 	}
 	seen := map[string]bool{}
+	via := map[string]string{}
 	var out, queue []string
 	for _, id := range members {
 		if !seen[id] {
@@ -855,13 +867,14 @@ func Covered(members []string, ix *link.Index) []string {
 		for _, kid := range kids[id] {
 			if !seen[kid] {
 				seen[kid] = true
+				via[kid] = cmp.Or(via[id], id)
 				follow = append(follow, kid)
 				queue = append(queue, kid)
 			}
 		}
 	}
 	sort.Strings(follow)
-	return append(out, follow...)
+	return append(out, follow...), via
 }
 
 // Unassigned returns the open tickets of a board that belong to no epic,

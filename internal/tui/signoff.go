@@ -24,7 +24,7 @@ func (m *Model) renderSignOff() string {
 	if t == nil {
 		return m.renderBoard()
 	}
-	const hint = "a accept → done · f follow-up ticket · e edit · E editor · esc back"
+	const hint = "a accept → done · m send back · f follow-up ticket · e edit · E editor · esc back"
 	if m.diffPaneShown() {
 		m.loadDiff(t)
 		return m.withDiff(m.signOffBody(diffLeftWidth), hint)

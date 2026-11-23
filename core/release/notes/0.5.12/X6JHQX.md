@@ -1,0 +1,1 @@
+- ! Start the next ticket from the teamlead after pressing Accept in the cockpit: Accept still opens the pull request when the branch needs one, but no longer starts the next ticket in a Herdr tab by itself — without a pull request to open it only says the ticket is accepted and, where there is a reason, why no pull request was opened.

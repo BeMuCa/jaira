@@ -119,12 +119,13 @@ func (h *Home) refresh(extra []string) (int, tea.Cmd) {
 }
 
 // boardRoots is every registered board followed by extra, each once, in
-// canonical form.
+// the form project.Board gives it: a board found in a linked worktree is
+// listed as its main checkout, as the registry lists it.
 func boardRoots(extra []string) []string {
 	seen := map[string]bool{}
 	var out []string
 	add := func(root string) {
-		abs := project.Canonical(root)
+		abs := project.Board(root)
 		if !seen[abs] {
 			seen[abs] = true
 			out = append(out, abs)
@@ -239,10 +240,20 @@ func describe(root string, lanes *lane.Set, counted bool) HomeEntry {
 		}
 	}
 	e.Logged = s.LoggedPerDay(time.Now(), logbookDays)
-	if ss, err := session.Load(s); err == nil {
-		for _, x := range ss {
-			if !x.Stale() {
-				e.Agents++
+	// The line stands for every working tree of the repository
+	// (project.Trees), so it counts the agents in each of them.
+	for _, tree := range project.Trees(root) {
+		ts := s
+		if tree != root {
+			if ts, err = ticket.At(tree); err != nil {
+				continue
+			}
+		}
+		if ss, err := session.Load(ts); err == nil {
+			for _, x := range ss {
+				if !x.Stale() {
+					e.Agents++
+				}
 			}
 		}
 	}

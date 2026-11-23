@@ -1,0 +1,3 @@
+- When two tabs open at the same moment and Herdr hands `spawn.sh` the other tab's pane, it now types nothing, closes its own empty tab and says which pane sat in which tab — start that lane again; before, the role was typed into the other dispatcher's tab.
+- When claude does not come up in a new tab, `spawn.sh` now names the pane, the tab and its `<ticket>/<lane>` label and the state Herdr reported — look at that tab first.
+- When Herdr does not answer the pane check, `spawn.sh` now stops with 'could not check pane …': before claude was started it closes its own empty tab — start the lane again; after that it leaves the tab standing — look at that tab before you start the lane again.

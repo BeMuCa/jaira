@@ -1,0 +1,1 @@
+- Run 'jaira update --roles' to see each agent tab in Herdr App's agent list by its role and ticket (worker-8tt890, review-ab12cd) instead of 'Claude Code'; a name a live tab still holds gets -2, -3 and so on.

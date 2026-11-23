@@ -266,3 +266,48 @@ func TestCommitsForTicketRefusesAnIDItWouldNotHaveWritten(t *testing.T) {
 		}
 	}
 }
+
+// TestBranchesNamingTicket: commits naming the ticket that HEAD does not
+// reach are named by the branches holding them; commits HEAD reaches, other
+// tickets' commits and a stacked branch on top all behave (VHGWQF).
+func TestBranchesNamingTicket(t *testing.T) {
+	dir, repo := fixtureRepo(t)
+	id := ticket.NewID(time.Now())
+	other := ticket.NewID(time.Now().Add(time.Second))
+	h := ticket.Handle(id)
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	git := func(args ...string) {
+		t.Helper()
+		if out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+		}
+	}
+	fixtureCommit(t, dir, map[string]string{"a": "1"}, "init", base)
+	git("branch", "-M", "master")
+
+	if got, err := repo.BranchesNamingTicket(id); err != nil || len(got) != 0 {
+		t.Fatalf("no commits naming it: got %v, %v", got, err)
+	}
+
+	// The work sits on another ticket's branch, not on master.
+	git("checkout", "-q", "-b", "feat/other")
+	fixtureCommit(t, dir, map[string]string{"b": "1"}, fmt.Sprintf("fix(%s): the follow-up's work", h), base.Add(time.Hour))
+	// A branch stacked on it holds the same commit.
+	git("checkout", "-q", "-b", "feat/stacked")
+	fixtureCommit(t, dir, map[string]string{"c": "1"}, fmt.Sprintf("fix(%s): unrelated", ticket.Handle(other)), base.Add(2*time.Hour))
+	git("checkout", "-q", "master")
+
+	got, err := repo.BranchesNamingTicket(id)
+	if err != nil || strings.Join(got, ",") != "feat/other,feat/stacked" {
+		t.Errorf("from master: got %v, %v; want feat/other,feat/stacked", got, err)
+	}
+	// From the branch that holds the commit, HEAD reaches it: nothing to name.
+	git("checkout", "-q", "feat/other")
+	if got, err := repo.BranchesNamingTicket(id); err != nil || len(got) != 0 {
+		t.Errorf("from feat/other: got %v, %v; want none", got, err)
+	}
+	// An id this tool never wrote names nothing.
+	if got, _ := repo.BranchesNamingTicket(".*"); len(got) != 0 {
+		t.Errorf("invalid id: got %v", got)
+	}
+}

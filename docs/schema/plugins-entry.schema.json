@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "plugins.json entry",
+  "description": "One entry of the plugin catalogue, plugins.json in panda-bobr/jaira-releases. plugins.json is an array of these. See docs/PLUGINS.md.",
+  "type": "object",
+  "required": ["id", "name", "author", "description", "repo"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The plugin's id; must match id in the plugin's jaira-plugin.json and must not name a jaira command.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "maxLength": 40
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "author": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "description": {
+      "description": "One line.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\n]*$"
+    },
+    "repo": {
+      "description": "The plugin's GitHub repository, where its releases are.",
+      "type": "string",
+      "pattern": "^https://github\\.com/[A-Za-z0-9-]+/[A-Za-z0-9._-]+$"
+    }
+  }
+}

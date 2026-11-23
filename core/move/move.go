@@ -8,8 +8,10 @@
 package move
 
 import (
+	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/gate"
 	"github.com/BeMuCa/jaira/core/lane"
@@ -27,6 +29,11 @@ type Request struct {
 	// Interactive marks a human pressing a key — the one thing an agent
 	// cannot claim, and the signal requires-human-exit listens for.
 	Interactive bool
+	// ByPerson marks a move a person made in the board, whatever lane it
+	// leaves: a send-back is recorded as theirs (back-by: person) and never
+	// counts toward a loop lane's third return, and the gate never refuses
+	// it for a lane's max-rounds. Unlike Interactive it opens no other gate.
+	ByPerson bool
 	// Force writes despite refusals; what was overridden is returned, the
 	// caller says it out loud. Nothing marks the ticket itself (deliberate).
 	Force bool
@@ -34,6 +41,10 @@ type Request struct {
 	// or a parking lane is judged on what the move brings along.
 	Question string
 	Reason   string
+	// Note is appended to the ticket's progress notes in the same write as
+	// the move, so a person's send-back and the reason for it land together
+	// or not at all. Empty writes none.
+	Note string
 	// Stage is applied and PERSISTED before the gate runs — the CLI stages
 	// outcome, question and commits this way, and a refused move keeps them:
 	// requiring two commands to satisfy one move would be a poor contract for
@@ -67,7 +78,19 @@ type Result struct {
 	Filed     bool
 	Holds     int
 	SettleErr error
+	// DoDUnticked is the size of a definition of done not one item of which
+	// is ticked, when the move left the implementing lane forward; 0 when
+	// there is nothing to warn about. The move lands regardless — the caller
+	// says it out loud. See untickedDoD.
+	DoDUnticked int
 }
+
+// Moved, when set, is called after every move that wrote: the CLI's, the
+// TUI's and any later caller's alike, so a plugin subscribed to moves hears
+// about each of them however it was made. from is the lane the ticket left.
+// It is set once at startup by the binary (internal/cli), which owns what a
+// plugin is told; a nil Moved calls nothing.
+var Moved func(s *ticket.Store, t *ticket.Ticket, from string, lanes *lane.Set)
 
 // Move performs one lane change: optional persisted staging, the gate, the
 // write, the settle — in that order, the same order every caller ran alone.
@@ -109,26 +132,53 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 	vs := gate.CheckAdvance(env, gated, gate.Request{
 		To: req.To, Question: req.Question, Reason: req.Reason,
 		Actor: req.Actor, ActorAliases: req.ActorAliases,
-		Interactive: req.Interactive,
+		Interactive: req.Interactive, ByPerson: req.ByPerson,
 	})
 	if len(vs) > 0 && !req.Force {
 		return &Result{Ticket: t, Refused: vs}, nil
 	}
 
+	// A lane that requires commits gets them written in the move itself, from
+	// the very derivation its gate just accepted: same function, same HEAD.
+	// Before this only a doorway's settle stamped, so a plain move into done
+	// passed the gate on derived commits and recorded none — and the logbook
+	// that stamped later often ran from a checkout that no longer reached the
+	// ticket's branch, and wrote an empty list.
+	var derived []string
+	if l, ok := env.Lanes.Get(req.To); ok && l.RequiresCommits && env.DeriveCommits != nil {
+		derived = env.DeriveCommits(t)
+	}
+
+	from := t.Status
 	t, err = s.Mutate(t.ID, func(t *ticket.Ticket) error {
+		if len(derived) > 0 {
+			merged := ticket.MergeCommits(derived, t.Commits)
+			if err := t.Doc().SetList(ticket.FieldCommits, merged); err != nil {
+				return err
+			}
+			t.Commits = merged
+		}
 		if claiming {
 			if err := t.Doc().SetScalar(ticket.FieldAssignee, req.Actor); err != nil {
 				return err
 			}
 			t.Assignee = req.Actor
 		}
-		if sendsBack(env.Lanes, t.Status, req.To) {
+		if env.Lanes.SendsBack(t.Status, req.To) {
 			if err := t.Doc().SetRaw(ticket.FieldRound, strconv.Itoa(ticket.CurrentRound(t)+1)); err != nil {
+				return err
+			}
+			if err := recordBack(t, env.Lanes, t.Status, req.Interactive || req.ByPerson); err != nil {
 				return err
 			}
 		}
 		if err := t.Doc().SetScalar(ticket.FieldStatus, req.To); err != nil {
 			return err
+		}
+		if note := strings.TrimSpace(req.Note); note != "" {
+			if err := ticket.AppendNote(t.Doc(), note, time.Now(), req.Actor); err != nil {
+				return err
+			}
 		}
 		return ticket.SetReady(t.Doc(), gate.Ready(t))
 	})
@@ -136,7 +186,7 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 		return nil, err
 	}
 
-	res := &Result{Ticket: t, Claimed: claiming}
+	res := &Result{Ticket: t, Claimed: claiming, DoDUnticked: untickedDoD(env.Lanes, t, from, req.To)}
 	if req.Force && len(vs) > 0 {
 		res.Overrode = vs
 	}
@@ -144,22 +194,68 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 		res.Holds = l.Holds
 		res.Trimmed, res.Filed, res.SettleErr = lane.Settle(s, l, req.Folder, t.ID, req.Prepare)
 	}
+	if Moved != nil {
+		Moved(s, t, from, env.Lanes)
+	}
 	return res, nil
 }
 
-// sendsBack reports a move to an earlier lane of the board, the one that
-// starts a new round. Parking does not: a ticket going to blocked and coming
-// back from it is the same round, whichever side of the work lane blocked is
-// drawn on. A lane this installation does not know counts nothing.
-func sendsBack(lanes *lane.Set, from, to string) bool {
-	f, t := lanes.Index(from), lanes.Index(to)
-	if f < 0 || t < 0 || t >= f {
-		return false
+// untickedDoD returns the number of definition-of-done items when a move out
+// of the implementing lane goes on with none of them ticked, and 0 otherwise.
+//
+// The terminal lane's gate reads the definition of done, not the plan, and an
+// agent once carried a ticket through eight lanes ticking only the plan: the
+// nine refusals arrived at once, at signoff, when finding out cost the most.
+// The gate stays as strict as it is; this only moves the news to the step
+// where the work was supposed to tick them.
+//
+// The implementing lane is the one whose output names outcome-what. Only a
+// move forward counts — a send-back or a parked ticket has not left the work
+// behind it. Ticked means settled: a superseded item satisfies the gate too.
+func untickedDoD(lanes *lane.Set, t *ticket.Ticket, from, to string) int {
+	l, ok := lanes.Get(from)
+	if !ok || !slices.Contains(l.OutputProduces, ticket.FieldOutcomeWhat) || len(t.DoDItems) == 0 {
+		return 0
 	}
-	for _, id := range []string{from, to} {
-		if l, ok := lanes.Get(id); ok && l.RequiresBlockedReason {
-			return false
+	dst, ok := lanes.Get(to)
+	if !ok || dst.RequiresBlockedReason || lanes.Index(to) <= lanes.Index(from) {
+		return 0
+	}
+	for _, it := range t.DoDItems {
+		if it.Settled() {
+			return 0
 		}
 	}
-	return true
+	return len(t.DoDItems)
+}
+
+// recordBack writes who sent the ticket back: the lane it leaves, whether a
+// person or a lane sent it — a person's lane, or a person at the board
+// (byPerson) — and how many returns in a row came from that lane. A person's return, or one from another lane, starts the count again:
+// the third-return stop is about a loop lane that keeps finding more, and a
+// person's wish is not a loop. Written by the move itself, so every path that
+// sends work back — the CLI, the cockpit, --force — records it the same way.
+func recordBack(t *ticket.Ticket, lanes *lane.Set, from string, byPerson bool) error {
+	by := ticket.BackByLane
+	if l, ok := lanes.Get(from); byPerson || !ok || isPersons(l) {
+		by = ticket.BackByPerson
+	}
+	n := 1
+	if by == ticket.BackByLane && t.BackFrom == from && t.BackBy == ticket.BackByLane {
+		n = t.BackCount + 1
+	}
+	d := t.Doc()
+	if err := d.SetScalar(ticket.FieldBackFrom, from); err != nil {
+		return err
+	}
+	if err := d.SetScalar(ticket.FieldBackBy, by); err != nil {
+		return err
+	}
+	return d.SetRaw(ticket.FieldBackCount, strconv.Itoa(n))
+}
+
+// isPersons reports a lane whose work a person does: one no agent steps
+// through, or one only a person may leave or enter with a question.
+func isPersons(l *lane.Lane) bool {
+	return !l.Agentic || l.RequiresHumanExit || l.RequiresQuestion
 }

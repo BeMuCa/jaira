@@ -141,7 +141,7 @@ func TestNarrowTerminalKeepsTheSingleColumn(t *testing.T) {
 		t.Errorf("narrow terminal shows the diff pane:\n%s", out)
 	}
 	m2 := diffModel(t, 120, "signoff")
-	hint := "a accept → done · f follow-up ticket · e edit · E editor · esc back"
+	hint := "a accept → done · m send back · f follow-up ticket · e edit · E editor · esc back"
 	want := stripANSI(m2.clipToWindow(m2.signOffBody(120), hint))
 	if out != want {
 		t.Errorf("narrow sign-off screen changed:\n got: %q\nwant: %q", out, want)

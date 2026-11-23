@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Worktree + Herdr pane + claude + role prompt for one jaira lane.
-# Usage: spawn.sh [--no-worktree] [--parent <session> | --no-parent] <slug> <ticket-id> <lane> [repo-root]
+# Usage: spawn.sh [--no-worktree] [--branch <name>] [--parent <session> | --no-parent] [--copy <path>] <slug> <ticket-id> <lane> [repo-root]
 # Prints the pane id on stdout; everything else goes to stderr.
 set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-spawn.sh [--no-worktree] [--parent <session> | --no-parent] <slug> <ticket-id> <lane> [repo-root]
+spawn.sh [--no-worktree] [--branch <name>] [--parent <session> | --no-parent] [--copy <path>] <slug> <ticket-id> <lane> [repo-root]
 
   --no-worktree   Start the worker in the repository directory itself: no
                   worktree, no branch of its own. For a one-lane job that
@@ -17,17 +17,35 @@ spawn.sh [--no-worktree] [--parent <session> | --no-parent] <slug> <ticket-id> <
                   nothing it does can collide. The slug is still required but
                   unused: it names a worktree, and there is none.
                   JAIRA_NO_WORKTREE=1 in the environment does the same.
-  --parent <s>    Only with the lane <dispatch>, <worker> or <discuss>: the
-                  session of whoever starts it (a name, as ListAgents shows
-                  it, or a uds: address). A dispatcher or worker hands its
-                  questions there instead of asking the person in its own tab;
-                  a discuss chat sends it the decision. Without it, <dispatch>
-                  and <worker> get the session this script runs in. A name is
-                  passed on as its uds: address, and one that names no running
-                  session stops the spawn before a tab is made.
+  --branch <b>    The new worktree checks out the branch <b>, which must
+                  exist, instead of <prefix>/<slug>: the ticket's work rides
+                  on a branch of another name (the cockpit's Give back finds
+                  it by the commits that name the ticket). Without it, a
+                  <prefix>/<slug> that already exists — its worktree removed,
+                  the branch left — is checked out again rather than refused
+                  by git. A worktree already standing at the slug's place on
+                  another branch stops the spawn before a tab is made.
+  --parent <s>    Only with the lane <dispatch>, <worker>, <pr> or <discuss>:
+                  the session of whoever starts it (a name, as ListAgents
+                  shows it, or a uds: address). A dispatcher, worker or pr
+                  role hands its questions and its report there instead of
+                  asking the person in its own tab; a discuss chat sends it
+                  the decision. Without it, <dispatch> and <worker> get the
+                  session this script runs in. A name is passed on as its
+                  uds: address, and one that names no running session stops
+                  the spawn before a tab is made.
   --no-parent     No parent at all, not even this session: the dispatcher or
-                  worker asks in its own tab. The cockpit passes it whenever
-                  it starts a dispatcher or worker itself.
+                  worker asks in its own tab. The cockpit passes it when its
+                  own session has no messaging socket to hand on, and Give
+                  back only where neither the ticket's parent session nor its
+                  own listens. With a parent, the line typed into the tab
+                  says that every question goes there by SendMessage.
+  --copy <path>   Only with the lane <explain> or <discuss>: the ticket file
+                  the cockpit pulled into the main checkout for this chat,
+                  because the ticket was only on its ref there. The chat
+                  removes it itself as its very last step, after its last
+                  jaira write: only the chat knows when that is, and a copy
+                  left there hides the ticket's ref.
   -h, --help      This text.
 
 Five lane names are special. <dispatch> starts the dispatcher itself in the tab
@@ -47,12 +65,27 @@ Every other lane name starts /jaira-role-lane <ticket-id> <lane>.
 A new worktree is set up by the repository's own .jaira/worktree-setup when it
 is there and executable, called as
   .jaira/worktree-setup <worktree> <slug> <port-offset 1-40> <repo-root>
-and spawn.sh then writes nothing into the worktree itself. Without it, a .env in
-the repository is copied and four port lines are appended. A setup that fails,
-or is there but not executable, stops the spawn before a tab opens.
+and spawn.sh then writes nothing into the worktree itself. The port offset is
+one no other worktree of the repository holds (0 is the main directory's); a
+worktree keeps it as long as it stands, and with all 40 taken the spawn stops
+before anything is made. Without a setup, spawn.sh makes the worktree and
+nothing else: no .env, no ports. worktree-setup.example beside this script is
+what spawn.sh itself wrote up to jaira 0.6.1 — the .env copied, four port lines
+appended — ready to copy into .jaira/worktree-setup. A setup that fails, or is
+there but not executable, stops the spawn before a tab opens.
+Its counterpart is .jaira/worktree-teardown, which reap.sh calls with the same
+four arguments — spawn.sh writes them down in the worktree's git directory,
+as jaira-setup — before it removes the worktree, once the ticket's pull request
+is merged — whatever the setup started (a container stack, its ports and
+volumes) is taken down there. See reap.sh --help.
 
-Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE,
+Environment: JAIRA_BRANCH_PREFIX (default feat), JAIRA_NO_WORKTREE, HC_TERMINAL_ID and
+HC_BIN (Herdr App, through herdr-hc.sh),
 HERDR_BIN_PATH, HERDR_WORKSPACE_ID.
+JAIRA_SPAWN_PAUSE: seconds for both waits while claude starts in the tab — between
+two looks at the tab (up to 20 of them) and before the Enter that sends the
+prompt. Unset or empty, they are 2 and 1, which a real terminal needs; the
+tests set 0, because their Herdr stub answers at once.
 USAGE
 }
 
@@ -61,11 +94,15 @@ USAGE
 no_worktree="${JAIRA_NO_WORKTREE:-}"
 parent=""
 no_parent=""
+want_branch=""
+copy=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-worktree) no_worktree=1; shift ;;
+    --branch)      want_branch="${2:?--branch needs a branch name}"; shift 2 ;;
     --parent)      parent="${2:?--parent needs a session name}"; no_parent=""; shift 2 ;;
     --no-parent)   parent=""; no_parent=1; shift ;;
+    --copy)        copy="${2:?--copy needs a path}"; shift 2 ;;
     -h|--help)     usage; exit 0 ;;
     --)            shift; break ;;
     -*)            echo "unknown flag: $1" >&2; usage >&2; exit 2 ;;
@@ -80,7 +117,18 @@ root="${4:-$PWD}"
 # a /c/... worktree. Where root already is an absolute path, nothing changes.
 root="$(cd "$root" && pwd)" || { echo "no such directory: ${4:-$PWD}" >&2; exit 1; }
 herdr="${HERDR_BIN_PATH:-herdr}"
-[ "${HERDR_ENV:-}" = 1 ] || { echo "not inside a Herdr pane" >&2; exit 1; }
+# Herdr App (herdr-core) sets no HERDR_ENV and has no herdr binary: its hc runs
+# the same calls through herdr-hc.sh beside this file. HC_TERMINAL_ID is what
+# the app exports into every terminal it starts.
+if [ "${HERDR_ENV:-}" != 1 ] && [ -n "${HC_TERMINAL_ID:-}" ] \
+  && command -v "${HC_BIN:-hc}" >/dev/null 2>&1; then
+  herdr="$(cd "$(dirname "$0")" && pwd)/herdr-hc.sh"
+fi
+# HERDR_ENV is never set here for Herdr App: WSLENV exports it, empty, into
+# every WSL shell, so an assignment would reach the scripts this one starts and
+# send them to a herdr binary that is not there.
+[ "${HERDR_ENV:-}" = 1 ] || [ "${herdr##*/}" = herdr-hc.sh ] \
+  || { echo "not inside a Herdr pane" >&2; exit 1; }
 
 # Every JSON below is read with 'jaira json get', so a jaira from before it —
 # the roles reinstalled, the binary not — would fail right after 'tab create'
@@ -149,29 +197,187 @@ else
   wt="$(cd "$root/.." && pwd)/.worktrees/$(basename "$root")-$slug"
 fi
 
+# One spawn.sh per ticket and lane at a time. A second one started while the
+# first still runs — a teamlead and the cockpit at once, a press repeated —
+# would find the first one's worktree folder standing, take it for a finished
+# worktree, and open a second tab beside the first (QTQW15, seen with CRASZS).
+# The claim is flock -n on a file per ticket and lane, held through fd 8 for
+# as long as this spawn.sh runs, as the offset lock below is held through fd
+# 9: the kernel lets go of it when this shell exits or dies, so nothing is
+# ever left to clean up, and no pid has to be trusted. Every command that
+# could outlive this script gets 8>&-, or it would hold the claim on. Once
+# the first is done a later spawn for the same ticket is a respawn, as
+# before. Kept in the git common directory beside the pane records; a
+# directory outside any repository has nowhere to keep it and takes none,
+# and neither flock nor perl means no claim, said once.
+if common="$(git -C "$root" rev-parse --git-common-dir 2>/dev/null)" \
+  && common="$(cd "$root" && cd "$common" && pwd)"; then
+  mkdir -p "$common/jaira/spawning"
+  claim="$common/jaira/spawning/$(printf '%s' "$ticket-$lane" | tr '[:lower:]' '[:upper:]' | tr -c 'A-Za-z0-9_.-' '_')"
+  if ! { exec 8>>"$claim"; } 2>/dev/null; then
+    echo "cannot open the claim $claim: is $common writable?" >&2
+    exit 1
+  fi
+  rc=0
+  if command -v flock >/dev/null 2>&1; then
+    flock -n 8 || rc=$?
+  elif command -v perl >/dev/null 2>&1; then
+    perl -MFcntl=:flock -e 'open(my $f, ">>&=", 8) or exit 2; flock($f, LOCK_EX | LOCK_NB) or exit 1' || rc=$?
+  else
+    echo "neither flock nor perl here: a second spawn.sh for $ticket/$lane" \
+         "started at the same moment is not stopped" >&2
+  fi
+  if [ "$rc" != 0 ]; then
+    echo "another spawn.sh is starting $ticket/$lane right now: no second one" >&2
+    exit 1
+  fi
+fi
+
+# --branch names the branch the ticket's work rides on. A worktree standing at
+# the slug's place on another branch would put the worker beside that work, on
+# a branch without it: refused before anything is made. Asked of git, not of a
+# path: a worktree in the middle of a rebase has no branch and is refused too.
+if [ -n "$want_branch" ] && [ "$wt" != "$root" ] && [ -d "$wt" ]; then
+  on_branch="$(git -C "$wt" symbolic-ref --short -q HEAD 2>/dev/null)" || on_branch=""
+  if [ "$on_branch" != "$want_branch" ]; then
+    echo "--branch $want_branch: $wt already stands on ${on_branch:-no branch}." \
+         "Remove that worktree, or pass the slug of the one on $want_branch" >&2
+    exit 1
+  fi
+fi
+
 if [ ! -d "$wt" ]; then
   # A repository that knows what its worktrees need says so in an executable
   # .jaira/worktree-setup, and then spawn.sh writes nothing into the worktree
   # itself. One that is there but not executable is a forgotten chmod, not a
-  # repository without setup: falling back to the .env below would hand the
-  # worker the wrong ports without a word. Refused before anything is made.
+  # repository without setup: going on without it would hand the worker a
+  # worktree with no .env and no ports without a word. Refused before anything
+  # is made.
   setup="$root/.jaira/worktree-setup"
   if [ -e "$setup" ] && [ ! -x "$setup" ]; then
     echo "$setup is not executable: chmod +x it, or remove it" \
-         "to have spawn.sh write the worktree's .env itself" >&2
+         "to have spawn.sh make the worktree and set up nothing in it" >&2
     exit 1
   fi
 
   # feat/, the prefix this board's own branches use. A repository that names
   # them differently sets JAIRA_BRANCH_PREFIX rather than editing this script.
-  branch="${JAIRA_BRANCH_PREFIX:-feat}/$slug"
-  git -C "$root" worktree add "$wt" -b "$branch" >&2
+  branch="${want_branch:-${JAIRA_BRANCH_PREFIX:-feat}/$slug}"
+  # A branch that is there already is checked out again: its worktree was
+  # removed and the branch left, or --branch names where the work rides.
+  # Only a branch made here is deleted again when the setup fails below — one
+  # that was there before holds commits nobody else has.
+  made_branch=1
+  if git -C "$root" show-ref --verify -q "refs/heads/$branch"; then
+    made_branch=""
+  elif [ -n "$want_branch" ]; then
+    echo "--branch $want_branch: no such branch in $root" >&2
+    exit 1
+  fi
 
-  # Deterministic per-slug port offset, so two workers never share a stack.
-  # 0 stays free: it belongs to the main directory's own stack. It stays here
-  # even when the repository sets up its own worktree: that two workers never
-  # share a stack is the one thing a single repository's script cannot promise.
-  off=$(( ( $(printf '%s' "$slug" | cksum | cut -d' ' -f1) % 40 ) + 1 ))
+  # The port offset, 1-40, so two workers never share a stack. 0 stays free:
+  # it belongs to the main directory's own stack. Handed out once, here, when
+  # the worktree is made: a worktree that stands keeps the one it got. The
+  # slug's hash only says where to start looking — on its own it gives 8r8vts,
+  # 32ttss and twb0r6 all the same one — and an offset another worktree of this
+  # repository holds is skipped. It stays here even when the repository sets
+  # up its own worktree: that two workers never share a stack is the one thing
+  # a single repository's script cannot promise. A repository without a setup
+  # has nobody to hand the offset to, and gets none.
+  off=""
+  if [ -x "$setup" ]; then
+    common="$(cd "$root" && cd "$(git rev-parse --git-common-dir)" && pwd)"
+    # Looking, making the worktree and writing its offset down are one step,
+    # or two spawns at once both take the same free offset. It is flock on jaira-offset.lock, held through fd 9 as reap.sh holds its
+    # reap.lock: the kernel lets go of it when this shell dies, so a killed
+    # spawn.sh leaves nothing behind for the next one to take over. A second
+    # spawn waits for the first, up to 600 seconds, which covers a checkout
+    # with slow hooks. flock(1) where there is one, perl's flock on macOS;
+    # with neither it runs unlocked, and says so.
+    lock="$common/jaira-offset.lock"
+    if ! { exec 9>>"$lock"; } 2>/dev/null; then
+      echo "cannot open the lock $lock: is $common writable, and is" \
+           "nothing but a file in that place?" >&2
+      exit 1
+    fi
+    rc=0
+    if command -v flock >/dev/null 2>&1; then
+      flock -w 600 9 || rc=$?
+    elif command -v perl >/dev/null 2>&1; then
+      perl -MFcntl=:flock -e 'alarm 600; open(my $f, ">>&=", 9) or exit 2; flock($f, LOCK_EX) or exit 1' || rc=$?
+    else
+      echo "neither flock nor perl here: $wt gets its offset unlocked," \
+           "and a spawn.sh started at the same moment may get the same one" >&2
+    fi
+    if [ "$rc" != 0 ]; then
+      echo "could not take $lock in 600 seconds: a spawn.sh for $root" \
+           "still makes its worktree, or hangs" >&2
+      exit 1
+    fi
+
+    # What every other worktree holds: its jaira-offset, else the offset its
+    # jaira-setup or .env names — a worktree made before offsets were written
+    # down has only those. One whose directory is gone (deleted by hand, not
+    # yet pruned) runs no stack and holds nothing.
+    taken=" "
+    for gd in "$common"/worktrees/*/; do
+      [ -f "$gd/gitdir" ] || continue
+      w="$(dirname "$(cat "$gd/gitdir")")"
+      # worktree.useRelativePaths (git 2.48+) writes it relative to $gd.
+      case "$w" in /*|[A-Za-z]:*) ;; *) w="$gd$w" ;; esac
+      [ -d "$w" ] || continue
+      o=""
+      if [ -f "$gd/jaira-offset" ]; then
+        o="$(cat "$gd/jaira-offset")"
+      elif [ -f "$gd/jaira-setup" ]; then
+        o="$(sed -n 's/^offset=//p' "$gd/jaira-setup")"
+      elif [ -f "$w/.env" ]; then
+        o="$(sed -n 's/^# worker stack: .* offset=\([0-9][0-9]*\)$/\1/p' "$w/.env" | tail -n 1)"
+      fi
+      taken="$taken$o "
+    done
+    start=$(( $(printf '%s' "$slug" | cksum | cut -d' ' -f1) % 40 ))
+    for (( i = 0; i < 40; i++ )); do
+      o=$(( (start + i) % 40 + 1 ))
+      case "$taken" in *" $o "*) ;; *) off=$o; break ;; esac
+    done
+    if [ -z "$off" ]; then
+      echo "every port offset 1-40 is held by a worktree of $root:" \
+           "remove a finished one (reap.sh) before starting another" >&2
+      exit 1
+    fi
+  fi
+
+  # The directory is claimed first, by a plain mkdir, which only one of two
+  # spawns started at once can win: both passed the -d test above, and 'git
+  # worktree add' on a branch that already exists has no -b to fail the second
+  # one — it would register the same worktree twice and open a second tab.
+  # git takes an empty directory. One that fails is removed again, or the next
+  # spawn would take the empty directory for a worktree.
+  mkdir -p "$(dirname "$wt")"
+  if ! mkdir "$wt" 2>/dev/null; then
+    echo "$wt is being made by another spawn.sh right now: no second" \
+         "worker started for it" >&2
+    exit 1
+  fi
+  # 9>&-: a checkout hook that leaves something running must not keep the
+  # offset lock held through an inherited fd 9.
+  rc=0
+  if [ -n "$made_branch" ]; then
+    git -C "$root" worktree add "$wt" -b "$branch" >&2 8>&- 9>&- || rc=$?
+  else
+    git -C "$root" worktree add "$wt" "$branch" >&2 8>&- 9>&- || rc=$?
+  fi
+  if [ "$rc" != 0 ]; then
+    rm -rf "$wt"
+    echo "git worktree add $wt failed (exit $rc): no worker started" >&2
+    exit 1
+  fi
+  if [ -n "$off" ]; then
+    printf '%s\n' "$off" > "$(git -C "$wt" rev-parse --absolute-git-dir)/jaira-offset" \
+      || echo "could not write the offset $off down for $wt: the next worktree may get it too" >&2
+    exec 9>&-
+  fi
 
   if [ -x "$setup" ]; then
     # Its output goes to stderr: stdout carries the pane id and nothing else.
@@ -179,34 +385,34 @@ if [ ! -d "$wt" ]; then
     # opens — a worktree left standing would skip the setup on the next try,
     # since only a missing directory is set up.
     rc=0
-    "$setup" "$wt" "$slug" "$off" "$root" >&2 || rc=$?
+    "$setup" "$wt" "$slug" "$off" "$root" >&2 8>&- || rc=$?
     if [ "$rc" != 0 ]; then
       git -C "$root" worktree remove --force "$wt" >&2 || true
-      git -C "$root" branch -D "$branch" >&2 || true
+      [ -z "$made_branch" ] || git -C "$root" branch -D "$branch" >&2 || true
+      gone="worktree and branch $branch removed again"
+      [ -n "$made_branch" ] || gone="worktree removed again, branch $branch kept"
       echo "$setup $wt $slug $off $root failed (exit $rc):" \
-           "no worker started, worktree and branch $branch removed again" >&2
+           "no worker started, $gone" >&2
       exit 1
     fi
-  # Only a repo that carries a container stack needs its own ports. A repo
-  # without a .env has nothing to offset, and must not fail here.
+    # What the setup was given, for reap.sh to hand .jaira/worktree-teardown
+    # once the ticket is merged. Written down, never worked out again later:
+    # from a name or a path the slug cannot be told for a worktree made from
+    # another worktree, and a wrong slug tears down another ticket's stack.
+    # In the worktree's own git directory, which 'git worktree remove' takes
+    # away with it.
+    rec="$(git -C "$wt" rev-parse --absolute-git-dir)/jaira-setup"
+    printf 'worktree=%s\nslug=%s\noffset=%s\nroot=%s\n' "$wt" "$slug" "$off" "$root" > "$rec" \
+      || echo "could not write $rec: reap.sh will not call .jaira/worktree-teardown for $wt" >&2
+  # Up to jaira 0.6.1 spawn.sh copied the .env and appended ports named after
+  # one project. A repository that relied on that would now get a worker
+  # without them in silence: say so, once per worktree, and how to get it back.
+  # A setup runs only for a worktree spawn.sh makes, so this one stays as it is.
   elif [ -f "$root/.env" ]; then
-    cp "$root/.env" "$wt/.env"
-    {
-      echo
-      echo "# worker stack: slug=$slug offset=$off"
-      # Derived from the repository, never a name written in here: a prefix
-      # baked into this script belongs to one project and silently names every
-      # other project's stack after it. Docker takes lower case only, so the
-      # name is folded before it is cleaned — a jaira slug is upper case, and
-      # `docker compose` refuses the whole stack over a single capital. printf
-      # rather than echo: the newline echo appends is a character like any
-      # other to tr, and would come back as a trailing underscore.
-      echo "COMPOSE_PROJECT_NAME=$(printf '%s_%s' "$(basename "$root")" "$slug" \
-        | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_-' '_')"
-      echo "HTTP_PORT=$((8080 + off))"
-      echo "DB_PORT_HOST=$((5500 + off * 2))"
-      echo "DB_PORT_TEST_HOST=$((5501 + off * 2))"
-    } >> "$wt/.env"
+    echo "spawn.sh no longer copies .env into a worktree: $wt has none." \
+         "To get it back as before, install -m 755" \
+         "\"$(cd "$(dirname "$0")" && pwd)/worktree-setup.example\" \"$setup\" and adapt it;" \
+         "it applies to worktrees made from then on" >&2
   fi
 fi
 
@@ -247,8 +453,47 @@ if [ -n "${HERDR_WORKSPACE_ID:-}" ]; then ws=(--workspace "$HERDR_WORKSPACE_ID")
 # JSON is read with 'jaira json get', never python3: on Windows python3 is
 # missing or the Store's stub, which prints "Python" and exits 49 (issue #79),
 # and jq is not everywhere either. jaira is on every machine that has the roles.
-pane="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$cwd" --label "$ticket/$lane" --no-focus \
-  | jaira json get result.root_pane.pane_id)"
+created="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$cwd" --label "$ticket/$lane" --no-focus 8>&-)"
+pane="$(jaira json get result.root_pane.pane_id <<<"$created")"
+tab="$(jaira json get result.tab.tab_id --default "" <<<"$created" 2>/dev/null || true)"
+
+# The pane id 'tab create' handed back is not believed later on: when a second
+# dispatcher opened its tab at the same moment, a run typed its role into the
+# other one's pane (3YRPXJ). Before anything is typed, the pane must still sit
+# in the tab this script made; otherwise stop, name both, and type nothing.
+# A Herdr that names no tab on create leaves nothing to compare against.
+record=""
+pane_is_ours() {
+  [ -n "$tab" ] || return 0
+  local pt
+  pt="$("$herdr" pane get "$pane" 2>/dev/null | jaira json get result.pane.tab_id --default "" 2>/dev/null || true)"
+  [ "$pt" = "$tab" ] && return 0
+  if [ -z "$pt" ]; then
+    # Herdr did not answer: that says nothing about a race. Before 'pane run'
+    # nothing of ours runs in the tab and reap.sh has no record of it, so it
+    # is closed rather than left empty for nobody to reap; after it, claude
+    # may already run there - leave it standing.
+    if [ "${1:-}" = early ]; then
+      echo "spawn.sh: could not check pane $pane of tab $tab ($ticket/$lane): 'herdr pane get' gave no tab - nothing was typed, the empty tab is closed; start this lane again" >&2
+      "$herdr" tab close "$tab" >/dev/null 2>&1 || true
+    else
+      echo "spawn.sh: could not check pane $pane of tab $tab ($ticket/$lane): 'herdr pane get' gave no tab - nothing was typed, look at that tab" >&2
+    fi
+    return 1
+  fi
+  echo "spawn.sh: pane $pane is not in tab $tab ($ticket/$lane) any more but in '$pt'" \
+       "- another tab was opened at the same moment; nothing was typed, start this lane again" >&2
+  # The tab is ours and nothing of ours runs in it any more: close it, so
+  # no empty tab is left standing for somebody to wonder about. The pane is
+  # somebody else's: a record of it under this ticket would have reap.sh
+  # close their tab.
+  "$herdr" tab close "$tab" >/dev/null 2>&1 || true
+  [ -z "$record" ] || rm -f "$record"
+  return 1
+}
+# Before the record below: a refused pane is somebody else's, and a record of
+# it under this ticket would have reap.sh look after the wrong tab.
+pane_is_ours early || exit 1
 
 # Which tab belongs to which ticket, for reap.sh: it closes them once the
 # ticket's pull request is merged, and the pane id printed below is gone from
@@ -261,8 +506,8 @@ pane="$("$herdr" tab create ${ws[@]+"${ws[@]}"} --cwd "$cwd" --label "$ticket/$l
 if common="$(git -C "$wt" rev-parse --git-common-dir 2>/dev/null)" \
   && gitdir="$(cd "$wt" && cd "$common" && pwd)"; then
   mkdir -p "$gitdir/jaira/panes"
-  printf 'pane=%s\nticket=%s\nlane=%s\nworktree=%s\n' "$pane" "$ticket" "$lane" "$wt" \
-    > "$gitdir/jaira/panes/$(printf '%s' "$pane" | tr -c 'A-Za-z0-9_.-' '_')"
+  record="$gitdir/jaira/panes/$(printf '%s' "$pane" | tr -c 'A-Za-z0-9_.-' '_')"
+  printf 'pane=%s\nticket=%s\nlane=%s\nworktree=%s\n' "$pane" "$ticket" "$lane" "$wt" > "$record"
 fi
 
 # <explain> and <discuss> write a few lines for a person, so they start on the
@@ -286,19 +531,32 @@ fi
 # (42C3RZ: 1395 characters arrived, the 'jaira note' instruction gone). It goes
 # into a file instead, and the tab is typed one short line that points at it.
 # The file sits in a folder of its own outside the repository — inside it,
-# git status would show it — and claude starts with that folder added, or its
-# Read would ask before opening the file. Native Windows claude reads the
-# Windows spelling of the path, which cygpath gives.
+# git status would show it — and claude starts with a rule that lets its Read
+# open that folder, or Read would ask before opening the file. A rule, not
+# --add-dir: since Claude Code 2.1 an added directory stops the tab at a trust
+# dialog nothing answers. The rule's path is absolute, so it starts with //,
+# and is written with = — --allowedTools takes every word after it. Native
+# Windows claude reads the Windows spelling of the path, which cygpath gives,
+# and matches rules in the POSIX form of that spelling: C:\x becomes /c/x.
+# A Read is allowed only where the rule matches the real path as well, so
+# the folder is named with its links resolved: macOS keeps TMPDIR under
+# /var, a link to /private/var.
 chat_dir=""
 if [ "$lane" = explain ] || [ "$lane" = discuss ]; then
   chat_dir="$(mktemp -d "${TMPDIR:-/tmp}/jaira-chat.XXXXXX")"
+  chat_dir="$(cd "$chat_dir" && pwd -P)"
   chat_file="$chat_dir/$ticket-$lane.md"
-  chat_dir_win="$chat_dir"; chat_file_win="$chat_file"
+  chat_file_win="$chat_file"; chat_rule="Read(/$chat_dir/**)"
   if [ "$on" = windows ] && command -v cygpath >/dev/null 2>&1; then
     chat_dir_win="$(cygpath -w "$chat_dir")"; chat_file_win="$(cygpath -w "$chat_file")"
+    if [[ "$chat_dir_win" =~ ^([A-Za-z]):(.*)$ ]]; then
+      # tr, not ${x,,}: macOS ships bash 3.2, which has no case conversion.
+      drive="$(printf %s "${BASH_REMATCH[1]}" | tr "[:upper:]" "[:lower:]")"; rest="${BASH_REMATCH[2]//\\//}"
+      chat_rule="Read(//$drive$rest/**)"
+    fi
   fi
 fi
-claude="claude${chat_model:+ --model '$chat_model'}${chat_dir:+ --add-dir '$chat_dir'}"
+claude="claude${chat_model:+ --model '$chat_model'}${chat_dir:+ '--allowedTools=$chat_rule'}"
 
 # The tab's shell runs on the machine Herdr itself runs on. When that is Windows
 # and this script runs in WSL, that shell has no /home/... at all: --cwd is
@@ -317,16 +575,18 @@ claude="claude${chat_model:+ --model '$chat_model'}${chat_dir:+ --add-dir '$chat
 # needs no quotes — only letters, digits and . _ - [ ] pass.
 case "$on" in
   wsl)     start="wsl.exe --cd '$wt' -- bash -lic \"$claude\"" ;;
-  windows) start="claude${chat_model:+ --model $chat_model}${chat_dir:+ --add-dir \"$chat_dir_win\"}" ;;
+  windows) start="claude${chat_model:+ --model $chat_model}${chat_dir:+ \"--allowedTools=$chat_rule\"}" ;;
   *)       start="cd '$cwd' && $claude" ;;
 esac
 
-"$herdr" pane run "$pane" "$start" >/dev/null
+"$herdr" pane run "$pane" "$start" >/dev/null 8>&-
 
 # The state hook reports idle a few seconds after startup.
 for _ in $(seq 20); do
-  sleep 2
-  pj="$("$herdr" pane get "$pane")"
+  sleep "${JAIRA_SPAWN_PAUSE:-2}"
+  # set -e would end the script on a failed get, without a word: an
+  # unanswered get falls through to the come-up line below instead.
+  pj="$("$herdr" pane get "$pane" 2>/dev/null)" || { st=""; continue; }
   st="$(jaira json get result.pane.agent --default - <<<"$pj") $(jaira json get result.pane.agent_status --default - <<<"$pj")"
   case "$st" in claude\ idle|claude\ done) break ;; esac
 done
@@ -341,7 +601,9 @@ case "${st:-}" in
          "report it to the human, let them answer it in that pane," \
          "then start this worker again" >&2
     exit 1 ;;
-  *) echo "claude did not come up in $pane: ${st:-none}" >&2; exit 1 ;;
+  *) echo "claude did not come up in pane $pane (tab ${tab:-unknown}, $ticket/$lane) after the wait: state '${st:-none}'" \
+          "- look at that tab; 'claude -' means no claude started there, 'none' that Herdr did not answer" >&2
+     exit 1 ;;
 esac
 
 # The lane name "dispatch" starts the dispatcher itself rather than one lane's
@@ -356,19 +618,26 @@ esac
 # Without Herdr the cockpit asks its own session the same two requests
 # (explainBySubagent and discussInThisChat in jaira-cockpit's hooks/texts.ts):
 # a change to one belongs in the other.
+# With a parent the line says once more where questions go: a worker started
+# from the cockpit's Give back that asked the person in its own tab is what
+# QTQW15 was filed for. Words after the arguments: the cockpit's startOf reads
+# the role and the ticket at the head of the line and nothing behind them.
+asks="${parent:+ --parent $parent - every question goes to $parent by SendMessage, never by AskUserQuestion}"
 if [ "$lane" = dispatch ]; then
-  prompt="/jaira-dispatcher $ticket${parent:+ --parent $parent}"
+  prompt="/jaira-dispatcher $ticket$asks"
 elif [ "$lane" = worker ]; then
-  prompt="/jaira-worker $ticket${parent:+ --parent $parent}"
+  prompt="/jaira-worker $ticket$asks"
 elif [ "$lane" = pr ]; then
   # A person pressed Accept in the cockpit: --by-person tells jaira-role-pr
   # the invocation is theirs, so it opens the pull request instead of handing
-  # the create line back. Only that press passes this lane.
-  prompt="/jaira-role-pr $ticket --by-person"
+  # the create line back. Only that press passes this lane. --parent is the
+  # cockpit's session: the role's stops and report go there, not only to
+  # its own tab.
+  prompt="/jaira-role-pr $ticket --by-person${parent:+ --parent $parent}"
 elif [ "$lane" = explain ]; then
-  src=" (jaira show $ticket --json: review.verdict, review.summary, review.gaps, review.check, dazu die Notes)"
+  src=" (jaira show $ticket --json: review.verdict, review.summary, review.gaps, review.verdict_gaps, review.check, dazu die Notes)"
   [ -z "$brief" ] || src=""
-  prompt="Erklaere mir in einfachen Worten den Review-Befund zu Ticket $ticket$src: was genau gefunden wurde, warum es zaehlt, welche Optionen es gibt und was der Reviewer empfiehlt. Schreibe danach dieselbe Erklaerung an das Ticket, als eine Note mit genau diesen Zeilen, jede Zeile ein Teil: jaira note $ticket \"explain: <Befund: was gefunden wurde, ein bis zwei Saetze>\nWarum: <warum es zaehlt, ein bis zwei Saetze>\n1) <erste Option, eine Zeile> [give back]\n2) <zweite Option, eine Zeile> [accept]\nEmpfehlung: <Nummer> - <warum, ein Satz>\" - mit echten Zeilenumbruechen im Text, zwei bis vier Optionen mit 1) 2) 3) 4) am Zeilenanfang - dieselben Nummern, mit denen die Person im Cockpit waehlt, die Woerter Warum: und Empfehlung: genau so. Ans Ende jeder Option gehoert [give back], wenn sie heisst, die Arbeit zurueckzugeben und etwas zu aendern, [accept], wenn sie heisst, das Ticket so anzunehmen, und keine Marke, wenn sie keins von beidem ist. Das Cockpit zeigt die Note unter [Read explanation], und die Wahl dort fuehrt genau diesen Schritt aus. Sonst aendere nichts, committe nichts, bewege das Ticket nicht. Antworte in der Sprache, in der ich mit dir spreche."
+  prompt="Erklaere mir in einfachen Worten das Review zu Ticket $ticket$src: wo es steht, was jede Note in review-gaps bedeutet (ein Alltagssatz je Note), welche Optionen es gibt und welche du empfiehlst. Ist review.verdict_gaps nicht leer und weicht von review.gaps ab, stammt das Urteil aus einer frueheren Runde und eine spaetere Lane hat review-gaps ueberschrieben: die Notes des Reviews stehen in review.verdict_gaps - lies sie ueberall, wo hier review-gaps steht, und sag, dass das Ticket sich seitdem geaendert hat. Schreibe danach dieselbe Erklaerung an das Ticket, als eine Note mit genau diesen Zeilen: jaira note $ticket \"explain: Status: DoD <erledigt>/<alle> ok|fail | tests ok|fail | blockers ok|fail | bughunt on HEAD ok|fail|unknown|skipped\n[<Klasse>] <eine Note, ein Alltagssatz>\n1) <Option, eine Zeile> [accept]\n2) <Option, eine Zeile> [give back]\nRecommendation: <Nummer> - <warum, ein Satz, mit der Note, die sie betrifft>\" - mit echten Zeilenumbruechen im Text. Die Statuszeile: DoD, tests und blockers enden je auf ok oder fail, bughunt on HEAD auf ok, fail, unknown oder skipped; blockers ist ok, wenn review-gaps keine blocker:-Zeile hat; bughunt on HEAD endet auf dem Wort aus bughunt.state im JSON, wie es dasteht - ok, fail, unknown (eine gejagte Datei ist geaendert und nicht committet, das kann niemand sagen; schreibe dafuer nie fail) oder skipped (das Ticket laesst nach einem Fix den Hunt mit Absicht weg) - und auf fail, wenn bughunt null ist (kein Hunt fertig); nur wenn der Schluessel bughunt fehlt (aelteres jaira oder kein Brief), gilt: ok, wenn die neueste Note 'bughunt: done at <commit>' den Commit nennt, den git rev-parse --short HEAD ausgibt. Eine [<Klasse>]-Zeile je Note in review-gaps, die Klasse genau eine von: [blocker] - falsches Ergebnis, Datenverlust, Absturz, Sicherheitsluecke; [small edge] - formal ok, eine Runde von etwa zehn Minuten schliesst ihn; [known limit] - hier nicht loesbar und dokumentiert; [not this ticket] - gehoert woandershin, sag wohin. Eine Note, die ihre Klasse selbst nennt, behaelt sie - blocker: ist [blocker], note: edge: [small edge], note: limit: [known limit], note: elsewhere: [not this ticket]; das Cockpit zeigt diese Klasse neben deiner. Zuerst einordnen; sonst nichts je Note, keine Zeile, warum es zaehlt. Zwei bis vier Optionen mit 1) 2) 3) 4) am Zeilenanfang - dieselben Nummern, mit denen die Person im Cockpit waehlt - in der Reihenfolge deiner Empfehlung, keine feste Reihenfolge. Ans Ende jeder Option gehoert [give back], wenn sie heisst, die Arbeit zurueckzugeben und etwas zu aendern, [accept], wenn sie heisst, das Ticket so anzunehmen, und keine Marke, wenn sie keins von beidem ist. Ist keine Note ein Blocker, sagt die Empfehlung ausdruecklich, dass das Ticket so angenommen werden kann. Die Woerter Status:, Recommendation:, ok, fail und die Klassen-Marken bleiben englisch, das Cockpit liest sie. Das Cockpit zeigt die Note unter [Read explanation], und die Wahl dort fuehrt genau diesen Schritt aus. Sonst aendere nichts, committe nichts, bewege das Ticket nicht. Antworte in der Sprache, in der ich mit dir spreche."
 elif [ "$lane" = discuss ]; then
   src=" (jaira show $ticket --json: das Feld question und die letzten Notes)"
   [ -z "$brief" ] || src=""
@@ -376,16 +645,23 @@ elif [ "$lane" = discuss ]; then
 else
   prompt="/jaira-role-lane $ticket $lane"
 fi
+# The copy the cockpit pulled for this chat goes last, by the chat itself:
+# the cockpit cannot see when the chat wrote its last line (DF46B9).
+if [ -n "$copy" ] && { [ "$lane" = explain ] || [ "$lane" = discuss ]; }; then
+  copy_q="$(printf %q "$copy")"
+  prompt="$prompt Als allerletzten Schritt, wenn du nichts mehr an das Ticket schreibst, auch wenn nichts entschieden wurde: git clean -fqx -- $copy_q - die Kopie des Tickets, die das Cockpit fuer diesen Chat geholt hat; liegen gelassen verdeckt sie den Ref."
+fi
 if [ -n "$brief" ]; then
-  prompt="$prompt Was du vom Ticket brauchst, steht hier - title, goal, question, review und die letzten Notes als JSON; lies das Ticket nicht noch einmal ganz: $brief"
+  prompt="$prompt Was du vom Ticket brauchst, steht hier - title, goal, question, review, der neueste Bughunt und die letzten Notes als JSON; lies das Ticket nicht noch einmal ganz: $brief"
 fi
 if [ -n "$chat_dir" ]; then
   printf '%s\n' "$prompt" > "$chat_file"
   if [ "$on" = windows ]; then chat_file="$chat_file_win"; fi
   prompt="Lies die Datei \"$chat_file\" ganz und tu, was darin steht."
 fi
+pane_is_ours || exit 1
 "$herdr" pane send-text "$pane" "$prompt" >/dev/null
-sleep 1
+sleep "${JAIRA_SPAWN_PAUSE:-1}"
 "$herdr" pane send-keys "$pane" enter >/dev/null
 
 echo "$pane"

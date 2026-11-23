@@ -206,6 +206,8 @@ just invented a synonym: check `jaira tags` and use the existing name.
 A milestone is the set of tickets that belong to one round of work, kept in its
 own hand-editable file, `.jaira/milestones/<name>-<ID>.md`, one ticket id per line.
 The six characters after the last dash are its ID: it stays when the name changes.
+The file travels on `refs/jaira/milestones/<ID>` and never in a commit: never
+`git add` it, and never `git add -A .jaira`.
 
 **Before you create one, run `jaira milestone ls`.**
 
@@ -328,6 +330,11 @@ A reviewer reading that commit then sees the change *and* what it was for. Split
 across two commits, they get a diff whose ticket is still in whatever state the
 previous commit left it, and have to go looking.
 
+On a board not shared yet — `jaira init` keeps `.jaira/` out of git until
+`jaira share` — there is no ticket file to add or commit: commit the code alone,
+and the handle in its subject is the whole link. The next rule holds there all
+the more; only its sentences about the ticket file fall away.
+
 **A lane that changed no code commits nothing.** critique, testing and review
 leave a note and a lane change and no source change; a commit carrying only that
 is bookkeeping, and a branch with one per lane hides the work inside it. Leave
@@ -362,8 +369,9 @@ plus `blocked`.
 - **review** — a second model judges the diff. Write, in this order:
   `jaira set <handle> review-summary="..."` (what the change does, from the
   diff), `jaira set <handle> review-gaps="..."` (what is missing — write
-  "none" if nothing is), `jaira set <handle> review-verdict="..."` (your
-  conclusion), and `jaira set <handle> review-check="..."` — how a person checks
+  "none" if nothing is), `jaira set <handle> review-verdict="accept: ..."`
+  or `"send-back: ..."` (your conclusion; the word decides where the ticket may
+  go — `send-back` lets it go back to in-progress only), and `jaira set <handle> review-check="..."` — how a person checks
   this themselves, as a flow: numbered steps, one action each, exact commands and
   exact paths, and what they should see. Every other field is an account of what
   happened; the check is the only one the reader can act on. All four are

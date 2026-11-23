@@ -1,4 +1,5 @@
 <!-- jaira:start -->
+<!-- jaira:version 0.6.3 -->
 ## Task tracking: jaira
 
 This repository has a jaira board (`.jaira/`). Multi-step work is tracked
@@ -93,15 +94,19 @@ Working a ticket:
   ticket's commit list from two sources: the history of the ticket file itself,
   and the commits that name its id. The first source is thin by design (see the
   point on lanes that change no code), and on a board that has not been shared
-  yet (`jaira init` gitignores `.jaira/` until `jaira share`) it does not exist
-  at all — so the handle in the subject line is what the list is actually built
-  from. Leave it out and the list stays empty and the move into the last lane
-  is refused
+  yet (`jaira init` keeps `.jaira/` out of git until `jaira share`) it does not
+  exist at all — so the handle in the subject line is what the list is actually
+  built from. Leave it out and the list stays empty and the move into the last
+  lane is refused
 - **the ticket rides with the code, never on its own.** Move the ticket first,
   then `git add` the changed file under `.jaira/tickets/` alongside your source
   changes and commit them together. A reviewer then sees the change and what it
   was for in one place, instead of a diff whose ticket is still in whatever
-  state the last commit left it
+  state the last commit left it. On a board not shared yet (`.jaira/` stays out
+  of git from `jaira init` until `jaira share`) there is no ticket file to add
+  or commit — commit the code alone, and the handle in its subject is the
+  whole link. The next point holds there all the more; only its sentences
+  about the ticket file fall away
 - **a lane that changed no code commits nothing.** critique, testing and review
   leave a note and a lane change and no source change; a commit carrying only
   that is bookkeeping, and a branch with one of them per lane hides the work
@@ -138,9 +143,9 @@ this note from outside the block.
 ## This board's lanes
 
 Order: ideas → backlog → brainstorm → todo → pre-process → in-progress → critique → optimize → testing → human → review → signoff → done → blocked
-Loop: critique sends work back to in-progress, and that repeats until critique has nothing left to say.
-Loop: optimize sends work back to in-progress, and that repeats until optimize has nothing left to say.
-Loop: testing sends work back to in-progress, and that repeats until testing has nothing left to say.
+Loop: critique sends work back to in-progress, and that repeats until critique has nothing left to say. At most 3 times in a row: the next send-back is refused, and the teamlead decides, or a person.
+Loop: optimize sends work back to in-progress, and that repeats until optimize has nothing left to say. At most 3 times in a row: the next send-back is refused, and the teamlead decides, or a person.
+Loop: testing sends work back to in-progress, and that repeats until testing has nothing left to say. At most 3 times in a row: the next send-back is refused, and the teamlead decides, or a person.
 
 - `ideas` — no agent step; move through it
   Ideas that are not ripe for the backlog yet.
@@ -158,9 +163,9 @@ Loop: testing sends work back to in-progress, and that repeats until testing has
   Judges whether this is the right implementation, not whether it works.
 - `optimize` — yours to work; tier strong; must produce review-gaps
   Removes what the change does not need — code that already exists elsewhere, code nobody calls, and code that carries its weight in nothing.
-- `testing` — yours to work; tier cheap; must produce test-verdict
-  Runs the change and checks it against the ticket - does the demanded thing exist, and does it work.
-- `human` — **a person's, not yours** — you may move work in, never out; only with an open question (`--question`); without one, work passes it by
+- `testing` — yours to work; tier cheap; must produce test-verdict, hunt-verdict
+  Runs the change and checks it against the ticket - does the demanded thing exist, and does it work - while a fresh agent hunts the touched modules for defects.
+- `human` — **a person answers here** — you may move work in, and move it on once the question is answered; only with an open question (`--question`); without one, work passes it by
   Human in the loop.
 - `review` — **fresh context** — an agent's, but not the one that carried the ticket here: hand it to a new agent; tier strong; must produce review-summary, review-gaps, review-verdict, review-check
   A second model has judged the diff.
@@ -264,5 +269,9 @@ not merge one, and does not approve one. Opening it is the maintainer's call,
 given as an instruction — so the person who wrote the change is never the person
 who decides it arrives. This is the same rule the board already applies to lanes
 — a review agent cannot certify its own work — said once more where it also has
-to hold.
+to hold. This repository's board has no `.jaira/pr`; a board
+that commits one saying `agent` lets jaira-role-pr open the pull request once
+`jaira roles pr-gate` finds every ticket on the branch in done, or in signoff
+where `.jaira/pr-when` says so — merging and approving stay the maintainer's
+there too.
 <!-- jaira:end -->

@@ -1,6 +1,6 @@
 ---
 name: jaira-worker
-description: "Carry one ticket through every agentic lane yourself, hand only a lane marked fresh context to a new agent, then report back in three lines. Invoked as /jaira-worker <ticket-id> [--parent <session>], normally by a teamlead session. Use when handed a whole ticket to carry to a human lane."
+description: "Carry one ticket through every agentic lane yourself, hand only a lane marked fresh context to a new agent, then report back in a status line. Invoked as /jaira-worker <ticket-id> [--parent <session>], normally by a teamlead session. Use when handed a whole ticket to carry to a human lane."
 ---
 
 # Worker
@@ -42,6 +42,23 @@ your head that the board does not know:
   what you had to find out. Not what the checklist and git already say. A
   killed session never gets a turn to write anything down.
 - `jaira dod <id> <n> --doing|--done` as you go, never all at the end.
+
+## When you wait
+
+A worker that ends its turn to wait — for the bug hunter, a fresh-lane agent,
+the parent's answer — looks from outside exactly like one that hangs. So
+before you end a turn to wait, say on what:
+
+- `jaira note <id> "waiting: <what> (<agent or session>) since <HH:MM>"`
+- started with `--parent`, send the same line to the parent with `SendMessage`
+
+What comes back is the hand-back, whatever shape it arrives in: a
+task-notification, an agent's message, or one line that only says
+`[shortened by jaira-cockpit] <ID> — full report: /cockpit report <ID>`. That
+line is not noise and not a link for the person — it is your agent's report.
+Read the result off the board (`jaira show <id> --json`, the agent's note) and
+carry on in the same turn. Never end a turn on a hand-back without either the
+next step done or a new `waiting:` note.
 
 ## Before the plan: count what is still open
 
@@ -104,6 +121,9 @@ never out of the line that started you.
   git commit -m "fix(A3K9QP): <what changed>"
   ```
 
+  On a board not shared yet (`.jaira/` out of git until `jaira share`) leave
+  the ticket file out of the `git add`: git refuses it as ignored.
+
   A lane that changed no code hands back no line — the ticket file waits for
   the next commit that carries code, as it always does.
 - **A critique reads beside you while you implement.** Start a second agent on
@@ -142,7 +162,11 @@ Then, until you stop:
    `jaira move <id> --to <next_lane>` (or back, where the lane found the work
    wanting). Every lane's prompt applies to you as written — the critique lane
    is not lighter because you wrote the code.
-3. **Is `next_lane` marked fresh?** (`context: fresh` in its `--for-lane`
+3. **Does the board's testing lane owe no `hunt-verdict`, did the ticket
+   change code, and is `next_lane` fresh or a lane a person owns?** Run the
+   bug hunt first — see "The bug hunt" below. Where testing owes it, the hunt
+   already ran inside that lane.
+   **Is `next_lane` marked fresh?** (`context: fresh` in its `--for-lane`
    payload.) Then it is not yours. Move the ticket
    into it and hand it to a new agent — see "The fresh lane" below.
 4. **Is `next_lane` a lane a person owns?** Deliver into it and stop. `human`
@@ -193,6 +217,50 @@ whole tree (`task code:format`, `ruff format .`, `npm run format`). A
 whole-tree run rewrites files nobody on this ticket opened, and every one of
 them is a conflict with somebody else's branch.
 
+### Before you push
+
+Run the project's own gates locally before every push — the checks its CI runs
+and that turn a pull request red when they fail. Read them off the repository,
+not from memory: the CI workflow (`.github/workflows/`, `.gitlab-ci.yml`), the
+test and lint tasks in `Taskfile.yml`, `Makefile` or `package.json`, and any
+check the repository's instructions name. A fast local subset that covers what
+this branch touched is enough; a suite that needs a service you do not have is
+named in your report, not skipped silently.
+
+The class this catches is the gate nobody thinks of as a test: a generated file
+or checksum list that has to be regenerated with the change, a formatter or
+linter run in CI only, a manifest that must name every new file. On 2026-11-20
+several pull requests went red for a line missing in such a list that one local
+test run would have named. A red gate is fixed before the push, in a new commit
+— never pushed with a promise.
+
+## The bug hunt
+
+The bug hunt is part of the `testing` lane: its prompt starts the hunter as a
+background agent, runs the tests beside it and owes `hunt-verdict` as well as
+`test-verdict`. You work testing like any other lane and start the hunter the
+way its prompt says — never as a step of your own outside it. A `bughunt:
+change:` finding sends the ticket back to `in-progress` like a failed test; a
+`pre-existing` one never does.
+
+**A board whose testing lane does not owe `hunt-verdict`** — no testing lane at
+all, as on a board fresh from `jaira init`, or an older one not yet updated —
+still gets its hunt, from you. Read it off the ticket's own board:
+`jaira show <id> --for-lane testing --json` lists the lane's outputs under
+`produces`; no `hunt-verdict` there, or exit 2 with `no_such_lane`, means the
+hunt is yours. Then, when the ticket changed
+code (anything outside `.jaira/`) and `next_lane` is the fresh lane, or a lane
+a person owns, start one before you move it there, with the id and nothing
+else:
+
+    Agent(subagent_type: "claude", prompt: "Read the jaira-role-bughunt skill and hunt ticket <id>.")
+
+It runs in your directory; while it runs you write nothing. A `change` finding
+sends the ticket back to `in-progress`, and the loop runs to silence with a
+new hunt before it leaves again; a `pre-existing` one you sort the way the
+testing lane does — same subject as the goal, a note for the person; another
+subject, `jaira create ... --follows <id>`.
+
 ## The fresh lane
 
 A lane marked fresh is the board's guarantee that somebody other than the
@@ -211,6 +279,19 @@ guarantee is gone and nobody can see that it is.
    the fresh lane gets a **new** agent next time, never the one from before.
    A `note:` line in its `review-gaps` is not work for you: it stays a line,
    and no ticket is created from it — the person decides that at acceptance.
+5. It sent the work back with `fix-now:` notes and no blocker: close
+   exactly those, before the ticket ever reaches signoff, and no other note.
+   Each closes in a few lines; one that would need a new rule, flag or
+   branch is not fix-now — leave it, and say so in a note, rather than grow
+   the change (edges that keep growing ask for a smaller design, not a
+   bigger fix). When the whole fix stays under 50 changed lines and touches
+   no lock and no parser, run the round lean: `jaira set <id>
+   stop-after-fix=true` and note that you set it; critique and optimize then
+   go in one pass, testing runs only what changed, and the new review agent
+   reads only the delta since `review: done at <commit>` — all three lanes'
+   prompts say how. Should that review send the work back with a blocker,
+   clear the flag again (`jaira set <id> stop-after-fix=`) if you set it:
+   the next round is no longer small.
 
 It runs in your directory, not a worktree of its own: what it judges includes
 your uncommitted work, and while it runs you write nothing.
@@ -221,7 +302,7 @@ You start one for a fresh lane, and in conversational mode for the critique
 beside you.
 
 ```bash
-test "${HERDR_ENV:-}" = 1 && echo herdr
+{ test "${HERDR_ENV:-}" = 1 || test -n "${HC_TERMINAL_ID:-}"; } && echo herdr
 ```
 
 The scripts are the dispatcher's, not copies: `jaira roles install` writes
@@ -279,7 +360,7 @@ yes-or-no is a choice too.
   you directly. Ask with it.
 - **No `AskUserQuestion` at all** — started as a subagent or headless. The
   options go into your report as a numbered list, recommendation first, on top
-  of the three report lines, and you stop.
+  of the status line, and you stop.
 
 You never pick an option because nobody answered. An agent you started never
 asks the person either: it writes its question onto the ticket (a note with
@@ -305,7 +386,8 @@ A worktree under the repository is a second copy of the sources on another
 branch, and `grep -r`, `find` and `ls -R` walk straight into it. Remove nothing
 you did not create, and no worktree before its ticket is in `done` — the pull
 request comes later and is not yours: push the branch when asked, never open,
-merge or approve a pull request. Your own tab is not yours to close either.
+merge or approve a pull request. Your own tab closes only the way "Report"
+says, through `close-tab.sh`, never by hand.
 
 ## When to stop and hand back
 
@@ -315,12 +397,21 @@ Stop and report the moment any of these is true:
   into one, never out of it
 - an agent you started is at an approval dialog — report what it asks, never
   answer for the human
-- **the same lane sent work back three times.** Stop and hand it to the person,
-  whatever you think of the loop. Three lines: the third round's findings,
+- **the same lane sent work back three times.** Stop and hand the decision
+  on, whatever you think of the loop. Three lines: the third round's findings,
   verbatim; whether you think the definition of done is wrong or the loop
   reads deeper every round without ever ending, and why; the one thing you
   would do. Then ask yes or no, as a choice, and wait. You may recommend; you
-  may not act on your own recommendation
+  may not act on your own recommendation.
+
+  **Started with `--parent`, the teamlead decides first, not the person.** The
+  ticket stays in the lane it is in — do not move it to `human`. Put the three
+  lines and the options on it with `jaira set <id> question="<...>"` and a
+  `jaira note`, send the same to the parent with `SendMessage`, and end your
+  turn. The parent either decides — a `decision (teamlead <date>):` note, then
+  clears the question and tells you how to go on — or takes it to the person
+  and moves the ticket into `human` itself. Only a parent `SendMessage` cannot
+  reach leaves the move to `human --question` to you, as without a parent
 - you touched, or are about to touch, a file outside your worktree
 
 ## Do not swallow what the human should hear
@@ -328,7 +419,9 @@ Stop and report the moment any of these is true:
 Report per lane, not only at the end: one line upward when a lane finishes —
 the lane, and the single thing a person would want to know from it. A decision
 taken, a surprise found, a number measured. A lane that produced nothing worth
-saying gets "done" and nothing else.
+saying gets "done" and nothing else. One line, never a paragraph: every line
+you send the parent stays in the teamlead's context for the rest of its
+session.
 
 ## Handing it on for acceptance
 
@@ -336,11 +429,18 @@ When the ticket reaches a human lane and its `review-check` asks a person to
 try something in the app, hand it on before you stop:
 `/jaira-role-acceptance <id> [<id>...]`, with every ticket of the same change
 already waiting in a human lane, and the language the person was spoken to in.
-Its link goes into your third report line.
+Its link goes into your `needs you:` line.
 
 ## Report
 
-Three lines at the end, on top of the per-lane lines:
+The report has two parts, and only the short one leaves your tab.
+
+**The full report goes onto the ticket**, as one note, before anything is
+sent — three lines, on top of the per-lane notes:
+
+```bash
+jaira note <id> "report: <what changed> | <lane now>, <context and cache> | <what is open>"
+```
 
 - what changed
 - which lane the ticket sits in now, and your own context and prompt cache —
@@ -349,3 +449,64 @@ Three lines at the end, on top of the per-lane lines:
   `context unknown` where that tool is not there. The teamlead reads it off
   this line to know what sending the next round back to you would cost
 - what is open, and whether it needs a person
+
+**The report you hand back is the status line**, and above it at most one
+line more, only when something waits for a person:
+
+```
+needs you: <what, in one line — the decision, the question, the acceptance link>
+jaira: <ID> <from> -> <to> · branch: <branch> · commits: <first>..<last> (<n>) · gates: ok|red|none · notes: <n> · verdict: <text>
+```
+
+Nothing else — no lane list, no diff summary, no repetition of the note. A
+teamlead holds a dozen of these reports in one session; a page each was what
+filled it. Whoever wants more reads `jaira show <id>`. Nothing open: no
+`needs you:` line at all, not one saying "nothing". A question with numbered
+options (see "How you ask") is not a report and keeps its options.
+
+The status line is always the last line, in a fixed format the teamlead and
+the jaira-cockpit read without opening the ticket:
+
+```
+jaira: <ID> <from> -> <to> · branch: <branch> · commits: <first>..<last> (<n>) · gates: ok|red|none · notes: <n> · verdict: <text>
+```
+
+- `<ID>` the six-character handle; `<from> -> <to>` the lane the ticket was in
+  when you took it and the lane it sits in now
+- `branch` the ticket's branch; `commits` the short hashes of its first and
+  last commit on that branch and how many there are
+- `gates` the project's local gates before the push (see "Before you push"):
+  `ok`, `red`, or `none` where nothing was run because no code changed
+- `notes` how many `note:` lines the review's `review-gaps` carries — what a
+  person still has to weigh at acceptance
+- `verdict` the `review-verdict`, or the lane's outcome where no review ran;
+  it comes last and may hold any text
+
+Keys and their order are fixed; an empty value is `-`, never a missing key.
+The cockpit shortens the report to this line and keeps the rest for
+`/cockpit report <ID>`; a report without it shows only the ticket id.
+
+Started with `--parent`, the short report — the status line, and the
+`needs you:` line where there is one — goes to the parent with `SendMessage`.
+Started by a person directly in your tab, print the three lines above it too:
+there the reader is the person, not a teamlead's context. Once it has taken
+the report, close your own tab as the very last call of your turn:
+
+```bash
+jaira-dispatcher/scripts/close-tab.sh --parent <session> <ticket id>
+```
+
+(`../jaira-dispatcher/scripts/` from this file, as in "Starting another
+agent".) In done nobody needs your context any more, and the tab closes. In
+signoff or another person's lane it stays while your prompt cache is warm —
+`kept <ticket>: cache warm until HH:MM` — so a give-back in that hour comes
+back to you instead of a new worker reading everything again; `reap.sh`
+closes it once the window is over or the ticket is done. What you knew is on
+the ticket either way. The script decides, not you — it
+closes only when the ticket sits in a person's lane or in done, has no open
+question and your worktree holds nothing `uncommitted.sh` counts — it lets
+through only new or changed ticket and milestone files under `.jaira/`, so a
+changed lane, tag or logbook file keeps the tab — and otherwise prints
+`kept <ticket>: <reason>` and leaves the tab. A message that did not reach the
+parent means no `--parent` here: the report is then in your tab, and the tab
+stays. Without a parent you never run it.

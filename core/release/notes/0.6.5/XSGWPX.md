@@ -1,0 +1,1 @@
+- `jaira pr` and the cockpit's pull-request check now work on GitHub Enterprise behind an SSH remote like `alice@ghe.example.com:team/app.git`: keep `git config jaira.forge github` set for such a host, and gh is asked for `ghe.example.com/team/app` with `--hostname` instead of failing with "Could not resolve to a Repository".

@@ -157,6 +157,18 @@ func TestWebCreatesMovesRemovesAndOpens(t *testing.T) {
 	if w := webDo(t, h, "POST", "/api/epics/pay-later/tickets", `{"id":"`+a+`","from":"magic-login"}`); w.Code != 200 || strings.Contains(w.Body.String(), "push_error") {
 		t.Fatalf("move: %d %s", w.Code, w.Body)
 	}
+	var epics []web.Epic
+	webGet(t, h, "/api/epics", &epics)
+	for _, e := range epics {
+		for _, c := range e.Tickets {
+			if c.ID == f && c.Via != a {
+				t.Errorf("follow-up in %s via = %q; want the member %s it is counted through", e.Name, c.Via, a)
+			}
+			if c.ID == a && c.Via != "" {
+				t.Errorf("member via = %q; want none", c.Via)
+			}
+		}
+	}
 	if w := webDo(t, h, "DELETE", "/api/epics/pay-later/tickets/"+f, ""); w.Code != http.StatusConflict || !strings.Contains(w.Body.String(), "follows") {
 		t.Fatalf("removing a follow-up: %d %s; want 409 naming follows", w.Code, w.Body)
 	}
@@ -282,6 +294,40 @@ func TestWebListsFiledTicketsAndOpensThem(t *testing.T) {
 	webGet(t, h, "/api/tickets/"+open, &d)
 	if d.Place != "board" {
 		t.Errorf("open detail place = %q", d.Place)
+	}
+}
+
+// A filed ticket keeps its line in an epic, and the page takes it out the
+// way 'jaira epic rm' does: the ticket is found in the logbook or the
+// archive, not answered with "not found".
+func TestWebRemovesAFiledTicketFromAnEpic(t *testing.T) {
+	ada, _ := twoBoards(t)
+	logged := createTicket(t, ada, "Long done")
+	rejected := createTicket(t, ada, "Never")
+	jsonOf(t, ada, "epic", "create", "old-work")
+	jsonOf(t, ada, "epic", "add", "old-work", logged, rejected)
+	for _, id := range []string{logged, rejected} {
+		if out, err := runAndSend(t, ada, "pull", id); err != nil {
+			t.Fatalf("pull: %v\n%s", err, out)
+		}
+	}
+
+	g.dir = ada
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fileAway(t, s, logged, filepath.Join(ticket.LogbookSubdir, "al-20261001"), "")
+	fileAway(t, s, rejected, ticket.ArchiveSubdir, "rejected-kind: wontfix\nrejected-why: nobody needs it\n")
+	h := (&web.Server{Source: newWebSource(s), Push: webPush}).Handler()
+
+	for _, id := range []string{logged, rejected} {
+		if w := webDo(t, h, "DELETE", "/api/epics/old-work/tickets/"+id, ""); w.Code != 200 {
+			t.Fatalf("removing filed %s: %d %s", id, w.Code, w.Body)
+		}
+	}
+	if got := jsonOf(t, ada, "epic", "show", "old-work"); got["total"].(float64) != 0 {
+		t.Fatalf("old-work still holds %v after removing both", got["total"])
 	}
 }
 
@@ -569,5 +615,38 @@ func TestWebEditsAnEpicsExternalKeys(t *testing.T) {
 	webGet(t, h, "/api/epics", &epics)
 	if x := epics[0].External; len(x) != 1 || x[0].Link != "" || x[0].URL != "javascript:alert(1)" {
 		t.Fatalf("a hand-written non-link = %+v; want it as text without a link", x)
+	}
+}
+
+// A page left open for hours writes as the person the board names now: an
+// alias that arrived after the server started is what its next write uses,
+// in the store and in the ref syncer alike.
+func TestWebWritesUnderTheNameThePeopleListGivesNow(t *testing.T) {
+	t.Setenv("JAIRA_USER", "")
+	ada, _ := twoBoards(t)
+	g.dir = ada
+	s, err := openStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := (&web.Server{Source: newWebSource(s), Push: webPush}).Handler()
+	if s.Actor != "ada" {
+		t.Fatalf("before the alias the page acts as %q, want ada", s.Actor)
+	}
+	syncer := refs // runCLI below opens a store of its own and replaces refs
+
+	if out, err := runCLI(t, ada, "people", "alias", "Ada Lovelace", "ada"); err != nil {
+		t.Fatalf("alias: %v\n%s", err, out)
+	}
+	refs = syncer
+	g.dir = ada
+	if w := webDo(t, h, "POST", "/api/epics", `{"name":"later"}`); w.Code != 200 {
+		t.Fatalf("create: %d %s", w.Code, w.Body)
+	}
+	if s.Actor != "Ada Lovelace" || refs.Actor != "Ada Lovelace" {
+		t.Errorf("after the alias the page writes as store %q, syncer %q; want Ada Lovelace for both", s.Actor, refs.Actor)
+	}
+	if author := gitOut(t, ada, "log", "-1", "--format=%an", "refs/jaira/epics/later"); strings.TrimSpace(author) != "Ada Lovelace" {
+		t.Errorf("the epic's ref commit is authored by %q, want Ada Lovelace", author)
 	}
 }

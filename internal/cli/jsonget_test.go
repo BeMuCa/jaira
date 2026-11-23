@@ -53,7 +53,7 @@ func TestTicketBriefCarriesTheNewestNotes(t *testing.T) {
 		"- **2026-10-05 10:00 · A** — fifth note\n"
 	j := map[string]any{"handle": "AB12CD", "title": "T", "goal": "G", "question": "Q?",
 		"review": map[string]string{"verdict": "V"}, "context": "LONG CONTEXT"}
-	line, err := compactJSON(ticketBrief(j, body))
+	line, err := compactJSON(ticketBrief(j, body, nil))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestTicketBriefCarriesTheNewestNotes(t *testing.T) {
 			t.Errorf("brief carries %q:\n%s", not, line)
 		}
 	}
-	if line, _ := compactJSON(ticketBrief(j, "")); !strings.Contains(line, `"notes_last":[],"notes_total":0`) {
+	if line, _ := compactJSON(ticketBrief(j, "", nil)); !strings.Contains(line, `"notes_last":[],"notes_total":0`) {
 		t.Errorf("a ticket without notes: %s", line)
 	}
 }

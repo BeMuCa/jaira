@@ -135,7 +135,7 @@ func (m *Model) projectTabs() []string {
 		}
 		sty := styMeta
 		label := fmt.Sprintf("%d %s", i+1, p.Name)
-		if p.Root == m.store.Root {
+		if p.Root == m.projectRoot {
 			// The board you are standing in is marked with a glyph, not only with
 			// a colour: the same rule the rest of the board follows, and colour
 			// alone is easy to miss on a line that also carries the live marker.
@@ -163,7 +163,7 @@ func (m *Model) switchToProject(n int) tea.Cmd {
 	if i < 0 || i >= len(m.projects) {
 		return nil
 	}
-	if m.projects[i].Root == m.store.Root {
+	if m.projects[i].Root == m.projectRoot {
 		return nil
 	}
 	return m.switchBoard(m.projects[i].Root)

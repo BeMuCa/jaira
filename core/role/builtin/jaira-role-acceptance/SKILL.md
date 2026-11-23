@@ -94,6 +94,10 @@ Run it now, in the ticket's worktree. Record `status` (`pass`/`fail`), a
 one-line `summary` (`5 passed`, `no output`), the last ~40 lines as `output`,
 and the time as `ran_at`.
 
+A step for a definition-of-done item that starts with `seen by a person:` is
+always **person**, even when it is a command: the item exists because a
+machine's answer is not what the person sees.
+
 Never run, even though it is a command:
 - anything that writes: `curl -X POST`, `jaira dod --done`, an SQL update
 - anything that costs tokens or starts a model run
@@ -147,12 +151,18 @@ This is the part that saves the person's time. Do it with care.
     "steps": [{"id": "b3-s01", "do": "Tab 1: 'Qualität prüfen' → 'Prüfung starten'",
                "expect": "the run starts and shows its progress", "covers": ["Q0G6H8", "6T77WD"], "costly": true}]
   }],
-  "tickets": [{"id": "Q0G6H8", "title": "...", "goal": "...", "dod": ["..."], "round": 1,
+  "tickets": [{"id": "Q0G6H8", "title": "...", "goal": "...", "dod": ["..."], "person": [], "round": 1,
                "next_lane": "review", "return_lane": "in-progress",
                "candidates": ["the export test covers 1MB, not 40MB"]}]
 }
 ```
 
+`person` lists the ticket's **open** definition-of-done items that start with
+`seen by a person:`, as `{"n": <.dod_items[].n>, "text": ...}` — not the
+ticked or superseded ones (`.state` `todo` or `doing` only). `[]` when there
+are none; always write it, even empty. A ticket without the key (a set built
+before it existed) reads as none — when you extend such a set, fill it in for
+every old ticket. An item of any other shape is refused by `build.py`.
 `next_lane` is the ticket's `next_lane` from `jaira show --json`;
 `return_lane` is the lane where this board does the work (the lane before the
 review loop, `in-progress` on the default board) — read it off `jaira lanes`,
@@ -209,6 +219,12 @@ next lane is the route's next step, not the terminal lane the board's `a` key
 jumps to: the page confirms behaviour, and whatever the board still asks after
 the person — a model review, a sign-off — still runs.
 
+A `seen by a person:` item is not ticked by you, and `--force` would carry
+the ticket past it unticked. So for an accepted ticket that has one,
+`build.py plan` prints the item and a single line for the person: its tick,
+then the move. Hand that line to the person and do not run it — they run it
+once they have looked. Their other accepted tickets you move as above.
+
 **Every failed step is a case, and working it out is your job, not the
 person's.** A "no" says something is wrong; it does not say what. For each
 case read what the person saw, the step's expectation, the definition of done
@@ -257,8 +273,9 @@ $(jaira roles list --json | jaira json get python) <this skill's folder>/build.p
 
 Publish report.html as its own artifact (no capabilities, `icon` `report`)
 and give the person its link; keep `report.md` beside data.json. Per block it
-lists accepted, not accepted and open tickets, and for every failed step what
-was expected, what was seen and what you decided. Each read-back writes a new
+lists accepted, not accepted and open tickets, the open `seen by a person:`
+items, and for every failed step what was expected, what was seen and what
+you decided. Each read-back writes a new
 record; an older one stays as it was.
 
 Reply: accepted n, back n (ids), new bugs n (ids), open n, questions, and the

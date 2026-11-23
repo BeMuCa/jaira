@@ -215,3 +215,371 @@ func TestMoveCountsARoundOnEverySendBack(t *testing.T) {
 		t.Fatalf("round is not written as a bare 3 a person can edit:\n%s", file)
 	}
 }
+
+// Moved hears every move that wrote, with the lane the ticket left — the one
+// place the TUI's moves and the CLI's reach a plugin alike — and nothing of a
+// refused one.
+func TestMovedHearsEveryWrittenMove(t *testing.T) {
+	s, env := fixture(t)
+	tk := mk(t, s, nil)
+	var heard []string
+	Moved = func(_ *ticket.Store, t *ticket.Ticket, from string, _ *lane.Set) {
+		heard = append(heard, from+">"+t.Status)
+	}
+	t.Cleanup(func() { Moved = nil })
+
+	if _, err := Move(s, env, tk.ID, Request{To: "todo", Actor: "berk"}); err != nil {
+		t.Fatal(err)
+	}
+	if len(heard) != 0 {
+		t.Fatalf("a refused move was heard: %v", heard)
+	}
+	if _, err := Move(s, env, tk.ID, Request{To: "todo", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	if len(heard) != 1 || heard[0] != "backlog>todo" {
+		t.Fatalf("heard %v, want [backlog>todo]", heard)
+	}
+}
+
+// Every send-back records the lane it came from, whether a person or a lane
+// sent it, and how many in a row came from that same lane: a person's return
+// or one from another lane starts the count again, parking records nothing,
+// and going on records nothing.
+func TestMoveRecordsWhoSentItBack(t *testing.T) {
+	s, env := fullBoard(t)
+	tk := mk(t, s, map[string]string{ticket.FieldStatus: "in-progress", ticket.FieldAssignee: "berk"})
+	back := func() (string, string, int) {
+		got, err := s.Load(tk.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return got.BackFrom, got.BackBy, got.BackCount
+	}
+	if from, by, n := back(); from != "" || by != "" || n != 0 {
+		t.Fatalf("a ticket never sent back reads %q/%q/%d, want nothing", from, by, n)
+	}
+	steps := []struct {
+		to       string
+		from, by string
+		n        int
+	}{
+		{"testing", "", "", 0},                  // going on records nothing
+		{"in-progress", "testing", "lane", 1},   // testing's first return
+		{"testing", "testing", "lane", 1},       // going on keeps the record
+		{"in-progress", "testing", "lane", 2},   // its second in a row
+		{"critique", "testing", "lane", 2},      //
+		{"in-progress", "critique", "lane", 1},  // another lane starts again
+		{"testing", "critique", "lane", 1},      //
+		{"blocked", "critique", "lane", 1},      // parking is no return
+		{"testing", "critique", "lane", 1},      // nor is coming back from it
+		{"in-progress", "testing", "lane", 1},   // testing again, but not in a row
+		{"signoff", "testing", "lane", 1},       //
+		{"in-progress", "signoff", "person", 1}, // the person's wish is no loop
+		{"testing", "signoff", "person", 1},     //
+		{"in-progress", "testing", "lane", 1},   // and starts the lane's count again
+		{"testing", "testing", "lane", 1},       //
+		{"in-progress", "testing", "lane", 2},   //
+		{"testing", "testing", "lane", 2},       //
+		{"in-progress", "testing", "lane", 3},   // the third: the prompt stops here
+	}
+	for i, st := range steps {
+		if _, err := Move(s, env, tk.ID, Request{To: st.to, Actor: "berk", Force: true}); err != nil {
+			t.Fatal(err)
+		}
+		if from, by, n := back(); from != st.from || by != st.by || n != st.n {
+			t.Fatalf("step %d, after the move to %s: %q/%q/%d, want %q/%q/%d", i, st.to, from, by, n, st.from, st.by, st.n)
+		}
+	}
+}
+
+// Two processes sending the same ticket back at once count one return, not
+// two: the second re-reads the ticket inside the lock and finds it already
+// in the lane it asked for.
+func TestMoveCountsOneReturnForTwoAtOnce(t *testing.T) {
+	s, env := fullBoard(t)
+	tk := mk(t, s, map[string]string{ticket.FieldStatus: "testing", ticket.FieldAssignee: "berk"})
+	errs := make(chan error, 2)
+	// A store each, as two processes have: one Store is not shared
+	// between goroutines anywhere in jaira.
+	for range 2 {
+		own, err := ticket.At(s.Root)
+		if err != nil {
+			t.Fatal(err)
+		}
+		go func() {
+			_, err := Move(own, env, tk.ID, Request{To: "in-progress", Actor: "berk", Force: true})
+			errs <- err
+		}()
+	}
+	for range 2 {
+		if err := <-errs; err != nil {
+			t.Logf("one move refused: %v", err)
+		}
+	}
+	got, err := s.Load(tk.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Status != "in-progress" || ticket.CurrentRound(got) != 2 || got.BackFrom != "testing" || got.BackCount != 1 {
+		t.Fatalf("two moves at once left %s, round %d, back %q/%d; want in-progress, round 2, testing/1",
+			got.Status, ticket.CurrentRound(got), got.BackFrom, got.BackCount)
+	}
+}
+
+// fullBoard is fixture with the whole shipped set, loop lanes included: the
+// default board has neither critique nor testing.
+func fullBoard(t *testing.T) (*ticket.Store, gate.Env) {
+	t.Helper()
+	s, env := fixture(t)
+	files, err := filepath.Glob(filepath.Join("..", "lane", "builtin", "*.md"))
+	if err != nil || len(files) == 0 {
+		t.Fatalf("no shipped lanes found: %v", err)
+	}
+	for _, f := range files {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(lane.ProjectLanesDir(s.Root), filepath.Base(f)), b, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if env.Lanes, err = lane.Load(s.Root); err != nil {
+		t.Fatal(err)
+	}
+	return s, env
+}
+
+// A person moving the ticket in the board is a person, whichever lane the
+// ticket leaves: three returns from testing made by hand never reach the
+// third-return stop.
+func TestMoveRecordsAPersonAtTheBoard(t *testing.T) {
+	s, env := fullBoard(t)
+	tk := mk(t, s, map[string]string{ticket.FieldStatus: "testing", ticket.FieldAssignee: "berk"})
+	for range 3 {
+		for _, to := range []string{"in-progress", "testing"} {
+			if _, err := Move(s, env, tk.ID, Request{To: to, Actor: "berk", Force: true, ByPerson: true}); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	got, err := s.Load(tk.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.BackFrom != "testing" || got.BackBy != ticket.BackByPerson || got.BackCount != 1 {
+		t.Fatalf("three returns by a person read %q/%q/%d, want testing/person/1", got.BackFrom, got.BackBy, got.BackCount)
+	}
+}
+
+// A stale bug hunt refuses the move into signoff, and a person's --force
+// carries it through like any other refusal (G8HNHT).
+func TestForceOverridesStaleHunt(t *testing.T) {
+	s, env := fixture(t)
+	lanes, err := lane.Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	env.Lanes = lanes
+	env.Hunt = func(*ticket.Ticket) gate.HuntReport {
+		return gate.HuntReport{CodeChanged: true, State: "unknown", At: "a1b2c3d", Head: "e4f5a6b"}
+	}
+	tk := mk(t, s, map[string]string{ticket.FieldStatus: "review", ticket.FieldAssignee: "berk"})
+	has := func(vs gate.Violations) bool {
+		for _, v := range vs {
+			if v.Code == gate.CodeHuntUncommitted {
+				return true
+			}
+		}
+		return false
+	}
+
+	res, err := Move(s, env, tk.ID, Request{To: "signoff", Actor: "berk"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !has(res.Refused) {
+		t.Fatalf("an uncommitted hunt was not refused: %v", res.Refused)
+	}
+	res, err = Move(s, env, tk.ID, Request{To: "signoff", Actor: "berk", Force: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !has(res.Overrode) {
+		t.Fatalf("force did not report the hunt it overrode: %v", res.Overrode)
+	}
+	if got, _ := s.Load(tk.ID); got.Status != "signoff" {
+		t.Fatalf("forced move landed in %q", got.Status)
+	}
+}
+
+// A send-back a worker forces past a loop lane's max-rounds is no decision:
+// it stays the lane's, and the count goes on rising, so the next worker still
+// stops. Only a reset of back-count — the teamlead's or a person's decision —
+// gives the lane its rounds back, and the send-back then needs no --force.
+func TestForcePastMaxRoundsKeepsCountingUntilAReset(t *testing.T) {
+	s, env := fullBoard(t)
+	tk := mk(t, s, map[string]string{ticket.FieldStatus: "in-progress", ticket.FieldAssignee: "berk"})
+	for i := 1; i <= 3; i++ {
+		for _, to := range []string{"testing", "in-progress"} {
+			if _, err := Move(s, env, tk.ID, Request{To: to, Actor: "berk", Force: true}); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if _, err := Move(s, env, tk.ID, Request{To: "testing", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	res, err := Move(s, env, tk.ID, Request{To: "in-progress", Actor: "berk"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !refusedFor(res, gate.CodeMaxRounds) {
+		t.Fatalf("the fourth send-back from testing was not refused for max-rounds: %+v", res.Refused)
+	}
+	if _, err := Move(s, env, tk.ID, Request{To: "in-progress", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := s.Load(tk.ID)
+	if got.BackFrom != "testing" || got.BackBy != ticket.BackByLane || got.BackCount != 4 {
+		t.Fatalf("a send-back forced past max-rounds reads %q/%q/%d, want testing/lane/4", got.BackFrom, got.BackBy, got.BackCount)
+	}
+
+	if _, err := s.Mutate(tk.ID, func(t *ticket.Ticket) error {
+		return t.Doc().SetRaw(ticket.FieldBackCount, "0")
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Move(s, env, tk.ID, Request{To: "testing", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	res, err = Move(s, env, tk.ID, Request{To: "in-progress", Actor: "berk"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Refused) > 0 {
+		t.Fatalf("the send-back after back-count=0 was refused: %+v", res.Refused)
+	}
+	got, _ = s.Load(tk.ID)
+	if got.BackBy != ticket.BackByLane || got.BackCount != 1 {
+		t.Fatalf("after the reset the send-back reads %q/%d, want lane/1", got.BackBy, got.BackCount)
+	}
+}
+
+func refusedFor(res *Result, code string) bool {
+	for _, v := range res.Refused {
+		if v.Code == code {
+			return true
+		}
+	}
+	return false
+}
+
+// Leaving the implementing lane forward with not one definition-of-done item
+// ticked is reported, and the move lands anyway; one ticked item, a send-back
+// or a parked ticket is not reported (77B4GA).
+func TestMoveReportsUntickedDoDOutOfImplementing(t *testing.T) {
+	body := func(first, second string) string {
+		return "\n# t\n\n## Definition of Done\n\n- [" + first + "] a\n- [" + second + "] b\n\n## Plan\n\n- [x] step\n"
+	}
+	cases := []struct {
+		name, from, to, first, want string
+		unticked                    int
+	}{
+		{"none ticked, forward", "in-progress", "review", " ", "review", 2},
+		{"one ticked, forward", "in-progress", "review", "x", "review", 0},
+		{"one superseded, forward", "in-progress", "review", "-", "review", 0},
+		{"none ticked, sent back", "in-progress", "pre-process", " ", "pre-process", 0},
+		{"none ticked, parked", "in-progress", "blocked", " ", "blocked", 0},
+		{"none ticked, not the implementing lane", "review", "signoff", " ", "signoff", 0},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s, env := fixture(t)
+			tk, err := s.Create(map[string]string{
+				ticket.FieldID:     ticket.NewID(time.Date(2026, 9, 6, 8, 0, 0, 0, time.UTC)),
+				ticket.FieldTitle:  "t",
+				ticket.FieldStatus: c.from, ticket.FieldAssignee: "berk",
+			}, nil, body(c.first, " "))
+			if err != nil {
+				t.Fatal(err)
+			}
+			res, err := Move(s, env, tk.ID, Request{To: c.to, Actor: "berk", Force: true, Reason: "waiting"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if res.Ticket.Status != c.want {
+				t.Fatalf("status %q, want %q: the warning must not stop the move", res.Ticket.Status, c.want)
+			}
+			if res.DoDUnticked != c.unticked {
+				t.Fatalf("DoDUnticked = %d, want %d", res.DoDUnticked, c.unticked)
+			}
+		})
+	}
+}
+
+// The commits a requires-commits gate accepted are the commits the move
+// writes: one derivation, read by the gate and written in the same move, so
+// a ticket cannot pass on commits and land with an empty list (8FE2EG).
+// A sha recorded by hand stays beside them.
+func TestMoveIntoDoneWritesTheCommitsItsGateFound(t *testing.T) {
+	s, env := fixture(t)
+	if l, ok := env.Lanes.Get("done"); !ok || !l.RequiresCommits {
+		t.Skip("the shipped done lane no longer requires commits")
+	}
+	tk, err := s.Create(map[string]string{
+		ticket.FieldID:    ticket.NewID(time.Date(2026, 9, 6, 8, 0, 0, 0, time.UTC)),
+		ticket.FieldTitle: "t", ticket.FieldStatus: "signoff",
+	}, map[string][]string{ticket.FieldCommits: {"cafe0001"}}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	derived := []string{"aaaa0001", "aaaa0002"}
+	env.DeriveCommits = func(*ticket.Ticket) []string { return derived }
+
+	if _, err := Move(s, env, tk.ID, Request{To: "done", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	after, err := s.Load(tk.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"aaaa0001", "aaaa0002", "cafe0001"}
+	if strings.Join(after.Commits, ",") != strings.Join(want, ",") {
+		t.Errorf("commits = %v, want %v", after.Commits, want)
+	}
+
+	// The gate refuses a ticket with no commits when nothing is derived; with
+	// the same derivation on offer it passes, and what it passed on is written.
+	bare := mk(t, s, map[string]string{
+		ticket.FieldID:     ticket.NewID(time.Date(2026, 9, 6, 9, 0, 0, 0, time.UTC)),
+		ticket.FieldStatus: "signoff",
+	})
+	bareT, _ := s.Load(bare.ID)
+	for _, v := range gate.CheckAdvance(env, bareT, gate.Request{To: "done"}) {
+		if v.Code == gate.CodeNeedsCommits {
+			t.Fatalf("gate refused commits it could derive: %s", v.Message)
+		}
+	}
+	if _, err := Move(s, env, bare.ID, Request{To: "done", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.Load(bare.ID); strings.Join(got.Commits, ",") != strings.Join(derived, ",") {
+		t.Errorf("commits = %v, want what the gate derived %v", got.Commits, derived)
+	}
+}
+
+// A lane that does not require commits writes none: the stamp belongs to
+// the lane whose gate reads them, not to every move.
+func TestMoveIntoALaneWithoutTheRequirementWritesNoCommits(t *testing.T) {
+	s, env := fixture(t)
+	tk := mk(t, s, map[string]string{ticket.FieldStatus: "signoff"})
+	env.DeriveCommits = func(*ticket.Ticket) []string { return []string{"aaaa0001"} }
+	if _, err := Move(s, env, tk.ID, Request{To: "in-progress", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.Load(tk.ID); len(got.Commits) != 0 {
+		t.Errorf("commits = %v, want none outside a requires-commits lane", got.Commits)
+	}
+}

@@ -43,6 +43,13 @@ done
 ticket="${1:?ticket id}"; lane="${2:?lane}"
 root="$(cd "${3:-$PWD}" && pwd)"
 herdr="${HERDR_BIN_PATH:-herdr}"
+# Herdr App (herdr-core) sets no HERDR_ENV and has no herdr binary: its hc runs
+# the same calls through herdr-hc.sh beside this file. HC_TERMINAL_ID is what
+# the app exports into every terminal it starts.
+if [ "${HERDR_ENV:-}" != 1 ] && [ -n "${HC_TERMINAL_ID:-}" ] \
+  && command -v "${HC_BIN:-hc}" >/dev/null 2>&1; then
+  herdr="$(cd "$(dirname "$0")" && pwd)/herdr-hc.sh"
+fi
 # Beside this file, not under ~/.claude/skills: roles are installed into a
 # project's .claude/skills as well, and a hard-coded home path misses those.
 here="$(cd "$(dirname "$0")" && pwd)"

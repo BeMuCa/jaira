@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/BeMuCa/jaira/core/gitrepo"
 	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -627,10 +628,8 @@ func refuseIfFiled(s *ticket.Store, name, inLogbook string) error {
 // milestone themselves (logbook, restore, fetch); create, add and rm go through
 // milestone.Create and milestone.Edit, which record it. Best effort, see
 // warnIfRecordOnly.
-func recordMilestone(ms *milestone.Milestone) {
-	if err := refs.RecordMilestone(ms.ID, ms.FileName(), ms.Bytes()); err != nil {
-		warnIfRecordOnly(&milestone.RecordError{Name: ms.Name, Err: err})
-	}
+func recordMilestone(ms *milestone.Milestone) error {
+	return refs.RecordMilestone(ms.ID, ms.FileName(), ms.Bytes())
 }
 
 // migrateHeld moves milestone files written before IDs existed to their ID
@@ -638,6 +637,19 @@ func recordMilestone(ms *milestone.Milestone) {
 // milestone outside milestone.Edit and milestone.Create (logbook, restore; a
 // fetch moves them in refs.FetchMilestones). It returns what moved.
 func migrateHeld(s *ticket.Store) ([]string, error) {
+	// First the files that fell behind their refs, as milestone.Edit does:
+	// logbook's gate and restore's write read the file next.
+	if err := refs.CatchUpMilestones(s.Root); err != nil {
+		return nil, err
+	}
+	// One ID in two files is a person's to sort out, not a file for logbook
+	// or restore to pick (8TT890). It refuses after the catch-up, which
+	// clears a stale copy beside a renamed file itself, and before Migrate,
+	// which could move an old-format file a refused restore has to put back.
+	// Migrate makes no pair: it only removes an old file whose ID file is there.
+	if err := milestone.CheckTwinFiles(s.Root); err != nil {
+		return nil, err
+	}
 	res, err := milestone.Migrate(s.Root, refs)
 	err = warnIfRecordOnly(err)
 	reportConflicts(res.Conflicts)
@@ -661,9 +673,9 @@ func migrateMilestones(s *ticket.Store) error {
 	// ref is born with it. No network means no fetch, and the move goes ahead:
 	// the base it records lets the next fetch adopt that edit.
 	if milestone.Pending(s.Root) && refs.FetchRefs() {
-		_, _, _, moved, conflicts, err := fetchMilestones(s)
-		reportMigrated(moved)
-		reportConflicts(conflicts)
+		res, err := fetchMilestones(s)
+		reportMigrated(res.Moved)
+		reportConflicts(res.Conflicts)
 		return err
 	}
 	unlock, err := s.Lock(milestoneLockName)
@@ -734,7 +746,7 @@ func warnIfRecordOnly(err error) error {
 		return err
 	}
 	warnRef(map[string]any{"milestone": re.Name, "error": re.Err.Error()},
-		"jaira: warning: milestone %q was written here but could not be queued for the remote: %v", re.Name, re.Err)
+		"jaira: warning: %s", re.Warning())
 	return nil
 }
 
@@ -866,4 +878,18 @@ func milestoneKey(raw string) (string, error) {
 func refuseAmbiguous(amb *milestone.AmbiguousError) error {
 	return fail(ExitValidation, "milestone_ambiguous",
 		"%v — nothing was written; run it again with one of them", amb)
+}
+
+// milestonesPath is where a board keeps its milestone files, relative to its root.
+var milestonesPath = filepath.ToSlash(filepath.Join(ticket.DirName, milestone.Subdir))
+
+// trackedMilestonesMessage is what update and validate say about
+// milestone files somebody committed.
+var trackedMilestonesMessage = "milestone files are committed under " + milestonesPath + "/: they travel on their refs, and a committed copy only adds commits and merge conflicts; " +
+	"take them out of git with: git rm -r --cached " + milestonesPath + " && git commit -m \"stop committing jaira milestones\""
+
+// milestonesTracked reports whether git tracks a file under the board's
+// milestone directory.
+func milestonesTracked(root string) bool {
+	return (&gitrepo.Repo{Dir: root}).Tracks(milestonesPath)
 }

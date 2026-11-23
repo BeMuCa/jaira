@@ -1,6 +1,6 @@
 // Self-contained, as a contract must be: these mirror hooks/board.ts.
 export type Waiting = {
-  id: string; title: string; lane: string; verdict: string; question: string; acceptTo: string | null; assignee: string; explainable: boolean
+  id: string; title: string; lane: string; verdict: string; question: string; acceptTo: string | null; assignee: string
 }
 export type Counts = { worker: number; review: number; person: number }
 
@@ -13,12 +13,11 @@ export type ThreadTally = { questions: number; stale: number }
 export type OverviewRow = { id: string; lane: string; title: string; who: string; reason: string }
 export type OverviewEvent = OverviewRow & { kind: 'created' | 'parked'; at: string }
 export type Overview = {
-  working: OverviewRow[]; queue: OverviewRow[]; parked: OverviewRow[]; history: { day: string; events: OverviewEvent[] }[]
+  working: OverviewRow[]; queue: OverviewRow[]; parked: OverviewRow[]; history: { day: string; events: OverviewEvent[] }[]; lanes: string[]
 }
 
 // What the Workers tab draws: these mirror hooks/overview.ts.
-export type Walker = { id: string; state: 'working' | 'idle' | 'question'; lane: string; next: string; title: string; progress: number }
-export type Spot = { lane: string; x: number }
+export type Worker = { id: string; role: string; state: 'working' | 'idle' | 'question' | 'blocked'; lane: string; title: string; open: number }
 
 declare module 'claude-code' {
   interface PluginState {
@@ -27,8 +26,15 @@ declare module 'claude-code' {
       board: BoardView | null
       cache: CacheState
       threads: ThreadTally
-      // The ticket the Give back pane asks "what is missing?" about.
+      // The ticket the Acceptance pane shows.
       giving: string | null
+      // The review notes that pane lists, each with what the person chose
+      // for it (fix now, follow-up, accept).
+      choosing: { id: string; items: { text: string; cls: 'blocker' | 'edge' | 'limit' | 'elsewhere'; choice: 'now' | 'later' | 'accept'; earlier?: 'now' | 'later' | 'accept'; follow?: string }[] } | null
+      // The definition-of-done items only a person ticks ('seen by a
+      // person: ...'), open on the ticket the Acceptance pane shows, each
+      // with whether the person ticked it there (board.ts SeenItem).
+      seen: { id: string; items: { n: number; text: string; checked: boolean }[] } | null
       // The ticket the pane shows.
       paneTicket: string | null
       // Moves once a minute, so the cache countdown redraws.
@@ -47,6 +53,35 @@ declare module 'claude-code' {
       // the ticket the own-answer pane asks about.
       explaining: { id: string; text: string; decided?: string } | null
       answering: string | null
+      // The Acceptance pane's head and history, read when it was opened:
+      // these mirror hooks/board.ts Story, with what git and the forge add.
+      story: {
+        id: string
+        story?: { title: string; goal: string; what: string; why: string; round: number; back?: { count: number; from: string }; dod: { done: number; superseded: number; total: number }; verdict: string; created?: number }
+        commits?: { commits: number; files: number }
+        // The language the person set in settings.json when the pane opened;
+        // without one the pane has no Translate.
+        language?: string
+        release: string[]
+        pr: boolean
+      } | null
+      // What the person typed into the Acceptance pane's field so far.
+      typed: string
+      // Why the last Execute changed nothing - a gate that refused done - by
+      // ticket, shown in the pane until the next press.
+      refusal: { id: string; text: string } | null
+      // Explain on one note, by ticket and note text: the sentence, or ''
+      // while the model is asked.
+      reasons: Record<string, Record<string, string>>
+      // The head and review notes of each ticket in the person's language,
+      // original text to the text shown, while Translate is on for it; a text
+      // without an entry is shown as written.
+      rephrased: Record<string, Record<string, string>>
+      // The ticket whose Translate waits for the model, or null.
+      translating: string | null
+      // The newest bug hunt of each ticket the band shows, as jaira's brief
+      // says it stands: ok, fail, unknown or skipped.
+      hunts: Record<string, 'ok' | 'fail' | 'unknown' | 'skipped'>
       // The explanation an Explain chat wrote onto each ticket the band shows,
       // and the decision that answered it, when one did.
       explained: Record<string, { text: string; decided?: string }>
@@ -65,17 +100,24 @@ declare module 'claude-code' {
       // null when that read failed.
       overview: Overview | null
       // The Overview pane's tab, its folded sections and the people its Log
-      // is filtered to, kept for the session across closing and opening it.
+      // is filtered to — chosen and left out, per row — kept for the session
+      // across closing and opening it. New keys, not overviewPeople/Lanes:
+      // those held string[] in older builds and may survive a hot reload.
       overviewTab: 'queue' | 'log' | 'workers'
       overviewFolded: Record<string, boolean>
-      overviewPeople: string[]
-      // The Workers tab: its figures, read while it is open; where each
-      // ticket's figures stand on their track; each ticket's colour and hat,
-      // kept while it stays on the board; and the frame the animation is at.
-      workers: Walker[] | null
-      workersWhere: Record<string, Spot>
+      overviewPeopleFilter: { only: string[]; not: string[] }
+      overviewLanesFilter: { only: string[]; not: string[] }
+      // The Workers tab: its agents, read while it is open; each ticket's
+      // colour and hat, kept while it stays on the board; when each agent
+      // (<id>/<kind>) was first seen; the first line of each ticket's last
+      // report; the frame the stone last lost a chunk (-1: never); and the
+      // frame the animation is at.
+      workers: Worker[] | null
       workersColors: Record<string, string>
       workersHats: Record<string, string>
+      workersSince: Record<string, number>
+      workersReports: Record<string, string>
+      workersFell: number
       workersFrame: number
     }
   }

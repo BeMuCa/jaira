@@ -129,9 +129,11 @@ type DriftEntry struct {
 
 // Drift implements D-02: it compares every lane this project's directory
 // supplies against a catalogue file of the same id, and reports the ones
-// whose bytes differ. Editing a lane writes through to the catalogue
-// immediately, so it is the project's copy that goes stale, not the other
-// way round — nothing here fixes that automatically; see RefreshDrift.
+// whose bytes differ. An E edit in the lane settings writes through to the
+// catalogue only while the two copies were byte-equal before the edit and the
+// id is not a built-in's; any other edit, by E or by hand, parts them, and
+// either side may then be the newer one — nothing here fixes that
+// automatically; see RefreshDrift.
 //
 // Checked only when the caller asks (the lane settings screen, on open),
 // per the decided design: checking on every command would mean every

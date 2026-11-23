@@ -29,8 +29,12 @@ func newInitCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "init",
 		Short: "Prepare this repository for jaira",
-		Long: `Creates .jaira/ with a tickets directory, plus a .gitignore so ephemeral
-session and lock state is never committed. Safe to run more than once.
+		Long: `Creates .jaira/ with a tickets directory. Safe to run more than once.
+
+A new board is private: .jaira/ is excluded in .git/info/exclude, which every
+worktree of the repository shares and which never shows up in a diff, so
+init leaves the tracked .gitignore alone. Outside a git repository the entry
+goes into .gitignore instead. 'jaira share' publishes the board.
 
 A board that is already in git — a fresh clone of a shared board — is set up
 on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
@@ -78,10 +82,17 @@ on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
 			// boards that were never shared and must still start private.
 			shared := hasAttributes(s) || (&gitrepo.Repo{Dir: s.Root}).Tracks(ticket.DirName)
 			var p board.Prepared
+			var msIgnored bool
+			var msIgnoreErr error
 			if !shared {
 				p = board.Prepare(s.Root, boardLanes.Facts())
 			} else {
 				p.Notes, p.NoteErr = board.AnnounceInAgentFiles(s.Root, boardLanes.Facts())
+				// A board 'share --undo' made private again is in git and
+				// excluded: its /.jaira/ covers the milestones already.
+				if !board.Ignored(s.Root) {
+					msIgnored, msIgnoreErr = board.AddMilestonesIgnore(s.Root, false)
+				}
 			}
 			// A board just prepared by this binary must not immediately be
 			// nagged about being out of date.
@@ -91,9 +102,10 @@ on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
 				return emit(cmd.OutOrStdout(), map[string]any{
 					"root": s.Root, "tickets_dir": s.TicketsDir(), "created": created,
 					"private": board.Ignored(s.Root), "gitignore_written": p.Ignored,
-					"state_dir":     s.SessionsDir(),
-					"agent_notes":   p.Notes,
-					"default_board": db.Path, "lanes": boardLanes.IDs(),
+					"milestones_ignored": msIgnored,
+					"state_dir":          s.SessionsDir(),
+					"agent_notes":        p.Notes,
+					"default_board":      db.Path, "lanes": boardLanes.IDs(),
 					"lane_warnings": db.Warnings,
 				})
 			}
@@ -114,16 +126,21 @@ on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
 				fmt.Fprintf(os.Stderr, "jaira: warning: %s\n", w)
 			}
 			if p.IgnoreErr != nil {
-				fmt.Fprintf(os.Stderr, "jaira: warning: could not write .gitignore: %v\n", p.IgnoreErr)
+				fmt.Fprintf(os.Stderr, "jaira: warning: could not write %s: %v\n", board.IgnoreFileName(s.Root), p.IgnoreErr)
 			} else if p.Ignored {
-				fmt.Fprintf(cmd.OutOrStdout(), "This board is private: .jaira/ is gitignored, so nobody else sees it.\n")
+				fmt.Fprintf(cmd.OutOrStdout(), "This board is private: .jaira/ is excluded in %s, so nobody else sees it.\n", board.IgnoreFileName(s.Root))
+			}
+			if msIgnoreErr != nil {
+				fmt.Fprintf(os.Stderr, "jaira: warning: could not write .gitignore: %v\n", msIgnoreErr)
+			} else if msIgnored {
+				fmt.Fprintf(cmd.OutOrStdout(), "Added %s to .gitignore: milestone files travel on their refs and stay out of git.\n", board.MilestonesIgnoreLine)
 			}
 			if p.NoteErr != nil {
 				fmt.Fprintf(os.Stderr, "jaira: warning: could not update an agent instruction file: %v\n", p.NoteErr)
 			} else if line := announceLine(p.Notes); line != "" {
 				fmt.Fprint(cmd.OutOrStdout(), line)
 			}
-			// Said from .gitignore, not from why init left it alone: a board in
+			// Said from the ignore files, not from why init left it alone: a board in
 			// git can still be ignored — after 'share --undo', or in a clone of
 			// one whose ignore line was committed. Neither applies when writing
 			// the ignore entry failed; the warning above already says so.
@@ -131,7 +148,7 @@ on this machine and keeps its .gitignore exactly as it is: it stays shared.`,
 			case board.Ignored(s.Root):
 				fmt.Fprintf(cmd.OutOrStdout(), "\nRun 'jaira share' when you want your team to have it.\n")
 			case shared:
-				fmt.Fprintf(cmd.OutOrStdout(), "\nThis board is shared: it is already in git, so .gitignore was left alone.\n")
+				fmt.Fprintf(cmd.OutOrStdout(), "\nThis board is shared: it is already in git, so it was not made private.\n")
 			}
 			return nil
 		},
@@ -249,6 +266,19 @@ already know it is yours; --assignee wins over it.`,
 				}
 				parentID = full
 			}
+			// blocked-by is resolved like every other link: a handle stored
+			// as typed matched nothing and blocked forever.
+			blockerIDs := make([]string, 0, len(blockedBy))
+			for _, ref := range blockedBy {
+				if strings.TrimSpace(ref) == "" {
+					continue
+				}
+				full, err := resolveBlocker(s, ref)
+				if err != nil {
+					return err
+				}
+				blockerIDs = append(blockerIDs, full)
+			}
 			relatedIDs := make([]string, 0, len(related))
 			for _, ref := range related {
 				if strings.TrimSpace(ref) == "" {
@@ -281,6 +311,9 @@ already know it is yours; --assignee wins over it.`,
 			if assignee == "" && mine {
 				assignee = me
 			}
+			// A person is stored under their jaira name, whichever of their
+			// names the caller typed, so the file says what the board shows.
+			assignee = peopleList().Canonical(assignee)
 
 			// The frontmatter field is one string and the body checklist is the
 			// list: core/gate reads DoDItems when there are any and only falls
@@ -322,7 +355,7 @@ already know it is yours; --assignee wins over it.`,
 				return err
 			}
 			lists := map[string][]string{
-				ticket.FieldBlockedBy: blockedBy,
+				ticket.FieldBlockedBy: blockerIDs,
 				ticket.FieldTags:      tagNames,
 				ticket.FieldRelated:   relatedIDs,
 				ticket.FieldCommits:   nil,
@@ -372,6 +405,7 @@ already know it is yours; --assignee wins over it.`,
 			// file stays away until somebody pulls it into work. See
 			// fileOnRefOnly for why.
 			onRefOnly, why := fileOnRefOnly(t)
+			firePlugins("create", s, t, "", lanes)
 			targetLane, _ := lanes.Get(target)
 			skipped, emptyInputs := skippedByCreate(lanes, t, targetLane)
 			if g.jsonOut {
@@ -461,7 +495,7 @@ already know it is yours; --assignee wins over it.`,
 	f.StringVar(&board, "board", "", boardFlagUsage)
 	f.StringVar(&tier, "tier", "", "model tier alias for agentic lanes")
 	f.StringVar(&body, "body", "", "markdown body")
-	f.StringSliceVar(&blockedBy, "blocked-by", nil, "ticket ids that must finish first")
+	f.StringSliceVar(&blockedBy, "blocked-by", nil, "ticket ids that must finish first, or pr#<n>: a pull request that must be merged first")
 	f.StringArrayVar(&tags, "tag", nil, "topic tag; repeat for several. Run 'jaira tags' first and reuse an existing name")
 	f.StringVar(&follows, "follows", "", "id of the ticket this one follows on from (default: the ticket the branch is named after; 'none' for no link)")
 	f.StringVar(&parent, "parent", "", "id of the ticket this one is a part of")
@@ -644,7 +678,7 @@ ticket.`,
 				if laneFilter != "" && t.Status != laneFilter {
 					continue
 				}
-				if assigneeFilter != "" && !strings.EqualFold(t.Assignee, assigneeFilter) {
+				if assigneeFilter != "" && !peopleList().Same(t.Assignee, assigneeFilter) {
 					continue
 				}
 				if tagFilter != "" && !tag.Matches(t.Tags, tagFilter) {
@@ -670,6 +704,7 @@ ticket.`,
 				for _, t := range out {
 					row := ticketJSON(t, env.Lanes)
 					row["milestones"] = strOrEmpty(ms.Names(t.ID))
+					row["waiting_on"] = gate.Waiting(env, t)
 					arr = append(arr, row)
 				}
 				return emit(cmd.OutOrStdout(), map[string]any{"tickets": arr, "count": len(arr)})
@@ -750,8 +785,13 @@ func printTable(w io.Writer, ts []*ticket.Ticket, env gate.Env) {
 			if !gate.Ready(t) {
 				flags += " [needs spec]"
 			}
-			if len(t.BlockedBy) > 0 && !gate.Actionable(env, t) {
+			// A pull request it waits on is named, so the row says what
+			// clears it; a ticket blocker is in show.
+			if waits := gate.Waiting(env, t); len(waits) > 0 {
 				flags += " [blocked]"
+				for _, w := range gate.WaitingOnPR(env, t) {
+					flags += " [" + w + "]"
+				}
 			}
 			// On its ref and not on this disk: it can be read and it cannot be
 			// written, so the row says which command changes that rather than
@@ -764,7 +804,7 @@ func printTable(w io.Writer, ts []*ticket.Ticket, env gate.Env) {
 			if t.BehindRef {
 				flags += " [behind ref: pull it]"
 			}
-			fmt.Fprintf(w, "  %-10s %-52s %s%s\n", ticket.Handle(t.ID), truncate(t.Title, 52), t.Assignee, flags)
+			fmt.Fprintf(w, "  %-10s %-52s %s%s\n", ticket.Handle(t.ID), truncate(t.Title, 52), shownName(t.Assignee), flags)
 		}
 	}
 	fmt.Fprintln(w)
@@ -786,8 +826,14 @@ from the ticket, and the count is always printed, so a reader is never left
 thinking they have seen everything.
 
 --brief prints one line of JSON with only what a chat about the ticket needs:
-id, title, goal, question, review, the newest four notes as notes_last and how
-many there are as notes_total.`,
+id, title, goal, question, review, the newest finished bug hunt as bughunt
+(at: its commit; state: ok when no commit naming the ticket since touched
+the files it read, fail when one did, unknown when a file it read is changed
+and not committed - in conversational mode, committing the hunted work after
+the hunt turns it fail until the next hunt - and skipped on a stop-after-fix
+ticket whose hunt does not cover HEAD; null without a finished hunt, except
+on a stop-after-fix ticket, where it is skipped with an empty at), the newest four notes as notes_last and how many
+there are as notes_total.`,
 		Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()
@@ -814,7 +860,7 @@ many there are as notes_total.`,
 				return showForLane(cmd, s, env, t, forLane)
 			}
 			if brief {
-				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body))
+				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body, (&gitrepo.Repo{Dir: s.Root}).LastHunt(t)))
 				if err != nil {
 					return err
 				}
@@ -822,11 +868,7 @@ many there are as notes_total.`,
 				return nil
 			}
 			if g.jsonOut {
-				j := ticketJSON(t, env.Lanes)
-				j["body"] = t.Body
-				j["path"] = path
-				j["filed_away"] = filedAway(t, path)
-				return emit(cmd.OutOrStdout(), j)
+				return emit(cmd.OutOrStdout(), showJSON(t, env.Lanes, path))
 			}
 			if where := filedAway(t, path); where != "" {
 				fmt.Fprintf(cmd.OutOrStdout(), "off the board: %s\n", where)
@@ -837,8 +879,18 @@ many there are as notes_total.`,
 	}
 	cmd.Flags().StringVar(&forLane, "for-lane", "", "assemble the bounded input a lane's agent should receive")
 	cmd.Flags().IntVar(&notesLast, "notes-last", 0, "show only the newest n progress notes (0 shows all)")
-	cmd.Flags().BoolVar(&brief, "brief", false, "one line of JSON: title, goal, question, review and the newest notes")
+	cmd.Flags().BoolVar(&brief, "brief", false, "one line of JSON: title, goal, question, review, the newest bug hunt and the newest notes")
 	return cmd
+}
+
+// showJSON is what 'show --json' prints for t, loaded from path: the ticket,
+// its body, and where it lives. A plugin's event gets the same object.
+func showJSON(t *ticket.Ticket, lanes *lane.Set, path string) map[string]any {
+	j := ticketJSON(t, lanes)
+	j["body"] = t.Body
+	j["path"] = path
+	j["filed_away"] = filedAway(t, path)
+	return j
 }
 
 // briefNotes is how many of the newest notes a brief carries.
@@ -849,21 +901,22 @@ const briefNotes = 4
 // proof is most of a chat's context for nothing. spawn.sh used to build it with
 // python3, which a Windows machine may not have (issue #79); notes split where
 // ticket.Notes splits them, at a dated heading, and the fields keep its order.
-func ticketBrief(j map[string]any, body string) any {
+func ticketBrief(j map[string]any, body string, hunt *gitrepo.Hunt) any {
 	notes := []string{}
 	for _, n := range ticket.Notes(body) {
 		notes = append(notes, n.Raw)
 	}
 	last := notes[max(0, len(notes)-briefNotes):]
 	return struct {
-		ID         any      `json:"id"`
-		Title      any      `json:"title"`
-		Goal       any      `json:"goal"`
-		Question   any      `json:"question"`
-		Review     any      `json:"review"`
-		NotesLast  []string `json:"notes_last"`
-		NotesTotal int      `json:"notes_total"`
-	}{j["handle"], j["title"], j["goal"], j["question"], j["review"], last, len(notes)}
+		ID         any           `json:"id"`
+		Title      any           `json:"title"`
+		Goal       any           `json:"goal"`
+		Question   any           `json:"question"`
+		Review     any           `json:"review"`
+		Bughunt    *gitrepo.Hunt `json:"bughunt"`
+		NotesLast  []string      `json:"notes_last"`
+		NotesTotal int           `json:"notes_total"`
+	}{j["handle"], j["title"], j["goal"], j["question"], j["review"], hunt, last, len(notes)}
 }
 
 // printDetail renders one ticket for a person. notesLast caps how many Progress
@@ -904,9 +957,9 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kid
 	if t.BehindRef {
 		row("behind", "the file here is older than its ref; this is the ref's state — run 'jaira pull "+ticket.Handle(t.ID)+"' before writing")
 	}
-	row("assignee", t.Assignee)
-	row("creator", t.Creator)
-	row("updated by", t.UpdatedBy)
+	row("assignee", shownName(t.Assignee))
+	row("creator", shownName(t.Creator))
+	row("updated by", shownName(t.UpdatedBy))
 	row("executed", t.ExecutedBy)
 	row("tier", t.ModelTier)
 	// Next to the tier because it is the same kind of statement: how this
@@ -915,6 +968,15 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kid
 	// the ticket rather than in a session. row() skips an empty value, so a
 	// ticket without a mode costs no line.
 	row("mode", t.Mode)
+	// Only what differs from the default costs a line: a ticket's own blocker
+	// rule, a skipped hunt, a recorded send-back.
+	row("blockers", t.BlockerRule)
+	if t.StopAfterFix {
+		row("after fix", "tests only, no new bug hunt")
+	}
+	if t.BackFrom != "" {
+		row("back", fmt.Sprintf("from %s (%s), %d in a row", t.BackFrom, dash(t.BackBy), t.BackCount))
+	}
 	row("tags", strings.Join(t.Tags, " "))
 	row("goal", t.Goal)
 	row("context", t.Context)
@@ -975,6 +1037,9 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kid
 		fmt.Fprintf(w, "\nReview\n")
 		row("  summary", t.ReviewSummary)
 		row("  gaps", t.ReviewGaps)
+		if t.ReviewVerdictGaps != t.ReviewGaps {
+			row("  gaps at verdict", t.ReviewVerdictGaps)
+		}
 		row("  verdict", t.ReviewVerdict)
 		row("  check", t.ReviewCheck)
 	}
@@ -1093,6 +1158,7 @@ its end. Review fields keep their history across loop rounds that way.`,
 			// landed says where a board change put a ticket whose lane the new
 			// board does not have; empty when its lane came along.
 			landed := ""
+			reviewWritten := false
 			t, err := s.Mutate(id, func(t *ticket.Ticket) error {
 				for _, a := range assignments {
 					k, v, ok := strings.Cut(a, "=")
@@ -1112,7 +1178,13 @@ its end. Review fields keep their history across loop rounds that way.`,
 							if p = strings.TrimSpace(p); p == "" {
 								continue
 							}
-							if linkFields[k] {
+							if k == ticket.FieldBlockedBy {
+								full, rerr := resolveBlocker(s, p)
+								if rerr != nil {
+									return rerr
+								}
+								p = full
+							} else if linkFields[k] {
 								full, rerr := resolveRef(s, p)
 								if rerr != nil {
 									return rerr
@@ -1179,6 +1251,20 @@ its end. Review fields keep their history across loop rounds that way.`,
 						}
 						v = canon
 					}
+					// stop-after-fix is read as exactly "true"; checked for
+					// the same reason as mode above.
+					// a person is stored under their jaira name, as create does.
+					if k == ticket.FieldAssignee {
+						v = peopleList().Canonical(v)
+					}
+					if k == ticket.FieldStopAfterFix {
+						canon, ok := ticket.CanonicalStopAfterFix(v)
+						if !ok {
+							return fail(ExitUsage, "bad_stop_after_fix",
+								"stop-after-fix is true, false or empty, got %q", v)
+						}
+						v = canon
+					}
 					if err := t.Doc().SetScalar(k, v); err != nil {
 						return err
 					}
@@ -1189,6 +1275,12 @@ its end. Review fields keep their history across loop rounds that way.`,
 							return err
 						}
 					}
+					if k == ticket.FieldReviewVerdict || k == ticket.FieldReviewGaps {
+						reviewWritten = true
+					}
+				}
+				if reviewWritten {
+					return keepVerdictGaps(t)
 				}
 				return nil
 			})
@@ -1205,6 +1297,12 @@ its end. Review fields keep their history across loop rounds that way.`,
 			env, err := envFor(s, t)
 			if err != nil {
 				return err
+			}
+			firePlugins("set", s, t, "", env.Lanes)
+			// A board change that put the ticket into another lane is a move
+			// as well, and a plugin mirroring lanes has to hear it as one.
+			if landed != "" {
+				firePlugins("move", s, t, cur.Status, env.Lanes)
 			}
 			if g.jsonOut {
 				j := ticketJSON(t, env.Lanes)
@@ -1297,6 +1395,13 @@ func newLanesCmd() *cobra.Command {
 						"input_requires":    l.InputRequires, "output_produces": l.OutputProduces,
 						"source": l.Source, "prompt": l.Prompt, "creator": l.Creator,
 					})
+					// Only for a lane that declares its verdict words, as in the
+					// --for-lane payload: the cockpit's verdict light reads which
+					// way a review-verdict sends the ticket off these, not off
+					// words of its own.
+					if l.DeclaresVerdicts() {
+						arr[len(arr)-1]["verdicts"] = map[string][]string{"accept": l.VerdictAccept, "send_back": l.VerdictSendBack}
+					}
 				}
 				avail := make([]map[string]any, 0, len(available))
 				for _, l := range available {
@@ -1445,7 +1550,7 @@ func newLanesShowCmd() *cobra.Command {
 					"input_requires": l.InputRequires, "output_produces": l.OutputProduces,
 					"source": src, "prompt": l.Prompt, "creator": l.Creator,
 					"after": l.After, "description": l.Description, "overrides": l.Overrides,
-					"rejects_to": l.RejectsTo, "holds": l.Holds,
+					"rejects_to": l.RejectsTo, "max_rounds": l.MaxRounds, "holds": l.Holds,
 					"context": l.Context, "context_implied": l.ContextImplied, "context_invalid": l.ContextInvalid,
 					"human_exit": l.RequiresHumanExit,
 				})
@@ -1458,6 +1563,9 @@ func newLanesShowCmd() *cobra.Command {
 			// are the lane's place in the flow: where it sits, and where it sends
 			// work that is not good enough yet.
 			fmt.Fprintf(w, "Rejects to:  %s\n", dash(board.OrList(l.RejectsTo)))
+			if l.MaxRounds > 0 {
+				fmt.Fprintf(w, "Max rounds:  %d in a row, then the teamlead decides, or a person\n", l.MaxRounds)
+			}
 			// Labelled as what it is, not as a position: column order follows
 			// Anchor, above, and never this number.
 			fmt.Fprintf(w, "Merge rank:  %d\n", l.Precedence)
@@ -1637,6 +1745,12 @@ func nextLaneID(t *ticket.Ticket, lanes *lane.Set) string {
 	return ""
 }
 
+// backJSON is the last send-back as jaira recorded it, as show --json and
+// the --for-lane payload both print it.
+func backJSON(t *ticket.Ticket) map[string]any {
+	return map[string]any{"from": t.BackFrom, "by": t.BackBy, "count": t.BackCount}
+}
+
 func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 	_, known := lanes.Get(t.Status)
 	dodComplete, _ := t.DoDComplete()
@@ -1655,8 +1769,8 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"ready":              gate.Ready(t),
 		"on-ref-only":        t.ReadOnly,
 		"behind-ref":         t.BehindRef,
-		"creator":            t.Creator,
-		"assignee":           t.Assignee,
+		"creator":            shownName(t.Creator),
+		"assignee":           shownName(t.Assignee),
 		"executed_by":        t.ExecutedBy,
 		"mode":               t.Mode,
 		"goal":               t.Goal,
@@ -1668,6 +1782,7 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"parent":             t.Parent,
 		"related":            t.Related,
 		"blocked_reason":     t.BlockedReason,
+		"external":           t.External,
 		"commits":            t.Commits,
 		"model_tier":         t.ModelTier,
 		"question":           t.Question,
@@ -1679,6 +1794,9 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"review": map[string]string{
 			"summary": t.ReviewSummary, "gaps": t.ReviewGaps,
 			"verdict": t.ReviewVerdict, "check": t.ReviewCheck,
+			// The gaps as they stood beside the verdict, for a verdict a
+			// later round left standing (its gaps are the loop lanes' by then).
+			"verdict_gaps": t.ReviewVerdictGaps,
 		},
 		"rejected": rejectionJSON(t.Rejected),
 		// Where this goes when the current step is finished, so the route is not
@@ -1688,10 +1806,19 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		// so a reader can tell a verdict from one a later round left standing.
 		"round":        ticket.CurrentRound(t),
 		"review_round": t.ReviewRound,
-		"next_lane":    nextLaneID(t, lanes),
-		"created_at":   nonZero(t.CreatedAt),
-		"updated_at":   nonZero(t.UpdatedAt),
-		"updated_by":   t.UpdatedBy,
+		// What sends work back on this ticket — its own rule, else the
+		// default — and whether a fix round skips the bug hunt, so the lanes
+		// and the bug hunter read one answer instead of each its own guess.
+		"blocker_rule":   ticket.BlockerRule(t),
+		"stop_after_fix": t.StopAfterFix,
+		// The last send-back as jaira recorded it: the lane it came from,
+		// "person" or "lane", and how many in a row came from that lane.
+		// Empty and 0 until a ticket is first sent back.
+		"back":       backJSON(t),
+		"next_lane":  nextLaneID(t, lanes),
+		"created_at": nonZero(t.CreatedAt),
+		"updated_at": nonZero(t.UpdatedAt),
+		"updated_by": shownName(t.UpdatedBy),
 	}
 }
 
@@ -1768,6 +1895,21 @@ var linkFields = map[string]bool{
 // ticket that exists — on the board, on a ref, or filed away. A reference
 // that resolves to nothing is refused rather than written: a dead link is
 // worse than no link, because it looks like a trail exists.
+// resolveBlocker is resolveRef for a blocked-by entry, which may also be a
+// pull request: pr#12, any case, is written as pr#12 and waits for that pull
+// request's merge. A malformed one is refused rather than looked up as a
+// ticket, so "pr#12a" says what is wrong with it instead of "no such ticket".
+func resolveBlocker(s *ticket.Store, ref string) (string, error) {
+	n, isPR, err := ticket.ParsePRRef(ref)
+	if isPR {
+		if err != nil {
+			return "", fail(ExitValidation, "bad_pr_ref", "%v", err)
+		}
+		return ticket.FormatPRRef(n), nil
+	}
+	return resolveRef(s, ref)
+}
+
 func resolveRef(s *ticket.Store, ref string) (string, error) {
 	t, _, err := s.LoadAnywhere(ref)
 	if err != nil {
@@ -1806,4 +1948,19 @@ func rejectionJSON(r ticket.Rejection) map[string]string {
 		at = r.At.UTC().Format(time.RFC3339)
 	}
 	return map[string]string{"kind": r.Kind, "why": r.Why, "by": r.By, "at": at, "duplicate_of": r.DuplicateOf}
+}
+
+// keepVerdictGaps copies review-gaps beside the verdict while both belong to
+// the verdict's round: written in either order, in one call or two, the copy
+// is the review's own findings. From the next round on a loop lane rewrites
+// review-gaps and the copy stays as the review left it.
+func keepVerdictGaps(t *ticket.Ticket) error {
+	d := t.Doc()
+	verdict, _, _ := d.Scalar(ticket.FieldReviewVerdict)
+	round, _, _ := d.Scalar(ticket.FieldReviewRound)
+	if strings.TrimSpace(verdict) == "" || strings.TrimSpace(round) != strconv.Itoa(ticket.CurrentRound(t)) {
+		return nil
+	}
+	gaps, _, _ := d.Scalar(ticket.FieldReviewGaps)
+	return d.SetScalar(ticket.FieldReviewVerdictGaps, gaps)
 }

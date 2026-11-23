@@ -16,6 +16,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"time"
 	"unicode"
 
@@ -30,6 +31,8 @@ import (
 	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/move"
+	"github.com/BeMuCa/jaira/core/people"
+	"github.com/BeMuCa/jaira/core/pr"
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/session"
@@ -56,6 +59,7 @@ const (
 	modeDefaultBoard
 	modeDelete
 	modeReject
+	modeSendBack
 	modeDropBoard
 	modeLegend
 	modeMilestones
@@ -194,6 +198,10 @@ type Model struct {
 	// typed: on the board the cursor may move under a reload, and the
 	// reason must land on the ticket it was typed for.
 	rejecting *ticket.Ticket
+	// sendingBack is the send-back the reason prompt was opened for. It is
+	// pinned here, not re-read from the cursor, because the board reloads
+	// every two seconds while the person types.
+	sendingBack *sendBack
 
 	// copied marks that the id was just put on the clipboard. OSC52 gives no
 	// feedback of its own, so the pane has to say the copy happened — it is
@@ -207,6 +215,14 @@ type Model struct {
 	// card on screen asks the gate whether it is blocked, and rebuilding
 	// this for each of them would list the logbook once per card.
 	index *link.Index
+
+	// prCheck answers blocked-by pr#<n> from the pull request cache, read
+	// once per reload like index. prCacheFile is where the cache of the
+	// repository prCacheRoot lives: a board switch changes m.store, and the
+	// path follows the store rather than the model.
+	prCheck     *pr.Checker
+	prCacheFile string
+	prCacheRoot string
 
 	// layer is the open milestone layer, nil when it is closed; see layer.go.
 	layer *layerView
@@ -237,6 +253,10 @@ type Model struct {
 	// first frame. Picking one swaps the store in place (switchBoard).
 	projects []project.Project
 	projIdx  int
+	// projectRoot is the root this board is listed under in projects
+	// (project.Board): its main checkout when it sits in a linked worktree.
+	// "Is this entry the open board" compares against it, never store.Root.
+	projectRoot string
 
 	// me is this machine's identity (identity.Current), cached because it
 	// shells out to git config and the card renderer asks for it per card.
@@ -357,6 +377,17 @@ type pendingMove struct {
 	claiming bool
 	refusals gate.Violations
 	confirm  bool
+	note     string // the send-back reason, written with the forced move
+}
+
+// sendBack is a move out of a person's lane waiting for its reason: which
+// ticket, the lane it was in when the prompt opened, where it goes, and the
+// page the prompt returns to.
+type sendBack struct {
+	id     string
+	from   string
+	target *lane.Lane
+	back   mode
 }
 
 // New builds a board model.
@@ -365,12 +396,11 @@ func New(s *ticket.Store) (*Model, error) {
 	// its 1-9 binding work from the very first frame — a board that has to be
 	// opened once with 'p' before it knows its own neighbours is the bug this
 	// exists to fix.
-	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), darkBG: true, anim: true, animStart: time.Now()}
+	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), projectRoot: project.Board(s.Root), darkBG: true, anim: true, animStart: time.Now()}
 	m.versionLine, m.releasePill = versionLine()
 	m.versionAt = time.Now()
-	m.me = identity.Current(s.Root)
 	// Mutations from the board record who made them, the same as the CLI's.
-	s.Actor = m.me
+	m.refreshPeople()
 	// And they are queued for the ticket's own ref, the same as the CLI's.
 	// Queued, not sent: nothing in the update loop may wait for a network, so
 	// the board files the write and a command with a route sends it.
@@ -380,7 +410,6 @@ func New(s *ticket.Store) (*Model, error) {
 	// decoded tickets; the CLI is one-shot and never asks for it.
 	s.EnableCache()
 	m.fullAt = time.Now()
-	m.myAliases = identity.Aliases(s.Root)
 	if err := m.reload(); err != nil {
 		return nil, err
 	}
@@ -407,14 +436,13 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 	project.Remember(s.Root)
 	m.Close()
 	m.store = s
-	m.me = identity.Current(s.Root)
+	m.projectRoot = project.Board(s.Root)
 	// Mutations from the board record who made them, the same as the CLI's.
-	s.Actor = m.me
+	m.refreshPeople()
 	m.refSync = newSyncer(s, m.me)
 	s.Recorder = m.refSync
 	s.EnableCache()
 	m.fullAt = time.Now()
-	m.myAliases = identity.Aliases(s.Root)
 	m.scroll = map[string]int{}
 	m.laneIdx, m.cardIdx = 0, 0
 	m.detail = nil
@@ -443,6 +471,16 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 // measurable. Reading from disk each time, rather than applying events to the
 // view, keeps edits made entirely outside this process (a git pull, another
 // session, a hand edit) on the same path as our own.
+// refreshPeople reads the board's people list, and with it the name this
+// board acts as and the names that mean this person. Called when a board is
+// opened, before its ref syncer is made from m.me.
+func (m *Model) refreshPeople() {
+	boardPeople.Store(identity.People(m.store.Root))
+	m.me = identity.Current(m.store.Root)
+	m.store.Actor = m.me
+	m.myAliases = identity.Aliases(m.store.Root)
+}
+
 func (m *Model) reload() error {
 	lanes, err := lane.LoadBoard(m.store.Root, m.boardName)
 	if errors.Is(err, lane.ErrNoSuchBoard) {
@@ -472,6 +510,7 @@ func (m *Model) reload() error {
 	// The relation index is built from the tickets this reload is about to
 	// read, so it goes with them rather than outliving them.
 	m.index = nil
+	m.prCheck = nil
 	// A reload is exactly the moment the git state behind a derived commit
 	// list may have changed — a teammate's commit naming the handle arrives,
 	// the board refreshes, and a stale memo would keep the sign-off screen
@@ -515,18 +554,26 @@ func (m *Model) reload() error {
 // m.sessions rather than the disk a second time — reload already loaded it.
 func (m *Model) refreshLiveBoards() {
 	live := make(map[string]bool, len(m.projects))
+	here := project.Canonical(m.store.Root)
 	for _, p := range m.projects {
-		if p.Root == m.store.Root {
-			for _, s := range m.sessions {
-				if !s.Stale() {
-					live[p.Root] = true
-					break
-				}
+		// An entry stands for its main checkout and every linked worktree of
+		// it (project.Trees): an agent in any of them makes the line live.
+		for _, tree := range project.Trees(p.Root) {
+			if live[p.Root] {
+				break
 			}
-			continue
-		}
-		if boardHasLiveSession(p.Root) {
-			live[p.Root] = true
+			if tree == here {
+				for _, s := range m.sessions {
+					if !s.Stale() {
+						live[p.Root] = true
+						break
+					}
+				}
+				continue
+			}
+			if boardHasLiveSession(tree) {
+				live[p.Root] = true
+			}
 		}
 	}
 	m.liveBoards = live
@@ -740,6 +787,14 @@ func (m *Model) currentLane() *lane.Lane {
 	return m.cols[m.laneIdx].lane
 }
 
+// boardPeople is the open board's people list: who goes by which name. The
+// filter is a free function the tests call with nothing else, so the list sits
+// here rather than on the Model; it is set wherever the board is opened, next
+// to myAliases, and a nil list compares names as plain strings, as before.
+// Atomic because the ref syncer's background fetch names people through it
+// while the update loop may be reading the list again.
+var boardPeople atomic.Pointer[people.List]
+
 // matches reports whether t passes the board filter q. Each word of q is a
 // condition of its own and all of them must hold: "user:berk 7mg5gb" is
 // berk's ticket 7MG5GB, not a ticket whose assignee is called "berk 7mg5gb".
@@ -897,12 +952,12 @@ func matchField(t *ticket.Ticket, key, val string, ms milestone.Index) (hit, kno
 	case "context":
 		field = t.Context
 	case "assignee":
-		field = t.Assignee
+		field = boardPeople.Load().Canonical(t.Assignee)
 	case "user":
 		// A person, so exact like tag below — "user:be" is nobody — and
 		// either end of the ticket: the one it is assigned to and the one
 		// who wrote it. The board's user picker writes this key.
-		return strings.EqualFold(t.Assignee, val) || strings.EqualFold(t.Creator, val), true
+		return boardPeople.Load().Same(t.Assignee, val) || boardPeople.Load().Same(t.Creator, val), true
 	case "tag", "tags":
 		// Exact, unlike every other key here, and deliberately: a tag is a
 		// name from a closed vocabulary, not prose. Substring matching made
@@ -1146,6 +1201,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case refTickMsg:
 		return m, tea.Batch(fetchRefs(m.refSync), refTick())
 
+	case refRejectedMsg:
+		m.refRejected(msg)
+		return m, nil
 	case refFetchedMsg:
 		if msg.err != nil {
 			// A remote that cannot be reached is the normal state the outbox
@@ -1154,8 +1212,28 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.notify(msg.err.Error(), true)
 			return m, nil
 		}
+		before := m.flashAt
 		m.announceMilestones(msg.milestones, msg.merged)
 		m.announceArrivals(msg.arrivals)
+		if re := msg.warn; re != nil {
+			// The same words as 'jaira fetch': without them the board retries
+			// every few minutes in silence while the person believes the
+			// milestone reaches their teammates. On the status line beside the
+			// fetch's other news, not as a message: this arrives in the
+			// background, and a message would take the keys of whatever the
+			// person is typing.
+			news := re.Warning()
+			if m.flashAt != before {
+				news = m.flashMsg + "; " + news // this fetch's own news first
+			}
+			m.flash(news)
+		}
+		// A teammate's 'jaira people alias' or 'rename' arrives with this
+		// fetch: the names the board shows and filters by are read again.
+		// Who it acts as stays what it was at open — the store, the ref
+		// syncer and its commits all name one person one way until the
+		// board is opened again, and that name is still theirs.
+		boardPeople.Store(identity.People(m.store.Root))
 		_ = m.reload()
 		return m, nil
 
@@ -1188,10 +1266,22 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case newLaneDoneMsg:
 		if msg.err != nil {
+			// An editor that exits non-zero (vim :cq) is an abort: nothing is
+			// copied, but the message says what that leaves the catalogue with.
 			if m.laneScreen != nil {
-				m.laneScreen.msg, m.laneScreen.isErr = msg.err.Error(), true
+				m.laneScreen.msg, m.laneScreen.isErr = editorFailedMsg(msg), true
 			}
 			return m, nil
+		}
+		// The catalogue is written first, so the drift the new screen works
+		// out below already sees it.
+		var text string
+		var isErr bool
+		switch {
+		case msg.path != "":
+			text, isErr = catalogueNewLane(msg.path)
+		case msg.syncTo != "":
+			text, isErr = writeThrough(msg.edited, msg.syncTo, msg.syncFrom)
 		}
 		// The new file may parse to a fresh lane, or to a warning if it was
 		// left unedited (an id collision with the last skeleton, say) — either
@@ -1202,6 +1292,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.laneScreen != nil {
 			m.laneScreen = newLaneScreen(m.store, m.lanes)
+			if text != "" {
+				m.laneScreen.msg, m.laneScreen.isErr = text, isErr
+			}
 		}
 		return m, nil
 
@@ -1262,7 +1355,7 @@ func (m *Model) insertText(text string) {
 		m.filter = m.input
 		m.rebuild()
 
-	case modeCreate, modeDelete, modeReject:
+	case modeCreate, modeDelete, modeReject, modeSendBack:
 		m.input += foldToOneLine(text)
 
 	case modeLayer:
@@ -1345,10 +1438,32 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case modeReject:
 		switch s {
 		case "enter":
-			m.confirmReject()
+			return m, m.confirmReject()
 		case "esc":
 			m.input, m.rejecting = "", nil
 			m.mode = m.returnTo
+		case "backspace":
+			if r := []rune(m.input); len(r) > 0 {
+				m.input = string(r[:len(r)-1])
+			}
+		default:
+			m.insertText(k.Text)
+		}
+		return m, nil
+
+	case modeSendBack:
+		if m.sendingBack == nil {
+			// Nothing to send back: a stale way back led here.
+			m.mode, m.input = modeBoard, ""
+			return m, nil
+		}
+		switch s {
+		case "enter":
+			if why := strings.TrimSpace(m.input); why != "" {
+				m.confirmSendBack(why)
+			}
+		case "esc":
+			m.leaveSendBack()
 		case "backspace":
 			if r := []rune(m.input); len(r) > 0 {
 				m.input = string(r[:len(r)-1])
@@ -1540,7 +1655,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			// is the one key on this screen that cannot be taken back.
 			if m.projIdx < len(m.projects) {
 				p := m.projects[m.projIdx]
-				m.drop = newDropBoard(p.Root, p.Name, p.Root == m.store.Root)
+				m.drop = newDropBoard(p.Root, p.Name, p.Root == m.projectRoot)
 				m.mode = modeDropBoard
 			}
 		}
@@ -1644,7 +1759,18 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			// always "and what is that one waiting on" — so the link is walkable.
 			// Repeated presses follow the chain; esc returns to the board.
 			if m.detail != nil && len(m.detail.BlockedBy) > 0 {
-				if full, err := m.store.Load(m.detail.BlockedBy[0]); err != nil {
+				// The first ticket it waits on; a pull request is no ticket
+				// to open, so one that waits only on pull requests says so.
+				dep := ""
+				for _, d := range m.detail.BlockedBy {
+					if _, isPR, _ := ticket.ParsePRRef(d); !isPR {
+						dep = d
+						break
+					}
+				}
+				if dep == "" {
+					m.notify("waits for "+strings.Join(m.detail.BlockedBy, ", ")+" — a pull request, not a ticket", false)
+				} else if full, err := m.store.Load(dep); err != nil {
 					m.notify(err.Error(), true)
 				} else {
 					m.detail = full
@@ -1933,6 +2059,10 @@ func (m *Model) notify(msg string, isErr bool) {
 		m.returnTo = m.mode
 	case modeMove, modeMessage:
 		// Leave returnTo alone.
+	case modeSendBack:
+		// Back to the prompt with what was typed: the send-back keeps its
+		// own way back in sendingBack.
+		m.returnTo = modeSendBack
 	default:
 		m.returnTo = modeBoard
 	}
@@ -2011,13 +2141,17 @@ func (m *Model) linkIndex() *link.Index {
 func (m *Model) gateEnv() gate.Env {
 	repo := &gitrepo.Repo{Dir: m.store.Root}
 	return gate.Env{
-		Lanes: m.lanes,
-		All:   m.allTickets,
+		People: boardPeople.Load(),
+		Lanes:  m.lanes,
+		All:    m.allTickets,
 		// Without this the board and the command line disagree about the
 		// one thing this pair of fields exists for: a blocker that finished
 		// and was filed away clears the dependency in the CLI and went on
 		// blocking here.
 		Satisfied: m.linkIndex().Satisfied,
+		// The board reads what list and next last learned about a pull
+		// request and never asks the forge itself: it has to stay instant.
+		PR: m.prWait,
 		DeriveCommits: func(t *ticket.Ticket) []string {
 			shas, err := repo.CommitsForTicket(t.Path, t.ID)
 			if err != nil {
@@ -2025,23 +2159,100 @@ func (m *Model) gateEnv() gate.Env {
 			}
 			return shas
 		},
+		// Asked only once DeriveCommits found nothing, at the same lane.
+		CommitsElsewhere: func(t *ticket.Ticket) []string {
+			branches, _ := repo.BranchesNamingTicket(t.ID)
+			return branches
+		},
+		// Asks git only for a move into a lane a person releases.
+		Hunt: func(t *ticket.Ticket) gate.HuntReport {
+			return gate.HuntReport(repo.HuntCheck(t))
+		},
 	}
 }
 
-// applyMove runs the same gate checks and the same core mutation the CLI uses.
+// prWait answers a blocked-by pr#<n> from the shared cache list and next
+// fill, never from the forge. The checker lives until the next reload, so
+// a render reads the cache file at most once, and a long-running board sees
+// what a later command wrote.
+func (m *Model) prWait(n int) gate.PRWait {
+	if m.prCacheRoot != m.store.Root {
+		m.prCacheRoot, m.prCacheFile, m.prCheck = m.store.Root, "", nil
+	}
+	if m.prCheck == nil {
+		if m.prCacheFile == "" {
+			// RepoStateDir asks git: once per repository, not per reload.
+			m.prCacheFile = filepath.Join(m.store.RepoStateDir(), pr.CacheFile)
+		}
+		m.prCheck = &pr.Checker{File: m.prCacheFile, Offline: true}
+	}
+	a := m.prCheck.Ask(n)
+	return gate.PRWait{Merged: a.Merged(), Why: a.Why()}
+}
+
+// applyMove moves the selected ticket to the lane the picker points at.
 func (m *Model) applyMove() {
 	t := m.selected()
 	if t == nil || m.moveTarget >= len(m.lanes.Lanes) {
 		m.mode = m.returnTo
 		return
 	}
-	target := m.lanes.Lanes[m.moveTarget]
-	env := m.gateEnv()
+	m.moveTo(t.ID, m.lanes.Lanes[m.moveTarget], "")
+}
 
-	full, err := m.store.Load(t.ID)
+// confirmSendBack carries out the send-back the prompt was opened for — that
+// ticket, not whichever the cursor rests on now — and only while it still
+// sits in the lane it was sent back from: a ticket that moved while the
+// reason was typed is not moved again on a reason written for where it was.
+func (m *Model) confirmSendBack(why string) {
+	sb := m.leaveSendBack()
+	t, err := m.store.Load(sb.id)
 	if err != nil {
 		m.notify(err.Error(), true)
 		return
+	}
+	if t.Status != sb.from {
+		m.notify(fmt.Sprintf("%s left %s while you typed, to %s — nothing was moved. Your reason was:\n\n  %s",
+			ticket.Handle(sb.id), sb.from, t.Status, why), true)
+		return
+	}
+	m.moveTo(sb.id, sb.target, why)
+}
+
+// leaveSendBack closes the reason prompt onto the page it was opened from.
+// returnTo is set back as well: a message raised over the prompt pointed it
+// at the prompt, and a move that finishes after would reopen it empty.
+func (m *Model) leaveSendBack() *sendBack {
+	sb := m.sendingBack
+	m.sendingBack, m.input = nil, ""
+	m.mode, m.returnTo = sb.back, sb.back
+	return sb
+}
+
+// moveTo runs the same gate checks and the same core mutation the CLI uses.
+// why is what a person typed for a send-back out of their own lane; empty
+// until the prompt has asked for it.
+func (m *Model) moveTo(id string, target *lane.Lane, why string) {
+	env := m.gateEnv()
+
+	full, err := m.store.Load(id)
+	if err != nil {
+		m.notify(err.Error(), true)
+		return
+	}
+	// Work a person sends back out of their own lane leaves with the reason,
+	// or the next session finds the ticket in an earlier lane and no word of
+	// what was wrong with it — the loss fe5a979 kept the follow-up ticket for.
+	// An empty reason keeps the prompt open, as reject's does.
+	note := ""
+	if m.sendsBackFromPerson(full.Status, target.ID) {
+		if why == "" {
+			m.sendingBack = &sendBack{id: full.ID, from: full.Status, target: target, back: m.returnTo}
+			m.input = ""
+			m.mode = modeSendBack
+			return
+		}
+		note = fmt.Sprintf("sent back to %s from %s: %s", target.ID, full.Status, why)
 	}
 	// Moving an unassigned ticket claims it — the same rule the CLI's move
 	// applies. Set before the gate check so the promotion gate's assignee
@@ -2052,7 +2263,7 @@ func (m *Model) applyMove() {
 		full.Assignee = me
 	}
 	vs := gate.CheckAdvance(env, full, gate.Request{
-		To: target.ID, Actor: me, ActorAliases: identity.Aliases(m.store.Root),
+		To: target.ID, Actor: me, ActorAliases: identity.Aliases(m.store.Root), ByPerson: true,
 	})
 	if len(vs) > 0 {
 		m.pending = &pendingMove{
@@ -2061,6 +2272,7 @@ func (m *Model) applyMove() {
 			actor:    me,
 			claiming: claiming,
 			refusals: vs,
+			note:     note,
 		}
 		var b strings.Builder
 		fmt.Fprintf(&b, "Cannot move to %s:\n\n", target.Name)
@@ -2073,8 +2285,8 @@ func (m *Model) applyMove() {
 	// Move re-runs the gate itself; nothing has changed the ticket between the
 	// pre-check above and here, so it lands the same verdict and writes.
 	res, err := move.Move(m.store, env, full.ID, move.Request{
-		To: target.ID, Actor: me, ActorAliases: identity.Aliases(m.store.Root),
-		ClaimOnPull: true, Folder: m.settleFolder(), Prepare: m.settlePrepare(),
+		To: target.ID, Actor: me, ActorAliases: identity.Aliases(m.store.Root), ByPerson: true,
+		ClaimOnPull: true, Note: note, Folder: m.settleFolder(), Prepare: m.settlePrepare(),
 	})
 	if err != nil {
 		m.notify(err.Error(), true)
@@ -2097,6 +2309,23 @@ func (m *Model) applyMove() {
 	if trimMsg != "" {
 		m.notify(trimMsg, false)
 	}
+}
+
+// sendsBackFromPerson reports a move from a lane a person decides in — one
+// only a person may move work on from, or one a question waits in — to an
+// earlier lane: the give-back that has to say why.
+func (m *Model) sendsBackFromPerson(from, to string) bool {
+	l, ok := m.lanes.Get(from)
+	return ok && (l.RequiresHumanExit || l.RequiresQuestion) && m.lanes.SendsBack(from, to)
+}
+
+// sendBackPrompt is the status line while a send-back waits for its reason.
+func (m *Model) sendBackPrompt() string {
+	to := ""
+	if m.sendingBack != nil {
+		to = ticket.Handle(m.sendingBack.id) + " to " + m.sendingBack.target.ID
+	}
+	return styWarn.Render("send back "+to+" — what is still open: ") + m.input + stySelected.Render("▏")
 }
 
 func refusalBullets(vs gate.Violations) string {
@@ -2129,7 +2358,7 @@ func (m *Model) forceMove() {
 	m.pending = nil
 	res, err := move.Move(m.store, m.gateEnv(), p.ticketID, move.Request{
 		To: p.target.ID, Actor: p.actor, ActorAliases: identity.Aliases(m.store.Root),
-		Force: true, ClaimOnPull: true, Folder: m.settleFolder(), Prepare: m.settlePrepare(),
+		Force: true, ByPerson: true, ClaimOnPull: true, Note: p.note, Folder: m.settleFolder(), Prepare: m.settlePrepare(),
 	})
 	if err != nil {
 		m.notify(err.Error(), true)
@@ -2354,12 +2583,18 @@ func (m *Model) startReject(t *ticket.Ticket) {
 
 // confirmReject rejects the ticket with the typed reason. An empty reason
 // leaves the prompt open: rejecting without one is archiving, and x does that.
-func (m *Model) confirmReject() {
+//
+// A card with no file here is rejected on its ref, which needs the network,
+// so that runs as a command and refRejected reports it.
+func (m *Model) confirmReject() tea.Cmd {
 	t, why := m.rejecting, strings.TrimSpace(m.input)
 	if why == "" {
-		return
+		return nil
 	}
 	m.input, m.rejecting = "", nil
+	if t.ReadOnly {
+		return m.rejectOnRef(t, why)
+	}
 	// Stamped before the ticket leaves the board, as 'jaira reject' does:
 	// a rejected ticket's commits are the record of what was tried.
 	// Best-effort, like there — finding none must not stop the rejection.
@@ -2368,16 +2603,57 @@ func (m *Model) confirmReject() {
 	if err != nil {
 		m.mode = m.returnTo
 		m.notify(err.Error(), true)
-		return
+		return nil
 	}
 	m.mode = modeBoard
 	m.detail = nil
 	if err := m.reload(); err != nil {
 		m.notify(err.Error(), true)
-		return
+		return nil
 	}
 	m.notify(fmt.Sprintf("Rejected %s: %s\n\nIt is in the archive with its reason — bring it back with:\n\n  jaira restore %s",
 		ticket.Handle(t.ID), why, filepath.Base(dst)), false)
+	return nil
+}
+
+// refRejectedMsg is the outcome of rejecting a card on its ref.
+type refRejectedMsg struct {
+	t      *ticket.Ticket
+	why    string
+	heldBy string
+	err    error
+}
+
+// rejectOnRef rejects a card that has no file here on its ref, as 'jaira
+// reject' does: no archive file in this checkout's branch, and everybody sees
+// it after their next fetch. It fetches and pushes, so it runs off the update
+// loop.
+func (m *Model) rejectOnRef(t *ticket.Ticket, why string) tea.Cmd {
+	y := m.refSync
+	m.mode = modeBoard
+	m.detail = nil
+	m.notify(fmt.Sprintf("Rejecting %s on its ref …", ticket.Handle(t.ID)), false)
+	return func() tea.Msg {
+		_, heldBy, err := y.Reject(t.ID, ticket.RejectWontfix, why, "", time.Now())
+		return refRejectedMsg{t: t, why: why, heldBy: heldBy, err: err}
+	}
+}
+
+func (m *Model) refRejected(msg refRejectedMsg) {
+	h := ticket.Handle(msg.t.ID)
+	if msg.err != nil {
+		m.notify(fmt.Sprintf("%s was not rejected: %v\n\nNothing was written.", h, msg.err), true)
+		return
+	}
+	if err := m.reload(); err != nil {
+		m.notify(err.Error(), true)
+		return
+	}
+	text := fmt.Sprintf("Rejected %s: %s\n\nWritten to its ref, not to a file here — everybody sees it after their next fetch.", h, msg.why)
+	if msg.heldBy != "" {
+		text += "\n\n" + refsync.HeldByWarning(h, msg.heldBy)
+	}
+	m.notify(text, false)
 }
 
 // nextBoard shows the repository's next board, in the order today's board

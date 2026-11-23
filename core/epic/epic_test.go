@@ -88,6 +88,13 @@ func TestCoveredWalksFollowsAndParent(t *testing.T) {
 	if p.Total != 3 || p.Done != 0 || !p.Tickets[0].Direct || p.Tickets[1].Direct {
 		t.Errorf("progress = %+v", p)
 	}
+	// Both follow-ups name the member line, even C, which is two steps down:
+	// that line is what would have to go to take them out.
+	for _, tk := range p.Tickets {
+		if want := map[bool]string{true: "", false: idA}[tk.Direct]; tk.Via != want {
+			t.Errorf("%s via = %q; want %q", tk.ID, tk.Via, want)
+		}
+	}
 	un := Unassigned([]*Epic{e}, ix, board)
 	if len(un) != 1 || un[0].Title != "d" {
 		t.Errorf("unassigned = %v; want only d", un)

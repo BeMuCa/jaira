@@ -2,11 +2,13 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
 
 	"github.com/BeMuCa/jaira/core/gate"
@@ -191,6 +193,7 @@ one the real move would have returned.`,
 				req := gate.Request{
 					To: to, Question: question, Reason: reason,
 					Actor: identity(), ActorAliases: identityAliases(),
+					ByPerson: atATerminal(),
 				}
 				return reportDryRun(cmd, env, t, to, gate.CheckAdvance(env, t, req), force)
 			}
@@ -206,6 +209,7 @@ one the real move would have returned.`,
 				Reload: func() (gate.Env, error) {
 					return envFor(s, t)
 				},
+				ByPerson:    atATerminal(),
 				ClaimOnPull: false,
 				Folder:      logbookFolder(),
 				Prepare: func(tk *ticket.Ticket) error {
@@ -229,6 +233,14 @@ one the real move would have returned.`,
 			// called with it.
 			fireHook("move", s, res.Ticket)
 			t = res.Ticket
+			// On stderr in both modes: --json keeps stdout to the data, and the
+			// warning is for whoever drives the move, not for a parser.
+			if res.DoDUnticked > 0 {
+				fmt.Fprintf(cmd.ErrOrStderr(),
+					"warning: Definition of Done: 0 of %d ticked — the terminal lane reads this list, not the plan. "+
+						"Tick each with 'jaira dod %s <n> --done --proof \"<file:line or test>\"'.\n",
+					res.DoDUnticked, ticket.Handle(t.ID))
+			}
 
 			if g.jsonOut {
 				out := map[string]any{
@@ -345,7 +357,7 @@ func reportDryRun(cmd *cobra.Command, env gate.Env, t *ticket.Ticket, to string,
 // stands in for cannot report different ones.
 func refusalCode(vs gate.Violations) int {
 	for _, v := range vs {
-		if v.Code == gate.CodeBlocked || v.Code == gate.CodeSelfBlock {
+		if v.Code == gate.CodeBlocked || v.Code == gate.CodeSelfBlock || v.Code == gate.CodeWaitsOnPR {
 			return ExitBlocked
 		}
 	}
@@ -384,15 +396,18 @@ skipping this command.`,
 				return err
 			}
 			tickets = onBoard(tickets, board)
-			var ready []*ticket.Ticket
+			var ready, onPR []*ticket.Ticket
 			for _, t := range tickets {
 				if laneFilter != "" && t.Status != laneFilter {
 					continue
 				}
-				if assigneeFilter != "" && !strings.EqualFold(t.Assignee, assigneeFilter) {
+				if assigneeFilter != "" && !peopleList().Same(t.Assignee, assigneeFilter) {
 					continue
 				}
 				if !gate.Actionable(env, t) {
+					if waitsOnPR(env, t) {
+						onPR = append(onPR, t)
+					}
 					continue
 				}
 				// Skip work another live session has claimed, so two sessions are
@@ -419,14 +434,25 @@ skipping this command.`,
 				for _, t := range ready {
 					arr = append(arr, ticketJSON(t, env.Lanes))
 				}
-				return emit(cmd.OutOrStdout(), map[string]any{"tickets": arr, "count": len(arr)})
+				waiting := make([]map[string]any, 0, len(onPR))
+				for _, t := range onPR {
+					waiting = append(waiting, map[string]any{"id": t.ID, "handle": ticket.Handle(t.ID),
+						"title": t.Title, "status": t.Status, "waiting_on": gate.Waiting(env, t)})
+				}
+				return emit(cmd.OutOrStdout(), map[string]any{"tickets": arr, "count": len(arr), "waiting_on_pr": waiting})
 			}
 			if len(ready) == 0 {
 				fmt.Fprintln(cmd.OutOrStdout(), "Nothing is actionable. Either everything is done, blocked, or still needs a spec.")
-				return nil
 			}
 			for _, t := range ready {
 				printDetail(cmd.OutOrStdout(), t, env, 0)
+			}
+			if len(onPR) > 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "\nWaiting on a pull request:")
+				for _, t := range onPR {
+					fmt.Fprintf(cmd.OutOrStdout(), "  %s  %s — %s\n", ticket.Handle(t.ID), t.Title,
+						strings.Join(gate.Waiting(env, t), "; "))
+				}
 			}
 			return nil
 		},
@@ -438,6 +464,16 @@ skipping this command.`,
 		"one ticket per lane that has work waiting, in pipeline order")
 	cmd.Flags().StringVar(&board, "board", "", boardFlagUsage)
 	return cmd
+}
+
+// waitsOnPR reports whether a ticket that is not actionable would be, but for
+// a pull request in its blocked-by that has not merged: specified, not in a
+// terminal lane, and held back by at least one pr#<n>.
+func waitsOnPR(env gate.Env, t *ticket.Ticket) bool {
+	if l, ok := env.Lanes.Get(t.Status); (ok && l.Terminal) || !gate.Ready(t) {
+		return false
+	}
+	return len(gate.WaitingOnPR(env, t)) > 0
 }
 
 // emitPerLane answers "where is work waiting", one line per lane, instead of
@@ -597,6 +633,26 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 	var worktreeErr string
 	for _, want := range l.InputRequires {
 		switch want {
+		case ticket.FieldDoD:
+			// The checklist in the body is the definition of done whenever
+			// there is one; the frontmatter scalar holds only the first item
+			// 'jaira create --dod' was given, and a lane handed that alone
+			// judges against a fraction of the criteria. Proofs stay out: they
+			// are the implementer's account, which a lane such as review is
+			// meant to judge the code without.
+			if len(t.DoDItems) == 0 {
+				if strings.TrimSpace(t.DoD) == "" {
+					missing = append(missing, want)
+					continue
+				}
+				fields[want] = t.DoD
+				continue
+			}
+			var items []string
+			for i, it := range t.DoDItems {
+				items = append(items, fmt.Sprintf("%d. [%s] %s", i+1, it.State.Marker(), it.Text))
+			}
+			fields[want] = strings.Join(items, "\n")
 		case "plan":
 			if len(t.PlanItems) == 0 {
 				missing = append(missing, "plan (the ticket has no Plan checklist)")
@@ -659,9 +715,16 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			if diff == "" && worktreeDiff == "" {
 				// Both halves are accounted for, because "no commits" alone
 				// would read as "the worktree was not looked at".
-				m := "diff (git has no commits for this ticket yet, and nothing is uncommitted)"
+				// Commits that touched nothing but the ticket file leave no
+				// text in the diff, which leaves .jaira/tickets out; saying
+				// "no commits" about them would be false.
+				commits := "git has no commits for this ticket yet"
+				if len(shas) > 0 {
+					commits = fmt.Sprintf("the ticket's %d commit(s) change nothing but ticket files", len(shas))
+				}
+				m := fmt.Sprintf("diff (%s, and nothing is uncommitted)", commits)
 				if worktreeErr != "" {
-					m = fmt.Sprintf("diff (git has no commits for this ticket yet, and the working tree could not be read: %s)", worktreeErr)
+					m = fmt.Sprintf("diff (%s, and the working tree could not be read: %s)", commits, worktreeErr)
 				}
 				missing = append(missing, m)
 				continue
@@ -691,13 +754,38 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 			// context sits beside mode for the same reason: it says who runs
 			// the lane. "fresh" means not the session that carried the ticket
 			// here — a new agent that has seen none of its work.
-			"context":  l.Context,
-			"prompt":   l.Prompt,
-			"input":    fields,
-			"diff":     diff,
-			"produces": l.OutputProduces,
-			"missing":  missing,
-			"complete": len(missing) == 0,
+			"context": l.Context,
+			// The loop brake, beside mode for the same reason: it says how
+			// the lane judges, not what with. Every lane gets it — testing,
+			// review and the bug hunt testing starts read it — rather than
+			// through input-requires, which would mean editing every board's
+			// lane files before an older board could hand it on.
+			"blocker_rule":   ticket.BlockerRule(t),
+			"stop_after_fix": t.StopAfterFix,
+			"back":           backJSON(t),
+			"round":          ticket.CurrentRound(t),
+			"prompt":         l.Prompt,
+			"input":          fields,
+			"diff":           diff,
+			"produces":       l.OutputProduces,
+			"missing":        missing,
+			"complete":       len(missing) == 0,
+		}
+		// Only for a lane that declares max-rounds: a "rounds_left" beside a
+		// lane with no limit would read as a limit of zero.
+		if left, limited := l.RoundsLeft(t); limited {
+			payload["max_rounds"] = l.MaxRounds
+			payload["rounds_left"] = left
+		}
+		// Only for a lane that declares its verdict words: the words
+		// review-verdict must start with, and which way each sends the
+		// ticket. The move reads the same lists, so what the lane is told
+		// here is what it is held to.
+		if l.DeclaresVerdicts() {
+			payload["verdicts"] = map[string][]string{
+				"accept":    l.VerdictAccept,
+				"send_back": l.VerdictSendBack,
+			}
 		}
 		// The uncommitted half rides in a key of its own, and only when there
 		// is one: a key that is always there is read as a field, and an empty
@@ -739,6 +827,18 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 		head += fmt.Sprintf(", context: %s", l.Context)
 	}
 	fmt.Fprintf(w, "# Lane: %s   (%s)\n\n", l.Name, head)
+	// The loop brake under the header, for a lane read as plain text.
+	fmt.Fprintf(w, "blockers: %s\n", ticket.BlockerRule(t))
+	if t.StopAfterFix {
+		fmt.Fprintf(w, "stop-after-fix: a round after a fix runs the tests only, no new bug hunt\n")
+	}
+	if t.BackFrom != "" {
+		fmt.Fprintf(w, "round %d, sent back from %s (%s), %d in a row from that lane\n", ticket.CurrentRound(t), t.BackFrom, t.BackBy, t.BackCount)
+	}
+	if left, limited := l.RoundsLeft(t); limited {
+		fmt.Fprintf(w, "max-rounds %d: %d send-back(s) left from this lane before the teamlead decides, or a person\n", l.MaxRounds, left)
+	}
+	fmt.Fprintln(w)
 	if l.Prompt != "" {
 		fmt.Fprintf(w, "%s\n\n", l.Prompt)
 	}
@@ -866,4 +966,17 @@ func trimmedJSON(ts []ticket.Trimmed) []map[string]any {
 		})
 	}
 	return out
+}
+
+// atATerminal reports a move typed at a terminal: stdin and stdout both a
+// TTY. An agent's shell has neither (Claude Code, Codex and the Herdr tabs
+// run their commands through pipes), so such a move is a person's and a
+// send-back from a loop lane is recorded as theirs. The rule errs only one
+// way that matters: a person's move without a terminal — `! jaira move` in a
+// Claude session, a script — is still recorded as the lane's, as before.
+// ByPerson opens no gate a person's hand is needed for, so an agent that
+// fakes a terminal escapes only its own loop count and a lane's max-rounds —
+// no more than --force already lets it. A variable so tests can stand in for a terminal.
+var atATerminal = func() bool {
+	return term.IsTerminal(os.Stdin.Fd()) && term.IsTerminal(os.Stdout.Fd())
 }

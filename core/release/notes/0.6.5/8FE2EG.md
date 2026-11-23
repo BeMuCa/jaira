@@ -1,0 +1,1 @@
+- A move into a lane that requires commits (done, by default) now writes the commits naming the ticket onto it in the same move, from the worktree it runs in — no more 'jaira set <id> commits=...' after accepting on a branch named differently from the ticket.

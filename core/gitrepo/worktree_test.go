@@ -55,3 +55,73 @@ func TestWorktreeDiffIgnoresAnEmptyUntrackedFile(t *testing.T) {
 		t.Fatalf("an empty untracked file must not be an error: %v", err)
 	}
 }
+
+// TestDiffLeavesTicketFilesOut pins that the commit diff a lane reads carries
+// the code and not the ticket file committed beside it: the ticket's patch
+// holds the implementer's outcome, which the review lane must not read.
+func TestDiffLeavesTicketFilesOut(t *testing.T) {
+	dir, repo := fixtureRepo(t)
+	fixtureCommit(t, dir, map[string]string{"base.txt": "base\n"}, "chore: base",
+		time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	head := fixtureCommit(t, dir, map[string]string{
+		"code.go":                                "package code\n",
+		".jaira/tickets/AAA.md":                  "outcome-what: the author's account\n",
+		".jaira/logbook/someone-2026-01-02/B.md": "outcome-what: a filed account\n",
+		".jaira/archive/C.md":                    "outcome-what: a rejected account\n",
+	}, "feat(AAA): code", time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC))
+
+	diff, unavailable := repo.Diff([]string{head})
+	if len(unavailable) != 0 {
+		t.Fatalf("unavailable: %v", unavailable)
+	}
+	if !strings.Contains(diff, "package code") {
+		t.Errorf("the code is missing from the diff:\n%s", diff)
+	}
+	if strings.Contains(diff, "account") || strings.Contains(diff, ".jaira/") {
+		t.Errorf("the ticket file is in the diff:\n%s", diff)
+	}
+}
+
+// TestDiffNeverHandsGitAnOption pins that a value in a ticket's hand-editable
+// commits: field reaches git only as a commit id: "--output=<path>" used to make
+// 'git show' truncate or create that file and exit 0.
+func TestDiffNeverHandsGitAnOption(t *testing.T) {
+	dir, repo := fixtureRepo(t)
+	fixtureCommit(t, dir, map[string]string{"base.txt": "base\n"}, "chore: base",
+		time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	victim := filepath.Join(t.TempDir(), "victim")
+	if err := os.WriteFile(victim, []byte("keep me\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	bad := "--output=" + victim
+
+	_, unavailable := repo.Diff([]string{bad})
+	if len(unavailable) != 1 || unavailable[0] != bad {
+		t.Errorf("unavailable = %v, want the option reported as unavailable", unavailable)
+	}
+	if _, err := repo.Stat([]string{bad}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.Commits([]string{bad}); err != nil {
+		t.Fatal(err)
+	}
+	if b, err := os.ReadFile(victim); err != nil || string(b) != "keep me\n" {
+		t.Errorf("git wrote over the file: %q, %v", b, err)
+	}
+}
+
+// TestDiffIsEmptyForTicketOnlyCommits pins that a commit which touched only its
+// ticket file adds nothing to Diff, not even a blank line: the caller tells
+// "no code to judge" from an empty string, and "\n" used to hide that.
+func TestDiffIsEmptyForTicketOnlyCommits(t *testing.T) {
+	dir, repo := fixtureRepo(t)
+	fixtureCommit(t, dir, map[string]string{"base.txt": "base\n"}, "chore: base",
+		time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	sha := fixtureCommit(t, dir, map[string]string{".jaira/tickets/AAA.md": "note\n"},
+		"chore(AAA): ticket only", time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC))
+
+	diff, unavailable := repo.Diff([]string{sha})
+	if diff != "" || len(unavailable) != 0 {
+		t.Errorf("Diff = %q, unavailable %v; want empty for a ticket-only commit", diff, unavailable)
+	}
+}

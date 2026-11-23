@@ -1,0 +1,1 @@
+- The cockpit's Acceptance pane lists a ticket's open 'seen by a person' definition-of-done items under 'Check yourself' above the review notes: tick each one there, and Execute ticks it on the ticket (proof 'seen by <you> in the cockpit') and accepts in the same press, instead of being refused with 'criterion N is still open'.
