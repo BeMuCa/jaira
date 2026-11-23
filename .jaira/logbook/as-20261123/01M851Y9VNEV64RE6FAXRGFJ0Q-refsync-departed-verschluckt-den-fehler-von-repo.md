@@ -1,7 +1,7 @@
 ---
 id: 01M851Y9VNEV64RE6FAXRGFJ0Q
 title: "refsync.Departed verschluckt den Fehler von Repo.List und liest ihn als 'keine Refs'"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -15,35 +15,38 @@ tags:
   - concurrency
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 23ded2de126c9a415f543e12fc0a89d738b42ac8
+  - a0a66de74119d97fe072eb99fbc261e3cbd9bc3f
+  - 860bb94dcd94f481c27e4c82cb939ed0ebe00fa9
+  - 54121bb79a53ab4f9325ed8035804c0aff697669
+  - cc100367337cfa8776c045cdd2b3eff132c6ae7d
 created-at: 2026-11-23T20:35:43Z
-updated-at: 2026-11-23T20:57:47Z
+updated-at: 2026-11-23T21:18:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-49023
 claimed-at: 2026-11-23T20:36:54Z
 outcome-what: "refsync.Departed returns ([]Departure, error); a failed Repo.List is an error, not an empty ref list. fetch and validate go through new departedHere, which warns on stderr and reports no departures. whoami's file-only count no longer reads a List error as no refs. Release note added."
 outcome-why: "A passing git error (lock, broken ref) made every seen ticket look taken off the board elsewhere, so fetch/validate told the person to file or archive live tickets."
 outcome-resolves: "DoD 1-4: Departed errors on List failure (refsync test with a broken packed-refs), both callers report no departure and a warning (CLI test), ForgetDeparted untouched as it never reads Departed, whoami sibling fixed. Checked: concurrency — no new shared state, seen record untouched on error; error paths — List error now surfaces; unusual input — broken packed-refs; permissions — n/a."
-review-summary: "Full review at 860bb94dc. Syncer.Departed now returns ([]Departure, error): when git cannot list the ticket refs it returns the error and no departures, instead of treating 'no refs' as 'every seen ticket left the board'. fetch and validate call it through a new departedHere helper (internal/cli/fetch.go:249) that prints 'jaira: warning: could not check ...' on stderr and reports an empty list, so the rest of the command still runs. whoami's file-only count got the same treatment: a failed listing warns on stderr and counts 0 instead of every file. saveSeen now writes refs-seen.json via ticket.WriteAtomic, so a fetch reading it while a background fetch writes never sees a torn, empty record that would forget departures. Tests: a broken packed-refs line drives the failure in refsync and CLI; a concurrent save/load test covers the torn read. Release note added."
+review-summary: "Delta review from 860bb94dc (one commit, 54121bb79): strandedHere's doc comment moved back above func strandedHere in internal/cli/fetch.go, so departedHere and strandedHere each carry their own comment again. The change as a whole: refs.Departed returns ([]Departure, error) and reports a failed git ref listing as an error instead of every seen ticket as departed; fetch and validate warn on stderr via departedHere and report no departures; whoami warns on stderr and counts 0 file-only instead of every ticket; refs-seen.json is written with ticket.WriteAtomic so a concurrent fetch never reads it half-written."
 review-gaps: |-
-  note: edge: fix-now: internal/cli/fetch.go:242-248 - departedHere was inserted between strandedHere's doc comment and strandedHere, so godoc now gives departedHere both comments and strandedHere none; move the strandedHere comment back above func strandedHere (line 258)
   note: limit: whoami prints file_only 0 (text and JSON) when the listing fails, with only a stderr warning to say the number is not real; chosen on purpose in testing round 2 over an 'unknown' value in the output contract
   note: limit: refs-seen.json is still read-modify-write without a lock (Incoming vs ForgetDeparted); a lost update only re-reports or re-learns one id, accepted in the testing note
   note: elsewhere: core/refsync/refsync.go:847 'entries, _ = y.Box.List()' drops an outbox listing error the same way; there before this change, new ticket
-test-verdict: "pass: vet ok, go test -race refsync+cli RC=0 (round 2), cli+release tests RC=0 after the comment/note change, DoD 1-6 verified in the tree"
-hunt-verdict: "pass: round 3 hunt at 860bb94dc, 0 findings"
+test-verdict: "pass: vet ok, TestAFailedRefListingReportsNoDepartures RC=0; only a comment moved since the review"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 4"
 round: 4
 back-from: review
 back-by: lane
 back-count: 1
-review-verdict: "accept: all six DoD items are met and proven by tests that fail on the old code; one fix-now (a misplaced doc comment in fetch.go)"
-review-round: 3
+review-verdict: "accept: the previous review's fix-now is closed (fetch.go comment back above strandedHere); all six DoD items met, refsync and cli tests pass; no blocker"
+review-round: 4
 review-verdict-gaps: |-
-  note: edge: fix-now: internal/cli/fetch.go:242-248 - departedHere was inserted between strandedHere's doc comment and strandedHere, so godoc now gives departedHere both comments and strandedHere none; move the strandedHere comment back above func strandedHere (line 258)
   note: limit: whoami prints file_only 0 (text and JSON) when the listing fails, with only a stderr warning to say the number is not real; chosen on purpose in testing round 2 over an 'unknown' value in the output contract
   note: limit: refs-seen.json is still read-modify-write without a lock (Incoming vs ForgetDeparted); a lost update only re-reports or re-learns one id, accepted in the testing note
   note: elsewhere: core/refsync/refsync.go:847 'entries, _ = y.Box.List()' drops an outbox listing error the same way; there before this change, new ticket
-review-check: "1. cd into this worktree  2. go test ./core/refsync -run 'TestDepartedReportsAFailedRefListingAsAnErrorNotAsDepartures|TestTheSeenRecordIsNeverReadHalfWritten' -count=1 -v  3. both PASS  4. go test ./internal/cli -run TestAFailedRefListingReportsNoDepartures -count=1 -v  5. PASS: no departures and the warning 'could not check for tickets taken off the board elsewhere' on a broken packed-refs  6. no hand path: the failure only happens when git breaks between two calls in one command"
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-rgfj0q  2. go test ./core/refsync -run 'TestDepartedReportsAFailedRefListingAsAnErrorNotAsDepartures|TestTheSeenRecordIsNeverReadHalfWritten' -count=1 -v  3. both PASS  4. go test ./internal/cli -run TestAFailedRefListingReportsNoDepartures -count=1 -v  5. PASS: no departures and the warning 'could not check for tickets taken off the board elsewhere'  6. open internal/cli/fetch.go around line 242: each of departedHere and strandedHere has its own doc comment  7. no hand path: the failure needs git to break between two calls inside one command"
 stop-after-fix: "true"
 ---
 
@@ -95,3 +98,11 @@ stop-after-fix: "true"
 - **2026-11-23 20:56 · Alexander Sacharov** — review: done at 860bb94dc
 - **2026-11-23 20:56 · Alexander Sacharov** — review: fix-now: internal/cli/fetch.go:242-248 - strandedHere's doc comment now sits above departedHere's; move it back above func strandedHere
 - **2026-11-23 20:57 · Alexander Sacharov** — review fix-now closed: strandedHere's doc comment moved back above it (fetch.go). Set stop-after-fix=true: a comment move, no lock, no parser. Proofs on DoD 1,2,4,5 refreshed to current lines. The review's other notes (whoami 0 limit, seen record lock limit, Box.List elsewhere) stay as notes for the person.
+- **2026-11-23 20:58 · Alexander Sacharov** — waiting: review round 2 (new fresh agent via run-lane.sh) since 21:58
+- **2026-11-23 21:02 · Alexander Sacharov** — review: done at 54121bb79
+- **2026-11-23 21:02 · Alexander Sacharov** — report: Departed errors on a failed ref listing; fetch/validate/whoami warn on stderr instead of false departures or counts; refs-seen.json written atomically | signoff, context unknown | 3 review notes for the person (2 accepted limits, Box.List elsewhere); branch not pushed
+- **2026-11-23 21:12 · Alexander Sacharov** — Accepted from signoff: angenommen:
+- note: limit: whoami prints file_only 0 (text and JSON) when the listing fails, with only a stderr warning to say the number is not real; chosen on purpose in testing round 2 over an 'unknown' value in the output contract
+- note: limit: refs-seen.json is still read-modify-write without a lock (Incoming vs ForgetDeparted); a lost update only re-reports or re-learns one id, accepted in the testing note
+- note: elsewhere: core/refsync/refsync.go:847 'entries, _ = y.Box.List()' drops an outbox listing error the same way; there before this change, new ticket
+- **2026-11-23 21:13 · Alexander Sacharov** — cockpit: accepted by the person, signoff -> done
