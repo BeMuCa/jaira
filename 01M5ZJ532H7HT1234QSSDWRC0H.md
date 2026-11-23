@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:13Z
-updated-at: 2026-11-23T22:38:29Z
+updated-at: 2026-11-23T22:38:32Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-dwrc0h
@@ -76,3 +76,4 @@ review-check: |-
 - **2026-11-23 01:29 · BeMuCa** — optimize: eigener CLI-Test entfernt, weil core/ticket/proof_test.go:115 genau diese Eigenschaft schon testet; DoD 2 zeigt jetzt darauf.
 - **2026-11-23 01:29 · BeMuCa** — bughunt: done at 60387d0e0 - 0 findings (0 change, 0 pre-existing) in 6 files, first hunt; concurrency, error paths, input, permissions checked; the documented set goal/context, dod --add and dod --text were run on a scratch board and keep numbers and proofs; files: AGENTS.md CLAUDE.md core/board/announce.go core/release/notes/DWRC0H.md internal/cli/checklist_test.go internal/cli/tickets.go
 - **2026-11-23 01:29 · BeMuCa** — testing: 'jaira validate' im Repo warnt, der jaira-Block in CLAUDE.md/AGENTS.md passe nicht zu Lanes/.jaira/pr. Der Befehlsteil (bis '## This board's lanes') ist mit der Generator-Ausgabe identisch (diff gegen 'jaira init' auf Scratch-Board); die Abweichung liegt im Lane-/PR-Teil und kommt nicht aus diesem Ticket. 'jaira update' im Worktree hat der Auto-Mode-Classifier abgelehnt, daher nicht weiter eingegrenzt.
+- **2026-11-23 22:38 · BeMuCa** — Berk accepted in the chat 2026-11-23 ('DWRC0H: akzeptieren'); Claude executed the move. Race suite green at 60387d0e0.
