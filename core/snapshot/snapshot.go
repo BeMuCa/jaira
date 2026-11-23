@@ -43,6 +43,10 @@ const DefaultBranch = "jaira/board"
 // Dir is the directory the ticket files live in inside the snapshot branch.
 const Dir = "board"
 
+// PeopleFile is the people list's file at the snapshot's root: the content
+// of gitref.PeopleRef as it was when the snapshot was taken.
+const PeopleFile = "people"
+
 // DefaultEvery is how old a snapshot may get before another is taken.
 //
 // Three days rather than minutes, and the reason is not thrift: every
@@ -148,20 +152,28 @@ func (r *Runner) Run() (*Result, error) {
 	lease := r.Repo.Rev(local)
 	previous := r.previousIDs(lease)
 
+	// The people list rides beside board/, at the root: it is the board's
+	// answer to who is who, and a first-time cloner restoring tickets from
+	// here needs it to read their names.
+	files := map[string]string{}
+	if blob := r.Repo.PeopleBlob(); blob != "" {
+		files[PeopleFile] = blob
+	}
+
 	var tree string
 	if len(entries) > 0 {
 		inner, err := r.Repo.Tree(entries)
 		if err != nil {
 			return nil, err
 		}
-		tree, err = r.Repo.Nest(Dir, inner)
+		tree, err = r.Repo.Nest(Dir, inner, files)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		// No refs at all: an empty tree, so a board that was emptied is
+		// No ticket refs at all: no board/, so a board that was emptied is
 		// recorded as empty rather than frozen at its last populated state.
-		tree, err = r.Repo.Tree(nil)
+		tree, err = r.Repo.Tree(files)
 		if err != nil {
 			return nil, err
 		}

@@ -257,3 +257,30 @@ func run(t *testing.T, dir, name string, args ...string) string {
 	}
 	return string(out)
 }
+
+// The people list is backed up beside board/: a first-time cloner restoring
+// tickets from the snapshot needs it to read whose they are. With no ticket
+// refs at all it is still there.
+func TestASnapshotHoldsThePeopleList(t *testing.T) {
+	for _, withTicket := range []bool{true, false} {
+		repo, clone, _ := board(t)
+		if withTicket {
+			if _, err := repo.Write("01AAA", ticketFile("01AAA", "backlog"), ""); err != nil {
+				t.Fatal(err)
+			}
+		}
+		list := []byte("berkc: BeMuCa\n")
+		if _, err := repo.WritePeople(list, ""); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := (&snapshot.Runner{Repo: repo}).Run(); err != nil {
+			t.Fatal(err)
+		}
+		if got := run(t, clone, "git", "show", snapshot.DefaultBranch+":"+snapshot.PeopleFile); got != string(list) {
+			t.Errorf("withTicket=%v: people in the snapshot = %q", withTicket, got)
+		}
+		if withTicket && !strings.Contains(run(t, clone, "git", "ls-tree", "-r", "--name-only", snapshot.DefaultBranch), "board/01AAA.md") {
+			t.Error("the ticket went missing beside the people file")
+		}
+	}
+}

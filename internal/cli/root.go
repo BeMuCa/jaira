@@ -23,6 +23,7 @@ import (
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/milestone"
+	"github.com/BeMuCa/jaira/core/people"
 	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -221,6 +222,7 @@ Exit codes:
 	root.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
 		f := cmd.Flags().Lookup("dry-run")
 		g.dryRun = f != nil && f.Value.String() == "true"
+		peopleCache = nil
 	}
 	root.PersistentFlags().BoolVar(&g.jsonOut, "json", false, "emit JSON on stdout and structured errors on stderr")
 	root.PersistentFlags().StringVarP(&g.dir, "dir", "C", ".", "run as if jaira was started in this directory")
@@ -261,6 +263,7 @@ Exit codes:
 		newClaimCmd(),
 		newProjectsCmd(),
 		newWhoamiCmd(),
+		newPeopleCmd(),
 		newShareCmd(),
 		newUpdateCmd(),
 		newSelfCmd(),
@@ -359,6 +362,7 @@ func loadBoardEnv(s *ticket.Store, board string) (gate.Env, []*ticket.Ticket, er
 	// filed.
 	ix := link.Build(s, lanes, all)
 	return gate.Env{
+		People:    peopleList(),
 		Lanes:     lanes,
 		All:       all,
 		Satisfied: ix.Satisfied,
@@ -400,6 +404,23 @@ func emit(w io.Writer, v any) error {
 func identity() string {
 	return coreidentity.Current(g.dir)
 }
+
+// peopleList is the board's people list, read once per command: a listing
+// asks it for every row it prints. newRoot forgets it, so a process running
+// several commands — the tests — reads the ref each one finds.
+func peopleList() *people.List {
+	if peopleCache == nil {
+		peopleCache = coreidentity.People(g.dir)
+	}
+	return peopleCache
+}
+
+var peopleCache *people.List
+
+// shownName is the name a ticket's person field is shown under: the jaira name
+// of the person it means, so a ticket written under an older name is shown
+// under the one they go by now without its file being rewritten.
+func shownName(name string) string { return peopleList().Canonical(name) }
 
 // identityAliases are the other names that mean the same person, so the
 // ownership rail does not refuse a move on your own ticket because the assignee

@@ -1062,6 +1062,7 @@ jaira resolve <id>         settle the fields a merge could not resolve
 jaira projects             boards you have opened
 jaira projects add <path>  register a board (--scan searches two levels down)
 jaira whoami               the identity jaira acts as, and the state of this board
+jaira people               who is who: each person's jaira name and the names that mean them (alias, rename)
 jaira share                publish the board (--undo to make it private)
 jaira roles install        write the teamlead, dispatcher and worker prompts as skills, and the cockpit mod (--agent copilot for Copilot)
 jaira hook print           print a Claude Code Stop-hook snippet that refuses to end a session with agentic lanes unworked

@@ -47,6 +47,7 @@ func newSyncer(s *ticket.Store, me string) *refsync.Syncer {
 	y.IsMine = func(assignee string) bool {
 		return assignee != "" && identity.IsMe(s.Root, assignee)
 	}
+	y.Name = func(who string) string { return boardPeople.Load().Canonical(who) }
 	s.Source = y
 	return y
 }

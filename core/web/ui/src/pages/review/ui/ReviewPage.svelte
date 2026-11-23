@@ -133,8 +133,13 @@
   }
 
   // On the way back the page rereads everything: what it shows is from
-  // before the gap, and the command may be a new one on a fresh board.
+  // before the gap, and the command may be a new one on a fresh board. So it
+  // does after every fetch the command made since the last beat, the first
+  // one included: what the fetch brought — a teammate's sorting, a person
+  // renamed — shows within a beat instead of waiting for the next minute's
+  // reread.
   async function heartbeat() {
+    const fetched = sync.last_fetch;
     try {
       sync = await fetchSync();
     } catch {
@@ -143,6 +148,8 @@
     }
     if (lostSince) {
       lostSince = null;
+      await load();
+    } else if (sync.last_fetch !== fetched) {
       await load();
     }
   }
