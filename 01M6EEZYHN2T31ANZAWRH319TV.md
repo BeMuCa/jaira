@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T15:45:35Z
-updated-at: 2026-11-23T01:44:46Z
+updated-at: 2026-11-23T01:44:48Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-h319tv
@@ -32,7 +32,8 @@ claimed-at: 2026-11-23T01:38:34Z
 
 - [x] README hat den Abschnitt 'Jaira PM View - Web only' mit Install-Zeile ohne Rollen/Cockpit, jaira web, Screenshot und je einem Satz was geht und was nicht
   proof: README.md:300 '## Jaira PM View - Web only' (install lines with JAIRA_NO_ROLES=1, jaira init/web, docs/img/web.png, one sentence each for can/cannot)
-- [ ] Die Zeile 'Web UI, VS Code extension' in der Tabelle 'Not built' ist entfernt oder sagt, was heute gilt
+- [x] Die Zeile 'Web UI, VS Code extension' in der Tabelle 'Not built' ist entfernt oder sagt, was heute gilt
+  proof: README.md:1247 row now '| VS Code extension | ...', Web UI dropped
 - [ ] Auf einem frischen Clone nachgestellt: Install-Zeile, jaira web, Tickets erscheinen; die Wartezeit steht im Abschnitt
 - [ ] Release-Notiz in core/release/notes/<ID>.md
 
