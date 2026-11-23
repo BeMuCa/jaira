@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:32:10Z
+updated-at: 2026-11-23T01:32:13Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -43,7 +43,7 @@ back-count: 1
 - [x] Ohne Git-Repo geht ein Ticket nach done und ins Logbook, ohne Commits und ohne --force
   proof: core/gate/gate.go OutsideRepo waiver in the requires-commits check; core/gitrepo/git.go OutsideRepo; manual: scratch board in plain dir, move to done exit 0 and logbook exit 0 without --force
 - [x] In einem Repo ohne Remote verlangt done weiter Commits
-  proof: OutsideRepo is false when a .git exists upward or git sees a work tree; manual: git init without remote, move to done refused with needs_commits; TestOutsideRepo repo cases
+  proof: gitrepo.OutsideRepo false when git missing, a .git exists above the real (symlink-resolved) path, or git sees a work tree; manual: git init without remote refused exit 3, also through a symlink, with and without git on PATH; TestOutsideRepo repo cases
 - [x] Ein Test je Fall
   proof: TestCommitsWaivedOnlyOutsideARepository (core/gate/commits_test.go), TestOutsideRepo + TestOutsideRepoWithoutGitKeepsTheRule (core/gitrepo/outside_test.go); compiled by go vet, not run (worker rule: no go test)
 - [x] Release-Notiz in core/release/notes/<ID>.md
