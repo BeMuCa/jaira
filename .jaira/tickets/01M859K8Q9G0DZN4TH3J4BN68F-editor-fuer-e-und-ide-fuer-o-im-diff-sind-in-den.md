@@ -1,0 +1,70 @@
+---
+id: 01M859K8Q9G0DZN4TH3J4BN68F
+title: Editor fuer E und IDE fuer o im Diff sind in den Settings einstellbar
+status: in-progress
+ready: true
+creator: berkc
+assignee: berkc
+goal: "Wer jaira nutzt, legt in den Settings fest, welcher Editor ein Ticket mit E oeffnet und welche IDE eine Datei aus dem Diff mit o an der Zeile oeffnet; ohne Einstellung gilt ein Default, der heute schon funktioniert."
+context: |-
+  Was heute falsch ist: Im Diff-Pane von EH6Z0N oeffnet o eine Datei immer mit 'code -g file:line' (internal/tui/diffpane.go:47, fest verdrahtet). Wer kein VS Code hat oder eine andere IDE will, kann nichts tun.
+  E (Ticket im Editor) nimmt heute VISUAL, dann EDITOR, dann 'git config core.editor' (internal/tui/external.go:23-28). Das geht, ist aber nicht in jaira sichtbar oder einstellbar.
+  Wunsch von berkc am 05.11. und 23.11.2026: beides in den Settings einstellbar, mit Default; soll mit EH6Z0N zusammen kommen (gleicher Branch feat/EH6Z0N-diff-view, gleicher PR).
+  Zwei getrennte Eintraege, weil E auf das Schliessen eines Terminal-Editors wartet, o dagegen ein GUI-Fenster startet und sofort zurueckkehrt.
+  Vorschlag: 'editor' (leer = VISUAL/EDITOR/core.editor wie heute) und 'ide' als Vorlage mit {file} und {line}, Default 'code -g {file}:{line}'; fehlt das IDE-Programm, faellt o auf den Editor zurueck. Bei der Installation wird nichts abgefragt.
+  Settings liegen in core/settings/settings.go (type Settings) und auf dem Settings-Screen S.
+definition-of-done: "In den Settings gibt es 'editor'; gesetzt, oeffnet E das Ticket damit, leer bleibt die heutige Reihenfolge VISUAL, EDITOR, core.editor"
+tags:
+  - tui
+blocked-by: []
+related: []
+follows: 01M67RYAXEZG7QD2XJ37EH6Z0N
+commits: []
+created-at: 2026-11-23T22:49:30Z
+updated-at: 2026-11-23T23:09:30Z
+updated-by: berkc
+claimed-by: "w-4bn68f"
+claimed-at: 2026-11-23T23:02:03Z
+---
+
+# Editor fuer E und IDE fuer o im Diff sind in den Settings einstellbar
+
+## Definition of Done
+
+- [x] In den Settings gibt es 'editor'; gesetzt, oeffnet E das Ticket damit, leer bleibt die heutige Reihenfolge VISUAL, EDITOR, core.editor
+  proof: internal/tui/external.go editorChoice (settings Editor first); internal/tui/external_test.go TestEditorInSettingsWinsOverTheEnvironment; internal/tui/external_test.go TestEditorCommandFallback (empty = VISUAL, EDITOR order)
+- [x] In den Settings gibt es 'ide' als Vorlage mit {file} und {line}, Default 'code -g {file}:{line}'; o im Diff-Pane startet genau diese Vorlage
+  proof: core/settings/settings.go IDETemplate + DefaultIDE; internal/tui/diffpane.go openDiffRow + ideCommand; internal/tui/diffpane_test.go TestIDECommandFillsTheTemplate, TestOKeyOpensFileAtLine; core/settings/settings_test.go TestIDETemplateIsTheDefaultWhenUnset
+- [x] Ist das Programm der ide-Vorlage nicht installiert, oeffnet o die Datei im Editor und sagt das in der Titelzeile
+  proof: internal/tui/diffpane.go openDiffRow lookIDE branch (tea.ExecProcess editor, diffOpened 'not found — opened in'); internal/tui/diffpane_test.go TestOKeyFallsBackToTheEditorWhenTheIDEIsMissing
+- [x] Beide Eintraege sind auf dem Settings-Screen S sichtbar und aenderbar
+  proof: internal/tui/settings.go settingsEntries 'Editor (E)' and 'IDE (o in the diff)', openText/saveText/textValue; internal/tui/model.go modeSettings typing route; internal/tui/settings_test.go TestSettingsTypesTheEditorAndIDE
+- [x] Tests decken Vorlage, Default und Rueckfall ab; Release-Note-Zeile in core/release/notes/<ID>.md
+  proof: internal/tui/settings_test.go TestSettingsTypesTheEditorAndIDE; internal/tui/diffpane_test.go TestIDECommandFillsTheTemplate, TestOKeyFallsBackToTheEditorWhenTheIDEIsMissing; internal/tui/external_test.go TestEditorInSettingsWinsOverTheEnvironment; core/release/notes/4BN68F.md
+- [ ] seen by a person: in the TUI, S shows Editor and IDE rows; typing a template there and pressing o in the diff pane of a signoff ticket opens that IDE at the line; with a missing program the file opens in the editor and the diff title says so
+
+## Options
+
+- [ ] brainstorm
+- [x] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+- [x] read editorCommand (external.go), openInCode/openDiffRow (diffpane.go), settings screen (internal/tui/settings.go), Settings struct (core/settings/settings.go)
+- [x] core/settings: add Editor and IDE string fields with doc comments; IDETemplate() returning the default when empty; DefaultIDE const
+- [x] tui: editorCommand reads settings.Load().Editor first; keep VISUAL/EDITOR/core.editor order when empty
+- [x] tui: ideCommand(template, file, line) []string — Fields then placeholder replace, append file when no {file}; unit tests for default, custom template, path with spaces, no {file}
+- [x] tui: openDiffRow returns tea.Cmd; LookPath on argv[0]; found -> start detached as today (openInCode var kept as test seam, now taking argv); missing -> tea.ExecProcess(editorCommand()+abs path) and diffOpened='<prog> not found — opened in <editor>'; model.go 'o' handler returns the cmd
+- [x] tui: footer hint 'o open in VS Code' -> 'o open in IDE'; update diffpane_test expectations
+- [x] tui settings screen: rows 'Editor (E)' and 'IDE (o in the diff)'; generic text edit mode (which entry is open), typed text from k.Text + PasteMsg via insertText modeSettings, enter saves via settings.Update, esc cancels; render effective value/source when empty
+- [x] tests: settings screen edit/save/cancel for both rows (HOME in t.TempDir), fallback path when program missing (template 'definitely-not-installed-xyz {file}')
+- [x] release note core/release/notes/4BN68F.md, one line each, unwrapped
+- [x] go build ./... && go vet ./internal/tui ./core/settings && go test ./internal/tui ./core/settings -count=1
+
+## Progress
+- **2026-11-23 22:56 · berkc** — pre-process decisions (settled, no person needed): (1) settings.json keys 'editor' and 'ide', both strings, omitempty. (2) editor: strings.Fields of the setting wins over VISUAL/EDITOR/core.editor; empty = today's order unchanged (internal/tui/external.go editorCommand). (3) ide template is split with strings.Fields FIRST, then {file}/{line} replaced inside each field, so a path with spaces stays one argument; no shell involved. Template without {file}: the path is appended as last argument. Empty ide = 'code -g {file}:{line}'. (4) 'not installed' = exec.LookPath on the template's first field fails; then o opens the file in editorCommand() via tea.ExecProcess (terminal editor, board suspended), without a line argument because +N is not portable across editors; diff pane title says '<prog> not found — opened in <editor>'. (5) Settings screen S: two new rows 'Editor (E)' and 'IDE (o in the diff)'; enter opens the value as free text (typed via k.Text and paste), enter saves through settings.Update, esc cancels, empty saves as default. Row shows the effective value with its source when empty. (6) footer hint 'o open in VS Code' becomes 'o open in IDE' since the program is now configurable. (7) After the fallback editor exits the diff is not reloaded (cached per ticket); acceptable, noted as limit.
+- **2026-11-23 22:57 · berkc** — waiting: in-progress (Haiku subagent) since 23:57
+- **2026-11-23 23:01 · berkc** — worker released its own claim so the in-progress agent can claim it (first Haiku agent refused to claim over the worker's claim)
+- **2026-11-23 23:01 · berkc** — claim identity: jaira falls back to host-PPID, which differs per bash call/agent; the worker and its lane agents share JAIRA_SESSION_ID=w-4bn68f

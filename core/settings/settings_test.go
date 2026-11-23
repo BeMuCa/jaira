@@ -605,3 +605,26 @@ func TestUpdateDropsAKnownKeyInAnyCase(t *testing.T) {
 		t.Fatalf("after emptying: %+v, want no language and remote upstream", s)
 	}
 }
+
+func TestIDETemplateIsTheDefaultWhenUnset(t *testing.T) {
+	if got := (settings.Settings{}).IDETemplate(); got != settings.DefaultIDE {
+		t.Errorf("unset IDE = %q, want %q", got, settings.DefaultIDE)
+	}
+	if got := (settings.Settings{IDE: "   "}).IDETemplate(); got != settings.DefaultIDE {
+		t.Errorf("blank IDE = %q, want %q", got, settings.DefaultIDE)
+	}
+	if got := (settings.Settings{IDE: " idea --line {line} {file} "}).IDETemplate(); got != "idea --line {line} {file}" {
+		t.Errorf("configured IDE = %q", got)
+	}
+}
+
+func TestEditorAndIDESaveUnderTheirKeys(t *testing.T) {
+	t.Setenv("JAIRA_HOME", t.TempDir())
+	if _, err := settings.Update(func(cur *settings.Settings) { cur.Editor, cur.IDE = "nvim", "idea {file}" }); err != nil {
+		t.Fatal(err)
+	}
+	got := settings.Load()
+	if got.Editor != "nvim" || got.IDE != "idea {file}" {
+		t.Errorf("Load() = editor %q, ide %q", got.Editor, got.IDE)
+	}
+}

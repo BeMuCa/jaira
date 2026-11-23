@@ -2,12 +2,14 @@ package tui
 
 import (
 	"os/exec"
+	"slices"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/BeMuCa/jaira/core/settings"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -112,7 +114,7 @@ func TestParseDiffDropsCommitNoise(t *testing.T) {
 func TestPersonLaneShowsDiffBesideTheTicketWhenWide(t *testing.T) {
 	m := diffModel(t, 160, "signoff")
 	out := stripANSI(m.render())
-	for _, want := range []string{"internal/a.go", "+    y := 3", "o open in VS Code"} {
+	for _, want := range []string{"internal/a.go", "+    y := 3", "o open in IDE"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("wide sign-off screen misses %q", want)
 		}
@@ -129,7 +131,7 @@ func TestPersonLaneShowsDiffBesideTheTicketWhenWide(t *testing.T) {
 func TestHumanLaneShowsDiffBesideTheTicketWhenWide(t *testing.T) {
 	m := diffModel(t, 160, "human")
 	out := stripANSI(m.render())
-	if !strings.Contains(out, "+    y := 3") || !strings.Contains(out, "o open in VS Code") {
+	if !strings.Contains(out, "+    y := 3") || !strings.Contains(out, "o open in IDE") {
 		t.Errorf("human lane screen misses the diff pane:\n%s", out)
 	}
 }
@@ -137,7 +139,7 @@ func TestHumanLaneShowsDiffBesideTheTicketWhenWide(t *testing.T) {
 func TestNarrowTerminalKeepsTheSingleColumn(t *testing.T) {
 	m := diffModel(t, 120, "signoff")
 	out := stripANSI(m.render())
-	if strings.Contains(out, "open in VS Code") || strings.Contains(out, "tab diff") {
+	if strings.Contains(out, "open in IDE") || strings.Contains(out, "tab diff") {
 		t.Errorf("narrow terminal shows the diff pane:\n%s", out)
 	}
 	m2 := diffModel(t, 120, "signoff")
@@ -196,36 +198,47 @@ func TestOpeningAnotherTicketResetsDiffScroll(t *testing.T) {
 	}
 }
 
+// ideInstalled says the IDE's program is on the PATH for one test, so 'o' starts
+// it through openInCode instead of falling back to the editor.
+func ideInstalled(t *testing.T) {
+	t.Helper()
+	orig := lookIDE
+	lookIDE = func(name string) (string, error) { return name, nil }
+	t.Cleanup(func() { lookIDE = orig })
+}
+
 func TestOKeyOpensFileAtLine(t *testing.T) {
-	var gotDir, gotPath string
-	var gotLine int
+	var gotDir string
+	var gotArgv []string
 	orig := openInCode
-	openInCode = func(dir, path string, line int) error {
-		gotDir, gotPath, gotLine = dir, path, line
+	openInCode = func(dir string, argv []string) error {
+		gotDir, gotArgv = dir, argv
 		return nil
 	}
 	t.Cleanup(func() { openInCode = orig })
+	ideInstalled(t)
 
 	m := diffModel(t, 160, "signoff")
 	m.diffDir = "/repo/worktree"
 	m.render()
 	m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
-	if gotPath != "internal/a.go" || gotLine != 10 || gotDir != "/repo/worktree" {
-		t.Errorf("openInCode(%q, %q, %d), want (/repo/worktree, internal/a.go, 10)", gotDir, gotPath, gotLine)
+	want := []string{"code", "-g", "internal/a.go:10"}
+	if !slices.Equal(gotArgv, want) || gotDir != "/repo/worktree" {
+		t.Errorf("openInCode(%q, %q), want (/repo/worktree, %q)", gotDir, gotArgv, want)
 	}
 }
 
 // A blank separator above a header has no path. With it on top, 'o' opens the
 // file below, and the counter and marker name that same file.
 func TestOKeyOnABlankRowOpensTheFileBelow(t *testing.T) {
-	var gotPath string
-	var gotLine int
+	var gotArgv []string
 	orig := openInCode
-	openInCode = func(_, path string, line int) error {
-		gotPath, gotLine = path, line
+	openInCode = func(_ string, argv []string) error {
+		gotArgv = argv
 		return nil
 	}
 	t.Cleanup(func() { openInCode = orig })
+	ideInstalled(t)
 
 	m := diffModel(t, 160, "signoff")
 	m.diffDir = "/repo/worktree"
@@ -244,8 +257,8 @@ func TestOKeyOnABlankRowOpensTheFileBelow(t *testing.T) {
 		t.Errorf("counter with a blank row on top does not name the file below:\n%s", out)
 	}
 	m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
-	if gotPath != "docs/b.md" || gotLine != 1 {
-		t.Errorf("openInCode got (%q, %d), want (docs/b.md, 1)", gotPath, gotLine)
+	if got := gotArgv[len(gotArgv)-1]; got != "docs/b.md:1" {
+		t.Errorf("openInCode got %q, want the file below at docs/b.md:1", gotArgv)
 	}
 	if out := stripANSI(m.render()); !strings.Contains(out, "opened docs/b.md:1") {
 		t.Errorf("diff title misses the open:\n%s", out)
@@ -256,8 +269,9 @@ func TestOKeyOnABlankRowOpensTheFileBelow(t *testing.T) {
 // keys. The confirmation sits in the diff title and clears on the next key.
 func TestOKeyConfirmsInTheDiffTitleWithoutAModal(t *testing.T) {
 	orig := openInCode
-	openInCode = func(string, string, int) error { return nil }
+	openInCode = func(string, []string) error { return nil }
 	t.Cleanup(func() { openInCode = orig })
+	ideInstalled(t)
 
 	m := diffModel(t, 160, "signoff")
 	m.diffDir = "/repo/worktree"
@@ -581,5 +595,50 @@ func TestFitSegsEndsAnExactBoundaryCutInEllipsis(t *testing.T) {
 	whole := fitSegs([]diffSeg{{"abcd", sty}, {"", sty}}, 4)
 	if got := text(whole); got != "abcd" {
 		t.Errorf("exact fit with no text after it is %q, want \"abcd\"", got)
+	}
+}
+
+func TestIDECommandFillsTheTemplate(t *testing.T) {
+	cases := []struct {
+		name, template, file string
+		line                 int
+		want                 []string
+	}{
+		{"default template", "code -g {file}:{line}", "internal/a.go", 10, []string{"code", "-g", "internal/a.go:10"}},
+		{"line as its own argument", "idea --line {line} {file}", "internal/a.go", 7, []string{"idea", "--line", "7", "internal/a.go"}},
+		{"path with spaces stays one argument", "code -g {file}:{line}", "docs/my notes.md", 3, []string{"code", "-g", "docs/my notes.md:3"}},
+		{"no placeholder appends the path", "nvim", "a.go", 1, []string{"nvim", "a.go"}},
+	}
+	for _, c := range cases {
+		if got := ideCommand(c.template, c.file, c.line); !slices.Equal(got, c.want) {
+			t.Errorf("%s: ideCommand(%q) = %q, want %q", c.name, c.template, got, c.want)
+		}
+	}
+}
+
+// An IDE that is not installed must not be started: 'o' opens the file in the
+// editor instead, and the diff title says which program was missing.
+func TestOKeyFallsBackToTheEditorWhenTheIDEIsMissing(t *testing.T) {
+	orig := openInCode
+	openInCode = func(string, []string) error {
+		t.Error("an IDE that is not installed was started")
+		return nil
+	}
+	t.Cleanup(func() { openInCode = orig })
+
+	// After diffModel: it gives the model its own JAIRA_HOME, which is where the
+	// setting has to go.
+	m := diffModel(t, 160, "signoff")
+	if _, err := settings.Update(func(cur *settings.Settings) { cur.IDE = "definitely-not-installed-xyz {file}" }); err != nil {
+		t.Fatal(err)
+	}
+	m.diffDir = "/repo/worktree"
+	m.render()
+	_, cmd := m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
+	if cmd == nil {
+		t.Fatal("no editor command was returned for the fallback")
+	}
+	if out := stripANSI(m.render()); !strings.Contains(out, "definitely-not-installed-xyz not found — opened in ") {
+		t.Errorf("diff title does not say the IDE is missing:\n%s", out)
 	}
 }

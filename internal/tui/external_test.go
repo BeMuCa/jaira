@@ -2,14 +2,18 @@ package tui
 
 import (
 	"os"
+	"slices"
 	"strings"
 	"testing"
+
+	"github.com/BeMuCa/jaira/core/settings"
 )
 
 // The fallback chain matters here: EDITOR is unset on plenty of machines,
 // including the one this was written on, and "no editor configured" is a worse
 // answer than "we found vi".
 func TestEditorCommandFallback(t *testing.T) {
+	t.Setenv("JAIRA_HOME", t.TempDir())
 	t.Setenv("VISUAL", "")
 	t.Setenv("EDITOR", "")
 
@@ -33,11 +37,32 @@ func TestEditorCommandFallback(t *testing.T) {
 }
 
 func TestEditorFallsBackWhenUnset(t *testing.T) {
+	t.Setenv("JAIRA_HOME", t.TempDir())
 	t.Setenv("VISUAL", "")
 	t.Setenv("EDITOR", "")
 	got := editorCommand()
 	if len(got) == 0 || got[0] == "" {
 		t.Fatal("no fallback editor was chosen")
+	}
+}
+
+// The editor in settings.json wins over the environment, and an empty one leaves
+// the environment's order as it was.
+func TestEditorInSettingsWinsOverTheEnvironment(t *testing.T) {
+	t.Setenv("JAIRA_HOME", t.TempDir())
+	t.Setenv("VISUAL", "vim")
+	t.Setenv("EDITOR", "nano")
+	if _, err := settings.Update(func(cur *settings.Settings) { cur.Editor = " nvim  --clean " }); err != nil {
+		t.Fatal(err)
+	}
+	if got := editorCommand(); !slices.Equal(got, []string{"nvim", "--clean"}) {
+		t.Errorf("settings editor ignored: %v", got)
+	}
+	if _, err := settings.Update(func(cur *settings.Settings) { cur.Editor = "" }); err != nil {
+		t.Fatal(err)
+	}
+	if got := editorCommand(); got[0] != "vim" {
+		t.Errorf("empty settings editor did not fall back to VISUAL: %v", got)
 	}
 }
 

@@ -140,6 +140,31 @@ type Settings struct {
 	// (issue #79). Empty means python3. JAIRA_PYTHON in the environment wins
 	// over it. Read it through PythonCommand.
 	Python string `json:"python,omitempty"`
+
+	// Editor is the command E opens a ticket with, arguments included ("nvim",
+	// "code --wait"). Split with strings.Fields, as VISUAL and EDITOR are. Empty
+	// means VISUAL, then EDITOR, then git's core.editor, as before there was a
+	// setting.
+	Editor string `json:"editor,omitempty"`
+
+	// IDE is the program o opens a file from the diff with, as a template:
+	// {file} and {line} are filled in inside each whitespace-separated field, so
+	// a path with spaces stays one argument and no shell reads it. Empty means
+	// DefaultIDE. Read it through IDETemplate.
+	IDE string `json:"ide,omitempty"`
+}
+
+// DefaultIDE is the template o uses when settings.json names none: VS Code at
+// the line.
+const DefaultIDE = "code -g {file}:{line}"
+
+// IDETemplate is the template o opens a file with: settings.json's, else
+// DefaultIDE.
+func (s Settings) IDETemplate() string {
+	if v := strings.TrimSpace(s.IDE); v != "" {
+		return v
+	}
+	return DefaultIDE
 }
 
 // PythonEnv overrides the python setting for one shell or one machine.

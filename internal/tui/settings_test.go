@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
+
 	"github.com/BeMuCa/jaira/core/settings"
 )
 
@@ -295,5 +297,73 @@ func TestSettingsWritesNeverWipeABrokenFile(t *testing.T) {
 				t.Fatalf("the row does not say the file does not parse:\n%s", got)
 			}
 		})
+	}
+}
+
+// The editor and IDE rows type their value in place: enter opens it with what
+// settings.json has, typed text and a paste land in it, enter saves it through
+// settings.Update, esc leaves it as it was, and an empty value saves the default.
+func TestSettingsTypesTheEditorAndIDE(t *testing.T) {
+	t.Setenv("VISUAL", "")
+	t.Setenv("EDITOR", "")
+	m := newTestModel(t, 150, 40)
+	open := func(rows int) {
+		t.Helper()
+		m.key(key("esc"))
+		m.key(key("S"))
+		for range rows {
+			m.key(key("j"))
+		}
+	}
+	row := func() string {
+		t.Helper()
+		return stripANSI(m.settingsScreen.render(150, 40))
+	}
+
+	open(6)
+	m.key(key("enter"))
+	for _, c := range "nvim" {
+		m.key(key(string(c)))
+	}
+	m.Update(tea.PasteMsg{Content: " --clean"})
+	if got := row(); !strings.Contains(got, "Editor (E)  [nvim --clean_]") {
+		t.Fatalf("the editor row does not show what was typed:\n%s", got)
+	}
+	m.key(key("enter"))
+	if got := settings.Load().Editor; got != "nvim --clean" {
+		t.Fatalf("settings.json editor = %q, want %q", got, "nvim --clean")
+	}
+	if got := row(); !strings.Contains(got, "Editor (E)  nvim --clean") {
+		t.Fatalf("after save, the editor row does not show the value:\n%s", got)
+	}
+
+	open(7)
+	m.key(key("enter"))
+	if got := row(); !strings.Contains(got, "IDE (o in the diff)  [_]") {
+		t.Fatalf("the IDE row does not open empty when none is set:\n%s", got)
+	}
+	m.Update(tea.PasteMsg{Content: "x"})
+	m.key(key("esc"))
+	if m.settingsScreen.typing != "" || settings.Load().IDE != "" {
+		t.Fatalf("esc did not leave the IDE as it was: typing=%q ide=%q", m.settingsScreen.typing, settings.Load().IDE)
+	}
+
+	m.key(key("enter"))
+	m.Update(tea.PasteMsg{Content: "idea --line {line} {file}"})
+	m.key(key("enter"))
+	if got := settings.Load().IDETemplate(); got != "idea --line {line} {file}" {
+		t.Fatalf("settings.json ide = %q", got)
+	}
+
+	m.key(key("enter"))
+	for range 40 {
+		m.key(key("backspace"))
+	}
+	m.key(key("enter"))
+	if got := settings.Load().IDE; got != "" {
+		t.Fatalf("an empty IDE should save the default, settings.json has %q", got)
+	}
+	if got := row(); !strings.Contains(got, "default — code -g {file}:{line}") {
+		t.Fatalf("after an empty save, the IDE row does not show the default:\n%s", got)
 	}
 }

@@ -9,33 +9,45 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/BeMuCa/jaira/core/gate"
+	"github.com/BeMuCa/jaira/core/settings"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // editorCommand resolves the editor to launch.
-//
-// VISUAL before EDITOR is the convention every tool that reads both follows, and
-// git's own core.editor is consulted next because a user who configured one there
-// has already stated a preference. The final fallbacks exist because "no editor
-// configured" is a worse answer than a working one — EDITOR is unset on plenty of
-// machines.
 func editorCommand() []string {
-	for _, v := range []string{os.Getenv("VISUAL"), os.Getenv("EDITOR")} {
-		if f := strings.Fields(v); len(f) > 0 {
-			return f
-		}
+	argv, _ := editorChoice(settings.Load())
+	return argv
+}
+
+// editorChoice resolves the editor to launch, and says where it came from in
+// words a person can read for the settings screen.
+//
+// The editor in settings.json wins. Without one, VISUAL before EDITOR is the
+// convention every tool that reads both follows, and git's own core.editor is
+// consulted next because a user who configured one there has already stated a
+// preference. The final fallbacks exist because "no editor configured" is a
+// worse answer than a working one — EDITOR is unset on plenty of machines.
+func editorChoice(cur settings.Settings) (argv []string, source string) {
+	if f := strings.Fields(cur.Editor); len(f) > 0 {
+		return f, "from settings.json"
+	}
+	if f := strings.Fields(os.Getenv("VISUAL")); len(f) > 0 {
+		return f, "from $VISUAL"
+	}
+	if f := strings.Fields(os.Getenv("EDITOR")); len(f) > 0 {
+		return f, "from $EDITOR"
 	}
 	if out, err := exec.Command("git", "config", "--get", "core.editor").Output(); err == nil {
 		if f := strings.Fields(strings.TrimSpace(string(out))); len(f) > 0 {
-			return f
+			return f, "from git core.editor"
 		}
 	}
 	for _, candidate := range []string{"nano", "vim", "vi"} {
 		if _, err := exec.LookPath(candidate); err == nil {
-			return []string{candidate}
+			return []string{candidate}, "found on PATH"
 		}
 	}
-	return []string{"vi"}
+	return []string{"vi"}, "the last resort"
 }
 
 // openInEditor suspends the board, hands the ticket's body to $EDITOR, and

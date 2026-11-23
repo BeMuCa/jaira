@@ -7,9 +7,11 @@ import (
 	"strconv"
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
 	"github.com/BeMuCa/jaira/core/gitrepo"
+	"github.com/BeMuCa/jaira/core/settings"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -41,10 +43,11 @@ type diffRow struct {
 	from, to int
 }
 
-// openInCode opens a file at a line in VS Code. A package variable so tests can
-// replace it with a recorder instead of launching an editor.
-var openInCode = func(dir, path string, line int) error {
-	cmd := exec.Command("code", "-g", fmt.Sprintf("%s:%d", path, line))
+// openInCode starts the IDE command argv in dir and does not wait for it: a GUI
+// window returns at once. A package variable so tests can replace it with a
+// recorder instead of launching an IDE.
+var openInCode = func(dir string, argv []string) error {
+	cmd := exec.Command(argv[0], argv[1:]...)
 	cmd.Dir = dir
 	if err := cmd.Start(); err != nil {
 		return err
@@ -52,6 +55,32 @@ var openInCode = func(dir, path string, line int) error {
 	go cmd.Wait()
 	return nil
 }
+
+// lookIDE finds the IDE's program on the PATH. A package variable so tests can
+// say it is installed without installing anything.
+var lookIDE = exec.LookPath
+
+// ideCommand is the command that opens file at line with the IDE template. The
+// template is split into fields before {file} and {line} are filled in, so a
+// path with spaces stays one argument. A template with no {file} gets the path
+// as its last argument.
+func ideCommand(template, file string, line int) []string {
+	var argv []string
+	hasFile := false
+	for _, f := range strings.Fields(template) {
+		hasFile = hasFile || strings.Contains(f, "{file}")
+		f = strings.ReplaceAll(f, "{file}", file)
+		argv = append(argv, strings.ReplaceAll(f, "{line}", strconv.Itoa(line)))
+	}
+	if !hasFile {
+		argv = append(argv, file)
+	}
+	return argv
+}
+
+// diffEditorDoneMsg reports how the editor opened for a file the IDE does not
+// have ended.
+type diffEditorDoneMsg struct{ err error }
 
 // parseDiff turns a git patch into one row per line of the diff, numbering each
 // row by its new-side line so a row can be opened in an editor. Lines outside a
@@ -363,17 +392,30 @@ func (m *Model) jumpFile(next bool) {
 	}
 }
 
-// openDiffRow opens the file of the target row in VS Code at its line.
-func (m *Model) openDiffRow() {
+// openDiffRow opens the file of the target row in the IDE from settings at its
+// line. When the IDE's program is not installed, the file opens in the editor
+// instead, without a line: +N means something different in every editor. The
+// returned command runs that editor; it is nil when the IDE was started.
+func (m *Model) openDiffRow() tea.Cmd {
 	if len(m.diffRows) == 0 {
-		return
+		return nil
 	}
 	r := m.diffRows[m.diffTarget()]
-	if err := openInCode(m.diffDir, r.path, r.line); err != nil {
+	cur := settings.Load()
+	argv := ideCommand(cur.IDETemplate(), r.path, r.line)
+	if _, err := lookIDE(argv[0]); err != nil {
+		editor, _ := editorChoice(cur)
+		cmd := exec.Command(editor[0], append(editor[1:], r.path)...)
+		cmd.Dir = m.diffDir
+		m.diffOpened = argv[0] + " not found — opened in " + editor[0]
+		return tea.ExecProcess(cmd, func(err error) tea.Msg { return diffEditorDoneMsg{err} })
+	}
+	if err := openInCode(m.diffDir, argv); err != nil {
 		m.notify(err.Error(), true)
-		return
+		return nil
 	}
 	m.diffOpened = "opened " + r.path + ":" + strconv.Itoa(r.line)
+	return nil
 }
 
 // diffPalette is the background of the changed rows and of the words that
@@ -623,7 +665,7 @@ func (m *Model) renderDiffPane(width, height int) string {
 // diff on the right, with the footer below both. hint is the ticket's own key
 // list; the diff's keys are appended to it.
 func (m *Model) withDiff(left, hint string) string {
-	footer := wrapHints(strings.Split(hint+" · tab diff · ]/[ file · o open in VS Code", " · "), max(1, m.width))
+	footer := wrapHints(strings.Split(hint+" · tab diff · ]/[ file · o open in IDE", " · "), max(1, m.width))
 	// A pane costs a row top and bottom for its box, and a column each side and
 	// the space between them.
 	rows := max(1, m.height-len(footer)-2)

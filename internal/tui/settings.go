@@ -29,6 +29,11 @@ const (
 	// settingsActionLanguage steps the notes language through its choices
 	// in place, the same way.
 	settingsActionLanguage = "language"
+	// settingsActionEditor and settingsActionIDE open a value for typing in
+	// place: enter saves it, esc leaves it as it was, and an empty value saves
+	// the default.
+	settingsActionEditor = "editor"
+	settingsActionIDE    = "ide"
 )
 
 // settingsEntry is one row in the menu: a name, what pressing enter on it
@@ -70,6 +75,16 @@ var settingsEntries = []settingsEntry{
 		desc:   "the language the cockpit shows a review's notes in, rewritten short by a cheap model, for you only (language in settings.json on this machine); none shows them as the ticket has them. enter steps through Deutsch, English, Русский and none; any other by hand",
 		action: settingsActionLanguage,
 	},
+	{
+		name:   "Editor (E)",
+		desc:   "the editor E opens a ticket in, with its arguments ('nvim', 'code --wait'); jaira waits until it exits. enter types it, enter saves, an empty value means VISUAL, EDITOR, then git's core.editor",
+		action: settingsActionEditor,
+	},
+	{
+		name:   "IDE (o in the diff)",
+		desc:   "the program o opens a file from the diff in, at its line; {file} and {line} are filled in, e.g. 'code -g {file}:{line}'. jaira does not wait for it. enter types it, enter saves, an empty value means the default",
+		action: settingsActionIDE,
+	},
 }
 
 // settingsScreen is the menu behind S: one door into both the lane screen and
@@ -106,13 +121,90 @@ type settingsScreen struct {
 	// none, and languageErr what went wrong saving the last step.
 	language    string
 	languageErr string
+
+	// editor and ide are the two settings as settings.json has them now, "" for
+	// the default; editorNow is the editor that applies when editor is "", and
+	// where it comes from. typing is the action of the row whose value is open
+	// for typing, "" when none; typed is what has been typed so far and textErr
+	// what went wrong saving it.
+	editor, ide string
+	editorNow   string
+	typing      string
+	typed       string
+	textErr     string
 }
 
 func newSettingsScreen(root string) *settingsScreen {
 	cur := settings.Load()
 	s := &settingsScreen{days: cur.LogbookWindow(), dispatch: cur.DispatchMode(), root: root, language: string(cur.Language)}
 	s.readChatModel(cur)
+	s.readText(cur)
 	return s
+}
+
+// readText takes the editor and IDE as settings.json has them, and the editor
+// that applies when none is set.
+func (s *settingsScreen) readText(cur settings.Settings) {
+	s.editor, s.ide = cur.Editor, cur.IDE
+	argv, source := editorChoice(cur)
+	s.editorNow = strings.Join(argv, " ") + " (" + source + ")"
+}
+
+// openText opens the editor or IDE row for typing, with the value settings.json
+// has for it now.
+func (s *settingsScreen) openText(action string) {
+	s.typing, s.typed, s.textErr = action, s.editor, ""
+	if action == settingsActionIDE {
+		s.typed = s.ide
+	}
+}
+
+// textKey drives the value while it is open for typing: enter saves it, esc
+// leaves it as it was and backspace takes one character back. The characters
+// themselves come through addText.
+func (s *settingsScreen) textKey(k string) string {
+	switch k {
+	case "esc":
+		s.typing, s.typed, s.textErr = "", "", ""
+	case "backspace":
+		if r := []rune(s.typed); len(r) > 0 {
+			s.typed = string(r[:len(r)-1])
+		}
+	case "enter":
+		return s.saveText()
+	}
+	return settingsActionNone
+}
+
+// addText types text into the open value, a key's character or a paste, on one
+// line. It does nothing when no value is open.
+func (s *settingsScreen) addText(text string) {
+	if s.typing != "" {
+		s.typed += foldToOneLine(text)
+	}
+}
+
+// saveText writes the open value through settings.Update, like every write of
+// this screen. The value stays open when the write fails, so nothing typed is
+// lost.
+func (s *settingsScreen) saveText() string {
+	action, value := s.typing, strings.TrimSpace(s.typed)
+	now, err := settings.Update(func(cur *settings.Settings) {
+		if action == settingsActionIDE {
+			cur.IDE = value
+		} else {
+			cur.Editor = value
+		}
+	})
+	if err != nil {
+		s.textErr = err.Error()
+		return settingsActionNone
+	}
+	// None, not returned: nothing on the board shows these, and the diff pane and
+	// the ticket editor read them when they open.
+	s.readText(now)
+	s.typing, s.typed, s.textErr = "", "", ""
+	return settingsActionNone
 }
 
 // readChatModel takes the board's chat model and the one that applies from
@@ -271,6 +363,10 @@ func (s *settingsScreen) key(k string) string {
 		if a == settingsActionLanguage {
 			return s.stepLanguage()
 		}
+		if a == settingsActionEditor || a == settingsActionIDE {
+			s.openText(a)
+			return settingsActionNone
+		}
 		if a != settingsActionLogbookDays {
 			return a
 		}
@@ -308,6 +404,9 @@ func (s *settingsScreen) render(width, height int) string {
 			}
 			name += "  " + styMeta.Render(lang)
 		}
+		if e.action == settingsActionEditor || e.action == settingsActionIDE {
+			name += "  " + s.textValue(e.action)
+		}
 		sb.WriteString(truncate(lead+name, w) + "\n")
 		sb.WriteString(styMeta.Render("      "+wrap(e.desc, max(10, w-6), 6)) + "\n")
 		if e.action == settingsActionLogbookDays && s.err != "" {
@@ -322,11 +421,17 @@ func (s *settingsScreen) render(width, height int) string {
 		if e.action == settingsActionLanguage && s.languageErr != "" {
 			sb.WriteString(styErr.Render("      "+s.languageErr) + "\n")
 		}
+		if e.action == s.typing && s.textErr != "" {
+			sb.WriteString(styErr.Render("      "+s.textErr) + "\n")
+		}
 	}
 
 	hints := []string{"enter open", "esc back"}
 	if s.editing {
 		hints = []string{"0-9 days", "enter save", "esc cancel"}
+	}
+	if s.typing != "" {
+		hints = []string{"type", "enter save", "esc cancel"}
 	}
 	for _, l := range wrapHints(hints, max(1, w)) {
 		sb.WriteString("\n" + styMeta.Render(l))
@@ -345,4 +450,21 @@ func (s *settingsScreen) logbookValue() string {
 	default:
 		return styMeta.Render(fmt.Sprintf("%d days", s.days))
 	}
+}
+
+// textValue is the editor or IDE row's value: the value being typed while it is
+// open, otherwise what settings.json says, and for an empty one the default in
+// words.
+func (s *settingsScreen) textValue(action string) string {
+	if s.typing == action {
+		return stySelected.Render("[" + s.typed + "_]")
+	}
+	set, def := s.editor, "default — "+s.editorNow
+	if action == settingsActionIDE {
+		set, def = s.ide, "default — "+settings.DefaultIDE
+	}
+	if set == "" {
+		return styMeta.Render(def)
+	}
+	return styMeta.Render(set)
 }

@@ -1254,6 +1254,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case diffEditorDoneMsg:
+		if msg.err != nil {
+			m.notify(msg.err.Error(), true)
+		}
+		return m, nil
+
 	case boardEditorDoneMsg:
 		if m.board != nil {
 			if msg.err != nil {
@@ -1361,6 +1367,11 @@ func (m *Model) insertText(text string) {
 	case modeLayer:
 		if l := m.layer; l != nil && l.stage == stageForm {
 			l.form.vals[l.form.field] += foldToOneLine(text)
+		}
+
+	case modeSettings:
+		if m.settingsScreen != nil {
+			m.settingsScreen.addText(text)
 		}
 	}
 }
@@ -1597,6 +1608,15 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, cmd
 
 	case modeSettings:
+		if m.settingsScreen.typing != "" {
+			switch s {
+			case "enter", "esc", "backspace":
+				m.settingsScreen.textKey(s)
+			default:
+				m.insertText(k.Text)
+			}
+			return m, nil
+		}
 		switch action := m.settingsScreen.key(s); action {
 		case settingsActionBack:
 			m.settingsScreen = nil
@@ -1719,7 +1739,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			}
 		case "o":
 			if m.diffPaneShown() {
-				m.openDiffRow()
+				return m, m.openDiffRow()
 			}
 		case "shift+down":
 			m.scrollSrc(1)
