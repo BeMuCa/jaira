@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:25:24Z
+updated-at: 2026-11-23T21:25:28Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -88,3 +88,4 @@ back-count: 1
 - **2026-11-23 21:24 · Alexander Sacharov** — bughunt: change: internal/tui/signoff.go:144 -> view.go:1327 detailFields - class: 'i' now adds the whole detail pane to the sign-off screen, including blocks that contradict what the screen already shows above it: a Commits block built from the recorded commits: list only (view.go:1475, the snapshot the comment at signoff.go:100 calls misleading) under the derived list, 'Before this can start: goal, context, assignee' (view.go:1483, missing()) on a ticket waiting for acceptance, and the DoD list a second time; example: Commits [0123abc], derived [0123abc 4567def] -> the top block lists 2 commits, the 'Details' block lists 1; ran: scratch go test, render after 'i' (Commits x2, DoD x2, start warning shown)
 - **2026-11-23 21:24 · Alexander Sacharov** — hunt report: 2 findings, both change, neither a blocker, as notes on ZZTCWS | read as a diff since 73d06b024: internal/tui/signoff.go signoff_test.go tags_test.go view.go (detailFields read whole); no new files | not checked: how the cockpit renders a blocker with no text (only that it counts as one); the per-render git exec for the stat is older than this change and was not looked at further
 - **2026-11-23 21:24 · Alexander Sacharov** — bughunt: done at 383b42d9e - 2 findings (2 change, 0 pre-existing) in 4 modules, follow-up hunt since 73d06b024; concurrency, error paths, input, permissions checked; files: core/release/notes/ZZTCWS.md internal/tui/diffpane.go internal/tui/diffpane_test.go internal/tui/model.go internal/tui/owed_test.go internal/tui/signoff.go internal/tui/signoff_test.go internal/tui/tags_test.go internal/tui/view.go
+- **2026-11-23 21:25 · Alexander Sacharov** — testing -> in-progress (round 3): fix - a blocker line whose label stands alone keeps its row, shown as written (no empty string). Let stand as a note for the person: Details repeat the Commits block (recorded list only, the detail pane's own pre-existing behaviour), the DoD and 'Before this can start' - it is the whole detail pane by design; filtering it would bring back a second renderer (the smaller design chosen in round 2).
