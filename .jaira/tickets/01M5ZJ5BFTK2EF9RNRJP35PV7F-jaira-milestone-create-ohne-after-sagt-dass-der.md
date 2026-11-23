@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:21Z
-updated-at: 2026-11-23T01:21:21Z
+updated-at: 2026-11-23T01:21:53Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-35pv7f
@@ -24,6 +24,11 @@ claimed-at: 2026-11-23T01:19:53Z
 outcome-what: "milestone create without --after now prints a second line: the milestone is in the picker (M), not on the roadmap (L), and 'jaira milestone set <name> --after <a,b>' puts it there. --after given (also --after \"\") and --json print nothing new. Test assertions added to TestCreateWritesGoalAndAfter; release note added."
 outcome-why: A milestone made without --after went to the M picker only; the person looked on the roadmap and thought it lost (O14). The hint was only in --help.
 outcome-resolves: "DoD 1 (hint with the set --after command) and DoD 2 (release note). Checked: concurrency (no new write, the line prints after the locked write returned), error paths (an error returns before the line), unusual input (normalised name like 'Round Two' -> round-two is the one printed; --after \"\" counts as placed), permissions n/a. go test not run per worker rules."
+review-summary: "core/release/notes/35PV7F.md:1 says 'read the second line', but with a normalised name ('Round Two') a 'Filed ... as ...' line comes first and the hint is the third; say 'the line under the created line' instead. Rest let stand: one if-block after the existing created line is the smallest shape, stdout matches the other create output, the TUI create path (internal/tui/layer.go createMilestone) always places on the roadmap so it has no sibling."
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # jaira milestone create ohne --after sagt, dass der Milestone nicht auf der Roadmap steht
@@ -46,3 +51,4 @@ outcome-resolves: "DoD 1 (hint with the set --after command) and DoD 2 (release 
 
 ## Progress
 - **2026-11-23 01:20 · BeMuCa** — Checked branch build 37e27ef69: 'milestone create q1' without --after prints only 'Milestone "q1" created with 0 ticket(s): <path>' — no roadmap hint, so the change is needed (not a reject). Decisions settled without the person: hint goes to stdout as a second line after the created line, only when --after was not given at all (--after "" does put it on the roadmap as a swimlane top); --json output unchanged (no message field to add to); the hint names the milestone by its name — create refuses a name already on the board, so the name is unique there.
+- **2026-11-23 01:21 · BeMuCa** — critique: core/release/notes/35PV7F.md:1 says 'read the second line', but with a normalised name ('Round Two') a 'Filed ... as ...' line comes first and the hint is the third; say 'the line under the created line' instead. Rest let stand: one if-block after the existing created line is the smallest shape, stdout matches the other create output, the TUI create path (internal/tui/layer.go createMilestone) always places on the roadmap so it has no sibling.
