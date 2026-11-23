@@ -26,7 +26,7 @@ follows: 01M67K72RDJY2N2R2KQGATDG74
 commits:
   - 71f812811bd997015ae675670c35cb4dbceefa15
 created-at: 2026-11-23T22:43:41Z
-updated-at: 2026-11-23T23:01:07Z
+updated-at: 2026-11-23T23:01:26Z
 updated-by: BeMuCa
 claimed-by: worker-fspjp9
 claimed-at: 2026-11-23T22:56:02Z
@@ -73,3 +73,4 @@ question: "agents above 1 passes the load on a lane that edits code. optimize pr
 ## Progress
 - **2026-11-23 22:57 · BeMuCa** — pre-process: agents has no runtime effect in jaira; facts.go left alone because the board note never shows lane agents. Default 1 is set in the parser so show prints 1 for an absent key. Lanes that write (outcome-what, plan) reject agents>1 at load, because N agents in one worktree collide.
 - **2026-11-23 23:01 · BeMuCa** — critique: agents above 1 is only refused where output-produces names outcome-what or plan. optimize (core/lane/builtin/26-optimize.md) produces review-gaps and edits code ('Make the changes. This lane edits'), so the rule lets agents: N through on it. review and critique produce review-gaps/review-summary and only read, so output-produces cannot tell optimize apart from them. Left alone: the choice is a person's (see question). Everything else in the diff read and found sound: parser, equality, show JSON and text, lanes show, shipped manifest only appended.
+- **2026-11-23 23:01 · BeMuCa** — Teamlead zur offenen Frage: die Luecke ist echt (optimize liefert review-gaps und aendert trotzdem Code). Empfehlung (a) - im Schluessel-Text und in beiden Skills steht, dass agents > 1 nur fuer Lanes gilt, die keinen Code aendern; kein neuer Schluessel 'writes', solange nur optimize betroffen ist. Entscheidung liegt bei Berk.
