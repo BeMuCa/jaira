@@ -129,6 +129,7 @@ function sceneRows(scene: WorkersScene, workers: Worker[], room: number): Cell[]
     const spark = at.left ? at.x + sprite.w - 1 : at.x
     const mark = working
       ? { ch: SPINNER[scene.frame % SPINNER.length]!, style: { color: scene.colors[f.id] } }
+      : f.state === 'blocked' ? { ch: '!', style: { color: 'warning', bold: true } }
       : f.state === 'question' ? { ch: '?', style: { color: 'warning', bold: true } } : { ch: 'z', style: { dim: true } }
     if (sprite === BIG) {
       put(rows[at.y]!, body + 1, HATS[scene.hats[f.id] ?? ''] ?? '', look)
@@ -163,7 +164,7 @@ function workerLines(Text: ElementTable['Text'], scene: WorkersScene, workers: W
       <Text key={`worker-${k}`} wrap="truncate">
         <Text bold color={scene.colors[f.id]}>{f.id}</Text>
         {`  ${f.lane.padEnd(lane)}  ${f.role.padEnd(role)}  `}
-        <Text color={f.state === 'question' ? 'warning' : undefined} dimColor={f.state === 'idle'}>{w.states[f.state].padEnd(state)}</Text>
+        <Text color={f.state === 'question' || f.state === 'blocked' ? 'warning' : undefined} dimColor={f.state === 'idle'}>{w.states[f.state].padEnd(state)}</Text>
         {`  ${dur.padStart(5)}  `}
         {report !== '' ? report : <Text dimColor>{f.title}</Text>}
       </Text>

@@ -116,9 +116,10 @@ export function overviewOf(lanesJson: string, listJson: string, nextJson: string
 
 // ── the Workers tab: every agent on the board at one stone ───────────────
 
-// How an agent reads: at work, resting with its tab open, or resting while
-// its ticket carries a question for a person.
-export type WorkerState = 'working' | 'idle' | 'question'
+// How an agent reads: at work, resting with its tab open, resting while
+// its ticket carries a question for a person, or held at an approval dialog
+// in its tab (Herdr's `blocked`) — which stops it whatever else is true.
+export type WorkerState = 'working' | 'idle' | 'question' | 'blocked'
 // One agent: the ticket it carries, what kind of agent it is (the part of
 // its Herdr tab's label after the slash, or `subagent`), the lane its ticket
 // is in, its title, and how many definition-of-done items that ticket still
@@ -147,10 +148,10 @@ export function workersOf(lanesJson: string, listJson: string, tabs: readonly Ta
   const workers: Worker[] = []
   for (const t of tickets) {
     const asks = oneLine(t.question) !== ''
-    const worker = (role: string, working: boolean): Worker => ({
+    const worker = (role: string, status: string): Worker => ({
       id: t.handle,
       role,
-      state: working ? 'working' : asks ? 'question' : 'idle',
+      state: status === 'blocked' ? 'blocked' : status === 'working' ? 'working' : asks ? 'question' : 'idle',
       lane: t.status,
       title: oneLine(t.title),
       open: openOf(t.dod_items),
@@ -158,10 +159,10 @@ export function workersOf(lanesJson: string, listJson: string, tabs: readonly Ta
     const mine: Worker[] = []
     for (const tab of tabs) {
       const [id = '', kind = ''] = tab.label.split('/')
-      if (id === t.handle && kind !== '' && !PERSONS_TABS.has(kind)) mine.push(worker(kind, tab.agent_status === 'working'))
+      if (id === t.handle && kind !== '' && !PERSONS_TABS.has(kind)) mine.push(worker(kind, tab.agent_status ?? ''))
     }
     for (const a of agents) {
-      if (`${a.description} ${a.name ?? ''}`.includes(t.handle) && (WORKING.has(a.status) || a.status === 'idle')) mine.push(worker(SUBAGENT, WORKING.has(a.status)))
+      if (`${a.description} ${a.name ?? ''}`.includes(t.handle) && (WORKING.has(a.status) || a.status === 'idle')) mine.push(worker(SUBAGENT, WORKING.has(a.status) ? 'working' : 'idle'))
     }
     workers.push(...mine.sort((a, b) => a.role.localeCompare(b.role)))
   }
