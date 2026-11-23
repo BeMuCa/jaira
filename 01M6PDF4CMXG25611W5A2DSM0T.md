@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:25:03Z
+updated-at: 2026-11-23T01:25:06Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -45,6 +45,7 @@ claimed-at: 2026-11-23T01:24:05Z
 
 - [ ] gitrepo: OutsideRepo() - true only when no .git in Dir or any parent AND git does not report a work tree
 - [ ] gate.Env: lazy OutsideRepo func; requires-commits refusal skipped only when derive found nothing and OutsideRepo() is true
+- [ ] wire it in internal/cli/root.go loadEnv and internal/tui/model.go gateEnv
 
 ## Progress
 
