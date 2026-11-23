@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:20:37Z
+updated-at: 2026-11-23T21:22:20Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -50,7 +50,7 @@ back-count: 1
 - [x] Release-Notiz in core/release/notes/<ID>.md
   proof: core/release/notes/ZZTCWS.md
 - [x] Eine 'blocker:'-Zeile aus review-gaps bleibt oben sichtbar; problem, resolves, summary, verdict und die uebrigen gaps sind hinter einer Taste erreichbar; Test
-  proof: signoff.go:81 gapLines/isBlockerLine; model.go case "i" toggles detailsFor; tests TestSignOffKeepsBlockersOnTop, TestSignOffViewShowsTheDecisionFirst
+  proof: signoff.go:82 blockerLines (cockpit MARKER/BLOCKER regexes, signoff.go:150-175); 'i' -> detailFields (view.go:1327) via model.go case "i"; tests TestSignOffKeepsBlockersOnTop, TestSignOffViewShowsTheDecisionFirst, TestDetailsCarryContextAndNotes
 
 ## Options
 
