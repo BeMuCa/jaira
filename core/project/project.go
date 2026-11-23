@@ -73,8 +73,11 @@ func Load() []Project {
 			continue
 		}
 		if root != c {
-			p.Root, p.Name = root, filepath.Base(root)
+			p.Name = filepath.Base(root)
 		}
+		// Always the canonical spelling: the TUI tells the open board's line
+		// by comparing against project.Board, which is canonical too.
+		p.Root = root
 		if i, ok := at[root]; ok {
 			if p.LastOpen > out[i].LastOpen {
 				out[i].LastOpen = p.LastOpen
@@ -192,14 +195,32 @@ func Canonical(p string) string { return canonical(p) }
 // canonical reduces a path to one spelling, so the same board added twice - once
 // with a trailing slash, once through a symlink, once relative - is recognised
 // as the same board rather than listed twice.
+//
+// A path that does not exist yet - the registry file before its first write -
+// is resolved through its nearest existing ancestor, so it is spelled the same
+// way as the directory it will be created in: on macOS os.TempDir() is
+// /var/folders/..., a symlink to /private/var/folders/..., and comparing a
+// resolved temp directory against an unresolved registry path put a test's own
+// registry outside the temporary directory (see throwaway).
 func canonical(p string) string {
 	abs, err := filepath.Abs(p)
 	if err != nil {
 		abs = p
 	}
 	abs = filepath.Clean(abs)
-	if resolved, err := filepath.EvalSymlinks(abs); err == nil {
-		return resolved
+	var rest []string
+	for dir := abs; ; {
+		if resolved, err := filepath.EvalSymlinks(dir); err == nil {
+			for i := len(rest) - 1; i >= 0; i-- {
+				resolved = filepath.Join(resolved, rest[i])
+			}
+			return resolved
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return abs
+		}
+		rest = append(rest, filepath.Base(dir))
+		dir = parent
 	}
-	return abs
 }

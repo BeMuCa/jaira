@@ -147,7 +147,7 @@ func TestRememberSkipsTemp(t *testing.T) {
 		t.Fatalf("Remember(temp board) = %q, want nothing recorded", got)
 	}
 	writeProjects(t, []Project{{Root: scratch, Name: "repo"}, {Root: keep, Name: "keep"}})
-	if got := roots(Load()); len(got) != 1 || got[0] != canonical(keep) {
+	if got := roots(Load()); len(got) != 1 || canonical(got[0]) != canonical(keep) {
 		t.Fatalf("Load() = %v, want only %s", got, keep)
 	}
 }

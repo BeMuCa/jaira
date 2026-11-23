@@ -17,7 +17,11 @@ import (
 // one linked worktree, the worktree's board holding a live session.
 func mainWithWorktree(t *testing.T) (main, wt *ticket.Store) {
 	t.Helper()
-	base := t.TempDir()
+	// Resolved: session state is keyed by the store root's spelling
+	// (ticket.stateKey) and project.Trees hands back resolved paths, so on
+	// macOS, where t.TempDir() is under the /var -> /private/var symlink, a
+	// store opened through the symlink keeps its sessions under another key.
+	base := project.Canonical(t.TempDir())
 	t.Setenv("JAIRA_HOME", filepath.Join(base, "home"))
 	mainDir := filepath.Join(base, "repo")
 	wtDir := filepath.Join(base, ".worktrees", "repo-x")
