@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:25:17Z
+updated-at: 2026-11-23T01:27:05Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -29,7 +29,8 @@ claimed-at: 2026-11-23T01:24:05Z
 
 ## Definition of Done
 
-- [ ] Ohne Git-Repo geht ein Ticket nach done und ins Logbook, ohne Commits und ohne --force
+- [x] Ohne Git-Repo geht ein Ticket nach done und ins Logbook, ohne Commits und ohne --force
+  proof: core/gate/gate.go OutsideRepo waiver in the requires-commits check; core/gitrepo/git.go OutsideRepo; manual: scratch board in plain dir, move to done exit 0 and logbook exit 0 without --force
 - [ ] In einem Repo ohne Remote verlangt done weiter Commits
 - [ ] Ein Test je Fall
 - [ ] Release-Notiz in core/release/notes/<ID>.md
