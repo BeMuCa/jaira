@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:13Z
-updated-at: 2026-11-23T01:28:38Z
+updated-at: 2026-11-23T01:28:55Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-dwrc0h
@@ -36,7 +36,7 @@ review-summary: none
 - [x] Der Agent-Block nennt jaira set fuer goal und context mit einem Beispiel
   proof: core/board/announce.go:57-61 (bullet 'a ticket changes after capture'), mirrored in CLAUDE.md:23-27 and AGENTS.md:23-27
 - [x] Ein DoD-Punkt laesst sich nach dem Anlegen anhaengen, ohne dass bestehende Nummern wandern; ein Test belegt es
-  proof: internal/cli/checklist_test.go TestDodAddKeepsExistingNumbersAndProofs (jaira dod --add, existing command); not run here (no go test in this session), compiles under go vet
+  proof: core/ticket/proof_test.go:115 TestAddItemAfterProofCarryingLastItem (existing): AddItem, the function behind 'jaira dod --add', appends below the last item and its proof, item 1 keeps number and proof; also tried by hand on a scratch board (item 2 [x] with proof, --add three -> 1,2 unchanged, 3 new)
 - [x] jaira create --help verweist auf set fuer spaetere Aenderungen
   proof: internal/cli/tickets.go:219-221, last paragraph of 'jaira create --help'
 
