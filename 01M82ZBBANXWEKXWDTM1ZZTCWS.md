@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:08:54Z
+updated-at: 2026-11-23T21:08:58Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -47,7 +47,7 @@ claimed-at: 2026-11-23T20:54:57Z
 
 - [x] renderSignOff on person lanes (human+signoff); a/f stay signoff-only
 - [x] signOffBody reordered: blocker, check, what, why, question, commits, DoD
-- [ ] 'i' toggles a details block: problem/resolves/summary/verdict/gaps/tags/lane fields
+- [x] 'i' toggles a details block: problem/resolves/summary/verdict/gaps/tags/lane fields
 - [ ] update existing signoff tests, add order/blocker/details tests
 - [ ] release note core/release/notes/ZZTCWS.md
 
