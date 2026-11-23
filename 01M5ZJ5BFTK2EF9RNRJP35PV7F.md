@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:21Z
-updated-at: 2026-11-23T01:21:16Z
+updated-at: 2026-11-23T01:21:19Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-35pv7f
@@ -29,7 +29,8 @@ claimed-at: 2026-11-23T01:19:53Z
 
 - [x] jaira milestone create <name> ohne --after druckt einen Satz mit dem set --after Befehl
   proof: internal/cli/milestones.go:207 (printed only when --after was not given); TestCreateWritesGoalAndAfter in internal/cli/milestones_test.go; manual run: 'milestone create q3' prints the hint, '--after q1', '--after=' and --json do not, and the suggested 'milestone set q3 --after q1' succeeds
-- [ ] Release-Notiz in core/release/notes/<ID>.md
+- [x] Release-Notiz in core/release/notes/<ID>.md
+  proof: core/release/notes/35PV7F.md
 
 ## Options
 
