@@ -16,7 +16,7 @@ import {
 } from './filter.ts'
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
-import { COLORS, HATS, overviewOf, pickOf, stoneOf, workerKey, workersOf } from './overview.ts'
+import { COLORS, cycled, HATS, NO_FILTER, overviewOf, pickOf, stoneOf, workerKey, workersOf } from './overview.ts'
 import { drawOverview, headRow, type OverviewTab } from './overview-pane.tsx'
 import {
   backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
@@ -70,8 +70,8 @@ const busyAtom = atom({ plugin: 'jaira-cockpit', key: 'busy' } as const, {})
 const overviewAtom = atom({ plugin: 'jaira-cockpit', key: 'overview' } as const, null)
 const overviewTabAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewTab' } as const, 'queue')
 const overviewFoldedAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewFolded' } as const, {})
-const overviewPeopleAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewPeople' } as const, [])
-const overviewLanesAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewLanes' } as const, [])
+const overviewPeopleAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewPeopleFilter' } as const, NO_FILTER)
+const overviewLanesAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewLanesFilter' } as const, NO_FILTER)
 const releaseAtom = atom({ plugin: 'jaira-cockpit', key: 'release' } as const, null)
 const upgradeAtom = atom({ plugin: 'jaira-cockpit', key: 'upgrade' } as const, null)
 const workersAtom = atom({ plugin: 'jaira-cockpit', key: 'workers' } as const, null)
@@ -110,8 +110,6 @@ const READ_FRAMES = 20
 const OVERVIEW_ROWS = 1
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
-// A filter's choice with one item pressed: out if it was in, in if it was not.
-const toggled = (chosen: string[], x: string) => (chosen.includes(x) ? chosen.filter(y => y !== x) : [...chosen, x])
 // A pane left with nothing to show (its ticket gone from the board, its state
 // cleared) keeps its head: [ Close ] closes it as in every other state.
 const nothingPane = ({ Box, Button, Text }: Pick<ElementTable, 'Box' | 'Button' | 'Text'>, head: string, close: { key: string; onPress: () => void }) => (
@@ -2529,10 +2527,10 @@ export const register: Register = (on, options) => {
       },
       tab: tab => void showTab($, tab),
       fold: key => void update($, overviewFoldedAtom, f => ({ ...f, [key]: !f[key] })),
-      person: name => void update($, overviewPeopleAtom, p => toggled(p, name)),
-      everybody: () => void update($, overviewPeopleAtom, () => []),
-      lane: id => void update($, overviewLanesAtom, l => toggled(l, id)),
-      allLanes: () => void update($, overviewLanesAtom, () => []),
+      person: name => void update($, overviewPeopleAtom, p => cycled(p, name)),
+      everybody: () => void update($, overviewPeopleAtom, () => NO_FILTER),
+      lane: id => void update($, overviewLanesAtom, l => cycled(l, id)),
+      allLanes: () => void update($, overviewLanesAtom, () => NO_FILTER),
     }, {
       workers: await read($, workersAtom),
       colors: await read($, workersColorsAtom),
