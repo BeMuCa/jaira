@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T20:54:19Z
+updated-at: 2026-11-23T20:54:23Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 ---
@@ -44,3 +44,4 @@ updated-by: Alexander Sacharov
 
 ## Progress
 - **2026-11-23 20:54 · Alexander Sacharov** — Alexander Sacharov took this ticket over from BeMuCa
+- **2026-11-23 20:54 · Alexander Sacharov** — decision: Alex 23.11.2026: vom Teamlead uebernommen, sofort umsetzen. Gestapelt auf EH6Z0N (berkc, signoff, Branch upstream/feat/EH6Z0N-diff-view, noch nicht auf master): beide aendern internal/tui/signoff.go, der Diff-Teil kommt von dort. Der Branch feat/zztcws enthaelt deshalb die EH6Z0N-Commits; gemergt wird nach EH6Z0N. Brainstorm-Vorgabe vom Teamlead: problem, resolves, summary und verdict fallen von der Ansicht und bleiben hinter einer Taste (z.B. 'i' Details) erreichbar; eine 'blocker:'-Zeile aus review-gaps bleibt oben sichtbar, weil sie die Entscheidung aendert; die uebrigen gaps hinter derselben Taste. Die genaue Liste schreibt die Brainstorm-Lane als Notiz (DoD 2).
