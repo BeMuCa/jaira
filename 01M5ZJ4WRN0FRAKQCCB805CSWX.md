@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:35:22Z
+updated-at: 2026-11-23T01:35:30Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -33,7 +33,8 @@ claimed-at: 2026-11-23T01:32:21Z
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:135 exit 3, core/role/builtin/jaira-dispatcher/scripts/spawn.sh:110 --force; extracted check against fake meminfo 976 MB -> rc=3, with force=1 -> started
 - [x] Die Grenze ist eine Variable am Kopf von spawn.sh mit Kommentar, warum der Default so ist
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:7-12 min_free_mb with comment (1-2 GB per -race build, 2026-10-27 crashes), JAIRA_MIN_FREE_MB
-- [ ] jaira-teamlead/SKILL.md sagt, was der Teamlead tut, wenn spawn.sh ablehnt
+- [x] jaira-teamlead/SKILL.md sagt, was der Teamlead tut, wenn spawn.sh ablehnt
+  proof: core/role/builtin/jaira-teamlead/SKILL.md:237 wait, tell the person, --force only on their word
 - [ ] Ohne /proc/meminfo oder ohne MemAvailable (macOS, Git Bash) ueberspringt spawn.sh die Pruefung mit einer Zeile auf stderr und startet; nie ein Abbruch
 - [ ] seen by a person: spawn.sh auf macOS oder unter Git Bash gestartet zeigt die Zeile, dass der Speicher nicht geprueft wurde, und oeffnet den Tab
 
