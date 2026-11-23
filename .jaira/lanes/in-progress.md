@@ -89,22 +89,40 @@ move recorded it:
 the count. Their reason is in the newest `Given back from <lane>:` or
 `decision:` note.
 
-`by: lane` with `count` 3 or more means the same lane has sent it back three
-times or more: do not start another round. Move the ticket to the human lane
-with the question instead — the third round's findings, and whether the definition of done is wrong or the
-loop reads deeper every round without ending:
+A teamlead that decides to let the loop go on sets `back-count` back to 0
+beside its `decision (teamlead <date>):` note, so a count below 3 is the
+answer and no stop.
 
-```bash
-jaira move <id> --to human --question "testing sent this back three times: <findings>. DoD wrong or loop without end? I would <...>"
-```
+`by: lane` with `count` 3 or more means the same lane has sent it back three
+times or more: do not start another round. The decision goes on, with the
+third round's findings and whether the definition of done is wrong or the loop
+reads deeper every round without ending — to the teamlead first, a person only
+after it:
+
+- **Started with a parent session** (`--parent`, usually a teamlead's): leave
+  the ticket in this lane, set the question and send the same text to that
+  session. A lane worker a dispatcher started sets the question and stops, as
+  its role says; the dispatcher carries it up. It decides — a `decision (teamlead <date>):`
+  note — or takes it to a person and moves the ticket into `human` itself.
+
+  ```bash
+  jaira set <id> question="testing sent this back three times: <findings>. DoD wrong or loop without end? I would <...>"
+  ```
+
+- **No parent session, or it cannot be reached:** move the ticket to the human
+  lane with the question.
+
+  ```bash
+  jaira move <id> --to human --question "testing sent this back three times: <findings>. DoD wrong or loop without end? I would <...>"
+  ```
 
 A ticket from before jaira recorded this has an empty `from` and `count` 0:
 it counts as no return.
 
 A loop lane that declares `max-rounds` (the shipped critique, optimize and
 testing: 3) does not need you to count: jaira itself refuses its next
-send-back past the limit (`max_rounds`, exit 3) and names the lane a person
-answers in. `rounds_left` in that lane's `--for-lane` payload says how many
+send-back past the limit (`max_rounds`, exit 3), says the teamlead decides,
+or a person, and names the lane that person answers in. `rounds_left` in that lane's `--for-lane` payload says how many
 remain.
 
 In conversational mode you hand back commit lines instead of committing, so
