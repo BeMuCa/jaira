@@ -693,7 +693,7 @@ export function forgeOf(forge: string, originUrl: string): Forge | undefined {
   return on === 'github' || on === 'gitlab' ? on : undefined
 }
 
-// A git remote URL taken apart, as core/pr's ParseRemote does: the host,
+// A git remote URL taken apart, as core/pr's parseRemote does: the host,
 // without user or port, and the repository's path there without .git — for
 // https://, ssh://, git+ssh://, git:// and the scp form [user@]host:path,
 // whatever the user before the @ is called. A GitHub Enterprise remote often

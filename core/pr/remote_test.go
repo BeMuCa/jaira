@@ -24,14 +24,14 @@ func TestParseRemote(t *testing.T) {
 		{"git@gitlab.example.com:group/sub/project.git", "gitlab.example.com", "group/sub/project"},
 		{"  git@github.com:me/jaira.git\n", "github.com", "me/jaira"},
 	} {
-		r, ok := ParseRemote(c.in)
+		r, ok := parseRemote(c.in)
 		if !ok || r.Host != c.host || r.Repo != c.repo {
-			t.Errorf("ParseRemote(%q) = %+v, %v; want %s %s", c.in, r, ok, c.host, c.repo)
+			t.Errorf("parseRemote(%q) = %+v, %v; want %s %s", c.in, r, ok, c.host, c.repo)
 		}
 	}
 	for _, in := range []string{"", "/srv/git/app.git", "../app", `C:\repos\app`, "C:/repos/app", "https://ghe.example.com/app", "git@host:app.git", "file:///srv/git/app.git"} {
-		if r, ok := ParseRemote(in); ok {
-			t.Errorf("ParseRemote(%q) = %+v, want no remote", in, r)
+		if r, ok := parseRemote(in); ok {
+			t.Errorf("parseRemote(%q) = %+v, want no remote", in, r)
 		}
 	}
 }

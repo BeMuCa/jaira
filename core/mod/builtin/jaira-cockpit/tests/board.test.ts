@@ -5580,7 +5580,7 @@ describe('where Accept moves a ticket', () => {
   }
 })
 
-// Every form git takes for a remote, taken apart as core/pr's ParseRemote
+// Every form git takes for a remote, taken apart as core/pr's parseRemote
 // does (XSGWPX): the user before the @ and the port are no part of the host.
 describe('parseRemote', () => {
   const cases: [string, { host: string; repo: string } | undefined][] = [
