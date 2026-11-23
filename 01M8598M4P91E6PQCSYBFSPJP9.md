@@ -25,7 +25,7 @@ related: []
 follows: 01M67K72RDJY2N2R2KQGATDG74
 commits: []
 created-at: 2026-11-23T22:43:41Z
-updated-at: 2026-11-23T22:57:05Z
+updated-at: 2026-11-23T22:57:08Z
 updated-by: BeMuCa
 claimed-by: worker-fspjp9
 claimed-at: 2026-11-23T22:56:02Z
@@ -57,6 +57,7 @@ claimed-at: 2026-11-23T22:56:02Z
 - [ ] implement show --for-lane payload and text in internal/cli/flow.go; lanes show in internal/cli/tickets.go
 - [ ] skill paragraphs in core/role/builtin/jaira-worker/SKILL.md and jaira-role-lane/SKILL.md, then add the new shipped.sha256 lines with scripts/shipped-history.sh --write
 - [ ] template.go comment line, README paragraph beside max-rounds, release note core/release/notes/FSPJP9.md
+- [ ] gofmt, go vet -p 2 on touched packages, targeted tests only, then move to in-progress
 
 ## Progress
 
