@@ -23,7 +23,7 @@ related:
   - 01M58G28438KJJD3YDGM2B4KC9
 commits: []
 created-at: 2026-11-23T22:17:22Z
-updated-at: 2026-11-23T22:42:37Z
+updated-at: 2026-11-23T22:44:01Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: teamlead-lane-graph
@@ -54,3 +54,4 @@ claimed-at: 2026-11-23T22:41:04Z
 Wege: A) nur TUI, Compact View umbauen (Berks Vorgabe 22:39): klein, nutzt was da ist, gibt jaira web auf. B) TUI und jaira web: doppelter Aufwand, zwei Darstellungen in Schritt halten - gegen 'kleiner als paca'. C) eigener Graph-Screen neben der Compact View: von Berk schon abgelehnt.
 Entschieden: A. Die Lane-Datei bleibt die Quelle: die Ansicht liest lane.Set und schreibt nur Frontmatter-Schluessel zurueck (model-tier, agents), nie den Prompt. Welches Modell hinter strong/cheap steht, stellt CXH98W in den Settings ein (noch nicht gemergt) - der Graph stellt je Lane nur den Tier um, kein Modellname in der Lane-Datei, sonst gaebe es zwei Stellen fuer dasselbe.
 Schnitt in baubare Teile: 1. Folgeticket 'Loops und Besetzung anzeigen' (nur Ansicht, sofort baubar auf master). 2. ATDG74-Folgeticket 'Lane-Schluessel agents: N' (sofort baubar). 3. WFHPZT selbst: Tier und agents im Graph einstellen, schreibt in die Lane-Datei - nach 1 und 2. 4. Folgeticket 'Worker ueber Worktrees gebuendelt' (Backlog, braucht erst einen Weg, Sessions anderer Worktrees zu lesen). 5. Join-Lane im Graph: erst wenn YTE87T entschieden ist, kein Ticket vorher.
+- **2026-11-23 22:44 · BeMuCa** — Folgetickets angelegt: R68J0X (Loops und Besetzung anzeigen, zuerst), FSPJP9 (Lane-Schluessel agents: N, folgt auf ATDG74), 3ADC5S (Worker ueber Worktrees gebuendelt, Backlog). WFHPZT selbst baut danach das Einstellen im Graph (Tier und agents je Lane, schreibt in die Lane-Datei) und wartet auf R68J0X und FSPJP9. Der Brainstorm zu ATDG74 steht im Kontext von FSPJP9: ATDG74 gehoert berkc, eine BeMuCa-Session kann es ohne --steal nicht ziehen und deshalb keine Notiz daran schreiben.
