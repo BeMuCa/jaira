@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:13Z
-updated-at: 2026-11-23T01:25:43Z
+updated-at: 2026-11-23T01:26:03Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-dwrc0h
@@ -43,4 +43,4 @@ claimed-at: 2026-11-23T01:25:43Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-23 01:26 · BeMuCa** — Keine offene Entscheidung. Geklaert aus dem Code: DoD-Punkt nachtragen = 'jaira dod <id> --add <text>' (gibt es schon, haengt im richtigen Abschnitt an, Nummern bleiben); kein neuer Befehl, kein 'set definition-of-done --append' (definition_of_done ist nur der erste Punkt, waere der falsche Weg). Umformulieren = 'jaira dod <id> <n> --text'. Fehlend: Satz im Agent-Block (core/board/announce.go), Verweis in 'create --help', ein Test dass --add die Nummern und den Proof bestehender Punkte laesst.
