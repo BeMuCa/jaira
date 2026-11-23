@@ -1228,7 +1228,7 @@ func (y *Syncer) loadSeen() seen {
 	if y.SeenPath == "" {
 		return s
 	}
-	b, err := os.ReadFile(y.SeenPath)
+	b, err := ticket.ReadAtomic(y.SeenPath)
 	if err != nil {
 		return s
 	}
