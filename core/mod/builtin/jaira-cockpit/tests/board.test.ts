@@ -5562,3 +5562,89 @@ describe('where Accept moves a ticket', () => {
     })
   }
 })
+
+// DKMG91: a 'seen by a person' item of the definition of done stands in the
+// Acceptance pane as a section of its own, above the review notes; the person
+// ticks it there, and Accept ticks it on the ticket before it moves it.
+describe('what the person checks themselves', () => {
+  const texts = async (pane: { findAll: (q: { type: 'Text' }) => Promise<{ text: string }[]> }) => (await pane.findAll({ type: 'Text' })).map(x => x.text)
+  const SEEN = [
+    { n: 1, done: true, state: 'done', text: 'the key names the branch' },
+    { n: 2, done: false, state: 'todo', text: 'seen by a person: the band shows the branch' },
+    { n: 3, done: true, state: 'done', text: 'seen by a person: already ticked' },
+    { n: 4, done: false, state: 'superseded', text: 'seen by a person: superseded' },
+  ]
+  const setUp = (on: On) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: a test is missing' } }, HUMAN, WORKING]
+    w.shows.MG677R = { title: 'cache key', dod_items: SEEN }
+    w.me = { identity: 'Alex', aliases: [] }
+    return w
+  }
+
+  test('open items stand above the review notes, each with its text; ticked and superseded ones do not', async ($, on) => {
+    setUp(on)
+    await startSession($)
+    const all = await texts(await acceptancePane($, await $.ui.mount(BAND), 'MG677R'))
+    const heading = all.indexOf('Check yourself - tick what you have seen:')
+    expect(heading).toBeGreaterThan(-1)
+    expect(all[heading + 1]).toBe('[ ] 2. seen by a person: the band shows the branch')
+    expect(all.indexOf('Review notes - choose for each:')).toBeGreaterThan(heading + 1)
+    expect(all.some(x => x.includes('already ticked') || x.includes('person: superseded'))).toBe(false)
+    expect(all).toContain('Execute: tick what you checked above first, then done')
+  })
+
+  test('a ticket without such items shows no section, and Execute accepts as before', async ($, on) => {
+    const w = setUp(on)
+    w.shows.MG677R = { title: 'cache key', dod_items: [SEEN[0], SEEN[2]] }
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    const all = await texts(pane)
+    expect(all.some(x => x.startsWith('Check yourself'))).toBe(false)
+    expect(all).toContain('Execute: done')
+    await pane.press({ key: 'execute-MG677R' })
+    expect(ran(w, 'jaira', 'dod')).toEqual([])
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
+  })
+
+  test('Execute with an item not ticked accepts nothing and names the item', async ($, on) => {
+    const w = setUp(on)
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await pane.press({ key: 'execute-MG677R' })
+    expect(ran(w, 'jaira', 'dod')).toEqual([])
+    expect(ran(w, 'jaira', 'move').filter(r => r[1] === 'MG677R')).toEqual([])
+    expect(await texts(pane)).toContain('MG677R: not accepted - one item is still to check yourself and tick:\n- seen by a person: the band shows the branch')
+    expect(w.closed).not.toContain('cockpit-acceptance')
+  })
+
+  test('ticked, one Execute ticks it on the ticket with the person named, then accepts', async ($, on) => {
+    const w = setUp(on)
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await pane.press({ key: 'seen-MG677R-2' })
+    expect(await texts(pane)).toContain('[✓] 2. seen by a person: the band shows the branch')
+    expect(await texts(pane)).toContain('Execute: done')
+    await pane.press({ key: 'execute-MG677R' })
+    expect(ran(w, 'jaira', 'dod').map(r => r.slice(0, -1))).toEqual([['jaira', 'dod', 'MG677R', '2', '--done', '--proof', 'seen by Alex in the cockpit']])
+    const order = w.ran.filter(r => r[0] === 'jaira' && ['dod', 'move'].includes(r[1]!) && r[2] === 'MG677R').map(r => (r[1] === 'dod' ? 'dod' : r.includes('--dry-run') ? 'dry-run' : 'move'))
+    expect(order).toEqual(['dod', 'dry-run', 'move'])
+    expect(w.closed).toContain('cockpit-acceptance')
+  })
+
+  test('a tick pressed twice is taken back', async ($, on) => {
+    setUp(on)
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await pane.press({ key: 'seen-MG677R-2' })
+    await pane.press({ key: 'seen-MG677R-2' })
+    expect(await texts(pane)).toContain('[ ] 2. seen by a person: the band shows the branch')
+  })
+
+  test('executionOf waits for the items; a note to fix still gives back', () => {
+    expect(executionOf([], '', 'done', 1).step).toBe('needSeen')
+    expect(executionOf([], '', 'done', 0).step).toBe('accept')
+    expect(executionOf([], 'missing', 'done', 1).step).toBe('giveBack')
+    expect(executionOf([], '', null, 1).step).toBe('notTerminal')
+  })
+})

@@ -60,15 +60,20 @@ export const t = {
   execute: 'Execute',
   busyRow: (id: string) => `${id}: an earlier press or an Explain chat is still at work on it - press Execute again once it is done`,
   // What Execute will do, in the pane's last line before the button.
-  summary: (step: 'giveBack' | 'accept' | 'needWhy' | 'notTerminal', fix: number, followUps: number, to: string) => {
+  summary: (step: 'giveBack' | 'accept' | 'needWhy' | 'notTerminal' | 'needSeen', fix: number, followUps: number, to: string) => {
     const tickets = followUps > 0 ? ` + ${followUps} follow-up ticket${followUps === 1 ? '' : 's'}` : ''
     switch (step) {
       case 'giveBack': return `Execute: give back${fix > 0 ? ` with ${fix} note${fix === 1 ? '' : 's'} to fix` : ' with what you typed'}${tickets}`
       case 'accept': return `Execute: ${to}${tickets}`
       case 'needWhy': return `Execute: type why the blocker is accepted${tickets}`
       case 'notTerminal': return 'Execute: nothing to accept in this lane - mark a note fix, or type what is missing'
+      case 'needSeen': return `Execute: tick what you checked above first, then ${to}${tickets}`
     }
   },
+  // DKMG91: the 'seen by a person' items of the definition of done, which
+  // only the person ticks - listed above the review notes, ticked by Accept.
+  checkYourself: 'Check yourself - tick what you have seen:',
+  seenMissing: (id: string, texts: string[]) => `${id}: not accepted - ${texts.length === 1 ? 'one item is' : `${texts.length} items are`} still to check yourself and tick:\n${texts.map(x => `- ${x}`).join('\n')}`,
   notTerminal: (id: string, lane: string) => `${id} waits in ${lane}, which does not end the work: nothing to accept there. Mark a note fix, or type what is missing, to give it back.`,
   refused: (id: string) => `${id} was not accepted, nothing was changed:`,
   explain: 'Explain',

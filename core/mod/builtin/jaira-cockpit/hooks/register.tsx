@@ -5,7 +5,7 @@ import {
   acceptTreeFor, branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
-  clipLines, commitsOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, headPrompt, rephrasedOf, rephrasePrompt, standOf, storyOf,
+  clipLines, commitsOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, headPrompt, rephrasedOf, rephrasePrompt, seenItemsOf, seenProof, type SeenItem, standOf, storyOf,
   type Action, type Agent, type GapItem, type Story, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
@@ -48,6 +48,7 @@ const cacheAtom = atom({ plugin: 'jaira-cockpit', key: 'cache' } as const, { tok
 const threadsAtom = atom({ plugin: 'jaira-cockpit', key: 'threads' } as const, { questions: 0, stale: 0 })
 const givingAtom = atom({ plugin: 'jaira-cockpit', key: 'giving' } as const, null)
 const choosingAtom = atom({ plugin: 'jaira-cockpit', key: 'choosing' } as const, null)
+const seenAtom = atom({ plugin: 'jaira-cockpit', key: 'seen' } as const, null)
 const paneAtom = atom({ plugin: 'jaira-cockpit', key: 'paneTicket' } as const, null)
 const minuteAtom = atom({ plugin: 'jaira-cockpit', key: 'minute' } as const, 0)
 const noticeAtom = atom({ plugin: 'jaira-cockpit', key: 'notice' } as const, null)
@@ -680,7 +681,10 @@ async function fail($: EngineInterface, what: string, why: string): Promise<void
 // moved.
 type Refused = (why: string) => Promise<void>
 
-async function accept($: EngineInterface, w: Waiting, after?: (dir: string) => Promise<void>, refused?: Refused): Promise<boolean> {
+// before: what runs in the ticket's checkout ahead of the gates - the
+// 'seen by a person' items the person ticked (DKMG91), so the dry run already
+// counts them; a reason it gives stops the press as a gate's refusal does.
+async function accept($: EngineInterface, w: Waiting, after?: (dir: string) => Promise<void>, refused?: Refused, before?: (dir: string) => Promise<string | undefined>): Promise<boolean> {
   if (!board || w.acceptTo === null) return false
   const here = await ticketHere($, board, w.id, w.acceptTo)
   if (!here.ok) {
@@ -688,6 +692,11 @@ async function accept($: EngineInterface, w: Waiting, after?: (dir: string) => P
     return false
   }
   try {
+    const stopped = before === undefined ? undefined : await before(here.dir)
+    if (stopped !== undefined) {
+      await (refused !== undefined ? refused(stopped) : fail($, `${t.accept} ${w.id}`, stopped))
+      return false
+    }
     return await accepting($, w, w.acceptTo, here.dir, after, refused)
   } finally {
     await here.leave()
@@ -1357,6 +1366,8 @@ async function openAcceptance($: EngineInterface, w: Waiting): Promise<void> {
   const json = shown?.exitCode === 0 ? shown.stdout : undefined
   const items = itemsOf(w, json)
   await update($, choosingAtom, () => (items.length === 0 ? null : { id: w.id, items }))
+  const seen = json === undefined ? [] : seenItemsOf(json)
+  await update($, seenAtom, () => (seen.length === 0 ? null : { id: w.id, items: seen }))
   const story = json === undefined ? undefined : storyOf(json)
   await update($, storyAtom, () => ({ id: w.id, ...(story !== undefined ? { story } : {}), release: [], pr: false }))
   const opened = await $.ui.open({ id: ACCEPTANCE, title: t.acceptanceOf(w.id), focus: true, closeOnEscape: true })
@@ -1475,24 +1486,33 @@ async function explainNote($: EngineInterface, id: string, title: string, text: 
 async function execute($: EngineInterface, w: Waiting, typed: string, share: number, canType = true): Promise<void> {
   const c = await read($, choosingAtom)
   const items = c?.id === w.id ? c.items : []
-  const e = executionOf(items, typed, w.acceptTo)
+  const seen = await seenOf($, w.id)
+  const e = executionOf(items, typed, w.acceptTo, seen.filter(x => !x.checked).length)
   const refuse = async (text: string) => void await update($, refusalAtom, () => ({ id: w.id, text }))
   await update($, refusalAtom, () => null)
   if (e.step === 'notTerminal') return refuse(t.notTerminal(w.id, w.lane))
   if (e.step === 'needWhy') return refuse(canType ? t.blockerNeedsWhy(w.id) : t.blockerNeedsTyping(w.id))
+  if (e.step === 'needSeen') return refuse(t.seenMissing(w.id, seen.filter(x => !x.checked).map(x => x.text)))
   // The pane closes once the ticket moved, as for Accept: a refusal before
   // that leaves the person's marks in it.
   if (e.step === 'giveBack') {
     if (items.length === 0) return giveBack($, w.id, w.lane, typed.trim(), share, () => closeAcceptance($))
     return giveBackWith($, w, items, typed.trim(), share, () => closeAcceptance($))
   }
-  const moved = await acceptWith($, w, items, e.asksWhy ? typed : '', why => refuse(`${t.refused(w.id)}\n${why}`))
+  const moved = await acceptWith($, w, items, e.asksWhy ? typed : '', why => refuse(`${t.refused(w.id)}\n${why}`), seen)
   if (moved) closeAcceptance($)
+}
+
+// The 'seen by a person' items the Acceptance pane lists for this ticket.
+async function seenOf($: EngineInterface, id: string): Promise<SeenItem[]> {
+  const s = await read($, seenAtom)
+  return s?.id === id ? s.items : []
 }
 
 function closeAcceptance($: EngineInterface): void {
   void update($, givingAtom, () => null)
   void update($, choosingAtom, () => null)
+  void update($, seenAtom, () => null)
   void update($, typedAtom, () => '')
   void update($, refusalAtom, () => null)
   void $.ui.close({ id: ACCEPTANCE })
@@ -1611,7 +1631,9 @@ async function giveBackWith($: EngineInterface, w: Waiting, items: readonly GapI
 
 // why: what the person typed to accept a blocker not fixed, which goes onto
 // the ticket as a decision of its own.
-async function acceptWith($: EngineInterface, w: Waiting, items: readonly GapItem[], why: string, refused: Refused): Promise<boolean> {
+// seen: the 'seen by a person' items the person ticked, each ticked on the
+// ticket before the gates run, the person named in its proof (DKMG91).
+async function acceptWith($: EngineInterface, w: Waiting, items: readonly GapItem[], why: string, refused: Refused, seen: readonly SeenItem[] = []): Promise<boolean> {
   const stand = await stillIn($, w, t.accept)
   if (stand === undefined) return false
   return accept($, w, async dir => {
@@ -1621,7 +1643,13 @@ async function acceptWith($: EngineInterface, w: Waiting, items: readonly GapIte
       const noted = await jaira($, dir, ['note', w.id, note])
       if (!noted.ok) await fail($, t.noteOn(w.id), t.noteLost(w.id, noted.why, note))
     }
-  }, refused)
+  }, refused, seen.length === 0 ? undefined : async dir => {
+    for (const x of seen) {
+      const ticked = await jaira($, dir, ['dod', w.id, String(x.n), '--done', '--proof', seenProof(me?.[0])])
+      if (!ticked.ok) return ticked.why
+    }
+    return undefined
+  })
 }
 
 // Every session with a Herdr pane writes where it stands, so the session a
@@ -2295,6 +2323,10 @@ export const register: Register = (on, options) => {
     if (w === undefined) return nothingPane(table, 'acceptance-head', { key: 'acceptance-close', onPress: () => closeAcceptance($) })
     const choosing = await read($, choosingAtom)
     const items = choosing?.id === w.id ? choosing.items : []
+    const seen = await seenOf($, w.id)
+    const unseen = seen.filter(x => !x.checked).length
+    const tick = (n: number) =>
+      void update($, seenAtom, c => (c === null || c.id !== w.id ? c : { ...c, items: c.items.map(x => (x.n === n ? { ...x, checked: !x.checked } : x)) }))
     const story = await read($, storyAtom)
     const s = story?.id === w.id ? story : undefined
     const typed = await read($, typedAtom)
@@ -2306,7 +2338,7 @@ export const register: Register = (on, options) => {
     const hunt = (await read($, huntsAtom))[w.id]
     const light = lightOf(w, hunt, items.map(x => x.cls))
     const first = light.reasons[0]
-    const exec = executionOf(items, typed, w.acceptTo)
+    const exec = executionOf(items, typed, w.acceptTo, unseen)
     const now = await $.clock.now()
     const choose = (n: number, choice: GapItem['choice']) =>
       void update($, choosingAtom, c => (c === null || c.id !== w.id ? c : { ...c, items: c.items.map((x, i) => (i === n ? { ...x, choice } : x)) }))
@@ -2338,6 +2370,14 @@ export const register: Register = (on, options) => {
         <Box marginTop={1}><Text bold>{t.historyHeading}</Text><Text dimColor wrap="wrap">{`${SEP}${w.id}${SEP}${w.lane}${w.reviewedIn !== undefined ? `${SEP}${t.reviewedIn(w.reviewedIn)}` : ''}`}</Text></Box>
         {history.map((line, i) => <Text key={`history-${i}`} wrap="wrap">{line}</Text>)}
         {(s?.release.length ?? 0) > 0 ? <Text key="release" wrap="wrap"><Text bold>{t.releaseNote}</Text> {s!.release.join(' / ')}</Text> : null}
+        {/* DKMG91: what only the person can tick, apart and above the review
+            notes; Accept ticks these on the ticket before it moves it. */}
+        {seen.length > 0 ? <Box marginTop={1}><Text bold color="warning">{t.checkYourself}</Text></Box> : null}
+        {seen.map((x, i) => (
+          <Button key={`seen-${w.id}-${x.n}`} label={x.text} plain {...(i === 0 ? { autoFocus: true as const } : {})} onPress={() => tick(x.n)}>
+            <Text wrap="wrap" {...(x.checked ? { color: 'success' } : {})}>{`${x.checked ? '[✓]' : '[ ]'} ${x.n}. ${x.text}`}</Text>
+          </Button>
+        ))}
         {items.length > 0 ? <Box marginTop={1}><Text bold>{t.notesChoose}</Text></Box> : null}
         {!w.findingsKnown ? <Text dimColor wrap="wrap">{t.notesNotKept}</Text> : null}
         {items.map((x, i) => (
@@ -2348,7 +2388,7 @@ export const register: Register = (on, options) => {
             </Text>
             <Box flexDirection="row">
               {CHOICES.map(([c, label, colour], j) => (
-                <Button key={`${c}-${w.id}-${i}`} label={label} plain {...(i === 0 && j === 0 ? { autoFocus: true as const } : {})} onPress={() => choose(i, c)}>
+                <Button key={`${c}-${w.id}-${i}`} label={label} plain {...(i === 0 && j === 0 && seen.length === 0 ? { autoFocus: true as const } : {})} onPress={() => choose(i, c)}>
                   <Text {...(x.choice === c ? { bold: true, color: colour } : { dimColor: true })}>{x.choice === c ? `[•${label}]` : `[ ${label} ]`}</Text>
                 </Button>
               ))}
@@ -2366,15 +2406,15 @@ export const register: Register = (on, options) => {
               label={exec.asksWhy ? t.whyLabel : items.length > 0 ? t.moreLabel : t.reasonLabel}
               placeholder={exec.asksWhy ? t.whyPlaceholder : items.length > 0 ? t.morePlaceholder : t.reasonPlaceholder}
               submitLabel={t.execute}
-              {...(items.length === 0 ? { autoFocus: true as const } : {})}
+              {...(items.length === 0 && seen.length === 0 ? { autoFocus: true as const } : {})}
               onInput={(text: string) => void update($, typedAtom, () => text)}
               onSubmit={(text: string) => {
                 void update($, typedAtom, () => text)
                 // Enter in the field never accepts by itself - one Enter too
                 // many would take the ticket to done: that is Execute's.
                 // Words typed, or a note to fix, it carries out.
-                const plan = executionOf(items, text, w.acceptTo)
-                if (plan.step === 'accept' && !plan.asksWhy) return void say($, t.nothingToFix(w.id))
+                const plan = executionOf(items, text, w.acceptTo, unseen)
+                if ((plan.step === 'accept' || plan.step === 'needSeen') && !plan.asksWhy) return void say($, t.nothingToFix(w.id))
                 void once($, w.id, () => execute($, w, text, share))
               }}
             />
