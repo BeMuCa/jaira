@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:13Z
-updated-at: 2026-11-23T01:31:17Z
+updated-at: 2026-11-23T01:31:20Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-dwrc0h
@@ -27,7 +27,9 @@ outcome-what: "Agent-Block (announce.go, CLAUDE.md, AGENTS.md) nennt jaira set g
 outcome-why: "Agenten hielten Goal/DoD nach dem Anlegen fuer unveraenderlich und behalfen sich mit Notizen, weil der Agent-Block die vorhandenen Befehle nicht nannte."
 outcome-resolves: "Alle drei DoD-Punkte; kein neuer Befehl noetig. Vier Kategorien: keine neue Logik, nur Text und ein Test; Nebenlaeufigkeit/Fehlerpfade/Rechte unveraendert, unuebliche Eingabe (Leerzeichen im set-Wert) auf Scratch-Board geprueft."
 review-summary: "Docs-only change: one new bullet in the agent block (core/board/announce.go agentNote, mirrored verbatim in CLAUDE.md and AGENTS.md) says a ticket is changed after capture through the CLI, not a note - 'jaira set <id> goal=... context=...' for goal and context, 'jaira dod <id> --add' to append a DoD item, 'jaira dod <id> <n> --text' to reword one, with existing numbers and proofs unchanged. 'jaira create --help' gains a closing paragraph pointing at set and dod --add. A release note core/release/notes/DWRC0H.md tells users to run jaira update. No new command and no logic change; a CLI test added in the first commit was removed again in the second as a duplicate of core/ticket/proof_test.go TestAddItemAfterProofCarryingLastItem, which is the proof for DoD 2."
-review-gaps: "removed internal/cli/checklist_test.go TestDodAddKeepsExistingNumbersAndProofs: core/ticket/proof_test.go:115 TestAddItemAfterProofCarryingLastItem already proves the same (append lands after the proof-carrying last item, earlier numbers and proofs stay); DoD 2 proof repointed there. Nothing else: text only."
+review-gaps: |-
+  note: DoD 2 rests on a unit test of ticket.AddItem (core/ticket/proof_test.go:115); internal/cli/checklist.go:240 does call AddItem, but no test drives 'jaira dod --add' end to end since the CLI test was dropped in 60387d0e0 - re-checked by hand on a scratch board, item 2 kept [x] and its proof after --add
+  note: the create --help paragraph (internal/cli/tickets.go:219-221) names set and dod --add but not dod <n> --text, which the agent block does name; one more clause would make the two match
 test-verdict: "pass: gofmt clean, go vet (core/board, internal/cli, core/ticket) RC=0, build RC=0; go test not run by house rule (main session runs it). DoD 1 and 3 read in the tree (announce.go:57-61, create --help last paragraph); DoD 2 proof test core/ticket/proof_test.go:115 read, not run. Scratch board: set goal/context and dod --add/--text behave as documented; set on a missing id exits 5, dod --add with empty text exits 2, nothing written; two parallel dod --add both landed (3 items). Agent-file command part identical to jaira init output."
 hunt-verdict: "pass: bughunt done at 60387d0e0, 0 findings (docs-only change)"
 ---
