@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:13:35Z
+updated-at: 2026-11-23T21:13:41Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -30,7 +30,8 @@ claimed-at: 2026-11-23T20:54:57Z
 
 ## Definition of Done
 
-- [ ] Die Ansicht in human, review und signoff zeigt oben in dieser Reihenfolge: So pruefst du, Was gemacht wurde, Offene Frage (wenn vorhanden), Code-Aenderungen, DoD mit Proofs
+- [x] Die Ansicht in human, review und signoff zeigt oben in dieser Reihenfolge: So pruefst du, Was gemacht wurde, Offene Frage (wenn vorhanden), Code-Aenderungen, DoD mit Proofs
+  proof: internal/tui/signoff.go:81-131 signOffBody order; view.go render() via atPersonsLane; tests TestSignOffViewShowsTheDecisionFirst, TestHumanLaneOpensTheDecisionScreen
 - [ ] Felder ohne Nutzen fuer die Entscheidung sind von dieser Ansicht entfernt; welche, steht nach dem Brainstorm als Notiz am Ticket
 - [ ] Ein leeres Pflichtfeld zeigt, welche Lane es haette schreiben muessen
 - [ ] Release-Notiz in core/release/notes/<ID>.md
