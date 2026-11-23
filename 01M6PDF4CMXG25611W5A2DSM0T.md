@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:34:00Z
+updated-at: 2026-11-23T01:34:30Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -28,7 +28,7 @@ outcome-why: "Solo users without a repository could never finish a ticket: the d
 outcome-resolves: "2DSM0T: gate.Env.OutsideRepo backed by gitrepo.Repo.OutsideRepo - true only when git is on PATH, no .git above the symlink-resolved path and git sees no work tree; wired in CLI and TUI; logbook drops the hand-record hint there. Round 2 fixed the hunt's blocker (EvalSymlinks; no git -> keep the rule). Checked: concurrency n/a (read-only probe; two parallel moves both landed); error paths - any stat/git/symlink error keeps the rule; input - relative, symlinked, subdir paths; permissions - unreadable parent counts as 'maybe a repo'."
 review-summary: none
 review-gaps: "none: round 2 added an early return and one EvalSymlinks call; the trailing !Available() it replaced is gone, nothing orphaned, no duplicate symlink-resolve helper in core/gitrepo"
-test-verdict: "fail: bughunt change blocker - OutsideRepo reads a symlinked repo path with git missing as 'no repository' and waives commits inside a real repo; own passes were green (vet/build rc=0, scratch boards behaved)"
+test-verdict: "fail: bughunt round 2 change blocker - OutsideRepo reads any git failure after an empty .git walk (GIT_DIR with a broken config) as 'no repository'; vet/build rc=0"
 hunt-verdict: "fail: 1 change blocker (core/gitrepo/git.go OutsideRepo, symlink + git missing)"
 round: 2
 back-from: testing
