@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:39:23Z
+updated-at: 2026-11-23T01:39:37Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -41,7 +41,7 @@ back-count: 1
 ## Definition of Done
 
 - [x] spawn.sh lehnt mit Exit 3 und Meldung ab, wenn MemAvailable unter der Grenze liegt; --force startet trotzdem
-  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:135 exit 3, core/role/builtin/jaira-dispatcher/scripts/spawn.sh:110 --force; extracted check against fake meminfo 976 MB -> rc=3, with force=1 -> started
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:140 exit 3 (EXIT trap keeps 3 for this refusal only), core/role/builtin/jaira-dispatcher/scripts/spawn.sh:110 --force; extracted check vs fake meminfo 976 MB -> rc=3, force=1 -> started
 - [x] Die Grenze ist eine Variable am Kopf von spawn.sh mit Kommentar, warum der Default so ist
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:7-12 min_free_mb with comment (1-2 GB per -race build, 2026-10-27 crashes), JAIRA_MIN_FREE_MB
 - [x] jaira-teamlead/SKILL.md sagt, was der Teamlead tut, wenn spawn.sh ablehnt
