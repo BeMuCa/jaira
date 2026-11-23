@@ -23,7 +23,7 @@ related:
   - 01M58G28438KJJD3YDGM2B4KC9
 commits: []
 created-at: 2026-11-23T22:17:22Z
-updated-at: 2026-11-23T22:44:01Z
+updated-at: 2026-11-23T22:44:04Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: teamlead-lane-graph
@@ -34,7 +34,8 @@ claimed-at: 2026-11-23T22:41:04Z
 
 ## Definition of Done
 
-- [ ] Brainstorm: Ort (TUI/web), was angezeigt und was eingestellt wird, wie es in die Lane-Dateien zurueckschreibt; als Notiz am Ticket
+- [x] Brainstorm: Ort (TUI/web), was angezeigt und was eingestellt wird, wie es in die Lane-Dateien zurueckschreibt; als Notiz am Ticket
+  proof: Notiz 'Brainstorm (Teamlead, 2026-11-23)' am Ticket; Folgetickets R68J0X, FSPJP9, 3ADC5S
 - [ ] Der Graph zeigt jede Lane als Knoten und jeden Uebergang und Loop als Kante, Loops mit ihrer Grenze
 - [ ] Je Lane lassen sich Agent bzw. Modell und Anzahl Agenten einstellen; die Einstellung steht danach in der Lane-Datei
 - [ ] Release-Notiz in core/release/notes/<ID>.md
