@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:38:13Z
+updated-at: 2026-11-23T21:38:17Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -46,7 +46,7 @@ review-verdict-gaps: |-
   note: edge: signoff.go:188 nextFinding takes whatever line comes next - a heading, 'none', an edge of another kind, only the first item of a list (bughunt 21:35); the smaller design is to drop nextFinding and show a lone label as written, as the cockpit does, with the whole gaps behind 'i'. That reverses the first review's fix-now, so it is the person's call
   note: limit: 'i' shows the whole detail pane, so Commits (recorded list only), DoD and 'Before this can start' repeat below the top block - chosen in round 2 to keep one renderer
   note: elsewhere: internal/tui/diffpane.go:106-112,202-210 keep quoted non-ASCII paths from git show --patch (core/gitrepo/git.go:149 lacks core.quotePath=false); there before this change (EH6Z0N)
-review-check: "1. go build -o /tmp/jaira-zz ./cmd/jaira  2. in a scratch repo: jaira init, jaira create 'Test' --goal g --context c --dod d, then move the ticket to signoff (--force where refused)  3. jaira set <id> review-check='step one' review-gaps=$'blocker: resets on restart\\nnote: edge: wording'  4. run /tmp/jaira-zz, open the ticket with enter: top reads 'blocker  resets on restart', then check, what, why, Commits, Definition of Done - no summary/verdict/gaps/problem rows  5. press i: a 'Details' block appears below with goal, context, gaps (both lines), verdict, notes  6. press i again: it closes  7. jaira set <id> question='ok?' and move the ticket to human: the same screen opens, banner says 'waiting on your answer', the question row shows, a/f do nothing"
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-zztcws && go run ./cmd/jaira  2. pick a ticket in signoff (or set one: jaira set <id> review-gaps=$'blocker:\\n- the limit resets on restart\\nnote: edge: wording')  3. open it: the top reads, in order: blocker 'the limit resets on restart', How to check, What was done, Why, the open question if any, Commits/diff, DoD with proofs - and no problem/summary/verdict rows  4. press i: a Details block appears with problem, resolves, summary, the full gaps, verdict, context and notes  5. press ? : the help lists 'a f i'  6. a ticket in the human lane opens to the same screen, but a and f do nothing there"
 ---
 
 # Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts
