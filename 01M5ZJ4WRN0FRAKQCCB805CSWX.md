@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:33:20Z
+updated-at: 2026-11-23T01:35:14Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -29,7 +29,8 @@ claimed-at: 2026-11-23T01:32:21Z
 
 ## Definition of Done
 
-- [ ] spawn.sh lehnt mit Exit 3 und Meldung ab, wenn MemAvailable unter der Grenze liegt; --force startet trotzdem
+- [x] spawn.sh lehnt mit Exit 3 und Meldung ab, wenn MemAvailable unter der Grenze liegt; --force startet trotzdem
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:135 exit 3, core/role/builtin/jaira-dispatcher/scripts/spawn.sh:110 --force; extracted check against fake meminfo 976 MB -> rc=3, with force=1 -> started
 - [ ] Die Grenze ist eine Variable am Kopf von spawn.sh mit Kommentar, warum der Default so ist
 - [ ] jaira-teamlead/SKILL.md sagt, was der Teamlead tut, wenn spawn.sh ablehnt
 - [ ] Ohne /proc/meminfo oder ohne MemAvailable (macOS, Git Bash) ueberspringt spawn.sh die Pruefung mit einer Zeile auf stderr und startet; nie ein Abbruch
