@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:09:07Z
+updated-at: 2026-11-23T21:09:55Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -57,3 +57,4 @@ claimed-at: 2026-11-23T20:54:57Z
 - **2026-11-23 20:55 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/48662.sock
 - **2026-11-23 20:59 · Alexander Sacharov** — stacked on EH6Z0N (merge commit f03f8598b): signoff.go conflict resolved keeping EH6Z0N's diff layout; master's 'm send back' hint carried into renderSignOff's hint (and diffpane_test.go's narrow-screen want)
 - **2026-11-23 21:00 · Alexander Sacharov** — decisions settled (worker, no person needed): (1) 'human, review und signoff' = the lanes a person owns, human and signoff, the same predicate EH6Z0N's diffPaneShown uses (RequiresHumanExit||RequiresQuestion); the agent lane 'review' keeps the plain detail view - EH6Z0N's title 'human review und signoff' names the human lane, not the review lane. Today a ticket in human shows renderDetail; it now gets this view too, but a/f (accept, follow-up) stay signoff-only. (2) Top of the view: blocker lines from review-gaps, check, what, why, question (only when set), Commits/diff, DoD with proofs. (3) DoD 2 list - moved behind 'i' details: problem (goal/context), resolves, summary, verdict, all of review-gaps, tags, and the board's own lane fields (laneFields). Labels stay English like the rest of the TUI. (4) An empty check/what/why keeps its row as '— owed by <lane>' (existing owedRow wording, same on every screen).
+- **2026-11-23 21:09 · Alexander Sacharov** — waiting: full go vet + go test ./internal/tui ./internal/cli ./core/... (bg task bqbdbt649) since 22:09
