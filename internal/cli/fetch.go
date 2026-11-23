@@ -239,9 +239,6 @@ func announceArrivals(arrivals []refsync.Arrival) {
 	}
 }
 
-// strandedHere lists tickets finished on this machine that have not arrived in
-// any landing branch. Resolved the same way the snapshot run resolves it, so
-// the report and the reaping can never disagree about what counts as landed.
 // departedHere is refs.Departed for a command that reports it beside other
 // things: a failure to list the refs is said on errw and leaves the report
 // empty. It never stands in for "nothing departed" silently, and it never
@@ -255,6 +252,9 @@ func departedHere(errw io.Writer) []refsync.Departure {
 	return departed
 }
 
+// strandedHere lists tickets finished on this machine that have not arrived in
+// any landing branch. Resolved the same way the snapshot run resolves it, so
+// the report and the reaping can never disagree about what counts as landed.
 func strandedHere() []refsync.Stranded {
 	set := settings.Load()
 	return refs.Stranded(set.Landing(refs.Repo.Remote, refs.Repo.RemoteHead), set.LandingGraceInterval())

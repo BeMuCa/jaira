@@ -17,21 +17,34 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T20:35:43Z
-updated-at: 2026-11-23T20:53:51Z
+updated-at: 2026-11-23T20:57:47Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-49023
 claimed-at: 2026-11-23T20:36:54Z
 outcome-what: "refsync.Departed returns ([]Departure, error); a failed Repo.List is an error, not an empty ref list. fetch and validate go through new departedHere, which warns on stderr and reports no departures. whoami's file-only count no longer reads a List error as no refs. Release note added."
 outcome-why: "A passing git error (lock, broken ref) made every seen ticket look taken off the board elsewhere, so fetch/validate told the person to file or archive live tickets."
 outcome-resolves: "DoD 1-4: Departed errors on List failure (refsync test with a broken packed-refs), both callers report no departure and a warning (CLI test), ForgetDeparted untouched as it never reads Departed, whoami sibling fixed. Checked: concurrency — no new shared state, seen record untouched on error; error paths — List error now surfaces; unusual input — broken packed-refs; permissions — n/a."
-review-summary: none
-review-gaps: "none — round 2 adds no helper; the seen test is internal (package refsync) because saveSeen/loadSeen are unexported, the only internal test file in that package"
-test-verdict: "pass: vet ok, go test -race refsync+cli RC=0, shipped-history ok, DoD 1-6 verified in the tree"
-hunt-verdict: "fail: bughunt change: release note and whoami comment promise more than the code does (count still printed as 0 beside the stderr warning)"
-round: 3
-back-from: testing
+review-summary: "Full review at 860bb94dc. Syncer.Departed now returns ([]Departure, error): when git cannot list the ticket refs it returns the error and no departures, instead of treating 'no refs' as 'every seen ticket left the board'. fetch and validate call it through a new departedHere helper (internal/cli/fetch.go:249) that prints 'jaira: warning: could not check ...' on stderr and reports an empty list, so the rest of the command still runs. whoami's file-only count got the same treatment: a failed listing warns on stderr and counts 0 instead of every file. saveSeen now writes refs-seen.json via ticket.WriteAtomic, so a fetch reading it while a background fetch writes never sees a torn, empty record that would forget departures. Tests: a broken packed-refs line drives the failure in refsync and CLI; a concurrent save/load test covers the torn read. Release note added."
+review-gaps: |-
+  note: edge: fix-now: internal/cli/fetch.go:242-248 - departedHere was inserted between strandedHere's doc comment and strandedHere, so godoc now gives departedHere both comments and strandedHere none; move the strandedHere comment back above func strandedHere (line 258)
+  note: limit: whoami prints file_only 0 (text and JSON) when the listing fails, with only a stderr warning to say the number is not real; chosen on purpose in testing round 2 over an 'unknown' value in the output contract
+  note: limit: refs-seen.json is still read-modify-write without a lock (Incoming vs ForgetDeparted); a lost update only re-reports or re-learns one id, accepted in the testing note
+  note: elsewhere: core/refsync/refsync.go:847 'entries, _ = y.Box.List()' drops an outbox listing error the same way; there before this change, new ticket
+test-verdict: "pass: vet ok, go test -race refsync+cli RC=0 (round 2), cli+release tests RC=0 after the comment/note change, DoD 1-6 verified in the tree"
+hunt-verdict: "pass: round 3 hunt at 860bb94dc, 0 findings"
+round: 4
+back-from: review
 back-by: lane
-back-count: 2
+back-count: 1
+review-verdict: "accept: all six DoD items are met and proven by tests that fail on the old code; one fix-now (a misplaced doc comment in fetch.go)"
+review-round: 3
+review-verdict-gaps: |-
+  note: edge: fix-now: internal/cli/fetch.go:242-248 - departedHere was inserted between strandedHere's doc comment and strandedHere, so godoc now gives departedHere both comments and strandedHere none; move the strandedHere comment back above func strandedHere (line 258)
+  note: limit: whoami prints file_only 0 (text and JSON) when the listing fails, with only a stderr warning to say the number is not real; chosen on purpose in testing round 2 over an 'unknown' value in the output contract
+  note: limit: refs-seen.json is still read-modify-write without a lock (Incoming vs ForgetDeparted); a lost update only re-reports or re-learns one id, accepted in the testing note
+  note: elsewhere: core/refsync/refsync.go:847 'entries, _ = y.Box.List()' drops an outbox listing error the same way; there before this change, new ticket
+review-check: "1. cd into this worktree  2. go test ./core/refsync -run 'TestDepartedReportsAFailedRefListingAsAnErrorNotAsDepartures|TestTheSeenRecordIsNeverReadHalfWritten' -count=1 -v  3. both PASS  4. go test ./internal/cli -run TestAFailedRefListingReportsNoDepartures -count=1 -v  5. PASS: no departures and the warning 'could not check for tickets taken off the board elsewhere' on a broken packed-refs  6. no hand path: the failure only happens when git breaks between two calls in one command"
+stop-after-fix: "true"
 ---
 
 # refsync.Departed verschluckt den Fehler von Repo.List und liest ihn als 'keine Refs'
@@ -39,15 +52,15 @@ back-count: 2
 ## Definition of Done
 
 - [x] Departed gibt bei einem Fehler von Repo.List einen Fehler zurueck (oder meldet nichts) statt alle gesehenen Tickets als gegangen; Test mit einem scheiternden Repo.List
-  proof: core/refsync/refsync.go:1983; TestDepartedReportsAFailedRefListingAsAnErrorNotAsDepartures (broken packed-refs)
+  proof: core/refsync/refsync.go:1986; TestDepartedReportsAFailedRefListingAsAnErrorNotAsDepartures (broken packed-refs)
 - [x] Alle Aufrufer von Departed behandeln den Fehler: keine falsche Meldung, kein ForgetDeparted; Test
-  proof: internal/cli/fetch.go:249 departedHere used by fetch and validate; TestAFailedRefListingReportsNoDepartures; ForgetDeparted (snapshot.go:61) never reads Departed
+  proof: internal/cli/fetch.go:246 departedHere used by fetch and validate; TestAFailedRefListingReportsNoDepartures; ForgetDeparted (snapshot.go:61) never reads Departed
 - [x] Release-Note in core/release/notes/<ID>.md, falls die TUI dadurch anders meldet
   proof: core/release/notes/RGFJ0Q.md (CLI warning on stderr; TUI does not call Departed)
 - [x] whoami: a failed Repo.List no longer counts every ticket file as file-only (same class: list error read as no refs)
-  proof: internal/cli/whoami.go:191 returns 0 and warns
+  proof: internal/cli/whoami.go:192 returns 0 and warns
 - [x] whoami: a failed ref listing is said on stderr, not only counted as 0 file-only
-  proof: internal/cli/whoami.go:191; TestAFailedRefListingReportsNoDepartures (fileOnlyCount part)
+  proof: internal/cli/whoami.go:192; TestAFailedRefListingReportsNoDepartures (fileOnlyCount part)
 - [x] refs-seen.json is written atomically (ticket.WriteAtomic), so a fetch reading it while a background fetch writes never sees an empty record and drops a departure
   proof: core/refsync/refsync.go:1255; TestTheSeenRecordIsNeverReadHalfWritten (fails with os.WriteFile)
 
@@ -75,3 +88,10 @@ back-count: 2
 - **2026-11-23 20:52 · Alexander Sacharov** — hunt report: 1 finding, 1 change (edge, not blocker), as a note on RGFJ0Q | read whole: core/refsync/seen_test.go (new); read as a diff since 23ded2de1: core/refsync/refsync.go (saveSeen/loadSeen, Incoming, Departed, ForgetDeparted followed), internal/cli/whoami.go, internal/cli/departed_test.go, core/release/notes/RGFJ0Q.md; also read ticket.WriteAtomic | could not reproduce the whoami path end to end through the CLI: a ref listing broken from the start makes the board read as ref mode no, so only a transient failure between Usable and List reaches it; the lost-update race on refs-seen.json (Incoming vs ForgetDeparted) was checked and only re-raises a forgotten departure, which the code accepts as a repeated notification
 - **2026-11-23 20:52 · Alexander Sacharov** — bughunt: done at a0a66de74 - 1 finding (1 change, 0 pre-existing) in 8 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: core/refsync/refsync.go core/refsync/refsync_test.go core/refsync/seen_test.go core/release/notes/RGFJ0Q.md internal/cli/departed_test.go internal/cli/fetch.go internal/cli/validate.go internal/cli/whoami.go
 - **2026-11-23 20:53 · Alexander Sacharov** — testing round 2: back for the hunt's whoami edge. Chose the smaller fix the hunter offered — reword the release note and the comment to say what happens (warning on stderr, count reads 0) — over an 'unknown' value in boardGit and the JSON: that would change whoami's output contract for a window only a git error between Usable() and List() opens; edges growing on a sibling ask for a smaller design, not a bigger fix.
+- **2026-11-23 20:54 · Alexander Sacharov** — waiting: bughunt round 3 (subagent) since 21:54
+- **2026-11-23 20:54 · Alexander Sacharov** — hunt report: 0 findings, nothing written beyond this report | read as a diff since a0a66de74: internal/cli/whoami.go (comment only, fileOnlyCount read in full with its caller), core/release/notes/RGFJ0Q.md (note now matches the 0-plus-warning behaviour, checked against departed_test.go:61); the other 6 files unchanged since the last round | nothing left unchecked
+- **2026-11-23 20:54 · Alexander Sacharov** — bughunt: done at 860bb94dc - 0 findings in 8 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: core/refsync/refsync.go core/refsync/refsync_test.go core/refsync/seen_test.go core/release/notes/RGFJ0Q.md internal/cli/departed_test.go internal/cli/fetch.go internal/cli/validate.go internal/cli/whoami.go
+- **2026-11-23 20:55 · Alexander Sacharov** — waiting: review lane (fresh agent via run-lane.sh) since 21:55
+- **2026-11-23 20:56 · Alexander Sacharov** — review: done at 860bb94dc
+- **2026-11-23 20:56 · Alexander Sacharov** — review: fix-now: internal/cli/fetch.go:242-248 - strandedHere's doc comment now sits above departedHere's; move it back above func strandedHere
+- **2026-11-23 20:57 · Alexander Sacharov** — review fix-now closed: strandedHere's doc comment moved back above it (fetch.go). Set stop-after-fix=true: a comment move, no lock, no parser. Proofs on DoD 1,2,4,5 refreshed to current lines. The review's other notes (whoami 0 limit, seen record lock limit, Box.List elsewhere) stay as notes for the person.
