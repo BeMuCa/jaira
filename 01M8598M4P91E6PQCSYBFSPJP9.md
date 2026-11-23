@@ -1,7 +1,7 @@
 ---
 id: 01M8598M4P91E6PQCSYBFSPJP9
 title: "Eine Lane-Datei kann mit agents: N sagen, dass N Agenten die Lane laufen; show --for-lane reicht es weiter"
-status: todo
+status: pre-process
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -25,7 +25,7 @@ related: []
 follows: 01M67K72RDJY2N2R2KQGATDG74
 commits: []
 created-at: 2026-11-23T22:43:41Z
-updated-at: 2026-11-23T22:56:08Z
+updated-at: 2026-11-23T22:56:10Z
 updated-by: BeMuCa
 claimed-by: worker-fspjp9
 claimed-at: 2026-11-23T22:56:02Z
