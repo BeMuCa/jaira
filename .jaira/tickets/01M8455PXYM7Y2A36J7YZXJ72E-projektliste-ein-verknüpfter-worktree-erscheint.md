@@ -1,7 +1,7 @@
 ---
 id: 01M8455PXYM7Y2A36J7YZXJ72E
 title: "Projektliste: ein verknüpfter Worktree erscheint nicht als eigenes Projekt, sein Haupt-Checkout steht dafür"
-status: in-progress
+status: optimize
 ready: true
 creator: Alexander Sacharov
 goal: "Die Projektliste des Launchers (Projects:) zeigt jedes Repository einmal, unter seinem Haupt-Checkout, statt jeden Worktree und jede Wegwerf-Kopie, in der jaira einmal lief."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T12:12:57Z
-updated-at: 2026-11-23T12:29:03Z
+updated-at: 2026-11-23T12:29:41Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27553
@@ -28,7 +28,7 @@ outcome-what: "project.Board(root) maps a board in a linked git worktree to the 
 outcome-why: "~/.jaira/projects.json collected every worktree and agent scratch repo, so the launcher listed one repository many times"
 outcome-resolves: "DoD 1-6; checked: concurrency (projects.json unlocked, pre-existing, not widened), error paths (unreadable .git/commondir -> entry kept as is), unusual input (submodule, bare-repo worktree, board in subdir, main without board, relative gitdir), permissions (only reads files git wrote in the repo)"
 review-summary: none
-review-gaps: "Load: canonical() was run twice per entry (inside Board and again for the compare) - now once; folded the one-caller test helper writeRegistry into writeProjects. Left: worktree.go under() duplicates core/selfupdate/install.go:102 isWithin (unexported, a dependency on selfupdate for four lines would be worse); pre-existing: projects.json written without a lock"
+review-gaps: "round 2: hoisted project.Canonical(m.store.Root) out of the per-entry/per-tree loop in refreshLiveBoards (EvalSymlinks per tree per refresh). Left: under() still duplicates core/selfupdate isWithin (see round 1)."
 test-verdict: "pass: go build + go vet ./... green; full go test ./... green, -race on core/project, internal/tui, internal/cli RC=0; DoD 1-6 verified in the tree; binary on this repo: 'projects add' in this worktree registers /home/alex/projects/jaira, a temp board prints 'Nothing registered', an old registry with worktree + gone worktree + temp entry lists one line (jaira); failure path: unwritable registry -> rc=0 'Registered' (pre-existing, noted); two writers: torn projects.json in 6/30 (released 0.6.4: 8/30), pre-existing, noted"
 hunt-verdict: "fail: bughunt done at 956cfb764 - 1 change blocker (folded worktree loses its agents/live/current marker), 1 change edge (projects add message, added:null), 1 pre-existing (registry write race) taken into DoD 7 by teamlead decision"
 round: 2
@@ -79,3 +79,4 @@ back-count: 1
 - **2026-11-23 12:24 · Alexander Sacharov** — bughunt: done at 956cfb764 - 3 findings (2 change, 1 pre-existing) in 3 modules, first hunt; concurrency, error paths, input, permissions checked; files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/project/project.go core/project/worktree.go core/project/worktree_test.go core/release/notes/ZXJ72E.md internal/cli/home.go internal/tui/home.go
 - **2026-11-23 12:24 · Alexander Sacharov** — decision (teamlead 2026-11-23): fix the torn projects.json writes in this ticket, not as a follow-up
 - **2026-11-23 12:29 · Alexander Sacharov** — round 2: bughunt blocker fixed as a class - 'is this line the open board' now compares with Model.projectRoot (project.Board of the store root) at every site (model.go refreshLiveBoards/drop, pipeline.go tabs+switch, view.go current); per-tree state (sessions/agents, liveness) is read across project.Trees(root) = main + every linked worktree with a board, read off .git/worktrees/*/gitdir. Not folded: LoggedPerDay stays the main checkout's logbook - worktree logbook files reach main through the merge. Remember now returns an error (no home, mkdir, lock, write); 'projects add' exits 1 on it, and --json added is [] not null. A hand-broken projects.json is still read as empty and overwritten - pre-existing, not the race.
+- **2026-11-23 12:29 · Alexander Sacharov** — critique round 2: none. Left standing: describe() and boardHasLiveSession both open a store per tree to read sessions - two callers with different needs (count vs any, panic guard), not worth a shared helper.

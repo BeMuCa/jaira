@@ -527,6 +527,7 @@ func (m *Model) reload() error {
 // m.sessions rather than the disk a second time — reload already loaded it.
 func (m *Model) refreshLiveBoards() {
 	live := make(map[string]bool, len(m.projects))
+	here := project.Canonical(m.store.Root)
 	for _, p := range m.projects {
 		// An entry stands for its main checkout and every linked worktree of
 		// it (project.Trees): an agent in any of them makes the line live.
@@ -534,7 +535,7 @@ func (m *Model) refreshLiveBoards() {
 			if live[p.Root] {
 				break
 			}
-			if tree == project.Canonical(m.store.Root) {
+			if tree == here {
 				for _, s := range m.sessions {
 					if !s.Stale() {
 						live[p.Root] = true
