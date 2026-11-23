@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:34:09Z
+updated-at: 2026-11-23T21:35:02Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -108,3 +108,4 @@ review-check: "1. go build -o /tmp/jaira-zz ./cmd/jaira  2. in a scratch repo: j
 - **2026-11-23 21:33 · Alexander Sacharov** — review fix-now closed: (1) help row 'a f i' (view.go renderHelp) names 'i' - folded into the a/f row, a separate row pushed '@name' off the 60-row help in TestHelpExplainsEveryCardMark; (2) blockerLines: a label with no finding (bare, or only emphasis left) takes the next non-empty line, list marker dropped, unless that line is a blocker label itself; no next line keeps the label. Let stand: a lone label followed by a 'note:' line takes that line - telling finding kinds apart would be a new rule (edges-grow).
 - **2026-11-23 21:33 · Alexander Sacharov** — critique (after review give-back, reads only the two fix-now notes and f0b0e438b): help names 'i' - addressed (view.go 'a f i' row); lone label takes the next line - addressed (nextFinding, 5 cases in TestSignOffKeepsBlockersOnTop). Nothing new. review-summary=none.
 - **2026-11-23 21:34 · Alexander Sacharov** — waiting: bughunt after review fix (subagent) and full race suite (bg) since 22:34
+- **2026-11-23 21:35 · Alexander Sacharov** — bughunt: change: internal/tui/signoff.go:176 (nextFinding, :188) - class: a blocker label standing alone takes the next non-empty line whatever it is - a heading, a 'none' line, a gap of another kind - and only the first of several items listed under it; examples: 'blocker:\n- a\n- b' shows 'a' and drops blocker b; '**Blocker:**\n\n## Edges' shows '## Edges' as the blocker; 'blocker:\nedge: cosmetic' shows the cosmetic edge as the blocker; 'blocker:\n- none' shows a blocker row reading 'none'. Not a blocker: the row still says blocker and the whole review-gaps is behind 'i', but the finding shown can be the wrong text. The cockpit (hooks/board.ts:345 BLOCKER, :339 NO_GAP) never consumes the next line, so the two now disagree on what the blocker says; blame: f0b0e438b (names ZZTCWS); ran: scratch go test calling blockerLines on the four inputs (outputs as above)
