@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:33:00Z
+updated-at: 2026-11-23T01:33:13Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -43,4 +43,4 @@ claimed-at: 2026-11-23T01:32:21Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-23 01:33 · BeMuCa** — Entscheidungen (keine offen fuer die Person): Grenze min_free_mb am Kopf von spawn.sh, setzbar mit JAIRA_MIN_FREE_MB, Default 2048 MB (ein -race-Build 1-2 GB). 0 schaltet ab, Nicht-Zahl -> Exit 2. Exit 3 bei zu wenig MemAvailable, vor Worktree und Tab. --force startet trotzdem. Ohne /proc/meminfo oder ohne MemAvailable-Zeile (macOS, Git Bash, Kernel <3.14): eine Zeile auf stderr, Start geht weiter. Ausgenommen sind die Lanes explain und discuss: das sind Chats fuer eine Person aus den Cockpit-Knoepfen, kein Build. Bekannte Grenze: gemessen wird der Stand jetzt; zwei Spawns direkt hintereinander bestehen beide, weil der erste noch nicht baut - kein Scheduler, wie der Kontext verlangt. TestMain in core/role setzt JAIRA_MIN_FREE_MB=0, damit die Skript-Tests auf knappen Maschinen nicht an der Pruefung scheitern.
