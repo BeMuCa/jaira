@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:24:38Z
+updated-at: 2026-11-23T21:25:21Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -29,7 +29,7 @@ outcome-why: "The check sat last under a page of account (Berk 2026-11-23); roun
 outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSignOffKeepsBlockersOnTop (11 blocker forms, 5 non-blockers), TestHumanLaneOpensTheDecisionScreen, TestDetailsCarryContextAndNotes; checked: concurrency n/a (render only, single-threaded TUI), error paths n/a, unusual input - blocker forms/case/markers/emphasis, empty fields owed rows; permissions n/a"
 review-summary: none
 review-gaps: "round 2: the repair removed the hand-picked details list, gapLines and isBlockerLine (no callers left - grep clean); detailBody now composes header + detailFields, no duplicate renderer. firstNonEmpty, laneFields, sourced, owedRow, fieldRow all still called. Left: the regex mirrors the TS one in hooks/board.ts - two languages, cannot share code; the gaps row inside Details repeats the blocker lines shown on top (the full ticket, by design)."
-test-verdict: "pass: go vet + go test -race -count=1 ./... RC=0; DoD 1-5 verified in the tree; screen exercised in tmux on a scratch board (blocker on top, 'i' details); render-only, writes nothing"
+test-verdict: "pass: go vet ./... + go test -race -count=1 ./internal/tui RC=0 at 383b42d9e; DoD 1-5 verified; render-only"
 hunt-verdict: "fail: bughunt done at 73d06b024 - change blocker: isBlockerLine misses '1. blocker:', '**Blocker**:', '`blocker`:', 'blocker :' (cockpit's BLOCKER regex counts them); change edge: human-lane ticket loses context and Progress notes; 1 pre-existing (quoted git paths in diffpane, EH6Z0N's subject - note for the person)"
 round: 2
 back-from: testing
@@ -87,3 +87,4 @@ back-count: 1
 - **2026-11-23 21:24 · Alexander Sacharov** — bughunt: change: internal/tui/signoff.go:162 (blockerLines) - class: a blocker label with no text after it on its own line is matched and then dropped as an empty string, so the sign-off screen shows no blocker row while the cockpit (hooks/board.ts BLOCKER) counts the line as a blocker and colours the ticket red; the old gapLines showed such a line as is, so this is a regression from 383b42d9e; example: review-gaps '**Blocker:**' or 'blocker:\n- the limit resets on restart' -> blockerLines returns '' and no blocker row appears above the check; with 'blocker: a\nblocker:\nblocker: b' the row gets an empty line in between; ran: scratch go test calling blockerLines + renderSignOff (row absent)
 - **2026-11-23 21:24 · Alexander Sacharov** — bughunt: change: internal/tui/signoff.go:144 -> view.go:1327 detailFields - class: 'i' now adds the whole detail pane to the sign-off screen, including blocks that contradict what the screen already shows above it: a Commits block built from the recorded commits: list only (view.go:1475, the snapshot the comment at signoff.go:100 calls misleading) under the derived list, 'Before this can start: goal, context, assignee' (view.go:1483, missing()) on a ticket waiting for acceptance, and the DoD list a second time; example: Commits [0123abc], derived [0123abc 4567def] -> the top block lists 2 commits, the 'Details' block lists 1; ran: scratch go test, render after 'i' (Commits x2, DoD x2, start warning shown)
 - **2026-11-23 21:24 · Alexander Sacharov** — hunt report: 2 findings, both change, neither a blocker, as notes on ZZTCWS | read as a diff since 73d06b024: internal/tui/signoff.go signoff_test.go tags_test.go view.go (detailFields read whole); no new files | not checked: how the cockpit renders a blocker with no text (only that it counts as one); the per-render git exec for the stat is older than this change and was not looked at further
+- **2026-11-23 21:24 · Alexander Sacharov** — bughunt: done at 383b42d9e - 2 findings (2 change, 0 pre-existing) in 4 modules, follow-up hunt since 73d06b024; concurrency, error paths, input, permissions checked; files: core/release/notes/ZZTCWS.md internal/tui/diffpane.go internal/tui/diffpane_test.go internal/tui/model.go internal/tui/owed_test.go internal/tui/signoff.go internal/tui/signoff_test.go internal/tui/tags_test.go internal/tui/view.go
