@@ -372,6 +372,11 @@ func loadBoardEnv(s *ticket.Store, board string) (gate.Env, []*ticket.Ticket, er
 			}
 			return shas
 		},
+		// Asked only once DeriveCommits found nothing, at the same lane.
+		CommitsElsewhere: func(t *ticket.Ticket) []string {
+			branches, _ := repo.BranchesNamingTicket(t.ID)
+			return branches
+		},
 		// Asks the forge only for a ticket whose blocked-by names a pull
 		// request, once per number and process, and not at all while the
 		// shared cache holds a fresh answer.

@@ -589,6 +589,23 @@ export function carrierFor(input: { own?: string; base: string; holders?: string
   return branches.length > 1 ? { ambiguous: branches } : undefined
 }
 
+// Where Accept moves a ticket (VHGWQF): its own worktree, else the worktree
+// of the branch its commits ride on, as carrierFor settles it. A follow-up
+// worked on the branch of the ticket it followed has its commits there and
+// nowhere the main checkout reaches, and a move into done from the main
+// checkout is refused for want of them. Several branches that could each be
+// the carrier: no tree, they are named, and nothing moves (QTQW15). A carrier
+// with no worktree, or no carrier: no tree either, and the move runs in the
+// main checkout as before, whose refusal then names the branch.
+export function acceptTreeFor(porcelain: string, id: string, carrier: Carrier | undefined): { dir?: string } | { ambiguous: string[] } {
+  const own = ownTreeFor(porcelain, id)
+  if (own !== undefined) return { dir: own }
+  if (carrier === undefined) return {}
+  if ('ambiguous' in carrier) return { ambiguous: carrier.ambiguous }
+  const dir = worktreeOfBranch(porcelain, carrier.branch)
+  return dir === undefined ? {} : { dir }
+}
+
 // The branches a `git branch --format=%(refname:short)` listing names, in
 // its order, without the default branch, a detached HEAD — listed as "(HEAD
 // detached at <sha>)", which is no branch — or a branch that only wraps
