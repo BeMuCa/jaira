@@ -961,6 +961,6 @@ func onBranches(t *ticket.Ticket, branches []string) string {
 	if len(branches) == 0 {
 		return ""
 	}
-	return fmt.Sprintf(". Commits naming %s sit on %s: run the move in that branch's worktree, or merge it first",
+	return fmt.Sprintf(". Commits naming %s sit on %s: run the move in the worktree of the branch that carries the work, or merge it first",
 		ticket.Handle(t.ID), strings.Join(branches, ", "))
 }

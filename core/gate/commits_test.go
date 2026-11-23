@@ -140,8 +140,8 @@ func TestNeedsCommitsNamesBranchesElsewhere(t *testing.T) {
 		want      string
 		wantNot   string
 	}{
-		{name: "one branch", elsewhere: func(*ticket.Ticket) []string { return []string{"feat/a3k9qp"} }, want: "sit on feat/a3k9qp: run the move in that branch's worktree"},
-		{name: "two branches", elsewhere: func(*ticket.Ticket) []string { return []string{"feat/a", "fix/b"} }, want: "sit on feat/a, fix/b:"},
+		{name: "one branch", elsewhere: func(*ticket.Ticket) []string { return []string{"feat/a3k9qp"} }, want: "sit on feat/a3k9qp: run the move in the worktree of the branch that carries the work"},
+		{name: "two branches", elsewhere: func(*ticket.Ticket) []string { return []string{"feat/a", "fix/b"} }, want: "sit on feat/a, fix/b: run the move in the worktree of the branch that carries the work"},
 		{name: "none found", elsewhere: func(*ticket.Ticket) []string { return nil }, wantNot: "sit on"},
 		{name: "nil", elsewhere: nil, wantNot: "sit on"},
 	}
