@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:13Z
-updated-at: 2026-11-23T01:29:02Z
+updated-at: 2026-11-23T01:29:46Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-dwrc0h
@@ -55,3 +55,4 @@ review-gaps: "removed internal/cli/checklist_test.go TestDodAddKeepsExistingNumb
 - **2026-11-23 01:28 · BeMuCa** — Bullet in den Abschnitt 'Capturing' gesetzt, nicht unter 'Working a ticket': feat/hpfd7d aendert die Milestone-Zeilen weiter unten im selben Block, so bleibt der Merge konfliktfrei. CLAUDE.md/AGENTS.md nur um diese 5 Zeilen ergaenzt, gegen 'jaira init' auf einem Scratch-Board verglichen (identisch). Beispiel set goal=... context=... und dod --add auf dem Scratch-Board von Hand ausprobiert. Test nicht gelaufen (go test in dieser Session verboten).
 - **2026-11-23 01:28 · BeMuCa** — critique: nichts. Nur Text und ein Test; die Befehle gab es schon (dod --add/--text, set), kein neues Muster. Bullet steht im Capturing-Abschnitt neben create, wo ein Agent nach dem Anlegen sucht.
 - **2026-11-23 01:29 · BeMuCa** — optimize: eigener CLI-Test entfernt, weil core/ticket/proof_test.go:115 genau diese Eigenschaft schon testet; DoD 2 zeigt jetzt darauf.
+- **2026-11-23 01:29 · BeMuCa** — bughunt: done at 60387d0e0 - 0 findings (0 change, 0 pre-existing) in 6 files, first hunt; concurrency, error paths, input, permissions checked; the documented set goal/context, dod --add and dod --text were run on a scratch board and keep numbers and proofs; files: AGENTS.md CLAUDE.md core/board/announce.go core/release/notes/DWRC0H.md internal/cli/checklist_test.go internal/cli/tickets.go
