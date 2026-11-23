@@ -190,7 +190,8 @@ export function asksOf(threads: readonly Thread[]): Ask[] {
       return {
         thread: t.id,
         ...(ticket !== undefined ? { ticket } : {}),
-        title: (t.about !== undefined ? t.aboutTitle : undefined) ?? t.title,
+        // '' : looked up, and jaira had no title for it.
+        title: (t.about !== undefined ? t.aboutTitle : undefined) || t.title,
         question: t.question!,
         options: t.options ?? [],
       }
@@ -208,7 +209,8 @@ export function untitled(threads: readonly Thread[]): string[] {
   return [...new Set(threads.filter(t => t.question !== undefined && t.about !== undefined && t.aboutTitle === undefined).map(t => t.about!))]
 }
 
-// The threads with a ticket's title written onto every question about it.
+// The threads with a ticket's title written onto every question about it;
+// '' where jaira had none, so it is not looked up again.
 export function titled(threads: readonly Thread[], ticket: string, title: string): Thread[] {
   return threads.map(t => (t.question !== undefined && t.about === ticket && t.aboutTitle === undefined ? { ...t, aboutTitle: clip(title, 120) } : t))
 }

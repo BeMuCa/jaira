@@ -20,13 +20,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T20:58:25Z
-updated-at: 2026-11-23T21:17:41Z
+updated-at: 2026-11-23T21:36:20Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-40547
 claimed-at: 2026-11-23T20:59:00Z
 outcome-what: "Cockpit: band entry 'threads: N open question(s)' is a button (q) opening a 'Waiting for you' pane; each open question with ticket, title and numbered options; a digit sends '<ticket>: <option>' into the session, 'Answer in the chat' fills the prompt"
 outcome-why: The person searched the chat for questions the teamlead asked; AskUserQuestion would block the session
 outcome-resolves: 1M3X77
+review-summary: "none"
+round: 3
+back-from: testing
+back-by: lane
+back-count: 1
+review-gaps: none
+hunt-verdict: "fail: 3 change findings (pick not filed as person's turn; failed title lookup repeats every turn; two autoFocus buttons)"
+test-verdict: "fail: suite green RC=0 (537), DoD 1-4 verified; sent back on 3 bughunt change findings"
 ---
 
 # Cockpit: Pane 'Wartet auf dich' listet die offenen Fragen der Sitzung, Antwort per Taste statt Suchen im Chat
@@ -34,11 +42,11 @@ outcome-resolves: 1M3X77
 ## Definition of Done
 
 - [x] Der Klassifizierer haelt zu einer offenen Frage das Ticket und die genannten Optionen fest (threads.ts); Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/threads.ts:69 (about/options in classifyPrompt, parseFiling, file); tests/board.test.ts:3577 'ride with the question' + options:/about: cases
+  proof: core/mod/builtin/jaira-cockpit/hooks/threads.ts:69 (about/options in classifyPrompt, parseFiling, file); tests/board.test.ts:3577 'ride with the question', :3636 'asked about once', options:/about: cases
 - [x] Eine Pane 'Wartet auf dich' listet jede offene Frage: Ticket-ID, Ticket-Titel, Frage, nummerierte Optionen; erreichbar vom Band (Klick auf die threads-Anzeige) und per Taste; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:2649 ASKS pane, :2391 band Button hotkey q; tests/board.test.ts:3600 'the band opens the pane'
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:2659 ASKS pane, :2401 band Button hotkey q; tests/board.test.ts:3600 'the band opens the pane', :3650 'one button holds the focus'
 - [x] Eine Option waehlen schickt sie als Nachricht der Person in die laufende Sitzung, ohne die Sitzung zu blockieren; eine beantwortete Frage verschwindet aus der Liste; Test
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1999 answerAsk (prompt.submit, question cleared); tests/board.test.ts:3600, :3629
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:2007 answerAsk (prompt.submit, question cleared, turn filed via picked queue); tests/board.test.ts:3600, :3666
 - [x] Release-Note in core/release/notes/<ID>.md
   proof: core/release/notes/1M3X77.md
 
@@ -54,3 +62,13 @@ outcome-resolves: 1M3X77
 ## Progress
 - **2026-11-23 20:59 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/48662.sock
 - **2026-11-23 21:05 · Alexander Sacharov** — decisions (worker, settled from code, no person needed): (1) classifier gets two new fields 'about' (ticket the question is about) and 'options' (choices the question named); stored on the thread, cleared with the question. (2) ticket title: looked up once with 'jaira show <id> --json' after filing, kept on the thread; falls back to the thread title. (3) pane opened by the band's threads entry turned into a Button with hotkey 'q' (same pattern as code-modernization's band 'show pane' hotkey 'm'); digits pick options like the Explanation pane. (4) pick sends '<ticket>: <option>' via $.prompt.submit (non-blocking, the pattern decide() uses) and clears the question locally at once; 'answer in chat' fills the prompt with '<ticket>: ' via $.prompt.fill. Baseline: claude plugin test . 522 pass.
+- **2026-11-23 21:18 · Alexander Sacharov** — critique: fileTurn writes the store twice on every turn; skip the second write when no question names an untitled ticket. Left standing on purpose: two atoms (threads tally keeps the stale count the band needs, asks carries the list) - deriving one from the other would mean the band reads the whole list each render; plugin-origin prompt.submit as the person's answer is the pattern decide() already uses.
+- **2026-11-23 21:18 · Alexander Sacharov** — critique round 2: fileTurn early return in place (register.tsx fileTurn); nothing left.
+- **2026-11-23 21:19 · Alexander Sacharov** — optimize: searched for an existing answer-into-session helper (decide() submits t.decisionFor and notes on the ticket - different: a thread question has no ticket note to write) and a title reader (storyOf parses the whole story; titleOf is the one-field read beside diskOf). No dead code, nothing orphaned.
+- **2026-11-23 21:21 · Alexander Sacharov** — waiting: bughunt (background subagent) since 22:21; gates: claude plugin test 537 pass RC=0, shipped-history --check 0, go test core/shipped core/release ok
+- **2026-11-23 21:24 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/register.tsx:2001 - class: an answer picked in the 'Waiting for you' pane goes in as a plugin-origin prompt, which isPersonsPrompt (hooks/cache.ts:60, used at register.tsx:2174) does not count as the person's, so the turn it starts is never filed by fileTurn; any follow-up question the assistant asks in reply to a pick never reaches the pane, and the thread gets no line for that turn; example: pick 'ja' on 'Antworte ja zu VTSF24?', the assistant answers 'Gut. Und wann?' - the pane says 'No question is waiting for you.'; ran: scratch test in a copy of the mod (claude plugin test): model calls stay 1 -> 1 after the picked turn completes
+- **2026-11-23 21:24 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1964 - class: a ticket id whose title lookup fails (jaira show non-zero, or no title) is never remembered as looked up, so untitled() returns it again and jaira show runs for it after every turn for as long as the question stays open, despite the comment 'read once'; example: the cheap model names about 'ZZZZZZ' (a word or an id from another board) - 4 turns run 'jaira show ZZZZZZ --json' 4 times; ran: scratch test in a copy of the mod (4 show calls over 4 turns)
+- **2026-11-23 21:24 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:2685 - class: autoFocus is set by two independent rules (n === 1 on the first option across the whole pane, and the chat button of the first question when it has no options), so two buttons claim focus whenever the newest question has no options and an older one has; example: newest 'b?' (no options) and older 'a?' (x, y) - both ask-2-chat and ask-1-0 carry autoFocus, so Enter may send 'x' to the older question the person was not looking at; ran: scratch test in a copy of the mod (props of both buttons autoFocus=true)
+- **2026-11-23 21:24 · Alexander Sacharov** — hunt report: 3 findings, all change (1 blocker: a pick's own turn is never filed), notes on 1M3X77 | read whole: hooks/threads.ts, hooks/texts.ts asks entries, types/index.d.ts, release note; register.tsx read through the threads section (threads/fileTurn/keepThreads/answerAsk), the prompt.submit and turn.complete hooks, the band and the asks pane; board.ts titleOf and its parse helpers; tests/board.test.ts 1M3X77 block and harness; shipped.sha256 not read (a hash list) | not checked: whether the engine's band hotkey 'q' fires while the person types in the composer - no engine docs at hand, and the test harness does not model key routing
+- **2026-11-23 21:24 · Alexander Sacharov** — bughunt: done at 65446e947 - 3 findings (3 change, 0 pre-existing) in 7 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/hooks/threads.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/1M3X77.md core/shipped/shipped.sha256
+- **2026-11-23 21:32 · Alexander Sacharov** — found: the engine runs none of the mod's own hooks on what the mod submits itself (probed: prompt.submit hook never saw the pick, store marker test). So a pick cannot be recognised in prompt.submit; turn.complete takes it from a queue when the turn had no person's prompt. Known limit: a pick made while an agent-report turn runs is filed against that turn's answer (mild misfile, no loss).

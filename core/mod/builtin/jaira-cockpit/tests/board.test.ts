@@ -3624,6 +3624,43 @@ describe('open questions with their ticket and options (1M3X77)', () => {
     expect(await (await $.ui.mount(BAND)).find({ key: 'asks' })).toBeUndefined()
     await pane.unmount()
     expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('No question is waiting for you.')
+    // The pick is the person's turn: a question asked back is filed and listed.
+    const calls = w.modelCalls
+    w.model = '{"thread": 1, "title": "Release", "line": "ja", "ticket": null, "question": "Und wann?", "options": ["heute", "morgen"], "answered": [1]}'
+    await answer($, 'Gut. Und wann?')
+    await w.clock.settle()
+    expect(w.modelCalls).toBe(calls + 1)
+    expect(await (await $.ui.mount(BAND)).find({ key: 'asks' })).toBeDefined()
+  })
+
+  test('a ticket jaira has no title for is asked about once, and the thread\'s title stands in', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    w.model = '{"thread": null, "title": "Logo", "line": "Frage", "ticket": null, "question": "Wie gross?", "about": "ZZZZZZ", "answered": []}'
+    for (let i = 0; i < 3; i++) {
+      await $.prompt.submit({ text: `Logo ${i}?`, origin: { kind: 'composer' }, wait: false })
+      await answer($, 'Wie gross?')
+      await w.clock.settle()
+      w.model = '{"thread": 1, "title": "Logo", "line": "noch offen", "ticket": null, "question": null, "answered": []}'
+    }
+    expect(ran(w, 'jaira', 'show', 'ZZZZZZ')).toHaveLength(1)
+    expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('ZZZZZZ | Logo')
+  })
+
+  test('one button holds the focus: the newest question\'s first', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    w.model = '{"thread": null, "title": "A", "line": "a", "ticket": null, "question": "a?", "options": ["x", "y"], "answered": []}'
+    await $.prompt.submit({ text: 'a', origin: { kind: 'composer' }, wait: false })
+    await answer($, 'a?')
+    await w.clock.settle()
+    w.model = '{"thread": null, "title": "B", "line": "b", "ticket": null, "question": "b?", "answered": []}'
+    await $.prompt.submit({ text: 'b', origin: { kind: 'composer' }, wait: false })
+    await answer($, 'b?')
+    await w.clock.settle()
+    const pane = await $.ui.mount(ASKS_PANE)
+    const focused = (await pane.findAll({ type: 'Button' })).filter(b => b.props.autoFocus === true).map(b => b.key)
+    expect(focused).toEqual(['ask-2-chat'])
   })
 
   test('a question with no options is answered in the chat, the prompt started with its ticket', async ($, on) => {

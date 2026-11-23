@@ -143,6 +143,12 @@ let totals: Totals = emptyTotals()
 let turn = 0
 // The person's message of the turn running, for the threads.
 let personSaid: string | undefined
+// The answers picked in the 'Waiting for you' pane, on their way in. They
+// are the person's, but the engine runs no hook of this mod on what the mod
+// submits itself, so personSaid never sees them: the first turn that ends
+// with no person's prompt of its own takes the oldest, and is filed under it
+// - a question asked back shows in the pane again.
+const picked: string[] = []
 let threads: Thread[] = []
 // The Explain and Discuss chats this session opened, by their tab's label
 // (`<id>/explain`), with when: the tab goes once the chat has done its part.
@@ -1959,13 +1965,15 @@ async function fileTurn($: EngineInterface, human: string, answer: string): Prom
   threads = file(threads, board ? filing : { ...filing, ticket: null, about: null }, turn)
   await keepThreads($)
   // The title of a ticket a question names, read once: the pane shows it
-  // beside the id. A ticket jaira does not know keeps the thread's title.
+  // beside the id. A ticket jaira does not know keeps the thread's title,
+  // and is not asked about again.
   const b = board
-  if (!b) return
-  for (const id of untitled(threads)) {
+  const ids = untitled(threads)
+  if (!b || ids.length === 0) return
+  for (const id of ids) {
     const shown = await run($, ['jaira', 'show', id, '--json'], b.dir)
     const title = shown?.exitCode === 0 ? titleOf(shown.stdout) : undefined
-    if (title !== undefined) threads = titled(threads, id, title)
+    threads = titled(threads, id, title ?? '')
   }
   await keepThreads($)
 }
@@ -1997,7 +2005,9 @@ async function openAsks($: EngineInterface): Promise<void> {
 // queued behind a turn still running, never waiting for it - and the
 // question leaves the list at once rather than after the next filing.
 async function answerAsk($: EngineInterface, a: Ask, choice: string): Promise<void> {
-  void $.prompt.submit({ text: answerLine(a, choice) })
+  const line = answerLine(a, choice)
+  picked.push(line)
+  void $.prompt.submit({ text: line })
   threads = answerThread(threads, a.thread, turn)
   await keepThreads($)
   if (asksOf(threads).length === 0) await $.ui.close({ id: ASKS })
@@ -2191,7 +2201,7 @@ export const register: Register = (on, options) => {
     if (await carries($)) return result
     await refreshCache($)
     await refreshBoard($)
-    const human = personSaid
+    const human = personSaid ?? picked.shift()
     personSaid = undefined
     if (human !== undefined && e.answer !== '') $.clock.after(0, () => void fileTurn($, human, e.answer))
     return result
@@ -2676,7 +2686,7 @@ export const register: Register = (on, options) => {
                   plain
                   label={o}
                   {...(n <= 9 ? { hotkey: String(n) } : {})}
-                  {...(n === 1 ? { autoFocus: true as const } : {})}
+                  {...(i === 0 && j === 0 ? { autoFocus: true as const } : {})}
                   onPress={() => void answerAsk($, a, o)}
                 >
                   <Text wrap="wrap">{o}</Text>
