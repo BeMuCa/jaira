@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T15:45:35Z
-updated-at: 2026-11-23T01:50:26Z
+updated-at: 2026-11-23T01:50:29Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-h319tv
@@ -39,6 +39,13 @@ review-gaps: |-
   note: README.md:338-339 'every drop is pushed at once, so you need push access'. Without push access the drop still lands locally and only the push fails, shown on the page (core/web/web.go:183, 253-266). Possible wording: 'without push access it stays on your machine'.
 test-verdict: "pass: no Go changed - suite not run (house rule tonight: no go test in lanes), go build ok. DoD 1-4 checked in the tree (README.md:301 section, :1247 row, :331-334 wait sentence, core/release/notes/H319TV.md one '- ' line, docs/img/web.png present, anchor #jaira-pm-view---web-only matches GitHub slug). Function: README steps replayed on a fresh clone of a scratch bare remote: jaira web before init exits 1 (no half state), after init jaira web serves 3 tickets within 1.5 s, /api/sync shows last_fetch. Two writers: the change writes nothing. Not verified: the curl|sh and PowerShell install lines themselves (not executed)."
 hunt-verdict: "pass: bughunt done at 797831c0c, 0 findings"
+review-verdict: "accept: all four DoD items are met by the diff and every README claim matches the code. No blocker. Four notes: the init side effects are worded too narrowly, a pre-existing help-text mismatch, the install line has not been run end to end by an agent, and the push-access wording."
+review-round: 2
+review-verdict-gaps: |-
+  note: README.md:327-329 says init writes CLAUDE.md and AGENTS.md 'where there were none'. On a shared clone, init writes its block into whichever of the two already carry it (core/board/announce.go:491-496), and it can append a milestones line to the tracked .gitignore (internal/cli/tickets.go:93-95). So it can also change committed files. Fix: 'init may change CLAUDE.md, AGENTS.md and .gitignore in the clone; you do not need to commit them'.
+  note: pre-existing: the help for jaira init (internal/cli/tickets.go:39-40) says a shared clone 'keeps its .gitignore exactly as it is', but tickets.go:93-95 can add the milestones ignore line.
+  note: DoD 3 - the install line was never run end to end (curl|sh was denied in the implementing session). I checked with a stub script that '| JAIRA_NO_ROLES=1 sh' hands the variable to the piped script, and that master's install.sh:110 and install.ps1:159 both read it. The PowerShell line is untested. The check flow below has the person run it.
+  note: README.md:338-339 'every drop is pushed at once, so you need push access'. Without push access the drop still lands locally and only the push fails, shown on the page (core/web/web.go:183, 253-266). Possible wording: 'without push access it stays on your machine'.
 ---
 
 # README: Abschnitt 'Jaira PM View - Web only' fuer Leute ohne Coding-Agent
