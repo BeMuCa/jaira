@@ -23,7 +23,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T16:24:33Z
-updated-at: 2026-11-23T16:24:33Z
+updated-at: 2026-11-23T16:24:48Z
+assignee: Alexander Sacharov
+updated-by: Alexander Sacharov
 ---
 
 # Alles Geteilte auf Refs: Team-Version, Tags, Lanes, Milestones, Logbuch - im Repo nur der Ticket-Schnappschuss im PR
