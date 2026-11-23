@@ -92,11 +92,23 @@ descends into caches and mounted drives to find nothing.`,
 				}
 				roots = []string{s.Root}
 			}
+			// What was recorded, not what was named: a worktree is recorded
+			// as its main checkout, a board in the temporary directory not at
+			// all, and reporting the path as given would claim otherwise.
+			var added []string
+			seen := map[string]bool{}
 			for _, r := range roots {
-				project.Remember(r)
+				if rec := project.Remember(r); rec != "" && !seen[rec] {
+					seen[rec] = true
+					added = append(added, rec)
+				}
 			}
+			roots = added
 			if g.jsonOut {
 				return emit(w, map[string]any{"added": roots, "count": len(roots)})
+			}
+			if len(roots) == 0 {
+				fmt.Fprintln(w, "Nothing registered: boards in the temporary directory are not recorded.")
 			}
 			for _, r := range roots {
 				fmt.Fprintf(w, "Registered %s\n", r)

@@ -119,12 +119,13 @@ func (h *Home) refresh(extra []string) (int, tea.Cmd) {
 }
 
 // boardRoots is every registered board followed by extra, each once, in
-// canonical form.
+// the form project.Board gives it: a board found in a linked worktree is
+// listed as its main checkout, as the registry lists it.
 func boardRoots(extra []string) []string {
 	seen := map[string]bool{}
 	var out []string
 	add := func(root string) {
-		abs := project.Canonical(root)
+		abs := project.Board(root)
 		if !seen[abs] {
 			seen[abs] = true
 			out = append(out, abs)
