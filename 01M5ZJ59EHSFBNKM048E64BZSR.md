@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ59EHSFBNKM048E64BZSR
 title: "jaira show nennt die optionalen Lanes, an denen next_lane vorbeigeht"
-status: todo
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "jaira show --json fuehrt neben next_lane die optionalen Lanes (brainstorm, pre-process) auf, die uebersprungen werden, und wie man sie einschaltet (jaira dod <id> --option <lane>); ein Driver kann so Planung waehlen, statt sie unbemerkt zu verpassen."
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:11:16Z
+updated-at: 2026-11-23T01:12:44Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
@@ -27,7 +27,8 @@ claimed-at: 2026-11-23T01:10:10Z
 
 ## Definition of Done
 
-- [ ] jaira show <id> --json hat ein Feld, das die uebersprungenen optionalen Lanes und den Befehl zum Einschalten nennt
+- [x] jaira show <id> --json hat ein Feld, das die uebersprungenen optionalen Lanes und den Befehl zum Einschalten nennt
+  proof: internal/cli/tickets.go:406 1810 skippedLanesJSON from lane.Set.SkippedAhead (core/lane/next.go); TestTicketJSONNamesTheSkippedOptionalLanes; live: show 64BZSR --json in backlog listed brainstorm+pre-process with enable lines
 - [ ] Der Agent-Block nennt --option in einem Satz
 - [ ] Release-Notiz in core/release/notes/<ID>.md
 
