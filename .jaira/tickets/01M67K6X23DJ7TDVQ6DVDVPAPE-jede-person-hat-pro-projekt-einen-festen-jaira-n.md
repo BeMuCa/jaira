@@ -1,7 +1,7 @@
 ---
 id: 01M67K6X23DJ7TDVQ6DVDVPAPE
 title: "Jede Person hat pro Projekt einen festen jaira-Namen, einmal abgefragt und lokal gespeichert; er ersetzt Git-Name und Aliasse"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: Alexander Sacharov
@@ -21,19 +21,36 @@ related:
   - 01M5MNWJF240306ZVDA41K3RA8
 commits: []
 created-at: 2026-10-30T23:44:36Z
-updated-at: 2026-11-23T20:13:11Z
+updated-at: 2026-11-23T20:35:00Z
 updated-by: Alexander Sacharov
-outcome-what: "Neuer Ref refs/jaira/people (core/people) mit jaira people [alias|rename]; core/identity loest den Handelnden darueber auf; list/next/show/TUI zeigen und filtern unter dem jaira-Namen; snapshot sichert die Liste."
-outcome-why: "Dieselben Menschen standen unter mehreren Namen auf dem Board (BeMuCa/berkc, Alexander Sacharov/alex/AlSa); Filter und Eigentum zerfielen danach."
-outcome-resolves: DVPAPE
-review-summary: "none"
-round: 4
-back-from: testing
-back-by: lane
-back-count: 2
-review-gaps: "internal/tui/model.go: both board-open paths set me/Actor/myAliases/people by hand - now one call to refreshPeople, the same the fetch uses. Left as in round 1: identity.People one 'git show'; people.same mirrors identity.Same (import direction)."
-test-verdict: "pass (round 2): go vet + windows vet green, full suite RC=0, race over cli/tui/core RC=0 before the last fold; DoD 4-9 re-verified incl. new TestOwnershipRefusalNamesTheJairaName, TestTheBoardFetchBringsInThePeopleList, pull refusal in TestPeopleTravelBetweenClonesAndRenameOldTickets; scratch board round 1: parallel aliases both land, remote gone exit 3 nothing written"
-hunt-verdict: "change: blocker JAIRA_USER loses to the email lookup (identity.go currentIn); edge: TUI syncer Actor not refreshed; edge: reject heldBy/TakenFrom/web Rejected.By print stored names; pre-existing: Departed drops Repo.List error (note only)"
+outcome-what: "create --assignee and set assignee= store the jaira name of the person an alias names"
+outcome-why: "signoff give-back: the file stored the alias literally while the board showed the jaira name"
+outcome-resolves: "edge note: set assignee=BeMuCa stored BeMuCa"
+review-summary: "Full review of b6335d5..37a51cd (6 commits). New ref refs/jaira/people carries one file 'people', a line per person '<jaira name>: alias, alias'; core/people parses, finds (case-insensitive), aliases and renames, and Update writes it by fetch, apply the change to the newest list, push with lease, redo the change on a lost race (4 tries, then 'run it again'). core/identity resolves the actor through that list by git user.name, or by user.email only when JAIRA_USER is unset, so creator/assignee/claims/notes/ref commits get the jaira name. Readers never rewrite tickets: list/next --assignee, show/JSON, the gate's 'belongs to' refusal, refsync refusals and announcements, jaira web and the TUI show and filter stored names through Canonical/Same. New commands 'jaira people', 'people alias', 'people rename' with exit codes 2/3/5. jaira snapshot puts the people blob beside board/. Old DoD 1-3 (local per-project setting, web prompt) were replaced by Alex's decision note and are struck out, not skipped."
+round: 5
+back-from: signoff
+back-by: person
+back-count: 1
+review-gaps: |-
+  note: edge: 'jaira set <id> assignee=BeMuCa' stores the alias literally (checked: file says BeMuCa, list shows berk) - display is right, but the file does not carry the jaira name; fix: run the assignee value through peopleList().Canonical in set/create --assignee
+  note: limit: an open TUI and a running 'jaira web' keep acting under the name read at open; only the displayed list refreshes after a fetch (model.go refreshPeople note)
+  note: limit: progress-note authors and executed_by keep the name they were written under; the release note says so
+  note: elsewhere: core/identity Aliases adds git user.email even when JAIRA_USER names someone else, so IsMe under JAIRA_USER=grace counts the checkout owner's email-assigned tickets as grace's; same on master, before this change
+  note: elsewhere: core/refsync/refsync.go Departed drops the Repo.List error and reads it as no refs (found by the bug hunt, before this change)
+test-verdict: "pass (round 3): full suite with -race RC=0, vet + windows vet green; DoD 4-9 re-verified; binary on scratch board: JAIRA_USER=grace with git email listed for berkc acts as grace, without JAIRA_USER acts as berkc; earlier rounds: parallel aliases both land, remote gone exit 3 nothing written"
+hunt-verdict: "pass: round 3 hunt at 37a51cd47, 0 findings in 13 modules; round 2 pre-existing (refsync Departed drops Repo.List error) left as note for the person"
+claimed-by: DESKTOP-RFTCH11-22903
+claimed-at: 2026-11-23T20:31:01Z
+review-verdict: "accept: DoD 4-9 met and tested (go test of people, identity, snapshot, gate, refsync, cli, tui green); hand run confirms alias, rename, list --assignee across old names, owner refusal under the new name, JAIRA_USER winning over git email; no blocker"
+review-round: 4
+review-verdict-gaps: |-
+  note: edge: 'jaira set <id> assignee=BeMuCa' stores the alias literally (checked: file says BeMuCa, list shows berk) - display is right, but the file does not carry the jaira name; fix: run the assignee value through peopleList().Canonical in set/create --assignee
+  note: limit: an open TUI and a running 'jaira web' keep acting under the name read at open; only the displayed list refreshes after a fetch (model.go refreshPeople note)
+  note: limit: progress-note authors and executed_by keep the name they were written under; the release note says so
+  note: elsewhere: core/identity Aliases adds git user.email even when JAIRA_USER names someone else, so IsMe under JAIRA_USER=grace counts the checkout owner's email-assigned tickets as grace's; same on master, before this change
+  note: elsewhere: core/refsync/refsync.go Departed drops the Repo.List error and reads it as no refs (found by the bug hunt, before this change)
+review-check: "1. In a clone with a remote and a shared board: jaira people alias berkc BeMuCa  -> 'berkc now also goes by BeMuCa'  2. jaira people  -> 'berkc — also BeMuCa'  3. git config user.name BeMuCa; jaira whoami  -> 'Acting as: berkc'  4. jaira set <id> assignee=BeMuCa; jaira list --assignee berkc  -> the ticket is listed under berkc  5. jaira people rename berkc berk; jaira list  -> the same ticket now shows berk, its file still says BeMuCa  6. JAIRA_USER=grace jaira move <id> --to todo  -> refused 'belongs to berk'  7. JAIRA_USER=grace jaira whoami  -> 'Acting as: grace'  8. jaira snapshot; git ls-tree jaira/board  -> a 'people' file beside board/"
+stop-after-fix: "true"
 ---
 
 # Jede Person hat pro Projekt einen festen jaira-Namen, einmal abgefragt und lokal gespeichert; er ersetzt Git-Name und Aliasse
@@ -48,7 +65,7 @@ hunt-verdict: "change: blocker JAIRA_USER loses to the email lookup (identity.go
 - [x] Personenliste auf einem eigenen Ref (z.B. refs/jaira/people): je Person ein jaira-Name und ihre Aliasse (git user.name, git user.email). Zwei Seiten, die gleichzeitig schreiben, werden zusammengefuehrt statt ueberschrieben (Vereinigung der Aliasse je Person); Test mit zwei Klonen
   proof: core/people/store.go Update; TestPeopleTravelBetweenClonesAndRenameOldTickets (internal/cli/people_test.go), TestAWriteThatLosesARaceIsMadeAgainOnTopOfTheWinner
 - [x] core/identity loest den git-Namen/die E-Mail ueber diese Liste auf: creator, assignee, claimed-by, updated_by, Notes und neue Refs tragen immer den jaira-Namen; ein unbekannter Name bleibt wie heute der git-Name; Test
-  proof: core/identity/identity.go currentIn; internal/cli/root.go s.Actor=identity(); TestCurrentIsTheJairaNameThePeopleListGives
+  proof: core/identity/identity.go currentIn; internal/cli/root.go s.Actor=identity(); internal/cli/tickets.go create/set Canonical(assignee); TestCurrentIsTheJairaNameThePeopleListGives, TestAssigneeIsStoredUnderTheJairaName
 - [x] Befehl, um einer Person einen Alias zuzuordnen (z.B. jaira people alias <name> <git-name|email>) und die Liste zu zeigen (jaira people); Test
   proof: internal/cli/people.go newPeopleAliasCmd/newPeopleCmd; TestPeopleRefusals, TestAlias
 - [x] Befehl, um eine Person umzubenennen (z.B. jaira people rename <alt> <neu>): der alte Name wird Alias des neuen; Board-Filter, list --assignee und das Cockpit zeigen alte Tickets unter dem neuen Namen, ohne dass Ticketdateien umgeschrieben werden muessen; Test
@@ -94,3 +111,19 @@ hunt-verdict: "change: blocker JAIRA_USER loses to the email lookup (identity.go
 - **2026-11-23 20:10 · Alexander Sacharov** — hunt report: 4 findings (3 change, 1 blocker among them; 1 pre-existing), all as notes on DVPAPE | read whole: core/gate/gate.go core/refsync/refsync.go internal/cli/refs.go internal/cli/web_source.go internal/tui/refs.go (new to the hunt, gate/refsync via a helper agent); read as a diff since 00e1138ea: core/release/notes/DVPAPE.md internal/cli/root.go internal/cli/tickets.go internal/tui/lanefocus.go internal/tui/model.go internal/tui/users.go internal/tui/view.go (identity.go re-entered only to follow the JAIRA_USER path) | not checked: live TUI for the stale syncer Actor; a -race run of refreshPeople writing store.Actor against tea.Cmd goroutines; Windows; milestone merge paths in refsync only read
 - **2026-11-23 20:10 · Alexander Sacharov** — bughunt: done at c7c77814d - 4 findings (3 change, 1 pre-existing) in 12 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: core/gate/gate.go core/gate/gate_test.go core/refsync/refsync.go core/release/notes/DVPAPE.md internal/cli/people_test.go internal/cli/refs.go internal/cli/root.go internal/cli/tickets.go internal/cli/web_source.go internal/tui/lanefocus.go internal/tui/model.go internal/tui/refs.go internal/tui/refs_test.go internal/tui/users.go internal/tui/view.go
 - **2026-11-23 20:13 · Alexander Sacharov** — in-progress (bughunt round 2): blocker fixed - JAIRA_USER, wenn gesetzt, ist der einzige nachgeschlagene Name; git user.email entscheidet nur ohne ihn (identity.go currentIn, Testfall grace/someone). Kleineres Design statt weiterer Halter: Die offene TUI liest nach einem Fetch nur die Personenliste neu (Anzeige/Filter); als wen sie handelt (me, store.Actor, Syncer.Actor) bleibt vom Oeffnen - einheitlich in allen Haltern, und der Name gehoert weiterhin derselben Person. Gleiches gilt fuer jaira web. Anzeige: reject heldBy, already-rejected-by, Steal-Notiz/TakenFrom und web Rejected.By laufen ueber die Liste. pre-existing (nicht dieses Ticket): refsync Departed verschluckt Repo.List-Fehler - Notiz fuer die Person.
+- **2026-11-23 20:15 · Alexander Sacharov** — waiting: bug hunt round 3 (background subagent) since 21:15
+- **2026-11-23 20:16 · Alexander Sacharov** — hunt report: 0 findings, nothing written to the board but this note and the closing line | read whole: core/people/people.go, core/people/store.go, core/identity/identity.go, internal/cli/people.go, core/snapshot/snapshot.go; core/gitref/gitref.go and internal/cli/flow.go read in the DVPAPE hunks plus the code on their paths (Usable, Fetch, refRead/refWrite/publish, Tree/Nest, LsTree; next --assignee), not every line; read as diff since c7c77814d: core/refsync/refsync.go, internal/cli/web_source.go, internal/tui/model.go, core/identity/identity.go | ran against a bare remote: 8 parallel 'people alias' from one clone (4 arrive, 4 exit 1 with ErrBusy, local ref = remote ref, nothing lost), exit codes for unknown rename (5), bad names (2), no-op alias --json (person null, 0), rename chain round-trip; not checked: a second clone writing, because the scratch board was unshared and the clone had no .jaira
+- **2026-11-23 20:16 · Alexander Sacharov** — bughunt: done at 37a51cd47 - 0 findings in 13 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: README.md core/gate/gate.go core/gate/gate_test.go core/gitref/gitref.go core/identity/identity.go core/identity/identity_test.go core/people/people.go core/people/people_test.go core/people/store.go core/refsync/refsync.go core/release/notes/DVPAPE.md core/snapshot/snapshot.go core/snapshot/snapshot_test.go docs/COMMANDS.md internal/cli/flow.go internal/cli/people.go internal/cli/people_test.go internal/cli/refs.go internal/cli/root.go internal/cli/tickets.go internal/cli/web_source.go internal/tui/lanefocus.go internal/tui/model.go internal/tui/refs.go internal/tui/refs_test.go internal/tui/users.go internal/tui/view.go
+- **2026-11-23 20:17 · Alexander Sacharov** — waiting: fresh review lane (run-lane.sh herdr tab) since 21:17
+- **2026-11-23 20:20 · Alexander Sacharov** — review: done at 37a51cd47
+- **2026-11-23 20:21 · Alexander Sacharov** — report: refs/jaira/people + jaira people [alias|rename]; identity resolves the actor via the list (JAIRA_USER first); list/next/show/JSON/web/TUI/refusals show jaira names, ticket files untouched; snapshot carries 'people' | signoff, context 253k of 1000k, cache warm 60 min after last answer | 5 review notes (set --assignee stores alias literally; open TUI/web act under the name from open; note authors stay; email-in-aliases under JAIRA_USER pre-existing; Departed drops List error pre-existing); branch not pushed; acceptance by person via review-check steps
+- **2026-11-23 20:30 · Alexander Sacharov** — Given back from signoff: beheben:
+- note: edge: 'jaira set <id> assignee=BeMuCa' stores the alias literally (checked: file says BeMuCa, list shows berk) - display is right, but the file does not carry the jaira name; fix: run the assignee value through peopleList().Canonical in set/create --assignee
+angenommen:
+- note: limit: an open TUI and a running 'jaira web' keep acting under the name read at open; only the displayed list refreshes after a fetch (model.go refreshPeople note)
+- note: limit: progress-note authors and executed_by keep the name they were written under; the release note says so
+- note: elsewhere: core/identity Aliases adds git user.email even when JAIRA_USER names someone else, so IsMe under JAIRA_USER=grace counts the checkout owner's email-assigned tickets as grace's; same on master, before this change
+- note: elsewhere: core/refsync/refsync.go Departed drops the Repo.List error and reads it as no refs (found by the bug hunt, before this change)
+- **2026-11-23 20:30 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown); branch feat/dvpape is the ticket's worktree's, worktree /home/alex/projects/.worktrees/jaira-dvpape; reports to uds:/run/user/1000/cc-socks/48662.sock, the ticket's parent session
+- **2026-11-23 20:31 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/48662.sock
+- **2026-11-23 20:34 · Alexander Sacharov** — in-progress (give-back signoff): create --assignee und set assignee= speichern den jaira-Namen (peopleList().Canonical); Test TestAssigneeIsStoredUnderTheJairaName. stop-after-fix=true gesetzt: Fix < 20 Zeilen, kein Lock, kein Parser.

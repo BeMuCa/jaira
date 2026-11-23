@@ -313,6 +313,9 @@ already know it is yours; --assignee wins over it.`,
 			if assignee == "" && mine {
 				assignee = me
 			}
+			// A person is stored under their jaira name, whichever of their
+			// names the caller typed, so the file says what the board shows.
+			assignee = peopleList().Canonical(assignee)
 
 			// The frontmatter field is one string and the body checklist is the
 			// list: core/gate reads DoDItems when there are any and only falls
@@ -1252,6 +1255,10 @@ its end. Review fields keep their history across loop rounds that way.`,
 					}
 					// stop-after-fix is read as exactly "true"; checked for
 					// the same reason as mode above.
+					// a person is stored under their jaira name, as create does.
+					if k == ticket.FieldAssignee {
+						v = peopleList().Canonical(v)
+					}
 					if k == ticket.FieldStopAfterFix {
 						canon, ok := ticket.CanonicalStopAfterFix(v)
 						if !ok {

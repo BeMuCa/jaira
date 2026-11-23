@@ -2,3 +2,4 @@
 - Use `jaira people rename <old> <new>` to change the name a person is shown under; old tickets follow without being rewritten, and `list --assignee`/`next --assignee` find them under either name.
 - `jaira list`, `show`, `jaira web`, the board and the refusals of `move` and `pull` now name a ticket's assignee, creator and last editor under the person's jaira name, not the name stored in the file; progress notes keep the name they were written under.
 - `jaira snapshot` now backs up the people list as `people` beside `board/` in the snapshot branch.
+- `jaira create --assignee` and `jaira set <id> assignee=` now store the person's jaira name when you type one of their aliases, so the ticket file names the same person the board shows.

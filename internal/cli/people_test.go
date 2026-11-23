@@ -160,6 +160,42 @@ func TestPeopleRefusals(t *testing.T) {
 	}
 }
 
+// A person named by one of their aliases is stored under their jaira name,
+// so the file says what the board shows.
+func TestAssigneeIsStoredUnderTheJairaName(t *testing.T) {
+	t.Setenv("JAIRA_USER", "")
+	ada, _ := twoBoards(t)
+	if _, err := runCLI(t, ada, "people", "alias", "grace", "gh"); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := runAndSend(t, ada, "create", "named work", "--assignee", "GH"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, ada, "create", "set work"); err != nil {
+		t.Fatalf("create: %v\n%s", err, out)
+	}
+	set := handleFromList(t, ada, "set work")
+	if out, err := runAndSend(t, ada, "pull", set); err != nil {
+		t.Fatalf("pull: %v\n%s", err, out)
+	}
+	if out, err := runAndSend(t, ada, "set", set, "assignee=gh"); err != nil {
+		t.Fatalf("set: %v\n%s", err, out)
+	}
+	for _, title := range []string{"named work", "set work"} {
+		out, err := runCLI(t, ada, "show", handleFromList(t, ada, title), "--json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		var shown struct{ ID string }
+		if err := json.Unmarshal([]byte(out), &shown); err != nil {
+			t.Fatal(err)
+		}
+		if raw := gitOut(t, ada, "show", gitref.RefName(shown.ID)+":"+shown.ID+".md"); !strings.Contains(raw, "assignee: grace\n") {
+			t.Errorf("%s: the file does not carry the jaira name:\n%s", title, raw)
+		}
+	}
+}
+
 func containsName(list []string, v string) bool {
 	for _, x := range list {
 		if strings.EqualFold(x, v) {
