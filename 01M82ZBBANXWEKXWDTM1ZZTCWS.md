@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:36:18Z
+updated-at: 2026-11-23T21:36:23Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -30,7 +30,7 @@ outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSign
 review-summary: "none"
 review-gaps: "after review give-back: nextFinding is one helper beside blockerLines, both share gapMarker/gapBlocker - nothing duplicated or orphaned. Left: regex mirrors hooks/board.ts (two languages); Details repeat Commits/DoD (whole detail pane by design)."
 test-verdict: "pass: go vet ./... + go test -race -count=1 ./... RC=0 at f0b0e438b; DoD 1-5 verified in the tree; screen exercised in tmux earlier, help row checked by TestHelpExplainsEveryCardMark; render-only, writes nothing"
-hunt-verdict: "pass: bughunt done at 2880173dd - 0 blocker, 1 change edge (a label-only blocker row shows the label, finding is behind 'i'; note for the person), 0 pre-existing; round 1 pre-existing quoted-path finding left as note (EH6Z0N's diff code)"
+hunt-verdict: "pass: bughunt done at f0b0e438b - 0 blocker, 1 change edge (lone blocker label takes the next line whatever it is; note for the person), 0 pre-existing"
 round: 4
 back-from: review
 back-by: lane
