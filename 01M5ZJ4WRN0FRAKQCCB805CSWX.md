@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ4WRN0FRAKQCCB805CSWX
 title: "spawn.sh startet keinen Worker, wenn der freie Speicher nicht fuer einen weiteren Build reicht"
-status: critique
+status: optimize
 ready: true
 creator: BeMuCa
 goal: "Vor dem Start eines Workers liest spawn.sh den freien Speicher und lehnt ab oder warnt, wenn ein weiterer paralleler Build den Rechner zum Absturz braechte; die Grenze steht an einer Stelle und laesst sich setzen."
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:39:52Z
+updated-at: 2026-11-23T01:39:54Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
