@@ -25,7 +25,7 @@ related: []
 follows: 01M67K72RDJY2N2R2KQGATDG74
 commits: []
 created-at: 2026-11-23T22:43:41Z
-updated-at: 2026-11-23T23:00:15Z
+updated-at: 2026-11-23T23:00:18Z
 updated-by: BeMuCa
 claimed-by: worker-fspjp9
 claimed-at: 2026-11-23T22:56:02Z
@@ -39,7 +39,8 @@ claimed-at: 2026-11-23T22:56:02Z
   proof: core/lane/agents_test.go TestParseAgents; core/lane/lane.go Agents parser
 - [x] agents > 1 auf einer Lane, die outcome-what oder plan liefert, wird beim Laden abgelehnt; Test
   proof: core/lane/agents_test.go TestParseAgentsRefusedOnWritingLane; core/lane/lane.go refusal
-- [ ] jaira show <id> --for-lane <lane> --json traegt agents (1 ohne Schluessel); die Textausgabe und jaira lanes show nennen es nur, wenn es groesser als 1 ist; Test in internal/cli
+- [x] jaira show <id> --for-lane <lane> --json traegt agents (1 ohne Schluessel); die Textausgabe und jaira lanes show nennen es nur, wenn es groesser als 1 ist; Test in internal/cli
+  proof: internal/cli/agents_test.go TestShowForLaneCarriesAgents, TestLanesShowCarriesAgents; internal/cli/flow.go, tickets.go
 - [ ] jaira-worker und jaira-role-lane sagen, was bei agents > 1 zu tun ist: N Agenten, Speicherregel, Befunde vereinigen und am Code pruefen, ein Verdict
 - [ ] docs und Release-Notiz in core/release/notes/<ID>.md
 
