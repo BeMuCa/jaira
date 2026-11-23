@@ -25,7 +25,7 @@ commits:
   - 2880173dd19a0719180344d11060a1c608f79fcf
   - f0b0e438bbaccf12bd0da0a0951979e4069daf21
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:42:21Z
+updated-at: 2026-11-23T21:42:27Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -130,3 +130,4 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-zztcws && go run ./cmd
 - note: edge: signoff.go:188 nextFinding takes whatever line comes next - a heading, 'none', an edge of another kind, only the first item of a list (bughunt 21:35); the smaller design is to drop nextFinding and show a lone label as written, as the cockpit does, with the whole gaps behind 'i'. That reverses the first review's fix-now, so it is the person's call
 - note: limit: 'i' shows the whole detail pane, so Commits (recorded list only), DoD and 'Before this can start' repeat below the top block - chosen in round 2 to keep one renderer
 - note: elsewhere: internal/tui/diffpane.go:106-112,202-210 keep quoted non-ASCII paths from git show --patch (core/gitrepo/git.go:149 lacks core.quotePath=false); there before this change (EH6Z0N)
+- **2026-11-23 21:42 · Alexander Sacharov** — cockpit: accepted by the person, signoff -> done
