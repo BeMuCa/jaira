@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:36:23Z
+updated-at: 2026-11-23T21:36:26Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -111,3 +111,4 @@ review-check: "1. go build -o /tmp/jaira-zz ./cmd/jaira  2. in a scratch repo: j
 - **2026-11-23 21:35 · Alexander Sacharov** — bughunt: change: internal/tui/signoff.go:176 (nextFinding, :188) - class: a blocker label standing alone takes the next non-empty line whatever it is - a heading, a 'none' line, a gap of another kind - and only the first of several items listed under it; examples: 'blocker:\n- a\n- b' shows 'a' and drops blocker b; '**Blocker:**\n\n## Edges' shows '## Edges' as the blocker; 'blocker:\nedge: cosmetic' shows the cosmetic edge as the blocker; 'blocker:\n- none' shows a blocker row reading 'none'. Not a blocker: the row still says blocker and the whole review-gaps is behind 'i', but the finding shown can be the wrong text. The cockpit (hooks/board.ts:345 BLOCKER, :339 NO_GAP) never consumes the next line, so the two now disagree on what the blocker says; blame: f0b0e438b (names ZZTCWS); ran: scratch go test calling blockerLines on the four inputs (outputs as above)
 - **2026-11-23 21:35 · Alexander Sacharov** — hunt report: 1 finding, 1 change (edge, no blocker), as a note on ZZTCWS | read as a diff since 2880173dd: internal/tui/signoff.go, signoff_test.go, view.go; no file new to the change, the others unchanged since | nothing left unchecked
 - **2026-11-23 21:35 · Alexander Sacharov** — bughunt: done at f0b0e438b - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since 2880173dd; concurrency, error paths, input, permissions checked; files: core/release/notes/ZZTCWS.md internal/tui/diffpane.go internal/tui/diffpane_test.go internal/tui/model.go internal/tui/owed_test.go internal/tui/signoff.go internal/tui/signoff_test.go internal/tui/tags_test.go internal/tui/view.go
+- **2026-11-23 21:36 · Alexander Sacharov** — testing: note: edge: the lone-label heuristic (review fix-now) keeps producing edges (heading, 'none', other kind, only first of a list). Smaller design if the person wants it: drop nextFinding and show a lone label as written, like the cockpit, which never reads the next line - the full gaps are behind 'i'. Not done here: it reverses the reviewer's fix-now.
