@@ -14,29 +14,11 @@ import (
 // found. The spawn that was handed the other's pane types nothing, says which
 // pane and which tab, and closes its own empty tab; the other one starts.
 func TestSpawnTypesOnlyIntoItsOwnTab(t *testing.T) {
-	bash, err := exec.LookPath("bash")
-	if err != nil {
-		t.Skipf("no bash on this machine: %v", err)
-	}
-	path := jairaPath(t)
-	dir := t.TempDir()
-	if _, err := install(dir, false, true, false); err != nil {
-		t.Fatal(err)
-	}
-	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
-	root := filepath.Join(t.TempDir(), "repo")
-	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if b, err := exec.Command("git", "-C", root, "init", "-q").CombinedOutput(); err != nil {
-		t.Fatalf("git init: %v\n%s", err, b)
-	}
-	bin := t.TempDir()
 	state := t.TempDir()
 	// tab create n makes tab tn with pane pn, waits until both tabs exist and
 	// then hands back the newest pane, whoever asked. pane get pk says tk.
-	herdr := `#!/usr/bin/env bash
-s="` + state + `"
+	root, spawn := spawnWith(t, `#!/usr/bin/env bash
+s="`+state+`"
 case "$1 $2" in
   "tab create")
     n=1; until mkdir "$s/t$n" 2>/dev/null; do n=$((n+1)); done
@@ -48,10 +30,7 @@ case "$1 $2" in
   "pane send-text") echo "$3" >> "$s/sent" ;;
   "tab close") echo "$3" >> "$s/closed" ;;
 esac
-`
-	if err := os.WriteFile(filepath.Join(bin, "herdr"), []byte(herdr), 0o755); err != nil {
-		t.Fatal(err)
-	}
+`)
 
 	var wg sync.WaitGroup
 	outs := make([]string, 2)
@@ -60,11 +39,7 @@ esac
 		wg.Add(1)
 		go func(i int, lane string) {
 			defer wg.Done()
-			cmd := exec.Command(bash, spawn, "--no-worktree", "ab12cd", "AB12CD", lane, root)
-			cmd.Dir = root
-			cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr"),
-				"HERDR_WORKSPACE_ID=", "JAIRA_SPAWN_PAUSE=0", "PATH="+bin+string(os.PathListSeparator)+path)
-			b, err := cmd.CombinedOutput()
+			b, err := spawn(lane).CombinedOutput()
 			outs[i], errs[i] = string(b), err
 		}(i, lane)
 	}
@@ -111,6 +86,27 @@ esac
 // claude that never comes up is reported with its pane, its tab and the
 // ticket/lane the tab carries, not with a bare pane id.
 func TestSpawnNamesPaneAndTabWhenClaudeDoesNotComeUp(t *testing.T) {
+	_, spawn := spawnWith(t, `#!/usr/bin/env bash
+case "$1 $2" in
+  "tab create") echo '{"result":{"tab":{"tab_id":"w1:t7"},"root_pane":{"pane_id":"w1:p9"}}}' ;;
+  "pane get")   echo '{"result":{"pane":{"agent":"","agent_status":"","tab_id":"w1:t7"}}}' ;;
+esac
+`)
+	out, err := spawn("critique").CombinedOutput()
+	if err == nil {
+		t.Fatalf("spawn.sh succeeded without claude:\n%s", out)
+	}
+	for _, want := range []string{"pane w1:p9", "tab w1:t7", "AB12CD/critique"} {
+		if !strings.Contains(string(out), want) {
+			t.Errorf("the failure does not name %q:\n%s", want, out)
+		}
+	}
+}
+
+// spawnWith installs the roles, makes a repository and returns spawn.sh with
+// the Herdr stub herdr, for one lane of AB12CD in that repository.
+func spawnWith(t *testing.T, herdr string) (root string, spawn func(lane string) *exec.Cmd) {
+	t.Helper()
 	bash, err := exec.LookPath("bash")
 	if err != nil {
 		t.Skipf("no bash on this machine: %v", err)
@@ -120,8 +116,8 @@ func TestSpawnNamesPaneAndTabWhenClaudeDoesNotComeUp(t *testing.T) {
 	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
-	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
-	root := filepath.Join(t.TempDir(), "repo")
+	script := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+	root = filepath.Join(t.TempDir(), "repo")
 	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -129,26 +125,14 @@ func TestSpawnNamesPaneAndTabWhenClaudeDoesNotComeUp(t *testing.T) {
 		t.Fatalf("git init: %v\n%s", err, b)
 	}
 	bin := t.TempDir()
-	herdr := `#!/usr/bin/env bash
-case "$1 $2" in
-  "tab create") echo '{"result":{"tab":{"tab_id":"w1:t7"},"root_pane":{"pane_id":"w1:p9"}}}' ;;
-  "pane get")   echo '{"result":{"pane":{"agent":"","agent_status":"","tab_id":"w1:t7"}}}' ;;
-esac
-`
 	if err := os.WriteFile(filepath.Join(bin, "herdr"), []byte(herdr), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	cmd := exec.Command(bash, spawn, "--no-worktree", "ab12cd", "AB12CD", "critique", root)
-	cmd.Dir = root
-	cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr"),
-		"HERDR_WORKSPACE_ID=", "JAIRA_SPAWN_PAUSE=0", "PATH="+bin+string(os.PathListSeparator)+path)
-	out, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("spawn.sh succeeded without claude:\n%s", out)
-	}
-	for _, want := range []string{"pane w1:p9", "tab w1:t7", "AB12CD/critique"} {
-		if !strings.Contains(string(out), want) {
-			t.Errorf("the failure does not name %q:\n%s", want, out)
-		}
+	return root, func(lane string) *exec.Cmd {
+		cmd := exec.Command(bash, script, "--no-worktree", "ab12cd", "AB12CD", lane, root)
+		cmd.Dir = root
+		cmd.Env = append(os.Environ(), "HERDR_ENV=1", "HERDR_BIN_PATH="+filepath.Join(bin, "herdr"),
+			"HERDR_WORKSPACE_ID=", "JAIRA_SPAWN_PAUSE=0", "PATH="+bin+string(os.PathListSeparator)+path)
+		return cmd
 	}
 }
