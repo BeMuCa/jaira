@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:25:21Z
+updated-at: 2026-11-23T21:25:24Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -30,7 +30,7 @@ outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSign
 review-summary: none
 review-gaps: "round 2: the repair removed the hand-picked details list, gapLines and isBlockerLine (no callers left - grep clean); detailBody now composes header + detailFields, no duplicate renderer. firstNonEmpty, laneFields, sourced, owedRow, fieldRow all still called. Left: the regex mirrors the TS one in hooks/board.ts - two languages, cannot share code; the gaps row inside Details repeats the blocker lines shown on top (the full ticket, by design)."
 test-verdict: "pass: go vet ./... + go test -race -count=1 ./internal/tui RC=0 at 383b42d9e; DoD 1-5 verified; render-only"
-hunt-verdict: "fail: bughunt done at 73d06b024 - change blocker: isBlockerLine misses '1. blocker:', '**Blocker**:', '`blocker`:', 'blocker :' (cockpit's BLOCKER regex counts them); change edge: human-lane ticket loses context and Progress notes; 1 pre-existing (quoted git paths in diffpane, EH6Z0N's subject - note for the person)"
+hunt-verdict: "fail: bughunt done at 383b42d9e - change: a label-only blocker line ('**Blocker:**', 'blocker:' with the finding on the next line) loses its row; change edge (note): Details repeat Commits/DoD and show 'Before this can start'"
 round: 2
 back-from: testing
 back-by: lane
