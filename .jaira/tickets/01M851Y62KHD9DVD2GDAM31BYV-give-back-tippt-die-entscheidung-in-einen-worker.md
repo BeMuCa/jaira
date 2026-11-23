@@ -1,7 +1,7 @@
 ---
 id: 01M851Y62KHD9DVD2GDAM31BYV
 title: "Give back tippt die Entscheidung in einen Worker-Tab, der an einem Freigabe-Dialog haengt"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T20:35:39Z
-updated-at: 2026-11-23T20:49:56Z
+updated-at: 2026-11-23T20:51:53Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-41227
 claimed-at: 2026-11-23T20:36:42Z
@@ -32,7 +32,7 @@ round: 3
 back-from: testing
 back-by: lane
 back-count: 1
-review-gaps: "none: no duplicate - sessions.ts:151 'waits for approval: answer the dialog in its tab' is the /cockpit workers line, a different message; label local used three times, kept; nothing orphaned"
+review-gaps: "none to remove: paneBlocked is the only 'herdr pane get' reader in hooks/ (spawn.sh reads it in bash); atDialog serves three callers; added: core/shipped/shipped.sha256 regenerated (TestEveryInstalledFileIsAShippedVersion was red - the plugin suite does not run it)"
 test-verdict: "pass: plugin suite green (rc=0, 523 pass), DoD 1-3 verified in the tree; Herdr not runnable here, behaviour exercised through the mod's test world"
 hunt-verdict: "fail: guard reads the carrier tab's status but types into record.pane, which may be another (blocked) pane; and nothing is re-read before the Enter"
 ---
@@ -68,3 +68,4 @@ hunt-verdict: "fail: guard reads the carrier tab's status but types into record.
 - **2026-11-23 20:43 · Alexander Sacharov** — bughunt: done at 9986c0694 - 3 findings (2 change, 1 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/M31BYV.md
 - **2026-11-23 20:44 · Alexander Sacharov** — testing: class: the blocked check looks at a tab, the keys go to a pane - status of one object, keystrokes to another, read once; example: bughunt notes 1+2 (record.pane in another session's pane at a dialog, carrier tab idle; dialog raised during the 1s before Enter); fix: ask 'herdr pane get <record.pane>' (result.pane.agent_status, as spawn.sh:549) right before send-text and again right before send-keys enter; blocked at either -> no keys, handedTo none naming the pane; keep the tab check (it stops closing a blocked tab and spawning beside it). Test both points.
 - **2026-11-23 20:49 · Alexander Sacharov** — in-progress round 2: blocked is now asked of the recorded pane itself (herdr pane get, as spawn.sh) before send-text and before Enter, besides the tab check. Remaining window: a dialog opening between the last pane get and the Enter (milliseconds) - no check closes that, accepted. Pre-existing bughunt finding (failed tab list -> second worker) left as a note for the person: other subject (tab list error path), not this goal.
+- **2026-11-23 20:51 · Alexander Sacharov** — optimize: core/role TestEveryInstalledFileIsAShippedVersion was red - changed cockpit files need their version in core/shipped/shipped.sha256; regenerated with scripts/shipped-history.sh --write. Gate for this ticket = plugin test AND go test ./...
