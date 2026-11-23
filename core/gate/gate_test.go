@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/BeMuCa/jaira/core/people"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
@@ -127,6 +128,20 @@ func TestOwnershipRefusesWriteByOtherThanAssignee(t *testing.T) {
 	}
 	if !strings.Contains(found.Message, "anna") {
 		t.Errorf("message %q does not name the owner", found.Message)
+	}
+}
+
+// The refusal names the owner under the jaira name the people list gives
+// them, the name 'jaira list' shows, not the one the ticket stores.
+func TestOwnershipRefusalNamesTheJairaName(t *testing.T) {
+	tk := ticketWith("")
+	tk.Status = "in-progress"
+	tk.Assignee = "anna"
+	env := testEnv(t)
+	env.People = people.Parse([]byte("Anna Berg: anna\n"))
+	found := findViolation(CheckAdvance(env, tk, Request{To: "review", Actor: "bob"}), CodeNotOwner)
+	if found == nil || !strings.Contains(found.Message, "belongs to Anna Berg") {
+		t.Fatalf("refusal = %v", found)
 	}
 }
 

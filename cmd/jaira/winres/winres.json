@@ -1,0 +1,34 @@
+{
+  "RT_MANIFEST": {
+    "#1": {
+      "0409": {
+        "description": "jaira - a git-synced kanban board for agent work",
+        "minimum-os": "win7",
+        "execution-level": "as invoker",
+        "long-path-aware": true
+      }
+    }
+  },
+  "RT_VERSION": {
+    "#1": {
+      "0000": {
+        "fixed": {
+          "file_version": "0.0.0.0",
+          "product_version": "0.0.0.0"
+        },
+        "info": {
+          "0409": {
+            "CompanyName": "jaira project",
+            "FileDescription": "jaira - a git-synced kanban board for agent work",
+            "FileVersion": "0.0.0.0",
+            "InternalName": "jaira",
+            "LegalCopyright": "Copyright (c) 2026 Berk Calabakan, MIT License",
+            "OriginalFilename": "jaira.exe",
+            "ProductName": "jaira",
+            "ProductVersion": "0.0.0.0"
+          }
+        }
+      }
+    }
+  }
+}

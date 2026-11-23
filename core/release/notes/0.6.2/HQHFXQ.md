@@ -1,0 +1,1 @@
+- In the cockpit's Overview, the tabs Queue, Log and Workers and Close now sit together in one row at the top; the open tab is the highlighted one.

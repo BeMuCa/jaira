@@ -1,6 +1,7 @@
 package gate
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -126,5 +127,42 @@ func TestDeriveCommitsNeverCalledWhenTicketAlreadyHasCommits(t *testing.T) {
 	}
 	if calls != 0 {
 		t.Errorf("DeriveCommits was called %d time(s) for a ticket that already records commits, want 0", calls)
+	}
+}
+
+// TestNeedsCommitsNamesBranchesElsewhere: the refusal names the branches
+// holding commits that name the ticket when HEAD reaches none of them, and
+// reads as before when there are none or nothing asks (VHGWQF).
+func TestNeedsCommitsNamesBranchesElsewhere(t *testing.T) {
+	cases := []struct {
+		name      string
+		elsewhere func(*ticket.Ticket) []string
+		want      string
+		wantNot   string
+	}{
+		{name: "one branch", elsewhere: func(*ticket.Ticket) []string { return []string{"feat/a3k9qp"} }, want: "sit on feat/a3k9qp: run the move in the worktree of the branch that carries the work"},
+		{name: "two branches", elsewhere: func(*ticket.Ticket) []string { return []string{"feat/a", "fix/b"} }, want: "sit on feat/a, fix/b: run the move in the worktree of the branch that carries the work"},
+		{name: "none found", elsewhere: func(*ticket.Ticket) []string { return nil }, wantNot: "sit on"},
+		{name: "nil", elsewhere: nil, wantNot: "sit on"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			tk := ticketWith("## Definition of Done\n\n- [x] it works\n")
+			tk.Status = "signoff"
+			env := testEnv(t)
+			env.DeriveCommits = func(*ticket.Ticket) []string { return nil }
+			env.CommitsElsewhere = c.elsewhere
+			vs := CheckAdvance(env, tk, Request{To: "done", Actor: "a", Interactive: true})
+			if !hasFieldViolation(vs, CodeNeedsCommits, ticket.FieldCommits) {
+				t.Fatalf("expected a %s violation, got %v", CodeNeedsCommits, vs)
+			}
+			msg := vs.Err().Error()
+			if c.want != "" && !strings.Contains(msg, c.want) {
+				t.Errorf("refusal %q does not contain %q", msg, c.want)
+			}
+			if c.wantNot != "" && strings.Contains(msg, c.wantNot) {
+				t.Errorf("refusal %q contains %q", msg, c.wantNot)
+			}
+		})
 	}
 }

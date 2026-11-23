@@ -33,7 +33,11 @@ type refFetchedMsg struct {
 	// merged names the milestones whose queued edit the remote refused and
 	// that were merged into the version that won.
 	merged []string
-	err    error
+	// warn is a milestone written here whose ref write could not be queued:
+	// the fetch worked, so it is not err, but the milestone will not reach
+	// anybody until it is, and nothing else would say so.
+	warn *milestone.RecordError
+	err  error
 }
 
 // newSyncer wires the board's ticket writes to the refs they travel on, with
@@ -43,6 +47,7 @@ func newSyncer(s *ticket.Store, me string) *refsync.Syncer {
 	y.IsMine = func(assignee string) bool {
 		return assignee != "" && identity.IsMe(s.Root, assignee)
 	}
+	y.Name = func(who string) string { return boardPeople.Load().Canonical(who) }
 	s.Source = y
 	return y
 }
@@ -106,9 +111,9 @@ func fetchRefs(y *refsync.Syncer) tea.Cmd {
 		ms, err := y.FetchMilestones(y.Store)
 		var re *milestone.RecordError
 		if errors.As(err, &re) {
-			err = nil // written here, only the queueing failed: best effort, as in the CLI
+			err = nil // written here, only the queueing failed: a warning, as in the CLI
 		}
-		return refFetchedMsg{arrivals: arrivals, milestones: ms, merged: merged, err: err}
+		return refFetchedMsg{arrivals: arrivals, milestones: ms, merged: merged, warn: re, err: err}
 	}
 }
 
@@ -128,6 +133,9 @@ func (m *Model) announceMilestones(f refsync.MilestonesFetched, merged []string)
 	}
 	if len(f.Moved) > 0 {
 		parts = append(parts, fmt.Sprintf("moved %d milestone file(s) to ID names", len(f.Moved)))
+	}
+	if len(f.Published) > 0 {
+		parts = append(parts, "milestones queued for the remote for the first time: "+strings.Join(f.Published, ", "))
 	}
 	if len(f.Conflicts) > 0 {
 		parts = append(parts, fmt.Sprintf("%d milestone edit(s) of an older build clashed with yours, yours kept", len(f.Conflicts)))

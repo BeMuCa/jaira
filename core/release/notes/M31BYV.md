@@ -1,0 +1,1 @@
+- Give back in the cockpit no longer types the decision into a worker that waits at an approval dialog, and presses no Enter if a dialog opens while it types: it says which tab or pane waits — answer the dialog there yourself, then type the decision into it.

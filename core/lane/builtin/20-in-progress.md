@@ -26,6 +26,110 @@ Work only within the plan's scope. If you discover adjacent problems, note them
 rather than fixing them. If the plan turns out to be wrong, say so and fix the
 plan rather than quietly doing something else.
 
+## Fix the class, not the example
+
+Ticking items is not the job; the change working is. After you, critique,
+testing, a bug hunter and a reviewer read this change, and each round they find
+the next example of a mistake that was fixed for one example only. So:
+
+- **Know the class before you write code.** The definition of done names the
+  class of fault, the input classes and, for a heuristic, the acceptance rule.
+  Where the definition of done does not — no planning step ran — name them
+  yourself first and write them on the ticket with `jaira dod <id> --add`.
+- **Fix the cause, not the example.** A finding or a ticket arrives as one
+  example: "3 / 12" is not removed. A fix that adds "3 / 12" to a pattern is
+  found out next round by "3/12". Ask why the example fails, and change that —
+  read structured data instead of parsing its printed form, validate at the
+  one place every caller passes through, not in the caller that was reported.
+- **Test the class.** One parametrised test over the input classes, the
+  reported example among them — not one test for the example.
+- **Search for the siblings.** The same mistake lives wherever the same code
+  was copied or the same pattern was used: other write paths, other commands,
+  other parsers of the same format. Grep for them and fix them in this change.
+  Siblings of this fault are within the plan's scope; a different problem you
+  find on the way is still a note.
+- **Check the four categories yourself before you move.** Concurrency (two
+  writers at once), error paths (a step failing halfway, an error dropped or
+  reported as success), unusual input (empty, huge, duplicated, another
+  encoding or locale), permissions (what it trusts from outside). Go through
+  each for the code you changed, and say in your outcome which you checked and
+  what you found. The testing lane and the bug hunt check exactly these; a
+  defect they find that you could have found yourself is a round lost.
+- **Close the small edges in the same round.** When the ticket comes back,
+  the notes that sent it carry blockers and often smaller edges of this change
+  beside them: a missing case of the class, a one-line guard, a test that
+  covers the example but not its neighbour. Close those too, now — a small
+  edge left as a note reaches the person, who sends the ticket back for it
+  anyway. A fault that was there before this change and lies outside its scope
+  stays a note.
+- **A give-back with decisions is the list.** A note `Given back from
+  <lane>: beheben:` carries what the person decided per review note, word for
+  word: fix exactly what stands under `beheben:`, its `dazu:` line (what
+  the person typed) included. What stands under
+  `angenommen:` was accepted as it is, and what stands under `Folge-Ticket:`
+  has a ticket of its own — leave both alone, small edges or not.
+
+## The third return from the same lane
+
+jaira counts the returns itself. `back` in this lane's payload
+(`jaira show <id> --for-lane in-progress --json`) is the last send-back as the
+move recorded it:
+
+- `from` — the lane the ticket came back from
+- `by` — `person` when a person sent it (from signoff, human or any lane no
+  agent works, from the board, or with `jaira move` typed at a terminal),
+  `lane` when a loop lane did. An agent whose harness runs its commands in a
+  terminal is recorded as a person too, so on such a harness `count` never
+  stops a loop: count the returns from the lane's own notes yourself
+- `count` — how many returns in a row came from that same lane; a person's
+  return, or one from another lane, starts it again at 1, so two loop lanes
+  that take turns sending it back never reach 3: count those yourself
+
+`by: person` is the person's word, not a loop: do what they asked, whatever
+the count. Their reason is in the newest `Given back from <lane>:` or
+`decision:` note.
+
+A teamlead that decides to let the loop go on sets `back-count` back to 0
+beside its `decision (teamlead <date>):` note, so a count below 3 is the
+answer and no stop.
+
+`by: lane` with `count` 3 or more means the same lane has sent it back three
+times or more: do not start another round. The decision goes on, with the
+third round's findings and whether the definition of done is wrong or the loop
+reads deeper every round without ending — to the teamlead first, a person only
+after it:
+
+- **Started with a parent session** (`--parent`, usually a teamlead's): leave
+  the ticket in this lane, set the question and send the same text to that
+  session. A lane worker a dispatcher started sets the question and stops, as
+  its role says; the dispatcher carries it up. It decides — a `decision (teamlead <date>):`
+  note — or takes it to a person and moves the ticket into `human` itself.
+
+  ```bash
+  jaira set <id> question="testing sent this back three times: <findings>. DoD wrong or loop without end? I would <...>"
+  ```
+
+- **No parent session, or it cannot be reached:** move the ticket to the human
+  lane with the question.
+
+  ```bash
+  jaira move <id> --to human --question "testing sent this back three times: <findings>. DoD wrong or loop without end? I would <...>"
+  ```
+
+A ticket from before jaira recorded this has an empty `from` and `count` 0:
+it counts as no return.
+
+A loop lane that declares `max-rounds` (the shipped critique, optimize and
+testing: 3) does not need you to count: jaira itself refuses its next
+send-back past the limit (`max_rounds`, exit 3), says the teamlead decides,
+or a person, and names the lane that person answers in. `rounds_left` in that lane's `--for-lane` payload says how many
+remain.
+
+In conversational mode you hand back commit lines instead of committing, so
+the bug hunt reads your work uncommitted; once that work is committed the
+hunt no longer covers HEAD and `bughunt` in `jaira show <id> --brief` reads
+`fail` until the next hunt.
+
 ## Progress notes
 
 Write a note with `jaira note <id> <text>`. You are writing to yourself, in a
@@ -74,3 +178,18 @@ When you are finished, report:
 Do not claim the definition of done is met unless you can point to the specific
 behaviour that now satisfies it — the `--proof` on each item is where that
 pointer goes.
+
+## Items only a person ticks
+
+A definition-of-done item that starts with `seen by a person:` is never yours
+to tick, however sure you are: a width table, a run on another platform or the
+text of a refusal is a stand-in, not what the person sees. Do the work around
+it — the code, the tests a machine can run — name in your outcome what the
+person should look at, and leave the item open. The person ticks it at
+acceptance.
+
+Where no planning step ran and the change alters what a terminal draws (the
+TUI, colours, widths, glyphs, a plugin's panel), behaves differently by
+operating system, shell or terminal, or needs a person at the keyboard, add
+such an item yourself before you start:
+`jaira dod <id> --add "seen by a person: <what to look at, where>"`.

@@ -6,6 +6,9 @@ export interface Ticket {
   done: boolean;
   // false: in the epic only because it follows, or is a child of, a member.
   direct: boolean;
+  // For a ticket that is not direct, the id of the member it is counted
+  // through: the line that would have to go to take it out.
+  via?: string;
   // Where it lies; a filed ticket (logbook, archive) is shown, never dragged.
   place: Place;
   goal?: string;

@@ -16,7 +16,7 @@ func olderTesting(t *testing.T, base *Lane) []byte {
 		t.Fatal(err)
 	}
 	if !shipped.Known(shippedKey(base), b) {
-		t.Fatal("the testing fixture is not in core/shipped/shipped.sha256; regenerate it: scripts/shipped-history.sh > core/shipped/shipped.sha256")
+		t.Fatal("the testing fixture is not in core/shipped/shipped.sha256; regenerate it: scripts/shipped-history.sh --write")
 	}
 	return b
 }
@@ -89,7 +89,7 @@ func TestEveryBuiltinLaneIsAShippedVersion(t *testing.T) {
 		}
 	}
 	if len(missing) > 0 {
-		t.Errorf("core/shipped/shipped.sha256 lacks the version of %d file(s) this build installs; run scripts/shipped-history.sh > core/shipped/shipped.sha256, or append:\n%s",
+		t.Errorf("core/shipped/shipped.sha256 lacks the version of %d file(s) this build installs; run scripts/shipped-history.sh --write, or append:\n%s",
 			len(missing), strings.Join(missing, "\n"))
 	}
 }
@@ -182,5 +182,34 @@ func TestRefreshShippedDryRunWritesNothing(t *testing.T) {
 	have, _ := os.ReadFile(p)
 	if string(have) != string(older) {
 		t.Error("a dry run wrote the lane file")
+	}
+}
+
+// A dry run writes no lane, so the agent note it previews has to come from
+// the lanes as the refresh would leave them: the stale testing lane on disk
+// owes test-verdict alone, the shipped one also hunt-verdict.
+func TestPreviewRefreshReadsTheRefreshedLanes(t *testing.T) {
+	root, p := boardWithTesting(t)
+	before, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rs, err := RefreshShipped(root, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	set, err := PreviewRefresh(root, rs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	l, ok := set.Get("testing")
+	if !ok {
+		t.Fatal("testing missing from the preview")
+	}
+	if want := builtinByID(t, "testing").OutputProduces; strings.Join(l.OutputProduces, ",") != strings.Join(want, ",") {
+		t.Errorf("preview testing produces %v, want the shipped %v", l.OutputProduces, want)
+	}
+	if after, _ := os.ReadFile(p); string(after) != string(before) {
+		t.Error("PreviewRefresh wrote the lane file")
 	}
 }

@@ -52,7 +52,8 @@ func sharedClone(t *testing.T) string {
 	return clone
 }
 
-// privateBoard is a board 'jaira init' made and nobody shared.
+// privateBoard is a board 'jaira init' made and nobody shared. Its entry is in
+// .git/info/exclude, so there is no .gitignore to commit.
 func privateBoard(t *testing.T) string {
 	t.Helper()
 	t.Setenv("JAIRA_HOME", filepath.Join(t.TempDir(), "home"))
@@ -63,15 +64,14 @@ func privateBoard(t *testing.T) string {
 	if out, err := runCLI(t, dir, "init"); err != nil {
 		t.Fatalf("jaira init: %v\n%s", err, out)
 	}
-	gitRun(t, dir, "add", ".gitignore")
-	gitRun(t, dir, "commit", "--quiet", "-m", "jaira board stays private")
 	return dir
 }
 
+// readIgnore is dir's .gitignore, "" where there is none.
 func readIgnore(t *testing.T, dir string) string {
 	t.Helper()
 	b, err := os.ReadFile(filepath.Join(dir, ".gitignore"))
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		t.Fatal(err)
 	}
 	return string(b)
@@ -177,9 +177,7 @@ func TestInitReportsTheShareStateItLeaves(t *testing.T) {
 		// A teammate's init in an older build committed the ignore line.
 		{"clone with a committed ignore line", func(t *testing.T) string {
 			dir := sharedClone(t)
-			if _, err := board.AddIgnore(dir); err != nil {
-				t.Fatal(err)
-			}
+			writeOldIgnoreLine(t, dir)
 			gitRun(t, dir, "config", "user.name", "ada")
 			gitRun(t, dir, "config", "user.email", "ada@example.test")
 			gitRun(t, dir, "commit", "--quiet", "-am", "an older init made it private")
@@ -213,5 +211,16 @@ func TestInitReportsTheShareStateItLeaves(t *testing.T) {
 				t.Errorf(".gitignore changed:\n before %q\n after  %q", before, after)
 			}
 		})
+	}
+}
+
+// writeOldIgnoreLine appends the entry an older jaira wrote into .gitignore.
+func writeOldIgnoreLine(t *testing.T, dir string) {
+	t.Helper()
+	path := filepath.Join(dir, ".gitignore")
+	b, _ := os.ReadFile(path)
+	b = append(b, "\n# jaira board — private to this machine. Run 'jaira share' to publish it.\n/.jaira/\n"...)
+	if err := os.WriteFile(path, b, 0o644); err != nil {
+		t.Fatal(err)
 	}
 }

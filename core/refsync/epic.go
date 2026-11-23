@@ -82,7 +82,6 @@ func (y *Syncer) rebaseEpic(r outbox.Result) outbox.Result {
 		pending: y.Box.PendingEpic,
 		queue:   y.Box.QueueEpic,
 		drop:    y.Box.DropEpic,
-		record:  y.RecordEpic,
 		readAt:  y.Repo.ReadEpicAt,
 		read:    y.Repo.ReadEpic,
 		write:   y.Repo.WriteEpic,

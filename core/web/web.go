@@ -41,6 +41,9 @@ type Ticket struct {
 	// Direct is false for a ticket that belongs to an epic only because it
 	// follows, or is a child of, one of its members.
 	Direct bool `json:"direct"`
+	// Via is, for a ticket that is not Direct, the id of the member it is
+	// counted through: the line that would have to go to take it out.
+	Via string `json:"via,omitzero"`
 	// Place is where the ticket lies: board, ref, logbook or archive. A
 	// filed ticket is shown, never dragged.
 	Place string `json:"place"`

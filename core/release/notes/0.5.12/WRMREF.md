@@ -1,0 +1,2 @@
+- Herdr App works like Herdr: inside it (HC_TERMINAL_ID set), spawn.sh, run-lane.sh and reap.sh open, find and close worker tabs through hc, as new tabs of your own space; run 'jaira roles install' to get the new scripts.
+- The cockpit's Accept, Give back, Explain and the workers list use Herdr App's tabs as they use Herdr's; run 'jaira roles install' for the new cockpit.

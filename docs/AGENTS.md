@@ -5,7 +5,9 @@ JSON can work the board — Claude Code, Codex, Aider, Cursor, a local model beh
 Ollama, or a shell script.
 
 The whole integration surface is: **run a command, read the JSON, branch on the
-exit code.** There is no SDK, no plugin API, and nothing to keep in sync.
+exit code.** There is no SDK and nothing to keep in sync. Extending jaira
+works the same way: a plugin is a program of its own that `jaira <id>` starts
+and that writes through the same commands — see [PLUGINS.md](PLUGINS.md).
 
 ## The loop
 
@@ -67,7 +69,9 @@ declares it as an output — so a review that skips it cannot leave the lane.
 the changed file under `.jaira/tickets/` next to your source changes and commit
 them together. A reviewer reading that commit sees the change and what it was
 for at once; split across two commits they get a diff whose ticket is still in
-the state the previous commit left it.
+the state the previous commit left it. On a board that has not been shared yet
+(`jaira init` keeps `.jaira/` out of git until `jaira share`) there is no ticket
+file to stage: commit the code alone, with the ticket handle in the subject.
 
 **A lane that changed no code commits nothing.** critique, testing and review
 leave a note and a lane change and no source change, and a commit carrying only
@@ -157,8 +161,9 @@ than trimmed down. Colors live once per board in `.jaira/tags`, one
 
 A milestone is the set of tickets that belong to one round of work, kept in
 `.jaira/milestones/<name>-<ID>.md`, one ticket id per line; the six characters
-after the last dash are the ID, which stays when the name changes. Read the list
-before starting one:
+after the last dash are the ID, which stays when the name changes. The file
+travels on `refs/jaira/milestones/<ID>` and never in a commit: do not `git add`
+it. Read the list before starting one:
 
 ```bash
 jaira milestone ls --json                # id, name, color, ticket count, goal, place on the roadmap

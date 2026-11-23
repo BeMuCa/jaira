@@ -22,6 +22,8 @@ import (
 	coreidentity "github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/link"
+	"github.com/BeMuCa/jaira/core/milestone"
+	"github.com/BeMuCa/jaira/core/people"
 	"github.com/BeMuCa/jaira/core/release"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
@@ -74,6 +76,16 @@ func minArgs(n int) cobra.PositionalArgs {
 	}
 }
 
+func maxArgs(n int) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if len(args) > n {
+			return fail(ExitUsage, "usage", "%s accepts at most %d argument(s), received %d\n\nUsage: %s",
+				cmd.Name(), n, len(args), cmd.UseLine())
+		}
+		return nil
+	}
+}
+
 func noArgs() cobra.PositionalArgs {
 	return func(cmd *cobra.Command, args []string) error {
 		if len(args) > 0 {
@@ -88,6 +100,9 @@ func noArgs() cobra.PositionalArgs {
 type globals struct {
 	jsonOut bool
 	dir     string
+	// dryRun is whether the running command was given --dry-run, whatever
+	// that command calls the variable behind it.
+	dryRun bool
 }
 
 var g globals
@@ -99,6 +114,9 @@ func Execute(version string) int {
 	// might need it.
 	release.Current = version
 	root := newRoot(version)
+	if code, ok := runPlugin(root, os.Args[1:]); ok {
+		return code
+	}
 	err := root.Execute()
 	// After the command, not during it: sending happens once, and it happens
 	// even when the command failed, because a ticket that was written is a
@@ -110,32 +128,42 @@ func Execute(version string) int {
 	return report(err)
 }
 
+// classify maps an error to its exit code and machine-readable reason.
+func classify(err error) (code int, reason string) {
+	var ce *codedError
+	if errors.As(err, &ce) {
+		return ce.code, ce.reason
+	}
+	var twin *milestone.TwinFilesError
+	switch {
+	case errors.As(err, &twin):
+		// One milestone in two files: a refusal that names both, and the
+		// person picks one.
+		return ExitValidation, "milestone_twin_files"
+	case errors.Is(err, ticket.ErrNotFound), errors.Is(err, ticket.ErrAmbiguous):
+		return ExitNotFound, "not_found"
+	case errors.Is(err, ticket.ErrOnRefOnly):
+		// A refusal, not a failure: the ticket is real and one command
+		// away, so it gets the gate's exit code rather than the
+		// unexpected-error one.
+		return ExitValidation, "on_ref_only"
+	case errors.Is(err, ticket.ErrStale):
+		// The same kind of refusal: nothing is wrong with the ticket, the
+		// copy here is behind, and 'jaira pull' brings it up.
+		return ExitValidation, "stale_file"
+	case errors.Is(err, ticket.ErrNoStore):
+		return ExitError, "no_store"
+	case errors.Is(err, ticket.ErrUnsafeYAML):
+		return ExitValidation, "unsafe_yaml"
+	}
+	return ExitError, "error"
+}
+
 // report renders an error in the requested format and maps it to an exit code.
 func report(err error) int {
 	var ce *codedError
-	code := ExitError
-	reason := "error"
-	if errors.As(err, &ce) {
-		code, reason = ce.code, ce.reason
-	} else {
-		switch {
-		case errors.Is(err, ticket.ErrNotFound), errors.Is(err, ticket.ErrAmbiguous):
-			code, reason = ExitNotFound, "not_found"
-		case errors.Is(err, ticket.ErrOnRefOnly):
-			// A refusal, not a failure: the ticket is real and one command
-			// away, so it gets the gate's exit code rather than the
-			// unexpected-error one.
-			code, reason = ExitValidation, "on_ref_only"
-		case errors.Is(err, ticket.ErrStale):
-			// The same kind of refusal: nothing is wrong with the ticket, the
-			// copy here is behind, and 'jaira pull' brings it up.
-			code, reason = ExitValidation, "stale_file"
-		case errors.Is(err, ticket.ErrNoStore):
-			code, reason = ExitError, "no_store"
-		case errors.Is(err, ticket.ErrUnsafeYAML):
-			code, reason = ExitValidation, "unsafe_yaml"
-		}
-	}
+	errors.As(err, &ce)
+	code, reason := classify(err)
 
 	if g.jsonOut {
 		// Structured errors on stderr so an agent never has to regex a sentence
@@ -189,6 +217,13 @@ Exit codes:
 			return runHome(cmd)
 		},
 	}
+	// A command run with --dry-run promised to write nothing, so the automatic
+	// lane refresh in openStore holds off for it (nudgeIfStale).
+	root.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
+		f := cmd.Flags().Lookup("dry-run")
+		g.dryRun = f != nil && f.Value.String() == "true"
+		peopleCache = nil
+	}
 	root.PersistentFlags().BoolVar(&g.jsonOut, "json", false, "emit JSON on stdout and structured errors on stderr")
 	root.PersistentFlags().StringVarP(&g.dir, "dir", "C", ".", "run as if jaira was started in this directory")
 
@@ -229,6 +264,7 @@ Exit codes:
 		newClaimCmd(),
 		newProjectsCmd(),
 		newWhoamiCmd(),
+		newPeopleCmd(),
 		newShareCmd(),
 		newUpdateCmd(),
 		newSelfCmd(),
@@ -238,6 +274,7 @@ Exit codes:
 		newReleaseCmd(),
 		newSnapshotCmd(),
 		newWebCmd(),
+		newPRCmd(),
 	)
 	// Usage errors must exit 2 rather than 1.
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error {
@@ -326,6 +363,7 @@ func loadBoardEnv(s *ticket.Store, board string) (gate.Env, []*ticket.Ticket, er
 	// filed.
 	ix := link.Build(s, lanes, all)
 	return gate.Env{
+		People:    peopleList(),
 		Lanes:     lanes,
 		All:       all,
 		Satisfied: ix.Satisfied,
@@ -338,6 +376,19 @@ func loadBoardEnv(s *ticket.Store, board string) (gate.Env, []*ticket.Ticket, er
 				return nil
 			}
 			return shas
+		},
+		// Asked only once DeriveCommits found nothing, at the same lane.
+		CommitsElsewhere: func(t *ticket.Ticket) []string {
+			branches, _ := repo.BranchesNamingTicket(t.ID)
+			return branches
+		},
+		// Asks the forge only for a ticket whose blocked-by names a pull
+		// request, once per number and process, and not at all while the
+		// shared cache holds a fresh answer.
+		PR: prWaiter(s),
+		// Asks git only for a move into a lane a person releases.
+		Hunt: func(t *ticket.Ticket) gate.HuntReport {
+			return gate.HuntReport(repo.HuntCheck(t))
 		},
 	}, all, nil
 }
@@ -354,6 +405,23 @@ func emit(w io.Writer, v any) error {
 func identity() string {
 	return coreidentity.Current(g.dir)
 }
+
+// peopleList is the board's people list, read once per command: a listing
+// asks it for every row it prints. newRoot forgets it, so a process running
+// several commands — the tests — reads the ref each one finds.
+func peopleList() *people.List {
+	if peopleCache == nil {
+		peopleCache = coreidentity.People(g.dir)
+	}
+	return peopleCache
+}
+
+var peopleCache *people.List
+
+// shownName is the name a ticket's person field is shown under: the jaira name
+// of the person it means, so a ticket written under an older name is shown
+// under the one they go by now without its file being rewritten.
+func shownName(name string) string { return peopleList().Canonical(name) }
 
 // identityAliases are the other names that mean the same person, so the
 // ownership rail does not refuse a move on your own ticket because the assignee

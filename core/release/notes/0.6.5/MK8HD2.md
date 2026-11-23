@@ -1,0 +1,1 @@
+- The cockpit's Acceptance pane now reads in blocks: History, Release note and Review notes each open with a coloured title and a rule, and Goal, Done and Why each start with their own coloured bar - look for the colour instead of reading the text.

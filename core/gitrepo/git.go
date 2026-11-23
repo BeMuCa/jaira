@@ -16,6 +16,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // Repo is a git working tree.
@@ -75,6 +77,10 @@ func (r *Repo) Commits(shas []string) ([]Commit, error) {
 		if strings.TrimSpace(sha) == "" {
 			continue
 		}
+		if !IsSHA(sha) {
+			out = append(out, Commit{SHA: sha, Short: shortSHA(sha)})
+			continue
+		}
 		line, err := r.run("show", "-s", "--format=%H%x1f%h%x1f%s%x1f%an%x1f%aI", sha)
 		if err != nil {
 			out = append(out, Commit{SHA: sha, Short: shortSHA(sha)})
@@ -90,6 +96,24 @@ func (r *Repo) Commits(shas []string) ([]Commit, error) {
 	return out, nil
 }
 
+// codeOnly is the pathspec that keeps ticket files out of Diff and WorktreeDiff:
+// the whole repository, minus every place a ticket file lives — on the board,
+// filed in the logbook, rejected into the archive. A filed ticket carries the
+// same outcome and notes as one on the board, and a commit that filed it can
+// be in a ticket's commit list by the file's history alone. ",top" anchors
+// each exclusion at the repository root so it holds whatever directory Dir is.
+var codeOnly = []string{
+	":/",
+	":(exclude,top).jaira/tickets",
+	":(exclude,top).jaira/logbook",
+	":(exclude,top).jaira/archive",
+}
+
+// pathspec returns args, then "--", then codeOnly.
+func pathspec(args ...string) []string {
+	return append(append(args, "--"), codeOnly...)
+}
+
 // Diff returns the combined patch for a set of commits, scoped to those commits
 // rather than to the working tree — a reviewer is judging what the ticket
 // shipped, not whatever happens to be uncommitted right now.
@@ -100,6 +124,16 @@ func (r *Repo) Commits(shas []string) ([]Commit, error) {
 // otherwise report them as diffs it had shown — the same fraction-reported-whole
 // failure this package was fixed for. There is no error return because there is
 // no failure: an unshowable sha is an outcome, not a broken repository.
+//
+// Ticket files (codeOnly) are left out for the reason WorktreeDiff leaves them
+// out, and one
+// more: the ticket file rides in the same commits as the code, so its patch
+// carries the implementer's outcome and notes — and a lane that declares it
+// does not take them (review reads goal, definition-of-done and diff only, so
+// it judges the code without the author's account of it) would read them in
+// the diff all the same. A commit that touched nothing but its ticket file
+// therefore leaves no text here at all — it carried no code to judge — while
+// it is still counted in the commits the caller names.
 func (r *Repo) Diff(shas []string) (string, []string) {
 	var b strings.Builder
 	var unavailable []string
@@ -107,10 +141,19 @@ func (r *Repo) Diff(shas []string) (string, []string) {
 		if strings.TrimSpace(sha) == "" {
 			continue
 		}
-		out, err := r.run("show", "--patch", "--stat", "--format=commit %H%n%s%n", sha)
+		if !IsSHA(sha) {
+			b.WriteString(fmt.Sprintf("commit %s\n  (not a commit id)\n\n", sha))
+			unavailable = append(unavailable, sha)
+			continue
+		}
+		out, err := r.run(pathspec("show", "--patch", "--stat", "--format=commit %H%n%s%n", sha)...)
 		if err != nil {
 			b.WriteString(fmt.Sprintf("commit %s\n  (not available locally)\n\n", sha))
 			unavailable = append(unavailable, sha)
+			continue
+		}
+		if out == "" {
+			// Only the ticket file changed; see above.
 			continue
 		}
 		b.WriteString(out)
@@ -126,6 +169,9 @@ func (r *Repo) Stat(shas []string) (string, error) {
 	}
 	var b strings.Builder
 	for _, sha := range shas {
+		if !IsSHA(sha) {
+			continue
+		}
 		out, err := r.run("show", "--stat=200", "--format=", sha)
 		if err != nil {
 			continue
@@ -150,6 +196,22 @@ func (r *Repo) Branch() string {
 		return ""
 	}
 	return strings.TrimSpace(out)
+}
+
+// IsSHA reports whether s is a commit id: 4 to 64 hex digits. The shas these
+// functions take come from a ticket's hand-editable commits: field, and a git
+// argument is an option when it starts with a dash — "--output=<path>" in that
+// field would make 'git show' write over a file. Only an id is handed to git.
+func IsSHA(s string) bool {
+	if len(s) < 4 || len(s) > 64 {
+		return false
+	}
+	for _, c := range s {
+		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F') {
+			return false
+		}
+	}
+	return true
 }
 
 func shortSHA(s string) string {
@@ -208,9 +270,8 @@ func (r *Repo) runTolerating(code int, args ...string) (string, error) {
 // already carries as goal, definition-of-done and notes. ",top" anchors the
 // exclusion at the repository root so it holds whatever directory Dir is.
 func (r *Repo) WorktreeDiff() (string, error) {
-	const notTickets = ":(exclude,top).jaira/tickets"
 	var b strings.Builder
-	tracked, err := r.run("-c", "core.quotePath=false", "diff", "HEAD", "--patch", "--stat", "--", ":/", notTickets)
+	tracked, err := r.run(pathspec("-c", "core.quotePath=false", "diff", "HEAD", "--patch", "--stat")...)
 	if err != nil {
 		return "", err
 	}
@@ -226,7 +287,7 @@ func (r *Repo) WorktreeDiff() (string, error) {
 	// the quoting off on the way in and settles paths with spaces in them at
 	// the same time; core.quotePath=false turns it off on the way out, so the
 	// patch a reviewer reads names the file rather than its escape sequence.
-	others, err := r.run("ls-files", "--others", "--exclude-standard", "-z", "--", ":/", notTickets)
+	others, err := r.run(pathspec("ls-files", "--others", "--exclude-standard", "-z")...)
 	if err != nil {
 		return "", err
 	}
@@ -256,4 +317,148 @@ func (r *Repo) WorktreeDiff() (string, error) {
 		b.WriteString(out)
 	}
 	return b.String(), nil
+}
+
+// HuntState is what a bug hunt at one commit says about the code now.
+type HuntState int
+
+const (
+	// HuntCovers: nothing the ticket committed since touched what it read,
+	// and nothing it read is changed and not committed.
+	HuntCovers HuntState = iota
+	// HuntStale: a commit of the ticket since then touched what it read, or
+	// this checkout does not descend from the hunt's commit.
+	HuntStale
+	// HuntUnknown: no commit since, but a file it read is changed and not
+	// committed. Whether the hunt saw that change git cannot tell — in
+	// conversational mode the worker commits after the lanes, and the hunt
+	// read the change as it was — so this is neither covered nor stale.
+	HuntUnknown
+)
+
+// HuntCoverage compares commits only, never clocks: a hunt is stale when a
+// commit since then that names the ticket and is no merge touched the paths
+// it read. Every commit of a ticket names it (the house rule its commit list
+// is built from), so master merged into the branch — work other people
+// reviewed — does not count, on the branch or after it was merged; what a
+// merge's conflict resolution wrote does not either. The limit of that rule:
+// a commit of this ticket that does not name it is not seen. A commit that is
+// no ancestor of HEAD — the hunt ran on a branch this checkout does not have
+// — reads as stale. Board data — everything under .jaira/ but the lane
+// prompts — never counts: a tag, a milestone or a pulled ticket changes no
+// code. Paths are relative to the repository root; none, or one that is
+// neither in commit nor on disk (a file list split at a space inside a
+// name), means all code (codeOnly).
+func (r *Repo) HuntCoverage(commit, ticketID string, paths []string) (HuntState, error) {
+	if !ticket.ValidID(ticketID) {
+		return HuntStale, fmt.Errorf("gitrepo: %q is no ticket id", ticketID)
+	}
+	// Without git or outside a repository git cannot answer at all: an
+	// error, which a caller reads as unknown — never as a stale hunt.
+	if _, err := r.run("rev-parse", "--verify", "--quiet", "HEAD^{commit}"); err != nil {
+		return HuntUnknown, fmt.Errorf("gitrepo: cannot read HEAD: %w", err)
+	}
+	// A commit this repository does not have — rebased away and
+	// force-pushed, seen from a fresh clone — is as far from HEAD as one
+	// that is no ancestor: the hunt read code this checkout does not hold.
+	if _, err := r.run("rev-parse", "--verify", "--quiet", commit+"^{commit}"); err != nil {
+		return HuntStale, nil
+	}
+	if _, err := r.run("merge-base", "--is-ancestor", commit, "HEAD"); err != nil {
+		return HuntStale, nil
+	}
+	specs, err := r.huntedSpecs(commit, paths)
+	if err != nil {
+		return HuntStale, err
+	}
+	own, err := r.run(append([]string{"-c", "core.quotePath=false", "log", "--no-merges", "--format=", "--name-only", "-z", "--extended-regexp", "--regexp-ignore-case", "--grep=" + namesTicket(ticketID), commit + "..HEAD", "--"}, specs...)...)
+	if err != nil {
+		return HuntStale, err
+	}
+	if r.anyCode(own) {
+		return HuntStale, nil
+	}
+	changed, err := r.run(append([]string{"-c", "core.quotePath=false", "diff", "--name-only", "-z", "HEAD", "--"}, specs...)...)
+	if err != nil {
+		return HuntStale, err
+	}
+	others, err := r.run(append([]string{"-c", "core.quotePath=false", "ls-files", "--others", "--exclude-standard", "--full-name", "-z", "--"}, specs...)...)
+	if err != nil {
+		return HuntStale, err
+	}
+	if r.anyCode(changed) || r.anyCode(others) {
+		return HuntUnknown, nil
+	}
+	return HuntCovers, nil
+}
+
+// anyCode reports a path in git's NUL-separated list that is no board data.
+// git names paths from the repository root, and a board may live in a
+// subdirectory of it (init and share support that), so its .jaira/ is
+// matched below the board's own prefix; a path outside the board's
+// directory is code.
+func (r *Repo) anyCode(list string) bool {
+	prefix, _ := r.run("rev-parse", "--show-prefix")
+	prefix = strings.TrimSpace(prefix)
+	for _, p := range strings.Split(list, "\x00") {
+		if p = strings.TrimSpace(p); p == "" {
+			continue
+		}
+		rel, inBoard := strings.CutPrefix(p, prefix)
+		if !inBoard || !isBoardData(rel) {
+			return true
+		}
+	}
+	return false
+}
+
+// isBoardData reports a path under .jaira/ that is no lane prompt: tickets,
+// tags, milestones, settings — what the board writes, not code. Lane prompts
+// are today's board's in .jaira/lanes/ and a named board's in
+// .jaira/boards/<name>/lanes/ (core/lane boardLanesDir).
+func isBoardData(p string) bool {
+	rest, ok := strings.CutPrefix(p, ".jaira/")
+	if !ok {
+		return false
+	}
+	if strings.HasPrefix(rest, "lanes/") {
+		return false
+	}
+	if board, ok := strings.CutPrefix(rest, "boards/"); ok {
+		if _, file, ok := strings.Cut(board, "/"); ok && strings.HasPrefix(file, "lanes/") {
+			return false
+		}
+	}
+	return true
+}
+
+// huntedSpecs turns a hunt's file list into pathspecs: each one literal, or
+// all code when the list is empty or names a path that is neither in commit
+// nor on disk — a list a reader cannot trust is not narrowed by.
+func (r *Repo) huntedSpecs(commit string, paths []string) ([]string, error) {
+	if len(paths) == 0 {
+		return codeOnly, nil
+	}
+	root, err := r.Root()
+	if err != nil {
+		return nil, err
+	}
+	listed, err := r.run(append([]string{"-c", "core.quotePath=false", "ls-tree", "-r", "--name-only", "--full-tree", "-z", commit, "--"}, paths...)...)
+	if err != nil {
+		return nil, err
+	}
+	known := map[string]bool{}
+	for _, p := range strings.Split(listed, "\x00") {
+		known[p] = true
+	}
+	specs := make([]string, 0, len(paths))
+	for _, p := range paths {
+		if !known[p] {
+			if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(p))); err != nil {
+				return codeOnly, nil
+			}
+		}
+		specs = append(specs, ":(top,literal)"+p)
+	}
+	return specs, nil
 }

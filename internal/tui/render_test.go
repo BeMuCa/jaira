@@ -9,13 +9,18 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // newTestStore builds a store with a handful of tickets spread across lanes.
 func newTestStore(t *testing.T) *ticket.Store {
 	t.Helper()
-	dir := t.TempDir()
+	// Resolved, as project.Board resolves the open board's root: on macOS
+	// t.TempDir() is under /var, a symlink to /private/var, and a store opened
+	// through the symlink is a different spelling from the projectRoot it is
+	// compared against.
+	dir := project.Canonical(t.TempDir())
 	// Redirect BOTH the config and state locations before anything touches the
 	// filesystem, so a test run never writes into the real user's home.
 	t.Setenv("JAIRA_HOME", filepath.Join(dir, "home"))

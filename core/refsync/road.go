@@ -82,7 +82,6 @@ func (y *Syncer) rebaseRoad(r outbox.Result) outbox.Result {
 		pending: y.Box.PendingRoad,
 		queue:   y.Box.QueueRoad,
 		drop:    y.Box.DropRoad,
-		record:  y.RecordRoad,
 		readAt:  y.Repo.ReadRoadAt,
 		read:    y.Repo.ReadRoad,
 		write:   y.Repo.WriteRoad,

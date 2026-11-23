@@ -1,0 +1,2 @@
+- A pull request the cockpit starts after Accept and a worker it starts on Give back now report to the session the cockpit runs in: their questions and final report arrive there as messages instead of waiting unseen in their own tab; run `jaira roles install` again to get it.
+- A session without a messaging socket still starts both with no parent, and they ask in their own tab as before.

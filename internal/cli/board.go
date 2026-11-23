@@ -3,8 +3,6 @@ package cli
 import (
 	"github.com/spf13/cobra"
 
-	tea "charm.land/bubbletea/v2"
-
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/BeMuCa/jaira/internal/tui"
@@ -32,8 +30,7 @@ func newBoardCmd() *cobra.Command {
 			// Board switches happen inside the program (Model.switchBoard):
 			// restarting the process per switch dropped the alternate screen
 			// for a frame, flashing the terminal through on every switch.
-			_, err = tea.NewProgram(m).Run()
-			return err
+			return runBoard(m)
 		},
 	}
 }

@@ -30,11 +30,13 @@ package settings
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/BeMuCa/jaira/core/board"
 	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/refsync"
 	"github.com/BeMuCa/jaira/core/snapshot"
@@ -120,6 +122,17 @@ type Settings struct {
 	// costs is the team's choice. Read it through ChatModelFor.
 	ChatModel string `json:"chat-model,omitempty"`
 
+	// Language is the language the cockpit shows a ticket's review notes in,
+	// in the Verdict and Give back panes: a cheap model rewrites them short
+	// and plain in it, for this person only. The ticket keeps its own words.
+	// A language name as a person writes it (Русский, Deutsch, English); it
+	// goes to the model as it stands. Empty means the notes as the ticket has
+	// them, and no model is asked. It lives here and never on the board,
+	// because two people on one board read different languages. A value that
+	// is no string is read as none rather than failing the whole file: a
+	// typo here must not cost the remote and the hook beside it.
+	Language Language `json:"language,omitempty"`
+
 	// Python is the command a role runs its Python scripts with — the
 	// acceptance page, the logbook summary. A command, not a path, so
 	// "uv run python" works as well as "py -3": on Windows python3 is often
@@ -148,6 +161,23 @@ func (s Settings) PythonCommand() (cmd, source string) {
 // ChatModelChoices are the values the settings screen steps through, the
 // empty account default first. Anything else is written by hand.
 var ChatModelChoices = []string{"", "sonnet", "haiku", "opus"}
+
+// Language is the language setting: a string, and anything else read as "".
+type Language string
+
+// UnmarshalJSON takes a JSON string and reads every other value as none.
+func (l *Language) UnmarshalJSON(b []byte) error {
+	var v string
+	if json.Unmarshal(b, &v) != nil {
+		v = ""
+	}
+	*l = Language(strings.TrimSpace(v))
+	return nil
+}
+
+// LanguageChoices are the values the settings screen steps through, none
+// first. Anything else is written by hand.
+var LanguageChoices = []string{"", "Deutsch", "English", "Русский"}
 
 // chatModelFile is the board's own chat model under .jaira: one line, the
 // model, shared with everybody who works the board. Its own file, like
@@ -180,14 +210,13 @@ func boardLine(path string) string {
 	if err != nil {
 		return ""
 	}
-	for _, line := range strings.Split(string(b), "\n") {
-		line = strings.TrimSpace(line)
-		if line != "" && !strings.HasPrefix(line, "#") {
-			return line
-		}
-	}
-	return ""
+	return firstLine(string(b))
 }
+
+// firstLine is the first line of a board file's content that is neither
+// blank nor a comment, trimmed, a byte order mark in front of it dropped —
+// the same reading every one-line board file gets as .jaira/pr does.
+func firstLine(content string) string { return board.PRWordIn(content) }
 
 // SetBoardChatModel writes the board's chat model; "" removes the file, so
 // the machine's fallback applies again.
@@ -223,10 +252,17 @@ func (s Settings) ChatModelFor(root string) (name, source string) {
 // letters, digits and . _ - [ ] is treated as unset rather than carried into
 // a shell.
 func modelName(v string) string {
+	return word(v, "._-[]")
+}
+
+// word returns v trimmed when it holds nothing but ASCII letters, digits and
+// the runes in extra, and "" otherwise — for a board value that ends up on a
+// command line.
+func word(v, extra string) string {
 	v = strings.TrimSpace(v)
 	for _, r := range v {
 		ok := r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' ||
-			strings.ContainsRune("._-[]", r)
+			strings.ContainsRune(extra, r)
 		if !ok {
 			return ""
 		}
@@ -264,6 +300,136 @@ func ReleaseFor(root string) (owner, source string) {
 		return ReleaseTeamlead, "from .jaira/release, shared with the board"
 	}
 	return ReleaseWorker, "the default"
+}
+
+// The three values of the board's pr file. They live in core/board, which
+// also writes them into the agent note; these are the same constants.
+const (
+	PRPerson = board.PRPerson
+	PRAgent  = board.PRAgent
+	PRNone   = board.PRNone
+)
+
+// prFile is the board's answer to who opens a pull request: "person" when an
+// agent pushes the branch and hands the create line back, "agent" when an
+// agent may open it itself once every ticket on the branch is in done, ask
+// for a review and answer one round of comments. A board file like
+// releaseFile and for the same reason: whether a project lets agents open
+// pull requests is the project's, not one machine's and not one clone's.
+const prFile = board.PRFileName
+
+// prReviewerFile names the reviewer an agent asks for when it opens a pull
+// request under PRAgent — "copilot", or a login.
+const prReviewerFile = "pr-reviewer"
+
+// BoardPRPath is where the board at root says who opens a pull request.
+func BoardPRPath(root string) string {
+	return filepath.Join(root, ticket.DirName, prFile)
+}
+
+// BoardPRReviewerPath is where the board at root names its reviewer.
+func BoardPRReviewerPath(root string) string {
+	return filepath.Join(root, ticket.DirName, prReviewerFile)
+}
+
+// PRFor returns PRAgent or PRNone when the board at root names it, and
+// PRPerson otherwise, with where it came from in words a person can read.
+// Person is the default because it is what ran before there was a choice, and
+// because a typo must never be what lets an agent open a pull request or push
+// to the default branch.
+func PRFor(root string) (who, source string) {
+	if who = board.PRModeFor(root); who != PRPerson {
+		return who, "from .jaira/pr, shared with the board"
+	}
+	// A file that is there but reads as person must not look like no file at
+	// all: someone who wrote "none" with a typo has to see why it did not take.
+	if root == "" {
+		return PRPerson, "the default"
+	}
+	b, err := os.ReadFile(BoardPRPath(root))
+	if err != nil {
+		return PRPerson, "the default"
+	}
+	switch w := board.PRWordIn(string(b)); w {
+	case "":
+		return PRPerson, "the default — .jaira/pr is there but says nothing"
+	case PRPerson:
+		return PRPerson, "from .jaira/pr, shared with the board"
+	default:
+		return PRPerson, fmt.Sprintf("the default — .jaira/pr says %q, which is neither agent nor none", w)
+	}
+}
+
+// PRIn reads the content of a .jaira/pr file — one taken from a commit
+// rather than from disk — the way PRFor reads the file: PRAgent or PRNone
+// only when it says exactly that, PRPerson for anything else, missing included.
+func PRIn(content string) string { return board.PRModeIn(content) }
+
+// PRReviewerFor returns the reviewer the board at root names, or "" when it
+// names none or names something that is not a login. The role passes it to
+// gh and glab on a command line, so anything but letters, digits and
+// . _ - [ ] / @ is treated as unset rather than carried into a shell.
+func PRReviewerFor(root string) string {
+	if root == "" {
+		return ""
+	}
+	return word(boardLine(BoardPRReviewerPath(root)), "._-[]/@")
+}
+
+// The two values of the board's pr-when file: the lane every ticket on a
+// branch must have reached before an agent opens its pull request.
+const (
+	PRWhenDone    = "done"
+	PRWhenSignoff = "signoff"
+)
+
+// prWhenFile says when an agent opens a pull request under PRAgent. "done"
+// for a project that reviews before it accepts — the person's acceptance is
+// the go-ahead, the pull request comes after. "signoff" for a project whose
+// review happens on the pull request itself: it opens while the person has
+// yet to accept, and done waits until its review round is finished.
+const prWhenFile = "pr-when"
+
+// PRReviewerIn reads the content of a .jaira/pr-reviewer file taken from a
+// commit the way PRReviewerFor reads the file on disk.
+func PRReviewerIn(content string) string {
+	return word(firstLine(content), "._-[]/@")
+}
+
+// BoardLandPath is where the board at root says whether an agent may merge
+// a pull request whose tickets are all in done: the one line "agent" lets
+// it, anything else — missing included — leaves merging to a person.
+func BoardLandPath(root string) string {
+	return filepath.Join(root, ticket.DirName, "land")
+}
+
+// LandIn reads the content of a .jaira/land file taken from a commit: true
+// only when it says exactly agent, so a typo never lets an agent merge.
+func LandIn(content string) bool { return board.PRWordIn(content) == PRAgent }
+
+// BoardPRWhenPath is where the board at root says when a pull request opens.
+func BoardPRWhenPath(root string) string {
+	return filepath.Join(root, ticket.DirName, prWhenFile)
+}
+
+// PRWhenFor returns PRWhenSignoff when the board at root names it, and
+// PRWhenDone otherwise, with where it came from. Done is the default because
+// it is what ran before there was a choice, and because a typo must never be
+// what opens a pull request on work nobody has accepted.
+func PRWhenFor(root string) (when, source string) {
+	if root != "" && boardLine(BoardPRWhenPath(root)) == PRWhenSignoff {
+		return PRWhenSignoff, "from .jaira/pr-when, shared with the board"
+	}
+	return PRWhenDone, "the default"
+}
+
+// PRWhenIn reads the content of a .jaira/pr-when file taken from a commit
+// the way PRWhenFor reads the file on disk.
+func PRWhenIn(content string) string {
+	if firstLine(content) == PRWhenSignoff {
+		return PRWhenSignoff
+	}
+	return PRWhenDone
 }
 
 // The two values of Dispatch.
@@ -324,7 +490,88 @@ func Load() Settings {
 	return s
 }
 
-// Save writes the settings, creating ~/.jaira if it is not there yet.
+// Update changes the settings file with change and returns what it now holds.
+// It is the write path for a person's choice made on a screen: it reads the
+// file again right before writing, so nothing set meanwhile is written back
+// from an older copy; it refuses to write over a file it cannot read whole —
+// Load's defaults written back would wipe the remote, the hook and
+// everything else — and says where the file is; and keys this build does not
+// know, written by a newer jaira or by hand, stay in the file as they were.
+// Two writers - two settings screens open at once - take turns under the lock
+// file the ticket store's own locks are made of, and the file is replaced
+// whole (ticket.WriteAtomic), so neither ever reads it half written.
+func Update(change func(*Settings)) (Settings, error) {
+	path := Path()
+	if path == "" {
+		return Settings{}, nil
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return Settings{}, err
+	}
+	unlock, err := ticket.LockFile(path + ".lock")
+	if err != nil {
+		return Settings{}, err
+	}
+	defer unlock()
+	raw := map[string]json.RawMessage{}
+	var s Settings
+	b, err := os.ReadFile(path)
+	switch {
+	case os.IsNotExist(err):
+	case err != nil:
+		return Settings{}, err
+	case strings.TrimSpace(string(b)) != "":
+		err := json.Unmarshal(b, &raw)
+		if err == nil {
+			err = json.Unmarshal(b, &s)
+		}
+		if err != nil {
+			return Settings{}, fmt.Errorf("%s does not parse (%v): fix it by hand, nothing was written", path, err)
+		}
+	}
+	before, err := known(s)
+	if err != nil {
+		return Settings{}, err
+	}
+	change(&s)
+	after, err := known(s)
+	if err != nil {
+		return Settings{}, err
+	}
+	// The fields this build knows are written as the struct now has them —
+	// one emptied by change is gone, as omitempty leaves it out; the rest of
+	// the file is kept. encoding/json read them whatever their case, so a
+	// hand-written "Language" goes with "language".
+	for k := range raw {
+		for b := range before {
+			if strings.EqualFold(k, b) {
+				delete(raw, k)
+			}
+		}
+	}
+	for k, v := range after {
+		raw[k] = v
+	}
+	out, err := json.MarshalIndent(raw, "", "  ")
+	if err != nil {
+		return Settings{}, err
+	}
+	return s, ticket.WriteAtomic(path, append(out, '\n'))
+}
+
+// known is s as the keys and values its JSON form carries.
+func known(s Settings) (map[string]json.RawMessage, error) {
+	b, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+	m := map[string]json.RawMessage{}
+	return m, json.Unmarshal(b, &m)
+}
+
+// Save writes the settings whole, creating ~/.jaira if it is not there yet.
+// A choice made on a screen goes through Update instead, which keeps what
+// this struct does not know and never writes over a file it cannot read.
 func Save(s Settings) error {
 	path := Path()
 	if path == "" {
@@ -337,7 +584,7 @@ func Save(s Settings) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(b, '\n'), 0o644)
+	return ticket.WriteAtomic(path, append(b, '\n'))
 }
 
 // RemoteFor returns the remote this board's ticket refs travel on.

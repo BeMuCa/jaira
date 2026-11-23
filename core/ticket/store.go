@@ -10,9 +10,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -113,6 +115,15 @@ type Store struct {
 	// cache, when EnableCache was called, remembers each ticket file's decoded
 	// header between listings. A pointer, so a copied Store does not copy a mutex.
 	cache *headerCache
+
+	// rejected holds what the last List left out because it carries a
+	// rejection. A pointer, so a copied Store does not copy a mutex.
+	rejected *rejectedSet
+}
+
+type rejectedSet struct {
+	mu sync.Mutex
+	ts []*Ticket
 }
 
 // TicketSource hands over tickets that exist for this board without a file
@@ -360,13 +371,6 @@ func (s *Store) archiveTarget(path string) (src, dst string, err error) {
 // the same way. Whether the caller may reject at all is decided above this
 // line, as it is for delete.
 func (s *Store) Reject(id, kind, why, duplicateOf string, now time.Time) (string, error) {
-	// One line, however it was typed: the archive listing prints the reason
-	// indented under its file, and a second line would read as an entry of
-	// its own.
-	why = strings.Join(strings.Fields(why), " ")
-	if duplicateOf != "" {
-		kind = RejectDuplicate
-	}
 	// Archive refuses a name the archive already holds, and by then the
 	// rejection would be written onto a ticket still on the board. Asked
 	// first, the refusal leaves the ticket as it was.
@@ -378,38 +382,57 @@ func (s *Store) Reject(id, kind, why, duplicateOf string, now time.Time) (string
 		return "", err
 	}
 	t, err := s.Mutate(id, func(t *Ticket) error {
-		if duplicateOf == t.ID {
-			return fmt.Errorf("%s cannot be a duplicate of itself", Handle(t.ID))
-		}
-		d := t.Doc()
-		for _, kv := range [][2]string{
-			{FieldRejectedKind, kind},
-			{FieldRejectedWhy, why},
-			{FieldRejectedBy, s.Actor},
-			{FieldRejectedAt, now.UTC().Format(time.RFC3339)},
-		} {
-			if err := d.SetScalar(kv[0], kv[1]); err != nil {
-				return err
-			}
-		}
-		if duplicateOf == "" {
-			return nil
-		}
-		if err := d.SetScalar(FieldRejectedDuplicateOf, duplicateOf); err != nil {
-			return err
-		}
-		if slices.Contains(t.Related, duplicateOf) {
-			return nil
-		}
-		if err := d.SetScalar(FieldRejectedLinked, "true"); err != nil {
-			return err
-		}
-		return d.SetList(FieldRelated, append(slices.Clone(t.Related), duplicateOf))
+		return StampRejection(t, kind, why, s.Actor, duplicateOf, now)
 	})
 	if err != nil && !errors.Is(err, ErrNotRecorded) {
 		return "", err
 	}
 	return s.Archive(t.ID)
+}
+
+// StampRejection writes the rejection fields onto t's document: kind, the
+// one-line reason, who and when, and for a duplicate the original, which it
+// also relates t to — marking FieldRejectedLinked when that link is new, so
+// restore takes off only what the rejection put there.
+//
+// It is the one place a rejection is written, whether the ticket is a file
+// here (Store.Reject) or lives only on its ref (refsync.Syncer.Reject): the two
+// must leave the same fields, or 'jaira show' tells two stories about one no.
+func StampRejection(t *Ticket, kind, why, by, duplicateOf string, now time.Time) error {
+	// One line, however it was typed: the archive listing prints the reason
+	// indented under its file, and a second line would read as an entry of
+	// its own.
+	why = strings.Join(strings.Fields(why), " ")
+	if duplicateOf != "" {
+		kind = RejectDuplicate
+	}
+	if duplicateOf == t.ID {
+		return fmt.Errorf("%s cannot be a duplicate of itself", Handle(t.ID))
+	}
+	d := t.Doc()
+	for _, kv := range [][2]string{
+		{FieldRejectedKind, kind},
+		{FieldRejectedWhy, why},
+		{FieldRejectedBy, by},
+		{FieldRejectedAt, now.UTC().Format(time.RFC3339)},
+	} {
+		if err := d.SetScalar(kv[0], kv[1]); err != nil {
+			return err
+		}
+	}
+	if duplicateOf == "" {
+		return nil
+	}
+	if err := d.SetScalar(FieldRejectedDuplicateOf, duplicateOf); err != nil {
+		return err
+	}
+	if slices.Contains(t.Related, duplicateOf) {
+		return nil
+	}
+	if err := d.SetScalar(FieldRejectedLinked, "true"); err != nil {
+		return err
+	}
+	return d.SetList(FieldRelated, append(slices.Clone(t.Related), duplicateOf))
 }
 
 // Delete removes a ticket's file and returns the path it was at.
@@ -714,17 +737,23 @@ func (s *Store) LoggedPerDay(now time.Time, days int) []int {
 // path, so a name built to escape the store (e.g. "../../etc/passwd") cannot
 // walk it anywhere but back into TicketsDir.
 func (s *Store) Restore(name string) (string, error) {
+	_, dst, err := s.RestoreFrom(name)
+	return dst, err
+}
+
+// RestoreFrom is Restore that also says where the file came from, so a caller
+// whose next step fails can put it back there.
+func (s *Store) RestoreFrom(name string) (src, dst string, err error) {
 	base := filepath.Base(name)
 	home := s.TicketsDir()
 
-	var src string
 	if _, err := os.Stat(filepath.Join(s.ArchiveDir(), base)); err == nil {
 		src = filepath.Join(s.ArchiveDir(), base)
 	}
 
 	folders, err := s.logbookFolders()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	// A file is looked for in the folder itself and in its milestones/
 	// subfolder, and where it was found is where it goes back to: a milestone
@@ -745,9 +774,9 @@ func (s *Store) Restore(name string) (string, error) {
 
 	switch {
 	case src != "" && len(logMatches) > 0:
-		return "", fmt.Errorf("%s is in both the archive and %s — remove one before restoring", base, strings.Join(names, ", "))
+		return "", "", fmt.Errorf("%s is in both the archive and %s — remove one before restoring", base, strings.Join(names, ", "))
 	case len(logMatches) > 1:
-		return "", fmt.Errorf("%s is in more than one logbook folder (%s) — remove one before restoring", base, strings.Join(names, ", "))
+		return "", "", fmt.Errorf("%s is in more than one logbook folder (%s) — remove one before restoring", base, strings.Join(names, ", "))
 	case len(logMatches) == 1:
 		src = logDirs[0]
 		if filepath.Base(src) == MilestonesSubdir {
@@ -755,23 +784,40 @@ func (s *Store) Restore(name string) (string, error) {
 		}
 		src = filepath.Join(src, base)
 	case src == "":
-		return "", fmt.Errorf("%s is not in the archive or in .jaira/logbook/", base)
+		return "", "", fmt.Errorf("%s is not in the archive or in .jaira/logbook/", base)
 	}
 
 	if err := os.MkdirAll(home, 0o755); err != nil {
-		return "", err
+		return "", "", err
 	}
-	dst := filepath.Join(home, base)
+	dst = filepath.Join(home, base)
 	if _, err := os.Stat(dst); err == nil {
-		return "", fmt.Errorf("%s is already on the board", base)
+		return "", "", fmt.Errorf("%s is already on the board", base)
 	}
 	if err := unreject(src); err != nil {
-		return "", err
+		return "", "", err
 	}
 	if err := os.Rename(src, dst); err != nil {
-		return "", err
+		return "", "", err
 	}
-	return dst, nil
+	return src, dst, nil
+}
+
+// RestoresMilestone reports whether RestoreFrom would bring name back as a
+// milestone: it lies in a logbook folder's milestones/ subfolder. The restore
+// command asks before the move, so a milestone it must refuse never leaves the
+// logbook.
+func (s *Store) RestoresMilestone(name string) bool {
+	folders, err := s.logbookFolders()
+	if err != nil {
+		return false
+	}
+	for _, folder := range folders {
+		if _, err := os.Stat(filepath.Join(folder, MilestonesSubdir, filepath.Base(name))); err == nil {
+			return true
+		}
+	}
+	return false
 }
 
 // unreject takes a rejection off a file about to go back on the board: a
@@ -790,16 +836,28 @@ func unreject(path string) error {
 		// refusing to restore it at all.
 		return nil
 	}
+	changed, err := Unreject(d)
+	if err != nil || !changed {
+		return err
+	}
+	return WriteAtomic(path, d.Bytes())
+}
+
+// Unreject takes the rejection off a ticket document — every rejected-* field,
+// and the related link a duplicate rejection added — and reports whether there
+// was one. Restore uses it on a file, and a pull of a ticket rejected on its
+// ref uses it on the ref's bytes, so the two take off exactly the same thing.
+func Unreject(d *Doc) (bool, error) {
 	changed := false
 	orig, _, _ := d.Scalar(FieldRejectedDuplicateOf)
 	if linked, _, _ := d.Scalar(FieldRejectedLinked); orig != "" && linked == "true" {
 		related, err := d.List(FieldRelated)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if i := slices.Index(related, orig); i >= 0 {
 			if err := d.SetList(FieldRelated, slices.Delete(related, i, i+1)); err != nil {
-				return err
+				return false, err
 			}
 			changed = true
 		}
@@ -807,15 +865,12 @@ func unreject(path string) error {
 	for _, key := range RejectedFields {
 		if d.Has(key) {
 			if err := d.Remove(key); err != nil {
-				return err
+				return false, err
 			}
 			changed = true
 		}
 	}
-	if !changed {
-		return nil
-	}
-	return WriteAtomic(path, d.Bytes())
+	return changed, nil
 }
 
 // SessionsDir is where this working tree's session state lives, outside the repo.
@@ -882,8 +937,10 @@ func commonGitDir(root string) string {
 	if err != nil {
 		return ""
 	}
-	dir := strings.TrimSpace(string(out))
-	if dir == "" {
+	// git before 2.31 prints an unknown --path-format back instead of the
+	// directory; only an absolute path is an answer.
+	dir := strings.TrimSpace(strings.SplitN(string(out), "\n", 2)[0])
+	if dir == "" || !filepath.IsAbs(filepath.FromSlash(dir)) {
 		return ""
 	}
 	return filepath.Clean(dir)
@@ -995,6 +1052,26 @@ func (s *Store) List() ([]*Ticket, error) {
 		have[t.ID] = true
 	}
 	out = append(out, s.extra(have)...)
+	// A rejected ticket is off every board, wherever its bytes are. One
+	// rejected while it lived only on its ref stays there, rejection and all:
+	// no branch carries its file to an archive. A file here that carries a
+	// rejection — pulled in before the ticket was rejected on its ref, or
+	// brought up to that ref since — is a leftover, not a card to work on.
+	// Load and show still find both.
+	var rejected []*Ticket
+	out = slices.DeleteFunc(out, func(t *Ticket) bool {
+		if t.Rejected.Kind == "" {
+			return false
+		}
+		rejected = append(rejected, t)
+		return true
+	})
+	if s.rejected == nil {
+		s.rejected = &rejectedSet{}
+	}
+	s.rejected.mu.Lock()
+	s.rejected.ts = rejected
+	s.rejected.mu.Unlock()
 	if len(problems) > 0 {
 		return out, &PartialError{Problems: problems}
 	}
@@ -1047,6 +1124,22 @@ func (s *Store) offBoardDuplicates(onBoard []*Ticket) []string {
 	}
 	sort.Strings(problems)
 	return problems
+}
+
+// RejectedOffBoard returns the rejected tickets the last List left off the
+// board — rejected on their ref, or a file here that carries a rejection.
+//
+// Off the board is not out of existence. A ticket blocked by one of them, or
+// pointing at it, still names a ticket that is there: whoever asks "does this
+// id exist" — the link index, a delete's reference check — reads these beside
+// the board, as it reads the filed-away ones.
+func (s *Store) RejectedOffBoard() []*Ticket {
+	if s.rejected == nil {
+		return nil
+	}
+	s.rejected.mu.Lock()
+	defer s.rejected.mu.Unlock()
+	return slices.Clone(s.rejected.ts)
 }
 
 // FiledAwayIDs maps the ids of tickets filed away here — logged or archived —
@@ -1532,7 +1625,31 @@ func (s *Store) lock(id string) (func(), error) {
 	if err := os.MkdirAll(s.locksDir(), 0o755); err != nil {
 		return nil, err
 	}
-	path := filepath.Join(s.locksDir(), id+".lock")
+	unlock, err := lockFile(filepath.Join(s.locksDir(), id+".lock"))
+	if err == errLockTimeout {
+		return nil, fmt.Errorf("ticket: timed out waiting for lock on %s", id)
+	}
+	return unlock, err
+}
+
+// errLockTimeout is lockFile's answer when the lock stayed taken; each caller
+// names what it was waiting for.
+var errLockTimeout = errors.New("ticket: timed out waiting for lock")
+
+// LockFile takes the advisory lock file at path — created with O_EXCL, waited
+// for with backoff, broken when its holder died — the one the store's own
+// locks are made of, for a file outside any store that two jaira processes
+// write: the info/exclude every worktree of a repository shares. Its directory
+// must exist. The caller must call the returned function, normally with defer.
+func LockFile(path string) (func(), error) {
+	unlock, err := lockFile(path)
+	if err == errLockTimeout {
+		return nil, fmt.Errorf("ticket: timed out waiting for lock %s", path)
+	}
+	return unlock, err
+}
+
+func lockFile(path string) (func(), error) {
 	deadline := time.Now().Add(lockTimeout)
 	backoff := 2 * time.Millisecond
 
@@ -1543,21 +1660,57 @@ func (s *Store) lock(id string) (func(), error) {
 			f.Close()
 			return func() { os.Remove(path) }, nil
 		}
-		if !os.IsExist(err) {
+		// On Windows a lock file the previous holder has just removed stays
+		// "delete pending" until every handle on it is closed, and creating it
+		// again in that window fails with Access is denied rather than with
+		// "exists". It is the same busy lock, so it is waited for like one; a
+		// denial that does not go away still ends in an error at the deadline.
+		busy := os.IsExist(err) || (runtime.GOOS == "windows" && os.IsPermission(err))
+		if !busy {
 			return nil, err
 		}
-		if fi, statErr := os.Stat(path); statErr == nil && time.Since(fi.ModTime()) > lockStale {
-			os.Remove(path) // previous holder died
+		if breakStale(path) {
 			continue
 		}
 		if time.Now().After(deadline) {
-			return nil, fmt.Errorf("ticket: timed out waiting for lock on %s", id)
+			if !os.IsExist(err) {
+				return nil, err
+			}
+			return nil, errLockTimeout
 		}
 		time.Sleep(backoff)
 		if backoff < 100*time.Millisecond {
 			backoff *= 2
 		}
 	}
+}
+
+// breakStale removes the lock file at path when its holder has died - it is
+// older than lockStale - and reports whether it did. A plain stat-then-remove
+// lets two waiters both see the dead lock, the first take a fresh one and the
+// second remove that fresh one, leaving two holders. So the break is made only
+// under <path>.break, taken with O_EXCL like the lock itself, and the lock is
+// looked at again under it: a lock somebody took in the meantime is fresh and
+// stays. A .break left by a process that died inside the few instructions it
+// holds one is broken the plain way once it is stale itself.
+func breakStale(path string) bool {
+	if fi, err := os.Stat(path); err != nil || time.Since(fi.ModTime()) <= lockStale {
+		return false
+	}
+	guard := path + ".break"
+	g, err := os.OpenFile(guard, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+	if err != nil {
+		if fi, statErr := os.Stat(guard); statErr == nil && time.Since(fi.ModTime()) > lockStale {
+			os.Remove(guard)
+		}
+		return false
+	}
+	g.Close()
+	defer os.Remove(guard)
+	if fi, err := os.Stat(path); err != nil || time.Since(fi.ModTime()) <= lockStale {
+		return false
+	}
+	return os.Remove(path) == nil
 }
 
 // Lock takes the store's advisory lock under a caller-chosen name, for state in
@@ -1610,7 +1763,43 @@ func WriteAtomic(path string, data []byte) error {
 	if err := os.Chmod(tmpName, 0o644); err != nil {
 		return err
 	}
-	return os.Rename(tmpName, path)
+	return renameOver(tmpName, path)
+}
+
+// renameOver replaces path with tmp. On Windows a rename onto a file that
+// another process has open for reading - a second jaira loading the lanes, an
+// editor, a virus scanner - fails with Access is denied until that handle
+// closes, which is a matter of milliseconds. It is tried again for over a
+// second there; everywhere else, and for any other error, the first answer
+// stands.
+func renameOver(tmp, path string) error {
+	err := os.Rename(tmp, path)
+	if runtime.GOOS != "windows" {
+		return err
+	}
+	for wait := 5 * time.Millisecond; err != nil && os.IsPermission(err) && wait <= 640*time.Millisecond; wait *= 2 {
+		time.Sleep(wait)
+		err = os.Rename(tmp, path)
+	}
+	return err
+}
+
+// ReadAtomic is the read half of WriteAtomic. On Windows an open of a file
+// that a rename is replacing at that moment fails - a sharing violation or
+// Access is denied - although the old or the new file is a millisecond away.
+// It is tried again there with renameOver's backoff, for any error but a
+// missing file; everywhere else, and for a missing file, the first answer
+// stands.
+func ReadAtomic(path string) ([]byte, error) {
+	b, err := os.ReadFile(path)
+	if runtime.GOOS != "windows" {
+		return b, err
+	}
+	for wait := 5 * time.Millisecond; err != nil && !errors.Is(err, os.ErrNotExist) && wait <= 640*time.Millisecond; wait *= 2 {
+		time.Sleep(wait)
+		b, err = os.ReadFile(path)
+	}
+	return b, err
 }
 
 // Save writes a ticket that the caller already mutated, without taking a lock.

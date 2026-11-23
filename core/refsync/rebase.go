@@ -18,7 +18,6 @@ type refKind struct {
 	pending func(name string) (outbox.Entry, bool)
 	queue   func(name string, content []byte, lease, by string) error
 	drop    func(name string) error
-	record  func(name string, content []byte) error
 	readAt  func(name, sha string) ([]byte, error)
 	read    func(name string) ([]byte, string, error)
 	write   func(name string, content []byte, lease string) (string, error)
@@ -35,7 +34,10 @@ func (y *Syncer) rebaseRef(r outbox.Result, k refKind) outbox.Result {
 	if !ok {
 		return r
 	}
-	name, ours := r.ID, []byte(e.Content)
+	// ours is always the text of a merge onto the ref at oursLease: that pair
+	// is what goes back in the queue when it is not sent. Leasing it on any
+	// newer state would let the next flush push it over a write it never saw.
+	name, ours, oursLease := r.ID, []byte(e.Content), e.Lease
 	var base []byte
 	if e.Lease != "" {
 		b, err := k.readAt(name, e.Lease)
@@ -62,8 +64,8 @@ func (y *Syncer) rebaseRef(r outbox.Result, k refKind) outbox.Result {
 		case errors.Is(err, gitref.ErrRaceLost):
 			// Somebody wrote it again between our read and our push: their
 			// state is now the one to merge onto, ours stays what it was.
-			base, ours = theirs, merged
-			if ferr := y.Repo.Fetch(); ferr != nil {
+			base, ours, oursLease = theirs, merged, lease
+			if ferr := y.fetch(); ferr != nil {
 				err = ferr
 			} else {
 				continue
@@ -73,14 +75,18 @@ func (y *Syncer) rebaseRef(r outbox.Result, k refKind) outbox.Result {
 		break
 	}
 	// Not sent: queue what we have, leased on the ref it was merged onto, so
-	// the next command tries again. The box keeps the lease of an entry that
-	// is there, so the refused one goes first, and comes back if the merge
-	// cannot be queued.
+	// the next command tries again and loses the race to every write it has
+	// not merged yet — not on the ref as it stands now, which after the fetch
+	// above may hold a write this text never saw. The box keeps the lease of
+	// an entry that is there, so the refused one goes first, and comes back
+	// if the merge cannot be queued.
 	if err := k.drop(name); err != nil {
 		r.Err = err
-	} else if err := k.record(name, ours); err != nil {
+	} else if err := k.queue(name, ours, oursLease, y.Actor); err != nil {
 		_ = k.queue(name, []byte(e.Content), e.Lease, e.By)
 		r.Err = err
+	} else {
+		y.dirty = true
 	}
 	r.Outcome = outbox.Unsent
 	return r

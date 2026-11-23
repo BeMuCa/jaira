@@ -26,6 +26,9 @@ const (
 	// settingsActionChatModel steps the chat model through its choices in
 	// place, the same way.
 	settingsActionChatModel = "chat-model"
+	// settingsActionLanguage steps the notes language through its choices
+	// in place, the same way.
+	settingsActionLanguage = "language"
 )
 
 // settingsEntry is one row in the menu: a name, what pressing enter on it
@@ -62,6 +65,11 @@ var settingsEntries = []settingsEntry{
 		desc:   "the model the cockpit's explain and discuss chats start on, for everybody on this board (.jaira/chat-model); without it this machine's chat-model in settings.json, else the account default. enter steps the board's through sonnet, haiku, opus and none; any other model by hand",
 		action: settingsActionChatModel,
 	},
+	{
+		name:   "Notes language",
+		desc:   "the language the cockpit shows a review's notes in, rewritten short by a cheap model, for you only (language in settings.json on this machine); none shows them as the ticket has them. enter steps through Deutsch, English, Русский and none; any other by hand",
+		action: settingsActionLanguage,
+	},
 }
 
 // settingsScreen is the menu behind S: one door into both the lane screen and
@@ -93,11 +101,16 @@ type settingsScreen struct {
 	chatModel       string
 	chatModelSource string
 	chatModelErr    string
+
+	// language is the notes language as settings.json has it now, "" for
+	// none, and languageErr what went wrong saving the last step.
+	language    string
+	languageErr string
 }
 
 func newSettingsScreen(root string) *settingsScreen {
 	cur := settings.Load()
-	s := &settingsScreen{days: cur.LogbookWindow(), dispatch: cur.DispatchMode(), root: root}
+	s := &settingsScreen{days: cur.LogbookWindow(), dispatch: cur.DispatchMode(), root: root, language: string(cur.Language)}
 	s.readChatModel(cur)
 	return s
 }
@@ -135,15 +148,9 @@ func (s *settingsScreen) stepChatModel() string {
 	if s.root == "" {
 		return settingsActionNone
 	}
-	choices := settings.ChatModelChoices
 	// Read again rather than trusting chatBoard, for the same reason editKey
 	// reads settings.json again: the file may have changed since S opened.
-	cur, next := settings.BoardChatModel(s.root), choices[0]
-	for i, c := range choices {
-		if c == cur {
-			next = choices[(i+1)%len(choices)]
-		}
-	}
+	next := stepAfter(settings.ChatModelChoices, settings.BoardChatModel(s.root))
 	if err := settings.SetBoardChatModel(s.root, next); err != nil {
 		s.chatModelErr = err.Error()
 		return settingsActionNone
@@ -154,19 +161,49 @@ func (s *settingsScreen) stepChatModel() string {
 	return settingsActionNone
 }
 
-// switchDispatch flips lanes and worker and saves at once, reading the file
-// again first for the same reason editKey does.
-func (s *settingsScreen) switchDispatch() string {
-	cur := settings.Load()
-	next := settings.DispatchWorker
-	if cur.DispatchMode() == settings.DispatchWorker {
-		next = settings.DispatchLanes
+// stepAfter is the choice after cur, wrapping round; a cur that is none of
+// them steps to the first.
+func stepAfter(choices []string, cur string) string {
+	for i, c := range choices {
+		if c == cur {
+			return choices[(i+1)%len(choices)]
+		}
 	}
-	cur.Dispatch = next
-	if err := settings.Save(cur); err != nil {
+	return choices[0]
+}
+
+// stepLanguage moves the notes language on to the next of its choices and
+// saves at once, through settings.Update like every write of this screen. A
+// language written by hand that is none of the choices steps to none, the
+// first, as the chat model does.
+func (s *settingsScreen) stepLanguage() string {
+	now, err := settings.Update(func(cur *settings.Settings) {
+		cur.Language = settings.Language(stepAfter(settings.LanguageChoices, string(cur.Language)))
+	})
+	if err != nil {
+		s.languageErr = err.Error()
+		return settingsActionNone
+	}
+	// None, not saved: nothing on the board shows it, only the cockpit.
+	s.language, s.languageErr = string(now.Language), ""
+	return settingsActionNone
+}
+
+// switchDispatch flips lanes and worker and saves at once, through
+// settings.Update like every write of this screen.
+func (s *settingsScreen) switchDispatch() string {
+	now, err := settings.Update(func(cur *settings.Settings) {
+		next := settings.DispatchWorker
+		if cur.DispatchMode() == settings.DispatchWorker {
+			next = settings.DispatchLanes
+		}
+		cur.Dispatch = next
+	})
+	if err != nil {
 		s.dispatchErr = err.Error()
 		return settingsActionNone
 	}
+	next := now.Dispatch
 	// None, not saved: nothing on the board shows this setting, so there is
 	// nothing to reload — the row above already says what the file now holds.
 	s.dispatch, s.dispatchErr = next, ""
@@ -174,9 +211,9 @@ func (s *settingsScreen) switchDispatch() string {
 }
 
 // editKey drives the number while it is open: digits type, backspace takes
-// one back, enter saves and esc leaves it as it was. Saving reads the file
-// again first, so nothing else in it — a remote, a hook — is written back from
-// a copy older than the edit.
+// one back, enter saves and esc leaves it as it was. Saving goes through
+// settings.Update, so nothing else in it — a remote, a hook — is written back
+// from a copy older than the edit, or wiped where the file does not parse.
 func (s *settingsScreen) editKey(k string) string {
 	switch k {
 	case "esc":
@@ -191,9 +228,7 @@ func (s *settingsScreen) editKey(k string) string {
 			s.err = "a number of days, 0 or more"
 			return settingsActionNone
 		}
-		cur := settings.Load()
-		cur.LogbookDays = &n
-		if err := settings.Save(cur); err != nil {
+		if _, err := settings.Update(func(cur *settings.Settings) { cur.LogbookDays = &n }); err != nil {
 			s.err = err.Error()
 			return settingsActionNone
 		}
@@ -233,6 +268,9 @@ func (s *settingsScreen) key(k string) string {
 		if a == settingsActionChatModel {
 			return s.stepChatModel()
 		}
+		if a == settingsActionLanguage {
+			return s.stepLanguage()
+		}
 		if a != settingsActionLogbookDays {
 			return a
 		}
@@ -263,6 +301,13 @@ func (s *settingsScreen) render(width, height int) string {
 		if e.action == settingsActionChatModel {
 			name += "  " + styMeta.Render(s.chatModelValue())
 		}
+		if e.action == settingsActionLanguage {
+			lang := s.language
+			if lang == "" {
+				lang = "none — notes as the ticket has them"
+			}
+			name += "  " + styMeta.Render(lang)
+		}
 		sb.WriteString(truncate(lead+name, w) + "\n")
 		sb.WriteString(styMeta.Render("      "+wrap(e.desc, max(10, w-6), 6)) + "\n")
 		if e.action == settingsActionLogbookDays && s.err != "" {
@@ -273,6 +318,9 @@ func (s *settingsScreen) render(width, height int) string {
 		}
 		if e.action == settingsActionChatModel && s.chatModelErr != "" {
 			sb.WriteString(styErr.Render("      "+s.chatModelErr) + "\n")
+		}
+		if e.action == settingsActionLanguage && s.languageErr != "" {
+			sb.WriteString(styErr.Render("      "+s.languageErr) + "\n")
 		}
 	}
 

@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/BeMuCa/jaira/core/gitref"
@@ -55,6 +56,12 @@ type Syncer struct {
 	// hold a second opinion.
 	IsMine func(assignee string) bool
 
+	// Name is the name a person stored on a ref is reported under: the jaira
+	// name the board's people list gives them, so a refusal says "Robert has
+	// it" where 'jaira list' shows Robert. nil reports names as stored. A
+	// function for the same reason IsMine is one.
+	Name func(stored string) string
+
 	// SeenPath records which ref SHA was last reported for each ticket, so
 	// being handed a ticket is announced once instead of on every fetch.
 	SeenPath string
@@ -71,6 +78,13 @@ type Syncer struct {
 	// wrote a ticket has a reason to send, and jaira list must never wait for
 	// a remote.
 	dirty bool
+
+	// fetched records whether the last fetch reached the remote. Only then
+	// does "no ref in this tree" mean "no ref on the remote" — offline, it may
+	// only mean this clone has not fetched a teammate's milestone yet. The
+	// last fetch, not any: the board fetches on a timer, and one good fetch an
+	// hour ago says nothing about the milestones made since.
+	fetched atomic.Bool
 
 	// extraMu guards extraCache: the decoded ticket of each ref-only ticket,
 	// with the commit hash it was decoded from. A hash is a content address, so
@@ -257,10 +271,13 @@ func (y *Syncer) MigrationBase(id string) (milestone.Base, bool) {
 // editor in jaira the way a ticket has a lane: the file IS the interface, and
 // a group somebody planned is of no use as a ref nobody has checked out. The
 // ref is the newer state by construction — it is what the remote accepted —
-// so a local file that differs is overwritten, and the previous content is in
-// git if it was ever committed. The one exception is a milestone with a write
-// still queued in the outbox: that file is newer than the ref and is left
-// alone until the write has been sent or rejected.
+// so a local file that differs is overwritten. The files are never in git, so
+// a hand edit that no milestone command has sent yet is gone with it: a known
+// limit, kept because telling such an edit from a copy that fell behind needs
+// a record per worktree, and every form of it tried in 1MYFKE lost somebody's
+// write at another edge. The one exception is a milestone with a write still
+// queued in the outbox: that file is newer than the ref and is left alone
+// until the write has been sent or rejected.
 //
 // A milestone's ref is named after its ID and carries the file under its
 // current name, so a rename arrives as the same ref with another file name.
@@ -367,6 +384,18 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 				if other.IDNamed != idNamed {
 					continue
 				}
+				// The ref's file under a name that differs only in case is
+				// that same file where case is ignored: not another one, but
+				// the spelling on disk is still the old name's.
+				if milestone.SameFile(filepath.Join(milestone.Dir(root), other.File), path) {
+					if err := milestone.MatchCase(filepath.Join(milestone.Dir(root), other.File), path); err != nil {
+						return err
+					}
+					if other.Name != ref.Name {
+						renamed[other.Name] = ref.Name
+					}
+					continue
+				}
 				if err := os.Remove(filepath.Join(milestone.Dir(root), other.File)); err != nil && !os.IsNotExist(err) {
 					return err
 				}
@@ -429,6 +458,77 @@ func (y *Syncer) IncomingMilestones(root string) (wrote, filed []string, renamed
 	return wrote, filed, renamed, conflicts, nil
 }
 
+// CatchUpMilestones brings every milestone file on this disk that is behind
+// its ref up to the ref, without a fetch. Every milestone write runs it under
+// the milestone lock before it reads the file (milestone.Edit, Rename,
+// Create), so a file older than its ref is never the state a write starts
+// from. The refs are shared by every worktree of the clone and the files are
+// not, which is how one worktree's copy falls behind without that worktree
+// ever fetching (KWQCYZ).
+//
+// Behind means the file holds a state the ref has carried before and has
+// moved on from — the same test a ticket's file gets (hadBefore). A file that
+// differs from its ref in any other way was edited by hand and is what the
+// write is about to send, so it stays; so does one with a write still queued
+// here. Known limits, both from telling a hand edit from an old copy by its
+// bytes alone: a hand edit made on a copy that had already fallen behind is
+// such a file too, and the write puts it over the newer ref ('jaira fetch'
+// before editing avoids it); and a hand edit that happens to restore an
+// earlier state of the ref — a line just added taken out again — is taken for
+// an old copy and brought up to the ref ('jaira milestone rm'/'add' do it
+// right). Only files named after their ID are looked at: an old-format file is
+// Migrate's, and a ref without a file on this disk is the fetch's to write.
+func (y *Syncer) CatchUpMilestones(root string) error {
+	if y == nil || y.Usable() != nil {
+		return nil
+	}
+	for _, d := range milestoneFiles(root) {
+		if !d.IDNamed || y.pendingMilestone(d.ID) {
+			continue
+		}
+		file, content, _, err := y.Repo.ReadMilestone(d.ID)
+		if err != nil || milestone.FromBytes(file, content).ID != d.ID {
+			continue // no ref for it yet, or one that is not this milestone's
+		}
+		path := filepath.Join(milestone.Dir(root), d.File)
+		have, err := os.ReadFile(path)
+		if err != nil || bytes.Equal(have, content) || !y.Repo.MilestoneHad(d.ID, have) {
+			continue
+		}
+		dst := filepath.Join(milestone.Dir(root), file)
+		// Renamed on the ref, and a file under the new name lies here already.
+		// One that is the ref, or a state it had, is this milestone too and
+		// is brought up like the old one, which then goes; one edited by hand
+		// is a twin, and which of the two is the milestone is a person's
+		// call: both stay, and the write that runs this refuses on them
+		// (milestone.TwinFilesError).
+		// A name that differs only in case is the same file where the file
+		// system ignores case (Windows, macOS, /mnt/c under WSL): neither a
+		// twin nor something to remove.
+		renamed := dst != path && !milestone.SameFile(dst, path)
+		if renamed {
+			if twin, err := os.ReadFile(dst); err == nil && !bytes.Equal(twin, content) && !y.Repo.MilestoneHad(d.ID, twin) {
+				continue
+			}
+		}
+		if err := ticket.WriteAtomic(dst, content); err != nil {
+			return err
+		}
+		if dst != path && !renamed {
+			if err := milestone.MatchCase(path, dst); err != nil {
+				return err
+			}
+		}
+		// Renamed on the ref since: the old name is the same milestone.
+		if renamed {
+			if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // pendingMilestone reports whether a write of this milestone is queued, under
 // its ref key, its ID or its old name.
 func (y *Syncer) pendingMilestone(keys ...string) bool {
@@ -443,8 +543,11 @@ func (y *Syncer) pendingMilestone(keys ...string) bool {
 // MilestonesFetched is what one fetch of milestones did on disk.
 type MilestonesFetched struct {
 	Wrote, Filed, Moved []string
-	Renamed             map[string]string
-	Conflicts           []milestone.Conflict
+	// Published names the milestones whose file was on this disk with no ref
+	// and no write waiting, and which this fetch queued for their ref.
+	Published []string
+	Renamed   map[string]string
+	Conflicts []milestone.Conflict
 }
 
 // FetchMilestones writes the milestone files the refs carry, then moves old
@@ -474,7 +577,67 @@ func (y *Syncer) FetchMilestones(s *ticket.Store) (MilestonesFetched, error) {
 	res, err := milestone.Migrate(s.Root, y)
 	out.Moved = res.Moved
 	out.Conflicts = append(out.Conflicts, res.Conflicts...)
+	var re *milestone.RecordError
+	if err != nil && !errors.As(err, &re) {
+		return out, err
+	}
+	// After Migrate, so a file it just moved to its ID is looked at under that
+	// ID. Whether "no ref here" also means none on the remote is the caller's
+	// fetch to say; publishUnsent reads that off the syncer.
+	published, perr := y.publishUnsent(s.Root)
+	out.Published = published
+	if err == nil {
+		err = perr
+	}
 	return out, err
+}
+
+// publishUnsent queues every milestone file named after its ID that has no
+// ref in this tree and no write waiting for one. Such a file was made where
+// nothing could queue it — before the board had a remote, or by hand — and
+// Migrate passes it by, because it only moves files without an ID. Without
+// this it would stay on one disk however often that clone fetches, which is
+// the one thing a milestone ref is there to prevent.
+//
+// It runs only when the last fetch reached the remote. Offline, a missing ref
+// may be a teammate's milestone this clone has not fetched yet, and a write
+// queued against no ref would be merged into theirs from an empty base when it
+// is finally sent — their removals undone, nobody told.
+//
+// An ID carried by two files is left alone: which of them is the milestone is
+// a person's call, and a ref written from either would decide it for them. A
+// file that could not be read or queued does not stop the others; the first
+// such failure comes back as a *milestone.RecordError after all of them.
+func (y *Syncer) publishUnsent(root string) ([]string, error) {
+	if y == nil || y.Usable() != nil || !y.fetched.Load() {
+		return nil, nil
+	}
+	files := milestoneFiles(root)
+	carriers := map[string]int{}
+	for _, m := range files {
+		if m.IDNamed {
+			carriers[m.ID]++
+		}
+	}
+	var sent []string
+	var first error
+	for _, m := range files {
+		if !m.IDNamed || carriers[m.ID] != 1 || y.HasMilestoneRef(m.ID) || y.pendingMilestone(m.ID) {
+			continue
+		}
+		content, err := os.ReadFile(filepath.Join(milestone.Dir(root), m.File))
+		if err == nil {
+			err = y.RecordMilestone(m.ID, m.File, content)
+		}
+		if err != nil {
+			if first == nil {
+				first = &milestone.RecordError{Name: m.Name, Err: err}
+			}
+			continue
+		}
+		sent = append(sent, m.Name)
+	}
+	return sent, first
 }
 
 // adoptOldRef merges what an older build wrote to an old name ref since the
@@ -510,13 +673,20 @@ func (y *Syncer) OldRefHad(name string, content []byte) bool {
 	return y.Repo.MilestoneHad(name, content)
 }
 
+// fetch is Repo.Fetch, remembering whether it reached the remote.
+func (y *Syncer) fetch() error {
+	err := y.Repo.Fetch()
+	y.fetched.Store(err == nil)
+	return err
+}
+
 // FetchRefs brings the refs here and reports whether it did. An unreachable
 // remote is not an error: whoever asks carries on without it.
 func (y *Syncer) FetchRefs() bool {
 	if y == nil || y.Usable() != nil {
 		return false
 	}
-	return y.Repo.Fetch() == nil
+	return y.fetch() == nil
 }
 
 // HasMilestoneRef reports whether this tree has the ref of the milestone with
@@ -663,7 +833,7 @@ func (y *Syncer) Flush() ([]Report, error) {
 	if len(entries) == 0 {
 		return nil, nil
 	}
-	if err := y.Repo.Fetch(); err != nil {
+	if err := y.fetch(); err != nil {
 		// An unreachable remote is not an error here: it is the state the
 		// outbox exists for. The queue stays as it is and the next command
 		// tries again.
@@ -911,7 +1081,16 @@ func (y *Syncer) winner(id string) (*Winner, error) {
 			*f.dst = v
 		}
 	}
+	w.Assignee, w.UpdatedBy = y.name(w.Assignee), y.name(w.UpdatedBy)
 	return w, nil
+}
+
+// name is who as Name reports them.
+func (y *Syncer) name(who string) string {
+	if y.Name == nil || who == "" {
+		return who
+	}
+	return y.Name(who)
 }
 
 // Arrival is a ticket as the ref now has it, seen from this clone.
@@ -951,7 +1130,7 @@ func (y *Syncer) Incoming() ([]Arrival, error) {
 	if y == nil || y.Usable() != nil {
 		return nil, nil
 	}
-	if err := y.Repo.Fetch(); err != nil {
+	if err := y.fetch(); err != nil {
 		if errors.Is(err, gitref.ErrOffline) || errors.Is(err, gitref.ErrNoGit) {
 			return nil, nil
 		}
@@ -992,6 +1171,7 @@ func (y *Syncer) Incoming() ([]Arrival, error) {
 		if y.IsMine != nil {
 			a.Mine = y.IsMine(a.Assignee)
 		}
+		a.Assignee = y.name(a.Assignee)
 		a.Local = y.hasLocal(id)
 		out = append(out, a)
 	}
@@ -1067,7 +1247,7 @@ func (y *Syncer) loadSeen() seen {
 	if y.SeenPath == "" {
 		return s
 	}
-	b, err := os.ReadFile(y.SeenPath)
+	b, err := ticket.ReadAtomic(y.SeenPath)
 	if err != nil {
 		return s
 	}
@@ -1088,7 +1268,10 @@ func (y *Syncer) saveSeen(s seen) {
 		return
 	}
 	if b, err := json.MarshalIndent(s, "", "  "); err == nil {
-		_ = os.WriteFile(y.SeenPath, append(b, '\n'), 0o644)
+		// Atomic: a background fetch writes this while a foreground one may
+		// read it, and a torn read parses as empty — losing the departures
+		// this record exists to keep.
+		_ = ticket.WriteAtomic(y.SeenPath, append(b, '\n'))
 	}
 }
 
@@ -1321,6 +1504,11 @@ type Pulled struct {
 	// --steal. A silent steal would leave the other person's board saying the
 	// ticket is theirs, with nothing anywhere saying why it stopped being.
 	TakenFrom string `json:"taken-from,omitempty"`
+
+	// Unrejected is the rejection the ref carried, taken off by this pull: a
+	// ticket rejected on its ref has no archive file for 'jaira restore', and
+	// pulling it is saying it is wanted after all — out loud, never silently.
+	Unrejected *ticket.Rejection `json:"unrejected,omitempty"`
 }
 
 // ErrUnsent means the file here holds a write that has not reached the remote,
@@ -1339,7 +1527,7 @@ var ErrUnsent = errors.New("refsync: the ticket has a write here that has not be
 // this clone knows of, and a repeated pull has always worked without a network.
 func (y *Syncer) refresh(id, path string) (*Pulled, error) {
 	out := &Pulled{ID: id, Path: path, AlreadyHere: true}
-	if err := y.Repo.Fetch(); err != nil && !errors.Is(err, gitref.ErrOffline) && !errors.Is(err, gitref.ErrNoGit) {
+	if err := y.fetch(); err != nil && !errors.Is(err, gitref.ErrOffline) && !errors.Is(err, gitref.ErrNoGit) {
 		return nil, err
 	}
 	file, err := y.Store.Load(id)
@@ -1408,7 +1596,7 @@ func (y *Syncer) Pull(id string, steal bool) (*Pulled, error) {
 	if path, ok := y.localPath(id); ok {
 		return y.refresh(id, path)
 	}
-	if err := y.Repo.Fetch(); err != nil {
+	if err := y.fetch(); err != nil {
 		return nil, err
 	}
 	content, lease, err := y.Repo.Read(id)
@@ -1432,8 +1620,19 @@ func (y *Syncer) Pull(id string, steal bool) (*Pulled, error) {
 		// Taken with --steal. Recorded on the ticket itself, because the ref is
 		// the only thing the other person will fetch, and a note there is the
 		// only place they can read why the ticket left them.
-		stolenFrom = h
-		if err := ticket.AppendNote(d, fmt.Sprintf("%s took this ticket over from %s", y.Actor, h), time.Now(), y.Actor); err != nil {
+		stolenFrom = y.name(h)
+		if err := ticket.AppendNote(d, fmt.Sprintf("%s took this ticket over from %s", y.Actor, stolenFrom), time.Now(), y.Actor); err != nil {
+			return nil, err
+		}
+	}
+	var unrejected *ticket.Rejection
+	if was, derr := ticket.Decode(d, ""); derr == nil && was.Rejected.Kind != "" {
+		r := was.Rejected
+		unrejected = &r
+		if _, err := ticket.Unreject(d); err != nil {
+			return nil, err
+		}
+		if err := ticket.AppendNote(d, fmt.Sprintf("%s pulled this ticket back; the rejection by %s (%s: %s) is taken off", y.Actor, r.By, r.Kind, r.Why), time.Now(), y.Actor); err != nil {
 			return nil, err
 		}
 	}
@@ -1470,7 +1669,7 @@ func (y *Syncer) Pull(id string, steal bool) (*Pulled, error) {
 	if err := ticket.WriteAtomic(path, taken); err != nil {
 		return nil, err
 	}
-	return &Pulled{ID: id, Title: title, Path: path, TakenFrom: stolenFrom}, nil
+	return &Pulled{ID: id, Title: title, Path: path, TakenFrom: stolenFrom, Unrejected: unrejected}, nil
 }
 
 // Released reports what a release did.
@@ -1503,7 +1702,7 @@ func (y *Syncer) Release(id string, force bool) (*Released, error) {
 	if err := y.Usable(); err != nil {
 		return nil, err
 	}
-	if err := y.Repo.Fetch(); err != nil {
+	if err := y.fetch(); err != nil {
 		return nil, err
 	}
 	content, lease, err := y.Repo.Read(id)
@@ -1544,6 +1743,91 @@ func (y *Syncer) Release(id string, force bool) (*Released, error) {
 		out.Removed = path
 	}
 	return out, nil
+}
+
+// ErrAlreadyRejected means the ref already carries a rejection.
+var ErrAlreadyRejected = errors.New("refsync: the ticket is already rejected")
+
+// Reject writes a rejection onto a ticket that lives only on its ref, and
+// leaves it there: fetch, read, stamp, write back under the lease of what was
+// read.
+//
+// A person who says "not this, because ..." should not have to pick a branch
+// for the ticket's archive file first. Pulled into whatever checkout they stand
+// in, the file would travel in that branch's pull request, the work of an
+// unrelated ticket. On the ref, everybody sees the rejection after their next
+// fetch, and Store.List keeps it off every board.
+//
+// Synchronous like Pull and Release, for their reason: there is nothing to
+// reject without a ref to read. It fetches first, so a stale local copy is
+// never the state stamped. A push the remote refuses because the ref moved
+// since the fetch is gitref.ErrRaceLost, and nothing is written.
+//
+// The assignee goes with it, and the one it had is returned as heldBy: on a
+// ref an assignee does not say whether anybody pulled the ticket — a ticket
+// gets one to leave the backlog — so it refuses nothing, but left in place it
+// would make the way back, 'jaira pull', refuse everybody else as "taken".
+func (y *Syncer) Reject(id, kind, why, duplicateOf string, now time.Time) (rejected *ticket.Ticket, heldBy string, err error) {
+	if y == nil || y.Store == nil {
+		return nil, "", errors.New("refsync: no board here")
+	}
+	if err := y.Usable(); err != nil {
+		return nil, "", err
+	}
+	if _, ok := y.localPath(id); ok {
+		return nil, "", fmt.Errorf("refsync: %s has a file here; reject it through the store", ticket.Handle(id))
+	}
+	if _, ok := y.Pending(id); ok {
+		return nil, "", fmt.Errorf("%w: send it first ('jaira fetch' sends what is queued)", ErrUnsent)
+	}
+	if err := y.Repo.Fetch(); err != nil {
+		return nil, "", err
+	}
+	content, lease, err := y.Repo.Read(id)
+	if errors.Is(err, gitref.ErrNoRef) {
+		return nil, "", fmt.Errorf("%s: %w", ticket.Handle(id), ticket.ErrNotFound)
+	}
+	if err != nil {
+		return nil, "", err
+	}
+	d, err := ticket.ParseDoc(content)
+	if err != nil {
+		return nil, "", fmt.Errorf("refsync: the ref for %s does not carry a ticket: %w", id, err)
+	}
+	t, err := ticket.Decode(d, "")
+	if err != nil {
+		return nil, "", err
+	}
+	if t.Rejected.Kind != "" {
+		return t, "", fmt.Errorf("%s: %w (%s by %s)", ticket.Handle(id), ErrAlreadyRejected, t.Rejected.Kind, y.name(t.Rejected.By))
+	}
+	heldBy = y.name(strings.TrimSpace(t.Assignee))
+	if err := ticket.StampRejection(t, kind, why, y.Actor, duplicateOf, now); err != nil {
+		return nil, "", err
+	}
+	if err := d.SetScalar(ticket.FieldAssignee, ""); err != nil {
+		return nil, "", err
+	}
+	if err := ticket.Touch(d, now); err != nil {
+		return nil, "", err
+	}
+	if err := ticket.TouchBy(d, y.Actor); err != nil {
+		return nil, "", err
+	}
+	if _, err := y.Repo.Write(id, d.Bytes(), lease); err != nil {
+		return nil, "", err
+	}
+	rejected, err = ticket.Decode(d, "")
+	return rejected, heldBy, err
+}
+
+// HeldByWarning is what a rejection on the ref says about the assignee Reject
+// took off: if that person pulled the ticket, a file in their checkout is
+// behind the ref now. 'jaira reject' and R on the board say it alike.
+func HeldByWarning(handle, heldBy string) string {
+	return fmt.Sprintf("%s was assigned to %s. If it was pulled into a checkout, that file is behind the ref now: "+
+		"after a fetch there, the next write is refused as stale, and 'jaira pull %s' brings the rejection in and takes the card off that board",
+		handle, heldBy, handle)
 }
 
 // Extra hands the store the tickets this board can see but has no file for —
@@ -1704,19 +1988,25 @@ type Departure struct {
 // Nothing is moved. Which of the two is right is a question for the person, and
 // a tool that guessed would sometimes reopen finished work; the caller reports
 // this and names the command that settles it.
-func (y *Syncer) Departed() []Departure {
+//
+// A failure to list the refs is an error, never an empty list: read as "no
+// refs", a passing git hiccup (a lock, a broken ref) would report every ticket
+// this clone has seen as gone.
+func (y *Syncer) Departed() ([]Departure, error) {
 	if y == nil || y.Store == nil || y.Usable() != nil {
-		return nil
+		return nil, nil
 	}
 	seen := y.loadSeen()
 	if len(seen) == 0 {
-		return nil
+		return nil, nil
 	}
-	present := map[string]bool{}
-	if ids, err := y.Repo.List(); err == nil {
-		for _, id := range ids {
-			present[id] = true
-		}
+	ids, err := y.Repo.List()
+	if err != nil {
+		return nil, fmt.Errorf("listing ticket refs: %w", err)
+	}
+	present := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		present[id] = true
 	}
 	var out []Departure
 	for id := range seen {
@@ -1734,7 +2024,7 @@ func (y *Syncer) Departed() []Departure {
 		out = append(out, d)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
-	return out
+	return out, nil
 }
 
 // ForgetDeparted drops a ticket from the seen record, so it stops being

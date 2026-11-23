@@ -10,8 +10,10 @@ import (
 	"time"
 
 	"github.com/BeMuCa/jaira/core/epic"
+	coreidentity "github.com/BeMuCa/jaira/core/identity"
 	"github.com/BeMuCa/jaira/core/lane"
 	"github.com/BeMuCa/jaira/core/link"
+	"github.com/BeMuCa/jaira/core/people"
 	"github.com/BeMuCa/jaira/core/ticket"
 	"github.com/BeMuCa/jaira/core/web"
 )
@@ -24,9 +26,49 @@ import (
 type webSource struct {
 	mu sync.Mutex
 	s  *ticket.Store
+	// pushing is held by a push, which runs outside mu, and by actAsNow while
+	// it renames who acts: the syncer reads Actor while it flushes.
+	pushing sync.Mutex
 }
 
-func newWebSource(s *ticket.Store) *webSource { return &webSource{s: s} }
+func newWebSource(s *ticket.Store) *webSource {
+	// The names the syncer prints are looked up afresh each time, as cards()
+	// does, not through the command's peopleList: the server runs for hours,
+	// and a push flushes outside w.mu, so a shared cache would be read and
+	// reset by two goroutines at once.
+	if refs != nil {
+		root := s.Root
+		refs.Name = func(who string) string { return coreidentity.People(root).Canonical(who) }
+	}
+	return &webSource{s: s}
+}
+
+// actAsNow settles who a write from the page is made as, again for each one:
+// the server runs for hours, and a 'jaira people alias' or 'rename' a fetch
+// brought in since it started names the person differently now. The store and
+// the ref syncer, the author of its ref commits included, follow, so one
+// write never carries two names. Called with w.mu held.
+func (w *webSource) actAsNow() {
+	who := identity()
+	if who == w.s.Actor {
+		return // nobody renamed: no need to wait for a push that may be slow
+	}
+	w.pushing.Lock()
+	defer w.pushing.Unlock()
+	w.s.Actor = who
+	if refs != nil {
+		refs.Actor = who
+		refs.Repo.AuthorName = who
+	}
+}
+
+// push is webPush for the page: it holds pushing so actAsNow cannot change
+// who acts under a flush that is reading it.
+func (w *webSource) push() error {
+	w.pushing.Lock()
+	defer w.pushing.Unlock()
+	return webPush()
+}
 
 // signoff is the lane whose tickets the epic's progress counts apart: finished,
 // waiting for a person to accept them. A board without it counts none.
@@ -72,7 +114,7 @@ func (w *webSource) Epics() ([]web.Epic, error) {
 			if !ok {
 				c = web.Ticket{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Lane}
 			}
-			c.Done, c.Direct = t.Done, t.Direct
+			c.Done, c.Direct, c.Via = t.Done, t.Direct, t.Via
 			if c.Lane == signoff {
 				v.Signoff++
 			}
@@ -134,12 +176,15 @@ func (w *webSource) Unassigned(everything bool) ([]web.Ticket, error) {
 // ticket is read for its frontmatter only, as the link index reads it.
 func (w *webSource) cards(all []*ticket.Ticket, ix *link.Index) map[string]web.Ticket {
 	out := make(map[string]web.Ticket, len(all))
+	// Read on every listing, not once: the server runs for hours, and a
+	// teammate's 'jaira people rename' arrives with any fetch in between.
+	who := coreidentity.People(w.s.Root)
 	for _, t := range all {
 		place := link.PlaceBoard
 		if t.ReadOnly {
 			place = link.PlaceRef
 		}
-		c := card(t, place)
+		c := card(t, place, who)
 		c.Done = ix.Satisfied(t.ID)
 		out[t.ID] = c
 	}
@@ -152,11 +197,11 @@ func (w *webSource) cards(all []*ticket.Ticket, ix *link.Index) map[string]web.T
 			continue
 		}
 		place := link.PlaceOf(path)
-		c := card(t, place)
+		c := card(t, place, who)
 		c.Done = ix.Satisfied(id)
 		if place == link.PlaceLogbook {
 			c.FiledAt, _ = ticket.LogbookFolderDay(filepath.Base(filepath.Dir(path)), time.Local)
-		} else if r := rejection(path); r != nil {
+		} else if r := rejection(path, who); r != nil {
 			c.Rejected, c.RejectedWhy, c.FiledAt = r.Kind, r.Why, r.At
 		}
 		out[id] = c
@@ -164,11 +209,13 @@ func (w *webSource) cards(all []*ticket.Ticket, ix *link.Index) map[string]web.T
 	return out
 }
 
-func card(t *ticket.Ticket, place link.Place) web.Ticket {
+// card is one ticket as the page lists it, its people under the jaira names
+// who gives them.
+func card(t *ticket.Ticket, place link.Place, who *people.List) web.Ticket {
 	return web.Ticket{
 		ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Direct: true,
 		Place: string(place), Goal: t.Goal, Tags: t.Tags,
-		Creator: t.Creator, Assignee: t.Assignee, UpdatedBy: t.UpdatedBy,
+		Creator: who.Canonical(t.Creator), Assignee: who.Canonical(t.Assignee), UpdatedBy: who.Canonical(t.UpdatedBy),
 		CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt, BehindRef: t.BehindRef,
 	}
 }
@@ -177,7 +224,7 @@ func card(t *ticket.Ticket, place link.Place) web.Ticket {
 // never rejected. The keys are read straight off the frontmatter rather than
 // through ticket.Ticket, so a ticket rejected by a newer build shows its
 // reason here too.
-func rejection(path string) *web.Rejection {
+func rejection(path string, who *people.List) *web.Rejection {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil
@@ -194,7 +241,7 @@ func rejection(path string) *web.Rejection {
 		v, _, _ := f.Scalar(key)
 		return v
 	}
-	r := &web.Rejection{Kind: str("rejected-kind"), Why: str("rejected-why"), By: str("rejected-by")}
+	r := &web.Rejection{Kind: str("rejected-kind"), Why: str("rejected-why"), By: who.Canonical(str("rejected-by"))}
 	if r.Kind == "" {
 		return nil
 	}
@@ -225,7 +272,7 @@ func (w *webSource) Ticket(id string) (web.TicketDetail, error) {
 	}
 	d := web.TicketDetail{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Place: string(place), Goal: t.Goal, Context: t.Context, BehindRef: t.BehindRef}
 	if place == link.PlaceArchive {
-		d.Rejected = rejection(path)
+		d.Rejected = rejection(path, coreidentity.People(w.s.Root))
 	}
 	for _, it := range t.DoDItems {
 		d.DoD = append(d.DoD, web.Check{Text: it.Text, Done: it.Checked()})
@@ -267,6 +314,7 @@ func (w *webSource) Lanes() ([]web.Lane, error) {
 func (w *webSource) CreateEpic(raw, title, description string) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	w.actAsNow()
 	name, _, err := epic.NormalizeName(raw)
 	if err != nil {
 		return fmt.Errorf("%w: %v", web.ErrInvalid, err)
@@ -285,6 +333,7 @@ func (w *webSource) CreateEpic(raw, title, description string) error {
 func (w *webSource) SetEpic(name string, edit web.EpicEdit) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	w.actAsNow()
 	p := epic.Patch{Title: edit.Title, Description: edit.Description, Body: edit.Body, DropExternal: edit.DropExternal}
 	for _, raw := range edit.AddExternal {
 		x, err := epic.ParseExternal(raw)
@@ -317,6 +366,7 @@ func (w *webSource) SetEpic(name string, edit web.EpicEdit) error {
 func (w *webSource) Assign(name, from, id string, force bool) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	w.actAsNow()
 	t, err := w.load(id)
 	if err != nil {
 		return err
@@ -338,6 +388,7 @@ func (w *webSource) Assign(name, from, id string, force bool) error {
 func (w *webSource) Unassign(name, id string) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	w.actAsNow()
 	t, err := w.load(id)
 	if err != nil {
 		return err
@@ -348,8 +399,12 @@ func (w *webSource) Unassign(name, id string) error {
 	return nil
 }
 
+// load resolves a ticket wherever it lies, filed away included, the way
+// 'jaira epic add' and 'jaira epic rm' resolve one: a logbook or archived
+// ticket still has its line in an epic, and the page must be able to take it
+// out as the command can.
 func (w *webSource) load(id string) (*ticket.Ticket, error) {
-	t, err := w.s.Load(id)
+	t, _, err := w.s.LoadAnywhere(id)
 	if errors.Is(err, ticket.ErrNotFound) {
 		return nil, fmt.Errorf("ticket %s: %w", id, web.ErrNotFound)
 	}
@@ -377,6 +432,7 @@ func (w *webSource) assign(name, id string, add, force bool) error {
 func (w *webSource) SetClosed(name string, closed, force bool) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	w.actAsNow()
 	var err error
 	if closed {
 		var ix *link.Index

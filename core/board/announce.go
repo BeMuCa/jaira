@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/BeMuCa/jaira/core/release"
 )
 
 // jairaMarker bounds the block jaira manages, so the note can be updated or
@@ -124,15 +127,19 @@ const agentNote = "## Task tracking: jaira\n" +
 	"  ticket's commit list from two sources: the history of the ticket file itself,\n" +
 	"  and the commits that name its id. The first source is thin by design (see the\n" +
 	"  point on lanes that change no code), and on a board that has not been shared\n" +
-	"  yet (`jaira init` gitignores `.jaira/` until `jaira share`) it does not exist\n" +
-	"  at all — so the handle in the subject line is what the list is actually built\n" +
-	"  from. Leave it out and the list stays empty and the move into the last lane\n" +
-	"  is refused\n" +
+	"  yet (`jaira init` keeps `.jaira/` out of git until `jaira share`) it does not\n" +
+	"  exist at all — so the handle in the subject line is what the list is actually\n" +
+	"  built from. Leave it out and the list stays empty and the move into the last\n" +
+	"  lane is refused\n" +
 	"- **the ticket rides with the code, never on its own.** Move the ticket first,\n" +
 	"  then `git add` the changed file under `.jaira/tickets/` alongside your source\n" +
 	"  changes and commit them together. A reviewer then sees the change and what it\n" +
 	"  was for in one place, instead of a diff whose ticket is still in whatever\n" +
-	"  state the last commit left it\n" +
+	"  state the last commit left it. On a board not shared yet (`.jaira/` stays out\n" +
+	"  of git from `jaira init` until `jaira share`) there is no ticket file to add\n" +
+	"  or commit — commit the code alone, and the handle in its subject is the\n" +
+	"  whole link. The next point holds there all the more; only its sentences\n" +
+	"  about the ticket file fall away\n" +
 	"- **a lane that changed no code commits nothing.** critique, testing and review\n" +
 	"  leave a note and a lane change and no source change; a commit carrying only\n" +
 	"  that is bookkeeping, and a branch with one of them per lane hides the work\n" +
@@ -183,7 +190,9 @@ type LaneFact struct {
 	Question    bool
 	Parking     bool
 	RejectsTo   []string
-	Produces    []string
+	// MaxRounds is how many send-backs in a row the lane may make; 0 is no limit.
+	MaxRounds int
+	Produces  []string
 	// Fresh marks a lane a new agent works, not the one carrying the ticket.
 	Fresh bool
 }
@@ -239,8 +248,12 @@ func laneSection(facts []LaneFact) string {
 	// cannot infer from an ordered list.
 	for _, f := range facts {
 		if len(f.RejectsTo) > 0 {
-			fmt.Fprintf(&b, "Loop: %s sends work back to %s, and that repeats until %s has nothing left to say.\n",
+			fmt.Fprintf(&b, "Loop: %s sends work back to %s, and that repeats until %s has nothing left to say.",
 				f.ID, OrList(f.RejectsTo), f.ID)
+			if f.MaxRounds > 0 {
+				fmt.Fprintf(&b, " At most %d times in a row: the next send-back is refused, and the teamlead decides, or a person.", f.MaxRounds)
+			}
+			b.WriteString("\n")
 		}
 	}
 
@@ -257,7 +270,11 @@ func laneSection(facts []LaneFact) string {
 		case f.HumanExit:
 			marks = append(marks, "**a person's, not yours** — you may move work in, or send it back to an earlier lane, never on")
 		case f.Question:
-			marks = append(marks, "**a person's, not yours** — you may move work in, never out")
+			// Nothing in the gate holds a ticket here — requires-question
+			// guards the way in, not the way out — so the line says what the
+			// lane is for, and that leaving it waits on the answer, not on a
+			// refusal.
+			marks = append(marks, "**a person answers here** — you may move work in, and move it on once the question is answered")
 		default:
 			marks = append(marks, "no agent step; move through it")
 		}
@@ -331,35 +348,109 @@ func NoteIsCurrent(root string, lanes []LaneFact) (current bool, stale []string)
 			// creates it; nothing here should nag about a file nobody wrote.
 			continue
 		}
-		want, ok := managedBlock(string(existing), noteFor(lanes))
+		bare := withoutVersion(string(existing))
+		want, ok := managedBlock(bare, noteFor(root, lanes))
 		if !ok {
 			continue // no managed block: this file is somebody else's entirely
 		}
-		if want != string(existing) {
+		if want != bare {
 			stale = append(stale, name)
 		}
 	}
 	return len(stale) == 0, stale
 }
 
-// noteFor is the note as it would be written for these lanes.
-func noteFor(lanes []LaneFact) string { return agentNote + laneSection(lanes) }
+// noteFor is the note as it would be written for these lanes on the board at
+// root: the commands, the lanes, and how work arrives there (.jaira/pr).
+func noteFor(root string, lanes []LaneFact) string {
+	return agentNote + laneSection(lanes) + arrivalSection(PRModeFor(root))
+}
+
+// versionLine opens the block with the version of jaira that last changed its
+// text, so an older jaira can tell it is looking at a newer block and leave it
+// alone (RenewInAgentFiles). It sits on a line of its own after the start
+// marker rather than inside it, because jaira before it finds the block by the
+// start marker's exact text and would append a second block otherwise.
+//
+// A CRLF file (a Windows checkout with core.autocrlf) carries the line as
+// '-->\r\n'; read as LF-only, its version would be lost and the guard gone.
+const versionLinePrefix = "<!-- jaira:version "
+
+var versionLineRe = regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(versionLinePrefix) + `(\S+) -->\r?\n`)
+
+// versioned is note as it is written: under the version line, except from a
+// dev build, whose version says nothing about what it would write.
+func versioned(note string) string {
+	if release.Current == "dev" {
+		return note
+	}
+	return versionLinePrefix + release.Current + " -->\n" + note
+}
+
+// blockBounds are where the managed block of s starts and ends, ok false
+// when s has none.
+func blockBounds(s string) (start, end int, ok bool) {
+	start = strings.Index(s, jairaMarkerStart)
+	end = strings.Index(s, jairaMarkerEnd)
+	return start, end, start >= 0 && end > start
+}
+
+// BlockVersion is the version that last changed the managed block of s, ""
+// when it carries none — written by a jaira from before the line existed.
+func BlockVersion(s string) string {
+	start, end, ok := blockBounds(s)
+	if !ok {
+		return ""
+	}
+	if m := versionLineRe.FindStringSubmatch(s[start:end]); m != nil {
+		return m[1]
+	}
+	return ""
+}
+
+// withoutVersion is s without the version line of its managed block. Whether
+// a block is current is judged on this: the line alone changing is no reason
+// to rewrite a file, or every release would leave a one-line diff behind.
+func withoutVersion(s string) string {
+	start, end, ok := blockBounds(s)
+	if !ok {
+		return s
+	}
+	loc := versionLineRe.FindStringIndex(s[start:end])
+	if loc == nil {
+		return s
+	}
+	return s[:start+loc[0]] + s[start+loc[1]:]
+}
 
 // managedBlock returns what s would become if its managed block were rewritten
 // with note, and whether s has such a block at all. One definition, used by the
 // writer and by the drift check, so the two can never disagree about what
 // "already current" means.
+//
+// A file with CRLF line endings — a Windows checkout with core.autocrlf — gets
+// the block in CRLF too. Built in LF, it never equals what is on disk, so the
+// drift check would call the file out of date straight after 'jaira update',
+// and the update would leave the file with mixed endings.
 func managedBlock(s, note string) (string, bool) {
 	start := strings.Index(s, jairaMarkerStart)
 	end := strings.Index(s, jairaMarkerEnd)
 	if start < 0 || end <= start {
 		return "", false
 	}
-	newBlock := jairaMarkerStart + "\n" + note + "\n" + jairaMarkerEnd
+	// The file's own lines decide, not the block: a CRLF file whose block an
+	// older build wrote in LF would otherwise keep it in LF for good.
+	outside := s[:start] + s[end+len(jairaMarkerEnd):]
+	if strings.TrimSpace(outside) == "" {
+		outside = s // nothing but the block: it is the file
+	}
+	nl := lineEnding(outside)
+	note = strings.ReplaceAll(note, "\n", nl)
+	newBlock := jairaMarkerStart + nl + note + nl + jairaMarkerEnd
 	if localRel := strings.Index(s[start:end], jairaMarkerLocal); localRel >= 0 {
 		localIdx := start + localRel
-		preserved := strings.TrimRight(s[localIdx+len(jairaMarkerLocal):end], "\n")
-		newBlock = jairaMarkerStart + "\n" + note + "\n\n" + jairaMarkerLocal + preserved + "\n" + jairaMarkerEnd
+		preserved := strings.TrimRight(s[localIdx+len(jairaMarkerLocal):end], "\r\n")
+		newBlock = jairaMarkerStart + nl + note + nl + nl + jairaMarkerLocal + preserved + nl + jairaMarkerEnd
 	}
 	return s[:start] + newBlock + s[end+len(jairaMarkerEnd):], true
 }
@@ -398,15 +489,20 @@ const claudeImport = "<!-- jaira: the jaira block lives in AGENTS.md -->\n@AGENT
 // keep it out of, and every teammate's clone reads that the same way. With no
 // block anywhere, both get one, which is what jaira always did.
 func chosenAgentFiles(root string) []string {
+	if have := filesWithBlock(root); len(have) > 0 {
+		return have
+	}
+	return agentFiles
+}
+
+// filesWithBlock are the agent instruction files at root that carry the block.
+func filesWithBlock(root string) []string {
 	var have []string
 	for _, name := range agentFiles {
 		b, err := os.ReadFile(filepath.Join(root, name))
 		if err == nil && strings.Contains(string(b), jairaMarkerStart) {
 			have = append(have, name)
 		}
-	}
-	if len(have) == 0 {
-		return agentFiles
 	}
 	return have
 }
@@ -415,6 +511,29 @@ func chosenAgentFiles(root string) []string {
 // carry it — see chosenAgentFiles.
 func AnnounceInAgentFiles(root string, lanes []LaneFact) (written []string, err error) {
 	return announceIn(root, chosenAgentFiles(root), lanes, false)
+}
+
+// RenewInAgentFiles rewrites the block in the files that already carry it and
+// nowhere else. It is what a board brought up to date without anybody asking
+// may do: refreshing a block somebody keeps is expected, creating AGENTS.md or
+// CLAUDE.md in a repository that has neither is not — that stays the act of
+// 'jaira init' and 'jaira update'.
+//
+// A block a newer jaira wrote (BlockVersion) is left byte for byte and named
+// in newer: two people on two versions in one repository would otherwise
+// rewrite it back and forth, one commit each.
+func RenewInAgentFiles(root string, lanes []LaneFact) (written, newer []string, err error) {
+	var names []string
+	for _, name := range filesWithBlock(root) {
+		b, _ := os.ReadFile(filepath.Join(root, name))
+		if v := BlockVersion(string(b)); v != "" && release.Current != "dev" && release.Newer(v, release.Current) {
+			newer = append(newer, name+" ("+v+")")
+			continue
+		}
+		names = append(names, name)
+	}
+	written, err = announceIn(root, names, lanes, false)
+	return written, newer, err
 }
 
 // PreviewAgentFiles reports what AnnounceInAgentFiles (choice "") or ChooseAgentFiles(choice)
@@ -580,8 +699,8 @@ func announceIn(root string, names []string, lanes []LaneFact, dry bool) (writte
 // the user wrote is not something a tool should do invisibly.
 func announceInAgentFile(root, name string, lanes []LaneFact, dry bool) (path string, action string, err error) {
 	path = filepath.Join(root, name)
-	note := agentNote + laneSection(lanes)
-	block := jairaMarkerStart + "\n" + note + "\n" + jairaMarkerEnd + "\n"
+	note := noteFor(root, lanes)
+	block := jairaMarkerStart + "\n" + versioned(note) + "\n" + jairaMarkerEnd + "\n"
 
 	existing, readErr := os.ReadFile(path)
 	if readErr != nil {
@@ -601,10 +720,12 @@ func announceInAgentFile(root, name string, lanes []LaneFact, dry bool) (path st
 	// block; one written before the start marker or after the end marker is
 	// ordinary user text, not the boundary, and is left alone. That rule lives
 	// in managedBlock, which the drift check reads too.
-	if updated, ok := managedBlock(s, note); ok {
-		if updated == s {
+	bare := withoutVersion(s)
+	if updated, ok := managedBlock(bare, note); ok {
+		if updated == bare {
 			return path, "unchanged", nil
 		}
+		updated, _ = managedBlock(bare, versioned(note))
 		if !dry {
 			if err := os.WriteFile(path, []byte(updated), 0o644); err != nil {
 				return path, "", err
@@ -616,9 +737,12 @@ func announceInAgentFile(root, name string, lanes []LaneFact, dry bool) (path st
 	sep := "\n"
 	if !strings.HasSuffix(s, "\n") {
 		sep = "\n\n"
-	} else if !strings.HasSuffix(s, "\n\n") {
-		sep = "\n"
 	}
+	// In the file's own line endings, as managedBlock rewrites it, or the
+	// block just appended reads as drifted at once.
+	nl := lineEnding(s)
+	sep = strings.ReplaceAll(sep, "\n", nl)
+	block = strings.ReplaceAll(block, "\n", nl)
 	if !dry {
 		if err := os.WriteFile(path, []byte(s+sep+block), 0o644); err != nil {
 			return path, "", err

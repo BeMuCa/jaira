@@ -15,27 +15,34 @@ import (
 	"strings"
 
 	"github.com/BeMuCa/jaira/core/lane"
+	"github.com/BeMuCa/jaira/core/people"
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
 // Violation codes. Agents branch on these, so they are stable strings rather
 // than prose that might be reworded.
 const (
-	CodeMissingField    = "missing_field"
-	CodeBlocked         = "blocked"
-	CodeUnknownLane     = "unknown_lane"
-	CodeNoSuchLane      = "no_such_lane"
-	CodeMissingOutcome  = "missing_outcome"
-	CodeNeedsSignal     = "needs_nonmodel_signal"
-	CodeNeedsQuestion   = "needs_question"
-	CodeNeedsReason     = "needs_blocked_reason"
-	CodeNeedsCommits    = "needs_commits"
-	CodeSelfBlock       = "self_block"
+	CodeMissingField   = "missing_field"
+	CodeBlocked        = "blocked"
+	CodeUnknownLane    = "unknown_lane"
+	CodeNoSuchLane     = "no_such_lane"
+	CodeMissingOutcome = "missing_outcome"
+	CodeNeedsSignal    = "needs_nonmodel_signal"
+	CodeNeedsQuestion  = "needs_question"
+	CodeNeedsReason    = "needs_blocked_reason"
+	CodeNeedsCommits   = "needs_commits"
+	CodeSelfBlock      = "self_block"
+	// CodeWaitsOnPR: a pull request in blocked-by (pr#<n>) has not merged.
+	CodeWaitsOnPR       = "waits_on_pr"
 	CodeMissingProduces = "missing_lane_output"
 	CodePlanIncomplete  = "plan_incomplete"
 	CodeNeedsHuman      = "needs_human"
 	CodeStepNotChosen   = "step_not_chosen"
 	CodeNotOwner        = "not_owner"
+	CodeMaxRounds       = "max_rounds"
+	CodeVerdictSendBack = "verdict_sends_back"
+	CodeNeedsBughunt    = "needs_bughunt"
+	CodeHuntUncommitted = "hunt_uncommitted"
 )
 
 // Violation is one reason a move was refused. Field is set when the fix is to
@@ -116,6 +123,13 @@ type Request struct {
 	// require a human to release a ticket rely on it.
 	Interactive bool
 
+	// ByPerson marks a move a person made — in the board, or typed at a
+	// terminal. It opens no gate a person's hand is needed for (Interactive
+	// does that); it only exempts the move from a loop lane's max-rounds,
+	// because that limit exists to hand the decision to a person, and this
+	// move is that person deciding.
+	ByPerson bool
+
 	// NewAssignee accompanies a move that also hands the ticket to someone
 	// else. A hand-over is always allowed, regardless of who currently owns
 	// the ticket — otherwise an absent owner could freeze it forever.
@@ -143,6 +157,11 @@ func (r Request) isActor(who string) bool {
 // Env is the surrounding state a decision needs.
 type Env struct {
 	Lanes *lane.Set
+
+	// People is the board's people list. A refusal names a person under the
+	// jaira name the list gives them, the name 'jaira list' shows; nil names
+	// them as the ticket stores them.
+	People *people.List
 	// All is every ticket, used to evaluate blockers. Only id and status are read.
 	All []*ticket.Ticket
 
@@ -155,6 +174,14 @@ type Env struct {
 	// it did before this existed.
 	DeriveCommits func(t *ticket.Ticket) []string
 
+	// CommitsElsewhere names the branches holding commits that name the
+	// ticket where DeriveCommits, which reads only what HEAD reaches, found
+	// none: the refusal then says where the work is instead of telling the
+	// person to commit what they already committed. Injected for the same
+	// reason DeriveCommits is; nil, or nothing found, leaves the refusal as
+	// it read before.
+	CommitsElsewhere func(t *ticket.Ticket) []string
+
 	// Satisfied answers whether a ticket that is not in All has nevertheless
 	// been finished and filed away — in the logbook, or in the archive in a
 	// terminal lane. It is injected for the same reason DeriveCommits is:
@@ -166,6 +193,30 @@ type Env struct {
 	// finishing the blocker was the thing that broke the board. nil keeps the
 	// old behaviour, which is right for a caller that has no store.
 	Satisfied func(id string) bool
+
+	// PR answers a blocked-by entry pr#<n>: whether pull request n is
+	// merged, and what the ticket waits on while it is not. Injected for the
+	// same reason DeriveCommits is — answering it means asking gh or glab.
+	// nil leaves every pr#<n> waiting: starting work before its pull request
+	// merged is worse than waiting a round longer.
+	PR func(n int) PRWait
+
+	// Hunt reports whether a ticket changed code and what its newest bug
+	// hunt says about HEAD. Injected for the same reason DeriveCommits is:
+	// answering it means asking git. It is called only for a move into a
+	// lane a person releases, on a board that runs hunts; nil means no
+	// check, which is right for a caller without a repository.
+	Hunt func(t *ticket.Ticket) HuntReport
+}
+
+// HuntReport is what Env.Hunt answers. State is the newest finished hunt's
+// state as 'jaira show --brief' reports it (ok, fail, unknown, skipped), and
+// empty when no hunt finished.
+type HuntReport struct {
+	CodeChanged bool
+	State       string
+	At          string
+	Head        string
 }
 
 // CheckAdvance decides whether t may move to req.To.
@@ -217,7 +268,7 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 				Code: CodeNotOwner,
 				Message: fmt.Sprintf(
 					"%s belongs to %s — ask them, take it over with 'jaira set %s assignee=<you>', or override with --force",
-					ticket.Handle(t.ID), owner, ticket.Handle(t.ID)),
+					ticket.Handle(t.ID), env.People.Canonical(owner), ticket.Handle(t.ID)),
 			})
 		}
 	}
@@ -331,6 +382,10 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 			derived = env.DeriveCommits(t)
 		}
 		if len(derived) == 0 {
+			var elsewhere []string
+			if env.CommitsElsewhere != nil {
+				elsewhere = env.CommitsElsewhere(t)
+			}
 			vs = append(vs, Violation{
 				Code:  CodeNeedsCommits,
 				Field: ticket.FieldCommits,
@@ -342,7 +397,7 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 				// any commit yet, so that is what is said first.
 				Message: fmt.Sprintf(
 					"lane %q requires the commits that carry this change, and git has none for %s yet. Commit the change with the ticket file alongside it, or name %s in the commit message, and the list fills itself in. To record it by hand instead: 'jaira set %s commits=<sha>[,<sha>]', or pass --commits on the move",
-					target.ID, ticket.Handle(t.ID), ticket.Handle(t.ID), ticket.Handle(t.ID)),
+					target.ID, ticket.Handle(t.ID), ticket.Handle(t.ID), ticket.Handle(t.ID)) + onBranches(t, elsewhere),
 			})
 		}
 	}
@@ -401,6 +456,30 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 		})
 	}
 
+	// A loop lane that keeps finding more stops after max-rounds send-backs in
+	// a row and hands the next decision on: to the teamlead that started the
+	// worker, where there is one, and to a person otherwise or when the
+	// teamlead cannot take it. Only a lane's own
+	// send-back is counted and refused: a person sending work back is the
+	// decision this limit exists to bring about, and so is the hand-off into
+	// a lane a person answers in — the very move the refusal prescribes,
+	// which on a board drawing that lane earlier is itself a send-back.
+	if cur, ok := env.Lanes.Get(t.Status); ok && !req.Interactive && !req.ByPerson &&
+		!target.AsksPerson() && env.Lanes.SendsBack(t.Status, req.To) {
+		if left, limited := cur.RoundsLeft(t); limited && left == 0 {
+			where := "the lane a person answers in"
+			if p := env.Lanes.PersonLane(cur); p != "" {
+				where = fmt.Sprintf("%q", p)
+			}
+			vs = append(vs, Violation{
+				Code: CodeMaxRounds,
+				Message: fmt.Sprintf(
+					"lane %q has sent %s back %d times in a row, its max-rounds: the teamlead decides now, or a person. Started with a parent session, leave it here, set the question with 'jaira set %s question=\"<this round's findings; is the definition of done wrong, or does the loop never end?>\"' and send it to that session; without one, move it to %s with --question and the same text. Whoever decides gives the loop its rounds back with 'jaira set %s back-count=0' and sends it back; --force does not",
+					cur.ID, ticket.Handle(t.ID), t.BackCount, ticket.Handle(t.ID), where, ticket.Handle(t.ID)),
+			})
+		}
+	}
+
 	// The plan and the definition of done are not independent. The plan is the
 	// method — write the spec, design it, implement it — and the criteria cannot
 	// have been met while the work that meets them is still under way. A ticket
@@ -445,7 +524,121 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 		}
 	}
 
+	// A ticket that changed code reaches the lane a person releases only
+	// with a bug hunt that covers HEAD. Before this the gate never read the
+	// hunt: a commit after the last hunt changed the hunted files and the
+	// ticket still landed in sign-off, its hunt reading fail. The human lane
+	// is not guarded — it takes questions, testing's max-rounds escape among
+	// them — and neither is a board without a lane that owes hunt-verdict:
+	// it never runs hunts, and demanding one there would refuse every move.
+	if target.RequiresHumanExit && t.Status != target.ID && !req.Interactive &&
+		env.Hunt != nil && runsHunts(env.Lanes) {
+		vs = append(vs, huntAgainstMove(env.Hunt(t), t, target)...)
+	}
+
+	// A verdict says which way the ticket goes, and the move must go that way.
+	// Nothing else read the field before: a review that wrote "send back"
+	// still saw its ticket land in sign-off, in front of a person, unapproved.
+	// Only a lane that declares its words is read, and only its send-back
+	// word refuses. A move made in the board is a person deciding.
+	if !req.Interactive && !target.RequiresBlockedReason {
+		vs = append(vs, verdictAgainstMove(env.Lanes, t, target)...)
+	}
+
 	return vs
+}
+
+// runsHunts reports a board with a lane that owes hunt-verdict.
+func runsHunts(set *lane.Set) bool {
+	for _, l := range set.Lanes {
+		if slices.Contains(l.OutputProduces, "hunt-verdict") {
+			return true
+		}
+	}
+	return false
+}
+
+// huntAgainstMove refuses a ticket that changed code and whose newest hunt
+// does not cover HEAD: none finished, a commit since touched what it read,
+// or a file it read is changed and not committed. ok passes, and so does
+// skipped — stop-after-fix is the ticket's own choice to run no more hunts.
+func huntAgainstMove(r HuntReport, t *ticket.Ticket, target *lane.Lane) Violations {
+	if !r.CodeChanged {
+		return nil
+	}
+	h := ticket.Handle(t.ID)
+	head := r.Head
+	if head == "" {
+		head = "unknown"
+	}
+	var msg string
+	switch r.State {
+	case "ok", "skipped":
+		return nil
+	case "unknown":
+		return Violations{{
+			Code: CodeHuntUncommitted,
+			Message: fmt.Sprintf(
+				"lane %q needs a bug hunt that covers HEAD, and %s has uncommitted changes in files its last hunt at %s read (HEAD %s), or git could not answer: commit them first, then run /jaira-role-bughunt %s if they changed code — or, as the person deciding, pass --force",
+				target.ID, h, r.At, head, h),
+		}}
+	case "":
+		msg = fmt.Sprintf("lane %q needs a bug hunt that covers HEAD, and %s changed code but no bug hunt finished on it (HEAD %s)", target.ID, h, head)
+	default:
+		msg = fmt.Sprintf("lane %q needs a bug hunt that covers HEAD, and %s committed changes to hunted files after its last hunt at %s (HEAD %s)", target.ID, h, r.At, head)
+	}
+	return Violations{{
+		Code:    CodeNeedsBughunt,
+		Message: msg + fmt.Sprintf(": run /jaira-role-bughunt %s, then try this move again — or, as the person deciding, pass --force", h),
+	}}
+}
+
+// verdictAgainstMove refuses a move that lands past a lane whose verdict sent
+// the work back — from that lane, or around it: blocked is drawn last, so
+// blocked → signoff is not even a forward move, and a ticket parked from
+// review would otherwise walk into sign-off past its own send-back. Any other
+// verdict passes, free text included: only the send-back word is a rail.
+func verdictAgainstMove(set *lane.Set, t *ticket.Ticket, target *lane.Lane) Violations {
+	to := set.Index(target.ID)
+	for i, cur := range set.Lanes {
+		if !cur.DeclaresVerdicts() || to <= i {
+			continue
+		}
+		if word, back := cur.SendsBackBy(t.ReviewVerdict); back {
+			return Violations{{
+				Code:  CodeVerdictSendBack,
+				Field: ticket.FieldReviewVerdict,
+				Message: fmt.Sprintf(
+					"%s says %q: lane %q sent %s back, so it may not go on to %q. Move it back to %s — or, as the person deciding, pass --force",
+					ticket.FieldReviewVerdict, word, cur.ID, ticket.Handle(t.ID), target.ID, sendBackTo(set, cur)),
+			}}
+		}
+	}
+	return nil
+}
+
+// sendBackTo names where a sent-back ticket goes from cur: its declared back
+// edges, else the last earlier lane that produces the outcome — the lane the
+// work was done in, in-progress on the default board — else "an earlier lane".
+func sendBackTo(set *lane.Set, cur *lane.Lane) string {
+	if len(cur.RejectsTo) > 0 {
+		return quoteAll(cur.RejectsTo)
+	}
+	at := set.Index(cur.ID)
+	for i := at - 1; i >= 0; i-- {
+		if slices.Contains(set.Lanes[i].OutputProduces, ticket.FieldOutcomeWhat) {
+			return fmt.Sprintf("%q", set.Lanes[i].ID)
+		}
+	}
+	return "an earlier lane"
+}
+
+func quoteAll(ws []string) string {
+	q := make([]string, len(ws))
+	for i, w := range ws {
+		q[i] = fmt.Sprintf("%q", w)
+	}
+	return strings.Join(q, " or ")
 }
 
 // OutputOwed lists the fields lane l declares it produces that ticket t has not
@@ -589,6 +782,13 @@ func fieldFilled(t *ticket.Ticket, field string) bool {
 	return strings.TrimSpace(v) != ""
 }
 
+// PRWait is what a pull request in blocked-by stands at. Why is the reason
+// it still blocks, shown as "waits for PR #12: <Why>"; empty when Merged.
+type PRWait struct {
+	Merged bool
+	Why    string
+}
+
 // blockedBy reports unresolved dependencies.
 func blockedBy(env Env, t *ticket.Ticket) Violations {
 	if len(t.BlockedBy) == 0 {
@@ -600,6 +800,30 @@ func blockedBy(env Env, t *ticket.Ticket) Violations {
 	}
 	var vs Violations
 	for _, dep := range t.BlockedBy {
+		if n, isPR, err := ticket.ParsePRRef(dep); isPR {
+			why := ""
+			switch {
+			case err != nil:
+				why = err.Error()
+			case env.PR == nil:
+				why = "not asked here"
+			default:
+				w := env.PR(n)
+				if w.Merged {
+					continue
+				}
+				why = w.Why
+			}
+			label := dep
+			if err == nil {
+				label = fmt.Sprintf("PR #%d", n)
+			}
+			vs = append(vs, Violation{
+				Code:    CodeWaitsOnPR,
+				Message: fmt.Sprintf("waits for %s: %s", label, why),
+			})
+			continue
+		}
 		if dep == t.ID {
 			vs = append(vs, Violation{
 				Code:    CodeSelfBlock,
@@ -632,6 +856,30 @@ func blockedBy(env Env, t *ticket.Ticket) Violations {
 		}
 	}
 	return vs
+}
+
+// Waiting is what a ticket still waits on, one line per blocked-by entry
+// that has not cleared — "waits for PR #12: open", "blocked by A3K9QP ...".
+// Empty when nothing in blocked-by holds it back.
+func Waiting(env Env, t *ticket.Ticket) []string {
+	vs := blockedBy(env, t)
+	out := make([]string, 0, len(vs))
+	for _, v := range vs {
+		out = append(out, v.Message)
+	}
+	return out
+}
+
+// WaitingOnPR is the part of Waiting that names a pull request in
+// blocked-by: "waits for PR #12: open".
+func WaitingOnPR(env Env, t *ticket.Ticket) []string {
+	var out []string
+	for _, v := range blockedBy(env, t) {
+		if v.Code == CodeWaitsOnPR {
+			out = append(out, v.Message)
+		}
+	}
+	return out
 }
 
 // Ready reports whether a ticket satisfies the promotion gate, without
@@ -711,4 +959,14 @@ func OwedBy(set *lane.Set, t *ticket.Ticket) map[string]string {
 		}
 	}
 	return owed
+}
+
+// onBranches is what the requires-commits refusal adds when commits naming
+// the ticket exist, only on branches this checkout's HEAD does not reach.
+func onBranches(t *ticket.Ticket, branches []string) string {
+	if len(branches) == 0 {
+		return ""
+	}
+	return fmt.Sprintf(". Commits naming %s sit on %s: run the move in the worktree of the branch that carries the work, or merge it first",
+		ticket.Handle(t.ID), strings.Join(branches, ", "))
 }

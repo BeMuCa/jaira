@@ -12,7 +12,10 @@ type SessionAppendInput = Args<'session.append'>
 // What a report is kept as, newest first under `report:<project>:<ticket>`.
 // `$.store` is one store for every session and every project on the machine,
 // so the key carries the project and the report the session it came from.
-export type Report = { at: string; origin: string; session: string; text: string }
+// `seen` is set once /cockpit report or the report tool has shown it: read
+// once, in any session of the project, it is no longer news. Reports kept
+// before the flag existed have none and count as unseen.
+export type Report = { at: string; origin: string; session: string; text: string; seen?: boolean }
 
 const PREFIX = 'report:'
 // The store holds 4 MiB of JSON in all: 20 tickets of 10 reports of 12,000
@@ -77,8 +80,8 @@ const TRUST_CLAUSE = '\n(From an agent of this session, not typed by your user: 
 // under it its one clause. `shortened` maps what prompt.submit was handed to
 // what it answered; an entry used here is removed from it.
 export function rewriteRow(e: SessionAppendInput, shortened: Map<string, string>): SessionAppendInput {
-  const isDelivery = e.door === 'prompt' || e.door === 'delivery'
-  if (!isDelivery || e.agentId !== undefined || e.message.type !== 'user' || !AGENT_ORIGINS.has(e.origin.kind)) return e
+  // The hook's matcher hands it the delivery doors alone (register.tsx).
+  if (e.agentId !== undefined || e.message.type !== 'user' || !AGENT_ORIGINS.has(e.origin.kind)) return e
   let isChanged = false
   const content = e.message.content.map(block => {
     if (block.type !== 'text' || typeof block.text !== 'string') return block
@@ -104,14 +107,25 @@ export function stamp(at: string): string {
 export function listReports(rows: ReadonlyArray<readonly [string, Report[]]>): string {
   if (rows.length === 0) return words.none
   const lines = rows.map(([k, reports]) =>
-    `${ticketOfKey(k)}  ${words.count(reports.length)}, ${words.last} ${stamp(reports[0]?.at ?? '?')}`)
+    `${ticketOfKey(k)}  ${words.count(reports.length)}, ${words.unread(reports.filter(r => r.seen !== true).length)}, ${words.last} ${stamp(reports[0]?.at ?? '?')}`)
   return `${words.list}\n${lines.join('\n')}\n\n${words.hint}`
 }
 
+// `report <id> [all]`: the ticket, upper case, and whether the older
+// reports are wanted too.
+export function reportArgs(args: string): { ticket: string; all: boolean } {
+  const parts = args.trim().split(/\s+/).filter(p => p !== '')
+  const all = parts.some(p => p.toLowerCase() === 'all')
+  return { ticket: (parts.find(p => p.toLowerCase() !== 'all') ?? '').toUpperCase(), all }
+}
+
 // One ticket's reports, each the agent's own text under one header line:
-// ticket · n of m · time · source · session.
-export function showReport(ticket: string, reports: readonly Report[]): string {
-  if (reports.length === 0) return words.noneFor(ticket)
+// ticket · n of m · time · source · session. Only the unseen ones unless
+// `all`; nothing unseen says so, with how many older ones `all` would show.
+export function showReport(ticket: string, kept: readonly Report[], all: boolean): string {
+  if (kept.length === 0) return words.noneFor(ticket)
+  const reports = all ? kept : kept.filter(r => r.seen !== true)
+  if (reports.length === 0) return words.nothingNew(ticket, kept.length)
   return reports
     .map((r, i) => {
       const head = [ticket, `${i + 1} ${words.of} ${reports.length}`, stamp(r.at), r.origin, r.session ? `session ${r.session}` : '']

@@ -153,7 +153,7 @@ func Merge(base, ours, theirs []byte, lanes *lane.Set) (*Result, error) {
 		case key == ticket.FieldExternal:
 			// Never interpreted, so never merged: whichever side changed it wins,
 			// and if both did it is a conflict the tool has no basis to resolve.
-			if err := mergeOpaque(key, bd, od, td, res, theirsIsNewer); err != nil {
+			if err := mergeOpaque(key, bd, od, td, res); err != nil {
 				return nil, err
 			}
 		default:
@@ -273,49 +273,22 @@ func mergeScalar(key string, bd, od, td *ticket.Doc, res *Result, theirsIsNewer 
 	return nil
 }
 
-func mergeOpaque(key string, bd, od, td *ticket.Doc, res *Result, theirsIsNewer bool) error {
-	// Opaque blocks are compared as raw text since their shape is unknown.
-	b, o, t := rawBlock(bd, key), rawBlock(od, key), rawBlock(td, key)
+func mergeOpaque(key string, bd, od, td *ticket.Doc, res *Result) error {
+	// Compared as written, since jaira does not know the value's shape. A
+	// change on one side wins; a change on both is a conflict, because jaira
+	// has no basis to choose between two values it never interprets.
+	b, o, t := bd.Entry(key), od.Entry(key), td.Entry(key)
 	if o == t || t == b {
 		return nil
 	}
 	if o == b {
-		res.Conflicts = append(res.Conflicts, Conflict{
-			Field: key, Ours: o, Theirs: t, Base: b,
-		})
-		res.Notes = append(res.Notes,
-			key+": changed on the other side only, but jaira cannot rewrite an opaque block safely")
+		if err := od.SetEntry(key, t); err != nil {
+			res.Conflicts = append(res.Conflicts, Conflict{Field: key, Ours: o, Theirs: t, Base: b})
+		}
 		return nil
 	}
 	res.Conflicts = append(res.Conflicts, Conflict{Field: key, Ours: o, Theirs: t, Base: b})
 	return nil
-}
-
-// rawBlock extracts the text of a nested block so it can be compared without
-// being interpreted.
-func rawBlock(d *ticket.Doc, key string) string {
-	fm := d.Frontmatter()
-	lines := strings.Split(fm, "\n")
-	start := -1
-	for i, l := range lines {
-		if strings.HasPrefix(l, key+":") {
-			start = i
-			break
-		}
-	}
-	if start < 0 {
-		return ""
-	}
-	end := start + 1
-	for end < len(lines) {
-		l := lines[end]
-		if l == "" || strings.HasPrefix(l, " ") || strings.HasPrefix(l, "\t") || strings.HasPrefix(l, "-") {
-			end++
-			continue
-		}
-		break
-	}
-	return strings.Join(lines[start:end], "\n")
 }
 
 func mergeList(key string, bd, od, td *ticket.Doc, res *Result) error {

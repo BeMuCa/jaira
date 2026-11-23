@@ -156,6 +156,10 @@ Or download a binary from the releases page and put it on your `PATH`. Either
 way it is a single static executable with no runtime dependency: nothing to
 install alongside it, no daemon, no database.
 
+Windows Defender has flagged unsigned jaira releases as a trojan — a false
+positive of its machine-learning heuristics. What to do about it, and how the
+release reports it to Microsoft, is in [docs/WINDOWS.md](docs/WINDOWS.md).
+
 `git` is optional. jaira works fine in a directory that is not a repository; you
 only lose the parts that are about sharing (`jaira share`, the merge driver).
 
@@ -244,20 +248,24 @@ and names `jaira update --roles`.
 
 **No update path changes whether the board is shared.** `jaira update`,
 `jaira self upgrade`, `go install` of a newer build, the first command after
-the binary changed, and `jaira init` run again all leave `.gitignore` exactly
-as it was: a shared board stays shared, a private one stays private. Only
-`jaira share` and `jaira share --undo` change it.
+the binary changed, and `jaira init` run again leave a shared board shared and
+a private one private. Only `jaira share` and `jaira share --undo` change it.
+The one thing `jaira update` moves is where a private board is excluded: an
+entry an older jaira wrote into `.gitignore` goes to `.git/info/exclude`, and
+the changed `.gitignore` is yours to commit once.
 
 ## Start
 
 ```bash
 cd your-repo
-jaira init      # creates .jaira/, private and gitignored
+jaira init      # creates .jaira/, private: excluded in .git/info/exclude
 jaira           # opens the board
 ```
 
-**A board starts private.** `init` gitignores it, so your tickets are yours alone.
-When you want the team to have them:
+**A board starts private.** `init` excludes it in `.git/info/exclude`, so your
+tickets are yours alone. That file belongs to the repository's git directory,
+covers every worktree, and never shows up in a diff: the tracked `.gitignore`
+stays untouched. When you want the team to have them:
 
 ```bash
 jaira share
@@ -448,6 +456,18 @@ jaira show JJN9KH --for-lane critique --json
 That returns the prompt, only the declared fields, and the diff of the ticket's
 own commits. If the agent chose its own context, the contract would be a
 suggestion.
+
+**A loop lane can stop itself.** `max-rounds: <n>` in a lane file is how many
+times in a row that lane may send a ticket back; the next send-back is refused
+(exit 3) with a message naming the lane a person answers in, usually `human`.
+The shipped critique, optimize and testing lanes say `max-rounds: 3`. The count
+is the ticket's `back-count`: a send-back made by a person — in the board, or
+`jaira move` typed at a terminal — is never refused and starts it again, as
+does one from another lane; the hand-off into a lane a person answers in (one that
+takes a question and no agent works) is never refused, wherever the board draws it; and `--force` overrides it like any
+refusal.
+`--for-lane` hands on `max_rounds` and `rounds_left` for such a lane. The value
+must be a whole number above 0; anything else is refused when the lane loads.
 
 Both agent files (`CLAUDE.md`, `AGENTS.md`) carry a generated block naming this
 board's lanes in order, any loop a lane declares, and for each lane whether an
@@ -827,6 +847,7 @@ left alone and reported, and `--force` replaces it too.
 | `/jaira-role-research <question>` | Finds the facts out first, each with its source and confidence. |
 | `/jaira-role-tester [id]` | Runs the tests and reports what fails. Fixes nothing. |
 | `/jaira-role-acceptance <id>...` | Builds the acceptance page and reads your marks back. |
+| `/jaira-role-signoff [id]...` | Puts each ticket in signoff to you as a status line, a sorted table of its notes and one recommendation, with the accept and give-back lines ready. Changes nothing. |
 | `/jaira-role-pr <id>` | Pushes the branch, opens the pull request when you typed it, answers review comments. Never merges. |
 | `/jaira-role-logbook-summary [period]` | Writes a report for a project lead, with hours. |
 
@@ -1001,6 +1022,7 @@ grows by one with every send-back (parking in blocked does not count);
 jaira                      open the home screen: your boards, and what each needs
 jaira board                open the board here directly
 jaira web                  the page in the browser: sort tickets into epics, read a ticket and its notes
+jaira pr [<branch>]        where the branch's pull request stands (threads, CI, reviews); --watch follows it line by line
 jaira init                 prepare a repository
 jaira update               re-apply setup after upgrading
 jaira self upgrade         replace the jaira binary with the latest release
@@ -1045,6 +1067,7 @@ jaira resolve <id>         settle the fields a merge could not resolve
 jaira projects             boards you have opened
 jaira projects add <path>  register a board (--scan searches two levels down)
 jaira whoami               the identity jaira acts as, and the state of this board
+jaira people               who is who: each person's jaira name and the names that mean them (alias, rename)
 jaira share                publish the board (--undo to make it private)
 jaira roles install        write the teamlead, dispatcher and worker prompts as skills, and the cockpit mod (--agent copilot for Copilot)
 jaira hook print           print a Claude Code Stop-hook snippet that refuses to end a session with agentic lanes unworked
@@ -1268,7 +1291,11 @@ The pull request belongs to the maintainer from the moment it exists. An agent
 pushes its branch and stops there: it does not open the pull request, does not
 merge one, and does not approve one. Opening it is the maintainer's call, given
 as an instruction — so whoever wrote the change is never whoever decides it
-arrives.
+arrives. This repository's board has no `.jaira/pr`; a board
+that commits one saying `agent` lets jaira-role-pr open the pull request once
+`jaira roles pr-gate` finds every ticket on the branch in done, or in signoff
+where `.jaira/pr-when` says so — merging and approving stay the maintainer's
+there too.
 
 Layering is enforced by the module graph: `core/` imports nothing from `cmd/` or
 `internal/`. The CLI and the TUI are peers over the same core, which is the only

@@ -7,6 +7,7 @@ precedence: 45
 agentic: true
 model-tier: strong
 rejects-to: in-progress
+max-rounds: 3
 input-requires: [goal, definition-of-done, outcome-what, outcome-resolves, diff, notes]
 output-produces: [review-summary]
 creator: BeMuCa
@@ -65,6 +66,25 @@ Then:
 
 - **Nothing left to say.** Write `review-summary="none"` explicitly — an empty
   field means nobody looked — and move the ticket on to the next lane.
+
+**A small change is critiqued and optimized in one pass.** When what you
+judge changes fewer than 50 lines outside `.jaira/` — the diff on a first
+pass; after a review sent the work back, the fix since the commit in its
+`review: done at <commit>` note, when that commit is an ancestor of `HEAD`
+(`git merge-base --is-ancestor <commit> HEAD`; otherwise the diff) —
+counted with `git diff --shortstat <commit> -- :/ ':(exclude,top).jaira'`,
+and no untracked file outside `.jaira/` (`git ls-files --others
+--exclude-standard -- :/ ':(exclude,top).jaira'` prints nothing, which
+`--shortstat` does not count) — and it touches no locking or parser (file
+locks, reading a file format, parsing command output), read it once with
+both lists —
+the four questions above and the optimize lane's four passes (`jaira show
+<handle> --for-lane optimize --json` hands you its prompt). Findings of your
+own send the ticket back as above, and optimize waits for the next round.
+Nothing to say: write `review-summary="none"`, carry out optimize's passes on
+the same reading — its edits, its test run and its `review-gaps` — and move
+the ticket through `optimize` on to the lane after it. From 50 lines up the
+lanes stay two.
 
 Four rules for this lane:
 

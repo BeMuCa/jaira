@@ -1,0 +1,2 @@
+- To send a ticket back for rework from signoff or human, press `m` on its screen, pick an earlier lane and type what is still open — the reason is written as a note on the ticket, no `--force` and no follow-up ticket needed.
+- Run `jaira update` to refresh the agent note: the `human` lane now reads "a person answers here — you may move work in, and move it on once the question is answered" instead of "never out".

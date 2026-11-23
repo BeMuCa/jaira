@@ -1,9 +1,13 @@
 package settings_test
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -318,5 +322,286 @@ func TestReleaseDefaultsToTheWorker(t *testing.T) {
 	}
 	if _, src := settings.ReleaseFor(root); src != "the default" {
 		t.Errorf("a file naming worker: source %q, want the default", src)
+	}
+}
+
+// Who opens a pull request is the board's: .jaira/pr. Without it, or with
+// anything but agent in it, an agent pushes and hands the create line back —
+// a typo must never be what lets an agent open one (JG3REW).
+func TestPRDefaultsToThePerson(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got, src := settings.PRFor(root); got != settings.PRPerson || src != "the default" {
+		t.Errorf("no file: %q (%s), want person, the default", got, src)
+	}
+	if got, _ := settings.PRFor(""); got != settings.PRPerson {
+		t.Errorf("outside a board: %q, want person", got)
+	}
+	for in, want := range map[string]string{
+		"":                            settings.PRPerson,
+		"agent\n":                     settings.PRAgent,
+		"agent\r\n":                   settings.PRAgent,
+		"# agents open\n\n  agent \n": settings.PRAgent,
+		"person\n":                    settings.PRPerson,
+		"Agent\n":                     settings.PRPerson,
+		"agents\n":                    settings.PRPerson,
+		"person\nagent\n":             settings.PRPerson,
+		"agent; rm -rf /\n":           settings.PRPerson,
+		"none\n":                      settings.PRNone,
+		"none\r\n":                    settings.PRNone,
+		"# no PRs\n\n\t none  \n":     settings.PRNone,
+		"None\n":                      settings.PRPerson,
+		"nnone\n":                     settings.PRPerson,
+		"none agent\n":                settings.PRPerson,
+		"person\nnone\n":              settings.PRPerson,
+	} {
+		if err := os.WriteFile(settings.BoardPRPath(root), []byte(in), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if got, _ := settings.PRFor(root); got != want {
+			t.Errorf(".jaira/pr %q: %q, want %q", in, got, want)
+		}
+		// The gate reads the same content out of the base commit.
+		if got := settings.PRIn(in); got != want {
+			t.Errorf("PRIn(%q): %q, want %q", in, got, want)
+		}
+	}
+	if err := os.WriteFile(settings.BoardPRPath(root), []byte("agent\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, src := settings.PRFor(root); src != "from .jaira/pr, shared with the board" {
+		t.Errorf("a file naming agent: source %q", src)
+	}
+}
+
+// pr-when opens a pull request before acceptance only when the board says
+// exactly signoff; anything else — no file, a typo, a second line — keeps the
+// order this repository runs: done, then the pull request (JG3REW).
+func TestPRWhenDefaultsToDone(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got, src := settings.PRWhenFor(root); got != settings.PRWhenDone || src != "the default" {
+		t.Errorf("no file: %q (%s), want done, the default", got, src)
+	}
+	if got, _ := settings.PRWhenFor(""); got != settings.PRWhenDone {
+		t.Errorf("outside a board: %q, want done", got)
+	}
+	for in, want := range map[string]string{
+		"":                                  settings.PRWhenDone,
+		"signoff\n":                         settings.PRWhenSignoff,
+		"signoff\r\n":                       settings.PRWhenSignoff,
+		"# review on the PR\n\n signoff \n": settings.PRWhenSignoff,
+		"done\n":                            settings.PRWhenDone,
+		"Signoff\n":                         settings.PRWhenDone,
+		"sign-off\n":                        settings.PRWhenDone,
+		"done\nsignoff\n":                   settings.PRWhenDone,
+		"signoff; rm -rf /\n":               settings.PRWhenDone,
+		"\xef\xbb\xbfsignoff\r\n":           settings.PRWhenSignoff,
+	} {
+		if err := os.WriteFile(settings.BoardPRWhenPath(root), []byte(in), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if got, _ := settings.PRWhenFor(root); got != want {
+			t.Errorf(".jaira/pr-when %q: %q, want %q", in, got, want)
+		}
+		if got := settings.PRWhenIn(in); got != want {
+			t.Errorf("PRWhenIn(%q): %q, want %q", in, got, want)
+		}
+	}
+}
+
+// The reviewer goes onto a gh or glab command line, so only a login survives.
+func TestPRReviewerIsALoginOrNothing(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got := settings.PRReviewerFor(root); got != "" {
+		t.Errorf("no file: %q, want empty", got)
+	}
+	if got := settings.PRReviewerFor(""); got != "" {
+		t.Errorf("outside a board: %q, want empty", got)
+	}
+	for in, want := range map[string]string{
+		"":                       "",
+		"copilot\n":              "copilot",
+		"copilot\r\n":            "copilot",
+		"# who reviews\ncopilot": "copilot",
+		"monalisa\n":             "monalisa",
+		"myorg/team-name\n":      "myorg/team-name",
+		"@copilot\n":             "@copilot",
+		"copilot $(id)\n":        "",
+		"copilot;rm\n":           "",
+		"a b\n":                  "",
+		"\"copilot\"\n":          "",
+		"кто-то\n":               "",
+	} {
+		if err := os.WriteFile(settings.BoardPRReviewerPath(root), []byte(in), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if got := settings.PRReviewerFor(root); got != want {
+			t.Errorf(".jaira/pr-reviewer %q: %q, want %q", in, got, want)
+		}
+	}
+}
+
+// A .jaira/pr that is there but reads as person says so in its source, so a
+// typo or a stray word is visible in 'jaira roles list' instead of looking
+// like no file at all.
+func TestPRSourceSaysWhenTheFileDidNotTake(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".jaira"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for in, want := range map[string]string{
+		"nnone\n":              `the default — .jaira/pr says "nnone", which is neither agent nor none`,
+		"# only a comment\n":   "the default — .jaira/pr is there but says nothing",
+		"person\n":             "from .jaira/pr, shared with the board",
+		"\xef\xbb\xbfnone\r\n": "from .jaira/pr, shared with the board",
+	} {
+		if err := os.WriteFile(settings.BoardPRPath(root), []byte(in), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if _, src := settings.PRFor(root); src != want {
+			t.Errorf(".jaira/pr %q: source %q, want %q", in, src, want)
+		}
+	}
+}
+
+// TestUpdateNeverWipesTheFile: a screen's write goes through Update. Over a
+// file that does not parse it writes nothing and says where the file is; keys
+// this build does not know stay; a field emptied by the change leaves the file;
+// a "language" that is no string reads as none and costs nothing beside it.
+func TestUpdateNeverWipesTheFile(t *testing.T) {
+	cases := []struct {
+		name, file string
+		wantErr    bool
+		want       map[string]any
+	}{
+		{"trailing comma", `{"remote":"upstream","hook":"/bin/notify",}`, true, nil},
+		{"not json", "remote = upstream", true, nil},
+		{"a non-string language", `{"remote":"upstream","hook":"/bin/notify","language":5}`, false,
+			map[string]any{"remote": "upstream", "hook": "/bin/notify", "language": "Deutsch"}},
+		{"an unknown key", `{"remote":"upstream","future-key":{"a":[1,2]}}`, false,
+			map[string]any{"remote": "upstream", "future-key": map[string]any{"a": []any{1.0, 2.0}}, "language": "Deutsch"}},
+		{"empty file", "", false, map[string]any{"language": "Deutsch"}},
+		{"no file", "-", false, map[string]any{"language": "Deutsch"}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			home := t.TempDir()
+			t.Setenv("JAIRA_HOME", home)
+			path := filepath.Join(home, "settings.json")
+			if c.file != "-" {
+				if err := os.WriteFile(path, []byte(c.file), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			_, err := settings.Update(func(s *settings.Settings) { s.Language = "Deutsch" })
+			b, _ := os.ReadFile(path)
+			if c.wantErr {
+				if err == nil || !strings.Contains(err.Error(), path) {
+					t.Fatalf("want an error naming %s, got %v", path, err)
+				}
+				if string(b) != c.file {
+					t.Fatalf("the file was written over: %q", b)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got map[string]any
+			if err := json.Unmarshal(b, &got); err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(got, c.want) {
+				t.Fatalf("file %v, want %v", got, c.want)
+			}
+		})
+	}
+
+	// A field the change empties leaves the file; the rest stays.
+	home := t.TempDir()
+	t.Setenv("JAIRA_HOME", home)
+	if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(`{"language":"Русский","dispatch":"worker","x":1}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := settings.Update(func(s *settings.Settings) { s.Language = "" }); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(filepath.Join(home, "settings.json"))
+	var got map[string]any
+	_ = json.Unmarshal(b, &got)
+	if want := map[string]any{"dispatch": "worker", "x": 1.0}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("after emptying the language: %v, want %v", got, want)
+	}
+	// And Load reads a non-string language as none without losing the rest.
+	if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(`{"remote":"upstream","language":["x"]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if s := settings.Load(); s.Remote != "upstream" || s.Language != "" {
+		t.Fatalf("Load: %+v, want remote upstream and no language", s)
+	}
+}
+
+// TestUpdateTwoWritersAtOnce: two settings screens writing at the same
+// moment take turns. Every write lands, and nothing beside them is lost.
+func TestUpdateTwoWritersAtOnce(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("JAIRA_HOME", home)
+	path := filepath.Join(home, "settings.json")
+	if err := os.WriteFile(path, []byte(`{"remote":"upstream","hook":"/h","zz-unknown":1}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	for i := range 2 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for n := range 50 {
+				_, err := settings.Update(func(s *settings.Settings) {
+					if i == 0 {
+						s.Language = settings.Language(fmt.Sprint("L", n))
+					} else {
+						s.Python = fmt.Sprint("py", n)
+					}
+				})
+				if err != nil {
+					t.Error(err)
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	b, _ := os.ReadFile(path)
+	var got map[string]any
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatalf("settings.json does not parse after two writers: %v\n%s", err, b)
+	}
+	want := map[string]any{"remote": "upstream", "hook": "/h", "zz-unknown": 1.0, "language": "L49", "python": "py49"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("after two writers: %v, want %v", got, want)
+	}
+}
+
+// TestUpdateDropsAKnownKeyInAnyCase: encoding/json reads "Language" as the
+// language, so emptying the language takes that key out too.
+func TestUpdateDropsAKnownKeyInAnyCase(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("JAIRA_HOME", home)
+	path := filepath.Join(home, "settings.json")
+	if err := os.WriteFile(path, []byte(`{"Language":"Deutsch","REMOTE":"upstream"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := settings.Update(func(s *settings.Settings) { s.Language = "" }); err != nil {
+		t.Fatal(err)
+	}
+	if s := settings.Load(); s.Language != "" || s.Remote != "upstream" {
+		t.Fatalf("after emptying: %+v, want no language and remote upstream", s)
 	}
 }

@@ -7,6 +7,15 @@
 # goreleaser writes its cross-platform matrix here.
 /dist/
 
+# The Windows version resource the release generates from
+# cmd/jaira/winres/winres.json; its version is the tag's, so it is never committed.
+/cmd/jaira/rsrc_windows_*.syso
+
+# Release staging: the SignPath-signed Windows files and the installer copy the
+# release attaches (scripts/signed-windows.sh).
+/signed/
+/dist-extra/
+
 # Test binaries left behind by `go test -c`, and the coverage profile.
 *.test
 /coverage.out
@@ -28,3 +37,7 @@ Thumbs.db
 # --plugin-dir, pointing at API types it lays beside the manifest (ignored
 # there by a .gitignore of its own). core/mod leaves both out of the binary.
 /core/mod/builtin/*/tsconfig.json
+
+# Milestones travel on refs/jaira/milestones; the files under .jaira/milestones/ are
+# local working copies and never ride in a commit.
+/.jaira/milestones/

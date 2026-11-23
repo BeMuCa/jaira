@@ -100,6 +100,14 @@ func TestNudgeIfStaleOnDifferingStampPrintsOneStderrLineOnly(t *testing.T) {
 	if !strings.Contains(stderr, "jaira update") {
 		t.Errorf("nudge line = %q, want it to point at 'jaira update'", stderr)
 	}
+	// Nothing to refresh on a fresh board, but the refresh is done for this
+	// version; the release-notes stamp is 'jaira update's to set.
+	if got := release.LanesRefreshed(s.StateDir()); got != "1.0.0" {
+		t.Errorf("LanesRefreshed = %q, want 1.0.0", got)
+	}
+	if got := release.Stamped(s.StateDir()); got != "" {
+		t.Errorf("Stamped = %q, want it left to 'jaira update'", got)
+	}
 }
 
 func TestNudgeIfStaleSkipsSilentlyWhenStateDirUnreadable(t *testing.T) {

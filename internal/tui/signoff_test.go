@@ -95,6 +95,17 @@ func TestHumanExitGate(t *testing.T) {
 	if hasCode(allowed, gate.CodeNeedsHuman) {
 		t.Errorf("a person was blocked from signing off: %v", allowed)
 	}
+
+	// The direction decides, not the actor: back is open to an agent without
+	// Interactive, on is shut to a person at the move dialog (ByPerson) too.
+	back := gate.CheckAdvance(env, tk, gate.Request{To: "in-progress"})
+	if hasCode(back, gate.CodeNeedsHuman) {
+		t.Errorf("an agent was refused a send-back out of the sign-off lane: %v", back)
+	}
+	dialog := gate.CheckAdvance(env, tk, gate.Request{To: "done", ByPerson: true})
+	if !hasCode(dialog, gate.CodeNeedsHuman) {
+		t.Errorf("the move dialog could accept past the accept key: %v", dialog)
+	}
 }
 
 // The sign-off screen is exactly where a ticked box without its evidence is a

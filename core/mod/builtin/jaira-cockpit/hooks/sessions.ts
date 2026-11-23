@@ -33,7 +33,11 @@ export type SessionRecord = {
 
 // The line spawn.sh types to start an agent on a ticket names the ticket:
 // `/jaira-worker <id>`, `/jaira-dispatcher <id>`, `/jaira-role-lane <id> <lane>`.
-const START = /^\s*\/jaira-(worker|dispatcher|role-lane)\s+([0-9A-Za-z]{6})\b(?:\s+([a-z][a-z-]*))?/
+// Herdr App delivers a line another tab typed wrapped as `<hc from="t3">…</hc>`
+// (origin `human`); missed, the session counts as a person's and its own
+// subagents' reports are shortened to a link it never follows. A lane id may
+// hold digits (qa2, 2-review), as core/lane accepts.
+const START = /^\s*(?:<hc\b[^>]*>\s*)?\/jaira-(worker|dispatcher|role-lane)\s+([0-9A-Za-z]{6})\b(?:\s+([a-z0-9][a-z0-9-]*))?/
 
 export function startOf(prompt: string): { ticket: string; role: Role; lane: string } | undefined {
   const m = START.exec(prompt)
@@ -113,7 +117,8 @@ export function selfLine(tokens: number, window: number | undefined, ttl: number
 
 // Every agent carrying a ticket of this board — a worker or a dispatcher —
 // with its ticket's lane, its context, its cache, and whom a new round of
-// that ticket would go to by chooseWorker. With Herdr (`tabs` given) only
+// that ticket would go to by chooseWorker — or, held at an approval dialog
+// (Herdr's `blocked`), that it waits for one. With Herdr (`tabs` given) only
 // those whose tab is open: a closed tab carries nothing any more. One at work
 // is never judged: nothing is decided about a worker while it works.
 export function workerLines(input: {
@@ -143,7 +148,9 @@ export function workerLines(input: {
     }
     const left = record.lastAnswerAt === undefined ? 0 : record.lastAnswerAt + record.ttl - now
     const cache = tab?.agent_status === 'working' ? 'cache warm (working)' : left > 0 ? `cache ${Math.ceil(left / 60_000)} min left` : 'cache cold'
-    const next = tab?.agent_status === 'working'
+    const next = tab?.agent_status === 'blocked'
+      ? 'waits for approval: answer the dialog in its tab'
+      : tab?.agent_status === 'working'
       ? 'working: nothing to decide'
       : (c => `next round: ${c.reuse ? 'same worker' : 'new worker'} (${c.why})`)(chooseWorker({ record, tabAlive: tab !== undefined, now, share }))
     lines.push(`${head} · ${size(record.tokens, record.window)} · ${cache} · ${next}`)
@@ -157,8 +164,10 @@ export function workerLines(input: {
 export const TYPED_BY_COCKPIT = '[jaira-cockpit]'
 
 // What the old worker is told when work comes back to it.
+// One line: the text is typed into the worker's prompt, where a line break
+// would send it half-written; the note on the ticket keeps the lines.
 export function backMessage(ticket: string, lane: string, reason: string): string {
-  return `${TYPED_BY_COCKPIT} Ticket ${ticket} came back from ${lane} to in-progress. Reason: ${reason} - also a note on the ticket. Carry it on as before (jaira show ${ticket} --json).`
+  return `${TYPED_BY_COCKPIT} Ticket ${ticket} came back from ${lane} to in-progress. Reason: ${reason.replace(/\s*\n\s*/g, ' ')} - also a note on the ticket. Carry it on as before (jaira show ${ticket} --json).`
 }
 
 export function isExpired(record: SessionRecord, now: number): boolean {

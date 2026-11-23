@@ -72,6 +72,15 @@ const RoadPrefix = Root + "roads/"
 // RoadRefName is the ref a road travels on.
 func RoadRefName(name string) string { return RoadPrefix + name }
 
+// PeopleRef is where the board's people travel: one file, PeopleFile, naming
+// each person once with every other name that means them. One ref for all of
+// them rather than one per person, because a rename turns one person into
+// another and must land as one write, never as two that can half-arrive.
+const PeopleRef = Root + "people"
+
+// PeopleFile is the one file PeopleRef carries.
+const PeopleFile = "people"
+
 // DefaultRemote is where refs go when nothing is configured.
 const DefaultRemote = "origin"
 
@@ -292,41 +301,58 @@ func (r *Repo) ReadMilestone(key string) (file string, content []byte, sha strin
 	if err != nil {
 		return "", nil, "", err
 	}
-	out, errb, runErr := r.run("", "ls-tree", "--name-only", sha)
+	out, errb, runErr := r.run("", "ls-tree", "-z", "--name-only", sha)
 	if runErr != nil {
 		if errors.Is(runErr, ErrNoGit) {
 			return "", nil, "", runErr
 		}
 		return "", nil, "", fmt.Errorf("gitref: ref %s: %s", ref, strings.TrimSpace(errb))
 	}
-	entries := strings.Fields(out)
-	if len(entries) != 1 || !strings.HasSuffix(entries[0], ".md") {
+	file, ok := soleMarkdown(out)
+	if !ok {
 		return "", nil, "", fmt.Errorf("gitref: ref %s does not carry exactly one .md file", ref)
 	}
-	content, err = r.readEntry(ref, sha, entries[0])
+	content, err = r.readEntry(ref, sha, file)
 	if err != nil {
 		return "", nil, "", err
 	}
-	return entries[0], content, sha, nil
+	return file, content, sha, nil
+}
+
+// soleMarkdown reads the output of 'ls-tree -z --name-only' over a milestone
+// commit: the one .md file it carries. -z because without it git quotes a
+// name with a space or a non-ASCII letter, and a name somebody gave a file by
+// hand may have either.
+func soleMarkdown(out string) (string, bool) {
+	var entries []string
+	for _, e := range strings.Split(out, "\x00") {
+		if e != "" {
+			entries = append(entries, e)
+		}
+	}
+	if len(entries) != 1 || !strings.HasSuffix(entries[0], ".md") {
+		return "", false
+	}
+	return entries[0], true
 }
 
 // ReadMilestoneFileAt returns the milestone file the commit sha carries, and
 // the name it carries it under: the state a write was leased on, which is what
 // a refused write is merged from.
 func (r *Repo) ReadMilestoneFileAt(sha string) (string, []byte, error) {
-	out, errb, err := r.run("", "ls-tree", "--name-only", sha)
+	out, errb, err := r.run("", "ls-tree", "-z", "--name-only", sha)
 	if err != nil {
 		if errors.Is(err, ErrNoGit) {
 			return "", nil, err
 		}
 		return "", nil, fmt.Errorf("gitref: commit %s: %s", sha, strings.TrimSpace(errb))
 	}
-	entries := strings.Fields(out)
-	if len(entries) != 1 || !strings.HasSuffix(entries[0], ".md") {
+	file, ok := soleMarkdown(out)
+	if !ok {
 		return "", nil, fmt.Errorf("gitref: commit %s does not carry exactly one .md file", sha)
 	}
-	content, err := r.readEntry(sha, sha, entries[0])
-	return entries[0], content, err
+	content, err := r.readEntry(sha, sha, file)
+	return file, content, err
 }
 
 // ReadEpic returns the epic file carried by the local ref, with its lease.
@@ -437,6 +463,24 @@ func (r *Repo) WriteEpic(name string, content []byte, lease string) (string, err
 // compare-and-swap as an epic.
 func (r *Repo) WriteRoad(name string, content []byte, lease string) (string, error) {
 	return r.refWrite(RoadRefName(name), name+".md", content, lease)
+}
+
+// PeopleBlob is the blob of the people file the local ref carries, or "" when
+// there is none.
+func (r *Repo) PeopleBlob() string {
+	return r.Rev(PeopleRef + ":" + PeopleFile)
+}
+
+// ReadPeople returns the people file the local ref carries, with its lease.
+// A board nobody has named a person on yet wraps ErrNoRef.
+func (r *Repo) ReadPeople() ([]byte, string, error) {
+	return r.refRead(PeopleRef, PeopleFile)
+}
+
+// WritePeople puts the people file on its ref and pushes it, under the same
+// compare-and-swap as an epic.
+func (r *Repo) WritePeople(content []byte, lease string) (string, error) {
+	return r.refWrite(PeopleRef, PeopleFile, content, lease)
 }
 
 // MigratedFromTrailer is the message trailer of the commit that moved a
@@ -677,8 +721,13 @@ func (r *Repo) Tree(entries map[string]string) (string, error) {
 }
 
 // Nest wraps a tree under a single directory name and returns the outer tree.
-func (r *Repo) Nest(dir, tree string) (string, error) {
-	out, errb, err := r.run(fmt.Sprintf("040000 tree %s\t%s\n", tree, dir), "mktree")
+// files are blobs to put beside the directory, name to blob.
+func (r *Repo) Nest(dir, tree string, files map[string]string) (string, error) {
+	in := fmt.Sprintf("040000 tree %s\t%s\n", tree, dir)
+	for name, blob := range files {
+		in += fmt.Sprintf("100644 blob %s\t%s\n", blob, name)
+	}
+	out, errb, err := r.run(in, "mktree")
 	if err != nil {
 		if errors.Is(err, ErrNoGit) {
 			return "", err
