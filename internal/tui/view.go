@@ -1728,7 +1728,7 @@ func (m *Model) renderProjects() string {
 			name = stySelected.Render(name)
 		}
 		cur := ""
-		if p.Root == m.store.Root {
+		if p.Root == m.projectRoot {
 			cur = styMeta.Render("  (current)")
 		}
 		b.WriteString(marker + name + cur + "\n")

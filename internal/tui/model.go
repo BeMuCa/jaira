@@ -235,6 +235,10 @@ type Model struct {
 	// first frame. Picking one swaps the store in place (switchBoard).
 	projects []project.Project
 	projIdx  int
+	// projectRoot is the root this board is listed under in projects
+	// (project.Board): its main checkout when it sits in a linked worktree.
+	// "Is this entry the open board" compares against it, never store.Root.
+	projectRoot string
 
 	// me is this machine's identity (identity.Current), cached because it
 	// shells out to git config and the card renderer asks for it per card.
@@ -374,7 +378,7 @@ func New(s *ticket.Store) (*Model, error) {
 	// its 1-9 binding work from the very first frame — a board that has to be
 	// opened once with 'p' before it knows its own neighbours is the bug this
 	// exists to fix.
-	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), darkBG: true, anim: true, animStart: time.Now()}
+	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), projectRoot: project.Board(s.Root), darkBG: true, anim: true, animStart: time.Now()}
 	m.versionLine, m.releasePill = versionLine()
 	m.versionAt = time.Now()
 	m.me = identity.Current(s.Root)
@@ -416,6 +420,7 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 	project.Remember(s.Root)
 	m.Close()
 	m.store = s
+	m.projectRoot = project.Board(s.Root)
 	m.me = identity.Current(s.Root)
 	// Mutations from the board record who made them, the same as the CLI's.
 	s.Actor = m.me
@@ -523,17 +528,24 @@ func (m *Model) reload() error {
 func (m *Model) refreshLiveBoards() {
 	live := make(map[string]bool, len(m.projects))
 	for _, p := range m.projects {
-		if p.Root == m.store.Root {
-			for _, s := range m.sessions {
-				if !s.Stale() {
-					live[p.Root] = true
-					break
-				}
+		// An entry stands for its main checkout and every linked worktree of
+		// it (project.Trees): an agent in any of them makes the line live.
+		for _, tree := range project.Trees(p.Root) {
+			if live[p.Root] {
+				break
 			}
-			continue
-		}
-		if boardHasLiveSession(p.Root) {
-			live[p.Root] = true
+			if tree == project.Canonical(m.store.Root) {
+				for _, s := range m.sessions {
+					if !s.Stale() {
+						live[p.Root] = true
+						break
+					}
+				}
+				continue
+			}
+			if boardHasLiveSession(tree) {
+				live[p.Root] = true
+			}
 		}
 	}
 	m.liveBoards = live
@@ -1601,7 +1613,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			// is the one key on this screen that cannot be taken back.
 			if m.projIdx < len(m.projects) {
 				p := m.projects[m.projIdx]
-				m.drop = newDropBoard(p.Root, p.Name, p.Root == m.store.Root)
+				m.drop = newDropBoard(p.Root, p.Name, p.Root == m.projectRoot)
 				m.mode = modeDropBoard
 			}
 		}

@@ -240,10 +240,20 @@ func describe(root string, lanes *lane.Set, counted bool) HomeEntry {
 		}
 	}
 	e.Logged = s.LoggedPerDay(time.Now(), logbookDays)
-	if ss, err := session.Load(s); err == nil {
-		for _, x := range ss {
-			if !x.Stale() {
-				e.Agents++
+	// The line stands for every working tree of the repository
+	// (project.Trees), so it counts the agents in each of them.
+	for _, tree := range project.Trees(root) {
+		ts := s
+		if tree != root {
+			if ts, err = ticket.At(tree); err != nil {
+				continue
+			}
+		}
+		if ss, err := session.Load(ts); err == nil {
+			for _, x := range ss {
+				if !x.Stale() {
+					e.Agents++
+				}
 			}
 		}
 	}

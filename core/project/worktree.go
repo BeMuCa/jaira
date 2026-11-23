@@ -100,3 +100,40 @@ func under(p, dir string) bool {
 	rel, err := filepath.Rel(dir, p)
 	return err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel)
 }
+
+// Trees is every working tree a board listed under root stands for: root
+// itself, then the same place in each linked worktree of root's repository
+// that holds a board. State kept per working tree - an agent's session, its
+// liveness - is read across all of them, so folding a worktree into its main
+// checkout's line hides none of it.
+//
+// Read off the main checkout's git directory, as mainCheckout reads the other
+// direction: each linked worktree has a directory under .git/worktrees whose
+// gitdir file names that worktree's .git file.
+func Trees(root string) []string {
+	trees := []string{root}
+	top := enclosingGit(root)
+	if top == "" {
+		return trees
+	}
+	rel, err := filepath.Rel(top, root)
+	if err != nil {
+		return trees
+	}
+	gitDir := filepath.Join(top, ".git")
+	entries, err := os.ReadDir(filepath.Join(gitDir, "worktrees"))
+	if err != nil {
+		return trees // not a main checkout, or no linked worktrees
+	}
+	for _, e := range entries {
+		b, err := os.ReadFile(filepath.Join(gitDir, "worktrees", e.Name(), "gitdir"))
+		if err != nil {
+			continue
+		}
+		wtGit := absUnder(filepath.Join(gitDir, "worktrees", e.Name()), strings.TrimSpace(firstLine(b)))
+		if wt := filepath.Join(filepath.Dir(wtGit), rel); isBoard(wt) {
+			trees = append(trees, canonical(wt))
+		}
+	}
+	return trees
+}

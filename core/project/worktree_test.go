@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"os/exec"
+	"strconv"
+	"sync"
 	"path/filepath"
 	"testing"
 )
@@ -121,7 +123,7 @@ func TestRememberRecordsMainCheckout(t *testing.T) {
 	base := isolate(t)
 	main, wts := repoWithWorktrees(t, base, "", 2)
 
-	if got := Remember(wts[0]); got != main {
+	if got, err := Remember(wts[0]); err != nil || got != main {
 		t.Fatalf("Remember(worktree) = %s, want main checkout %s", got, main)
 	}
 	Remember(wts[1])
@@ -138,7 +140,7 @@ func TestRememberSkipsTemp(t *testing.T) {
 	scratch := mkBoard(t, filepath.Join(tempDir(), "scratchpad", "repo"))
 	keep := mkBoard(t, filepath.Join(base, "keep"))
 
-	if got := Remember(scratch); got != "" {
+	if got, err := Remember(scratch); err != nil || got != "" {
 		t.Fatalf("Remember(temp board) = %q, want nothing recorded", got)
 	}
 	writeProjects(t, []Project{{Root: scratch, Name: "repo"}, {Root: keep, Name: "keep"}})
@@ -153,7 +155,7 @@ func TestRememberTempRegistry(t *testing.T) {
 	isolate(t)
 	t.Setenv("JAIRA_HOME", filepath.Join(tempDir(), "home"))
 	b := mkBoard(t, filepath.Join(tempDir(), "repo"))
-	if got := Remember(b); got != canonical(b) {
+	if got, err := Remember(b); err != nil || got != canonical(b) {
 		t.Fatalf("Remember = %q, want %s", got, b)
 	}
 }
@@ -201,5 +203,59 @@ func writeProjects(t *testing.T, ps []Project) {
 	}
 	if err := os.WriteFile(projectsPath(), b, 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestRememberParallel: starts that record at the same moment take turns -
+// every board arrives and the file still parses. Written in place without a
+// lock, two writers interleaved their bytes and Load read the result as an
+// empty list.
+func TestRememberParallel(t *testing.T) {
+	base := isolate(t)
+	const n = 12
+	var wg sync.WaitGroup
+	errs := make(chan error, n)
+	for i := range n {
+		b := mkBoard(t, filepath.Join(base, "b"+strconv.Itoa(i)))
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if _, err := Remember(b); err != nil {
+				errs <- err
+			}
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(projectsPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ps []Project
+	if err := json.Unmarshal(raw, &ps); err != nil {
+		t.Fatalf("projects.json does not parse after parallel writes: %v", err)
+	}
+	if got := len(Load()); got != n {
+		t.Fatalf("Load() has %d boards after %d parallel Remember, want all", got, n)
+	}
+}
+
+// TestTrees: a main checkout's line stands for every linked worktree that
+// holds a board, which is where per-tree state such as sessions is read.
+func TestTrees(t *testing.T) {
+	base := isolate(t)
+	main, wts := repoWithWorktrees(t, base, "sub", 2)
+	if err := os.RemoveAll(filepath.Join(wts[1], ".jaira")); err != nil {
+		t.Fatal(err)
+	}
+	got := Trees(main)
+	if len(got) != 2 || got[0] != main || got[1] != canonical(wts[0]) {
+		t.Fatalf("Trees(%s) = %v, want [main, %s]", main, got, wts[0])
+	}
+	if got := Trees(wts[0]); len(got) != 1 {
+		t.Errorf("Trees(worktree) = %v, want only itself", got)
 	}
 }

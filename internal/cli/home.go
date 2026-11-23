@@ -95,10 +95,14 @@ descends into caches and mounted drives to find nothing.`,
 			// What was recorded, not what was named: a worktree is recorded
 			// as its main checkout, a board in the temporary directory not at
 			// all, and reporting the path as given would claim otherwise.
-			var added []string
+			added := []string{}
 			seen := map[string]bool{}
 			for _, r := range roots {
-				if rec := project.Remember(r); rec != "" && !seen[rec] {
+				rec, err := project.Remember(r)
+				if err != nil {
+					return fmt.Errorf("could not record %s: %w", r, err)
+				}
+				if rec != "" && !seen[rec] {
 					seen[rec] = true
 					added = append(added, rec)
 				}

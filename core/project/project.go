@@ -6,6 +6,7 @@ package project
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"sort"
@@ -86,16 +87,30 @@ func Load() []Project {
 // Remember records that a board was opened here and returns the root it was
 // recorded under: a board in a linked worktree is recorded as its main
 // checkout (see Board), and one in the temporary directory not at all, which
-// returns "".
-func Remember(root string) string {
+// returns "" and no error. An error means the registry could not be written.
+//
+// Every start writes this file, so two jaira processes starting at once write
+// it together: the read-modify-write runs under the lock file the ticket
+// store's own locks are made of, and the file is replaced whole
+// (ticket.WriteAtomic) - written in place, two writers interleaved their bytes
+// and left a file that no longer parsed, which Load reads as an empty list.
+func Remember(root string) (string, error) {
 	path := projectsPath()
 	if path == "" {
-		return ""
+		return "", errors.New("no home directory to keep the project list in")
 	}
 	root = Board(root)
 	if throwaway(root, path) {
-		return ""
+		return "", nil
 	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return "", err
+	}
+	unlock, err := ticket.LockFile(path + ".lock")
+	if err != nil {
+		return "", err
+	}
+	defer unlock()
 	ps := Load()
 	now := ticket.FormatTime(time.Now())
 	found := false
@@ -112,13 +127,14 @@ func Remember(root string) string {
 		sort.Slice(ps, func(i, j int) bool { return ps[i].LastOpen > ps[j].LastOpen })
 		ps = ps[:20]
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return ""
+	b, err := json.MarshalIndent(ps, "", "  ")
+	if err != nil {
+		return "", err
 	}
-	if b, err := json.MarshalIndent(ps, "", "  "); err == nil {
-		_ = os.WriteFile(path, append(b, '\n'), 0o644)
+	if err := ticket.WriteAtomic(path, append(b, '\n')); err != nil {
+		return "", err
 	}
-	return root
+	return root, nil
 }
 
 // Board is the one root a board is listed under: Canonical, and for a board in
