@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:27:15Z
+updated-at: 2026-11-23T21:27:47Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -29,7 +29,7 @@ outcome-why: "Berk 2026-11-23: the check sat last under a page of account; round
 outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSignOffKeepsBlockersOnTop (11 forms, 3 label-alone, 5 non-blockers), TestHumanLaneOpensTheDecisionScreen, TestDetailsCarryContextAndNotes; checked: concurrency n/a (render only), error paths n/a, unusual input - blocker forms, label alone, empty fields; permissions n/a"
 review-summary: none
 review-gaps: "round 3: nothing to remove - the fallback is 3 lines inside blockerLines. Earlier rounds: hand-picked details list, gapLines, isBlockerLine removed; regex mirrors hooks/board.ts (two languages). Left: Details repeat Commits/DoD (whole detail pane by design)."
-test-verdict: "pass: go vet ./... + go test -race -count=1 ./internal/tui RC=0 at 383b42d9e; DoD 1-5 verified; render-only"
+test-verdict: "pass: go vet ./... + go test -race -count=1 ./internal/tui RC=0 at 2880173dd (full race suite RC=0 at 73d06b024); DoD 1-5 verified in the tree; screen exercised in tmux on a scratch board; render-only, writes nothing"
 hunt-verdict: "fail: bughunt done at 383b42d9e - change: a label-only blocker line ('**Blocker:**', 'blocker:' with the finding on the next line) loses its row; change edge (note): Details repeat Commits/DoD and show 'Before this can start'"
 round: 3
 back-from: testing
