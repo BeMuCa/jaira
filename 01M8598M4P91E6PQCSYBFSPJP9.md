@@ -25,7 +25,8 @@ related: []
 follows: 01M67K72RDJY2N2R2KQGATDG74
 commits: []
 created-at: 2026-11-23T22:43:41Z
-updated-at: 2026-11-23T22:43:41Z
+updated-at: 2026-11-23T22:55:57Z
+updated-by: BeMuCa
 ---
 
 # Eine Lane-Datei kann mit agents: N sagen, dass N Agenten die Lane laufen; show --for-lane reicht es weiter
