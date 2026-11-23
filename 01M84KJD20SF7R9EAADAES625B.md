@@ -23,7 +23,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T16:24:33Z
-updated-at: 2026-11-23T16:30:44Z
+updated-at: 2026-11-23T16:30:48Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 round: 2
@@ -55,4 +55,4 @@ back-count: 1
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-23 16:30 · Alexander Sacharov** — decision (Alex 23.11.2026): the backup must copy everything, not only tickets. Today 'jaira snapshot' (internal/cli/snapshot.go) writes only tickets to the snapshot branch under board/ and drops a ticket ref once the ticket is filed in a landing branch's logbook/archive - that drop rule depends on the logbook being in the repo, so it must change together with moving the logbook to a ref.
