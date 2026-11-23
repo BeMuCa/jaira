@@ -1,7 +1,7 @@
 ---
 id: 01M2HRF34AS7QDTACC323YRPXJ
 title: "spawn.sh kann nur eine Rolle starten, obwohl der Prompt zwei verlangt"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher kann mit dem mitgelieferten Skript jede Lane besetzen, die sein eigener Prompt von ihm verlangt - nicht nur die, deren Name fest eingebaut ist."
@@ -14,7 +14,7 @@ related:
   - 01M2G9X5HVH29SDS8FAZKSGSKK
 commits: []
 created-at: 2026-09-15T05:26:04Z
-updated-at: 2026-11-23T20:14:49Z
+updated-at: 2026-11-23T20:15:41Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5256
@@ -22,16 +22,12 @@ claimed-at: 2026-11-23T20:11:42Z
 outcome-what: "Zusaetzlich zu Runde 3: unbeantwortetes pane get vor pane run schliesst den leeren Tab; spaete Race loescht den eigenen Pane-Record; ein scheiternder pane get im come-up-Loop endet in der come-up-Zeile statt stumm per set -e."
 outcome-why: "Rueckgabe aus signoff: drei Kanten liessen einen leeren, nie geernteten Tab, einen Record auf fremder Pane oder einen Abbruch ohne Meldung zurueck."
 outcome-resolves: "DoD 2, 3, 4, 5 (DoD 1 superseded); die drei edge-Notes der Rueckgabe 20:11"
-review-summary: "Full review (merge of upstream/master since the last review at b17384e62 inflates the delta past 50 lines; the ticket's own change is spawn.sh, spawnpane_test.go, the release note and three manifest hashes). spawn.sh now keeps the tab id from 'herdr tab create' beside the pane id and, through pane_is_ours, asks 'herdr pane get' twice - before the reap.sh pane record and 'pane run', and again right before 'send-text' - whether the pane still sits in that tab. A pane in another tab means a parallel spawn got it: nothing is typed, the own empty tab is closed, and the message names pane, tab and ticket/lane. No answer from Herdr is not treated as a race: 'could not check pane', tab stays. The 'claude did not come up' line now names pane, tab, label and state. DoD 1 was dropped by Alex's decision (17:55). Tests TestSpawnTypesOnlyIntoItsOwnTab, TestSpawnNamesPaneAndTabWhenClaudeDoesNotComeUp, TestSpawnKeepsItsTabWhenHerdrDoesNotAnswer pass."
+review-summary: "none"
 round: 4
 back-from: signoff
 back-by: person
 back-count: 1
-review-gaps: |-
-  note: edge: spawn.sh:471-475 - an unanswered 'pane get' at the first check (line 485, before pane run and before the record) keeps the tab although nothing runs in it yet and reap.sh has no record of it: an empty tab nobody reaps; fix: close the tab at the first call, keep it only at the second (bughunt 19:38)
-  note: edge: spawn.sh:649 - when the late check finds the pane in another tab, claude already runs in that pane and the record from line 492 still names it under this ticket, so reap.sh would later close a tab that is not ours; fix: remove the record before exit at the late check (bughunt 18:04, second half not taken up)
-  note: edge: spawn.sh:574 - under set -e a failing 'herdr pane get' in the come-up loop ends the script with herdr's exit code and no message, the one start failure left that does not say where and why (DoD 3); fix: --default/|| true on that call so the loop falls through to the come-up line
-  note: limit: the race is reproduced with a Herdr stub only, not against a live Herdr; under herdr-hc.sh pane equals tab and the check always passes
+review-gaps: "optimize round 4: '${record:-}' -> '$record' (record is set to \"\" before pane_is_ours); no duplicate: pane get|tab_id is the reap.sh/close-tab.sh pattern already noted; nothing dead, no cost on a hot path"
 test-verdict: "pass: round 2 after merge c20059153 - go build/vet ./... and go test -race -count=1 ./... green (RC=0); shipped-history --check green (41 tags); DoD 2-5 re-checked: TestSpawnTypesOnlyIntoItsOwnTab, TestSpawnNamesPaneAndTabWhenClaudeDoesNotComeUp, TestSpawnKeepsItsTabWhenHerdrDoesNotAnswer pass; failure path (pane get exit 1 before send-text) exits 1, nothing typed, no tab close; writes: only the pane record, covered by the two-at-once test"
 hunt-verdict: "pass: bughunt done at c20059153, 1 change (edge, not a blocker: a failed pane get at the first check leaves an empty, unrecorded tab standing), 0 pre-existing"
 review-verdict: "accept: DoD 2-5 are met and tested, DoD 1 dropped by decision; three error-path edges around the pane check, none a wrong result"
@@ -111,3 +107,4 @@ angenommen:
 - **2026-11-23 20:11 · Alexander Sacharov** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown); branch feat/3yrpxj is the ticket's worktree's, worktree /home/alex/projects/.worktrees/jaira-3yrpxj; reports to uds:/run/user/1000/cc-socks/48662.sock, the ticket's parent session
 - **2026-11-23 20:11 · Alexander Sacharov** — worker round 4 started: three give-back edges (first-check empty tab, late-check record, come-up loop pane get under set -e)
 - **2026-11-23 20:14 · Alexander Sacharov** — round 4 (give-back): pane_is_ours bekommt 'early' - unbeantwortetes pane get am 1. Check schliesst den leeren Tab; spaete Race loescht den eigenen Pane-Record; come-up-Loop: pane get mit '|| { st=""; continue; }' statt set-e-Abbruch -> come-up-Zeile mit state 'none'. record="" vor der Funktion, damit eine geerbte Env-Variable 'record' nie geloescht wird. Manifest: nur die eine spawn.sh-Zeile eingefuegt; --write haette 18 fremde Hashes anderer Branches mitgenommen. Neuer Test faellt auf altem spawn.sh in allen 3 Faellen.
+- **2026-11-23 20:15 · Alexander Sacharov** — critique round 4: none - Delta seit c20059153 schliesst genau die drei Rueckgabe-Kanten; early-Argument statt zweiter Funktion haelt eine Pruefstelle; Record-Pfad als Variable ist das einzige, was der spaete Check braucht.

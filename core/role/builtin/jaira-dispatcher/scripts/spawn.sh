@@ -488,7 +488,7 @@ pane_is_ours() {
   # somebody else's: a record of it under this ticket would have reap.sh
   # close their tab.
   "$herdr" tab close "$tab" >/dev/null 2>&1 || true
-  [ -z "${record:-}" ] || rm -f "$record"
+  [ -z "$record" ] || rm -f "$record"
   return 1
 }
 # Before the record below: a refused pane is somebody else's, and a record of
