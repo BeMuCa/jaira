@@ -104,7 +104,7 @@ export const t = {
   accepted: (id: string, lane: string) => `${id} accepted: ${lane}`,
   returnedTo: (id: string, who: 'old' | 'new' | 'none') =>
     who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
-  workerBlocked: (id: string, tab: string) => `${id} back in in-progress; its worker waits at an approval dialog in tab ${tab} - answer it there, then type the decision into that tab. Nothing was typed for you.`,
+  workerBlocked: (id: string, where: string) => `${id} back in in-progress; its worker waits at an approval dialog in ${where} - answer it there, then type the decision into it. No Enter was pressed for you.`,
   // The one line Accept and Give back hand this session, the teamlead's,
   // after a move that went through: what happened, and what already runs.
   // Each says who decided — '(Person, Cockpit)' — and leads with the

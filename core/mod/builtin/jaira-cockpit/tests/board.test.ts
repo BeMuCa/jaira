@@ -16,6 +16,9 @@ type World = {
   tabs: { tab_id: string; label: string; agent_status?: string }[]
   // The old worker's pane went away after the tab list was read.
   paneGone: boolean
+  // What each `herdr pane get` answers as the pane's agent_status, in order;
+  // once used up, the pane is idle.
+  paneStates: string[]
   // When set, every `jaira move` waits here, in order, until the test lets it go.
   held: (() => void)[] | undefined
   // A forced move answers without moving the ticket: the row stays in the
@@ -199,6 +202,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     tickets: [SIGNOFF, HUMAN, WORKING],
     tabs: [],
     paneGone: false,
+    paneStates: [],
     held: undefined,
     agents: [],
     oldJaira: false,
@@ -445,6 +449,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'next' && w.nextFails) return failed('jaira: board unreadable')
     if (cmd === 'jaira' && args[0] === 'next') return ok(JSON.stringify({ count: w.next.length, tickets: w.next.map(handle => ({ handle })) }))
     if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list') return ok(JSON.stringify({ result: { tabs: w.tabs } }))
+    if (cmd === 'herdr' && args[0] === 'pane' && args[1] === 'get' && !w.paneGone) return ok(JSON.stringify({ result: { pane: { agent: 'claude', agent_status: w.paneStates.shift() ?? 'idle' } } }))
     if (cmd === 'herdr' && args[0] === 'pane' && w.paneGone) return { value: { exitCode: 1, stdout: '', stderr: 'no such pane', isStdoutTruncated: false, isStderrTruncated: false } }
     return ok()
   })
@@ -2420,9 +2425,39 @@ describe('give back', () => {
     expect(ran(w, 'herdr', 'pane', 'send-keys')).toEqual([])
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
     expect(spawned(w)).toEqual([])
-    expect(lastNote(w)).toBe('cockpit: given back to nobody (no worker started) - the old worker waits at an approval dialog in tab MG677R/worker; nothing typed, no second worker started')
-    expect(w.toasts.at(-1)).toBe('MG677R back in in-progress; its worker waits at an approval dialog in tab MG677R/worker - answer it there, then type the decision into that tab. Nothing was typed for you.')
-    expect(w.submitted).toEqual(['jaira-cockpit: MG677R given back: der Branch fehlt im Schluessel, worker MG677R/worker waits at an approval dialog: answer it there, then type the decision into that tab (Person, Cockpit; signoff -> in-progress)'])
+    expect(lastNote(w)).toBe('cockpit: given back to nobody (no worker started) - the old worker waits at an approval dialog in tab MG677R/worker; no Enter pressed, no second worker started')
+    expect(w.toasts.at(-1)).toBe('MG677R back in in-progress; its worker waits at an approval dialog in tab MG677R/worker - answer it there, then type the decision into it. No Enter was pressed for you.')
+    expect(w.submitted).toEqual(['jaira-cockpit: MG677R given back: der Branch fehlt im Schluessel, worker tab MG677R/worker waits at an approval dialog: answer it there, then type the decision into it (Person, Cockpit; signoff -> in-progress)'])
+  })
+
+  test('the recorded pane at a dialog while its tab looks idle: Herdr is asked about the pane itself, and nothing is typed', async ($, on) => {
+    // A warm cache and a small context: the old worker would get the text.
+    const w = world(on, { herdr: true, store: { 'session:old': {
+      session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
+      lastAnswerAt: 1_000_000 - 20 * 60_000, tokens: 80_000, ttl: 3_600_000, updatedAt: 1_000_000 - 20 * 60_000,
+    } } })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker', agent_status: 'idle' }]
+    w.paneStates = ['blocked']
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'herdr', 'pane', 'get', 'w1:p9')).toHaveLength(1)
+    expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
+    expect(ran(w, 'herdr', 'pane', 'send-keys')).toEqual([])
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
+    expect(spawned(w)).toEqual([])
+    expect(w.toasts.at(-1)).toBe('MG677R back in in-progress; its worker waits at an approval dialog in pane w1:p9 - answer it there, then type the decision into it. No Enter was pressed for you.')
+  })
+
+  test('a dialog that opens in the second between the text and its Enter gets no Enter', async ($, on) => {
+    const w = world(on, { herdr: true, store: big(500_000) })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker', agent_status: 'working' }]
+    w.paneStates = ['working', 'blocked']
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
+    expect(ran(w, 'herdr', 'pane', 'send-keys')).toEqual([])
+    expect(spawned(w)).toEqual([])
+    expect(lastNote(w)).toBe('cockpit: given back to nobody (no worker started) - the old worker waits at an approval dialog in pane w1:p9; no Enter pressed, no second worker started')
   })
 
   test('Give back twice in a row: one worker, the second press finds the ticket already back', async ($, on) => {
