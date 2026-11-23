@@ -56,6 +56,12 @@ type Syncer struct {
 	// hold a second opinion.
 	IsMine func(assignee string) bool
 
+	// Name is the name a person stored on a ref is reported under: the jaira
+	// name the board's people list gives them, so a refusal says "Robert has
+	// it" where 'jaira list' shows Robert. nil reports names as stored. A
+	// function for the same reason IsMine is one.
+	Name func(stored string) string
+
 	// SeenPath records which ref SHA was last reported for each ticket, so
 	// being handed a ticket is announced once instead of on every fetch.
 	SeenPath string
@@ -1072,7 +1078,16 @@ func (y *Syncer) winner(id string) (*Winner, error) {
 			*f.dst = v
 		}
 	}
+	w.Assignee, w.UpdatedBy = y.name(w.Assignee), y.name(w.UpdatedBy)
 	return w, nil
+}
+
+// name is who as Name reports them.
+func (y *Syncer) name(who string) string {
+	if y.Name == nil || who == "" {
+		return who
+	}
+	return y.Name(who)
 }
 
 // Arrival is a ticket as the ref now has it, seen from this clone.
@@ -1153,6 +1168,7 @@ func (y *Syncer) Incoming() ([]Arrival, error) {
 		if y.IsMine != nil {
 			a.Mine = y.IsMine(a.Assignee)
 		}
+		a.Assignee = y.name(a.Assignee)
 		a.Local = y.hasLocal(id)
 		out = append(out, a)
 	}
@@ -1598,8 +1614,8 @@ func (y *Syncer) Pull(id string, steal bool) (*Pulled, error) {
 		// Taken with --steal. Recorded on the ticket itself, because the ref is
 		// the only thing the other person will fetch, and a note there is the
 		// only place they can read why the ticket left them.
-		stolenFrom = h
-		if err := ticket.AppendNote(d, fmt.Sprintf("%s took this ticket over from %s", y.Actor, h), time.Now(), y.Actor); err != nil {
+		stolenFrom = y.name(h)
+		if err := ticket.AppendNote(d, fmt.Sprintf("%s took this ticket over from %s", y.Actor, stolenFrom), time.Now(), y.Actor); err != nil {
 			return nil, err
 		}
 	}
@@ -1777,9 +1793,9 @@ func (y *Syncer) Reject(id, kind, why, duplicateOf string, now time.Time) (rejec
 		return nil, "", err
 	}
 	if t.Rejected.Kind != "" {
-		return t, "", fmt.Errorf("%s: %w (%s by %s)", ticket.Handle(id), ErrAlreadyRejected, t.Rejected.Kind, t.Rejected.By)
+		return t, "", fmt.Errorf("%s: %w (%s by %s)", ticket.Handle(id), ErrAlreadyRejected, t.Rejected.Kind, y.name(t.Rejected.By))
 	}
-	heldBy = strings.TrimSpace(t.Assignee)
+	heldBy = y.name(strings.TrimSpace(t.Assignee))
 	if err := ticket.StampRejection(t, kind, why, y.Actor, duplicateOf, now); err != nil {
 		return nil, "", err
 	}

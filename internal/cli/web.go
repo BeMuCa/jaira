@@ -97,11 +97,12 @@ Stop it with Ctrl-C.`,
 				defer logFile.Close()
 				logger = web.NewLogger(logFile)
 			}
-			srv := &web.Server{Source: newWebSource(s), Log: logger}
+			src := newWebSource(s)
+			srv := &web.Server{Source: src, Log: logger}
 			if refs.Usable() == nil {
 				root := s.Root
 				srv.Fetch = func() error { return fetchInChild(root) }
-				srv.Push = webPush
+				srv.Push = src.push
 			}
 			url := "http://" + l.Addr().String() + "/"
 			fmt.Fprintf(cmd.OutOrStdout(), "jaira web: %s  (Ctrl-C to stop)\n", url)
