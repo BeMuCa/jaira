@@ -1,7 +1,7 @@
 ---
 id: 01M6PDF4CMXG25611W5A2DSM0T
 title: "Ein Board ohne Git-Repo schiebt Tickets nach done, ohne Commits zu verlangen"
-status: optimize
+status: testing
 ready: true
 creator: BeMuCa
 goal: "Liegt das Board in keinem Git-Repository, verlangt die Lane done keine Commits; in einem Repository bleibt die Regel wie heute."
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:32:43Z
+updated-at: 2026-11-23T01:32:45Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
