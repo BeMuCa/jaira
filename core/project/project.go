@@ -5,8 +5,11 @@
 package project
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -111,6 +114,9 @@ func Remember(root string) (string, error) {
 		return "", err
 	}
 	defer unlock()
+	if err := keepBroken(path); err != nil {
+		return "", err
+	}
 	ps := Load()
 	now := ticket.FormatTime(time.Now())
 	found := false
@@ -135,6 +141,32 @@ func Remember(root string) (string, error) {
 		return "", err
 	}
 	return root, nil
+}
+
+// Stderr is where keepBroken says that it kept a copy; tests swap it.
+var Stderr io.Writer = os.Stderr
+
+// keepBroken copies a projects.json that does not parse aside before Remember
+// replaces it, and says so once. Load reads such a file as an empty list, so
+// without the copy the next write keeps one entry and every other board is
+// gone. A missing or empty file is the ordinary first start and is left alone.
+// The copy goes to projects.json.broken, or, when an earlier copy is there,
+// to one named after the time, so no earlier copy is overwritten. A copy that
+// cannot be written is an error: Remember then leaves the original as it is.
+func keepBroken(path string) error {
+	b, err := os.ReadFile(path)
+	if err != nil || len(bytes.TrimSpace(b)) == 0 || json.Unmarshal(b, new([]Project)) == nil {
+		return nil
+	}
+	dst := path + ".broken"
+	if _, err := os.Lstat(dst); err == nil {
+		dst += "-" + time.Now().UTC().Format("20060102T150405.000000000Z")
+	}
+	if err := ticket.WriteAtomic(dst, b); err != nil {
+		return fmt.Errorf("%s could not be read as a project list and could not be copied aside, so it is left as it is: %w", path, err)
+	}
+	fmt.Fprintf(Stderr, "jaira: %s could not be read as a project list; a copy is at %s, and a new list starts here\n", path, dst)
+	return nil
 }
 
 // Board is the one root a board is listed under: Canonical, and for a board in
