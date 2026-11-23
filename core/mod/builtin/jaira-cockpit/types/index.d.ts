@@ -59,6 +59,9 @@ declare module 'claude-code' {
         id: string
         story?: { title: string; goal: string; what: string; why: string; round: number; back?: { count: number; from: string }; dod: { done: number; superseded: number; total: number }; verdict: string; created?: number }
         commits?: { commits: number; files: number }
+        // The language the person set in settings.json when the pane opened;
+        // without one the pane has no Translate.
+        language?: string
         release: string[]
         pr: boolean
       } | null
@@ -70,9 +73,12 @@ declare module 'claude-code' {
       // Explain on one note, by ticket and note text: the sentence, or ''
       // while the model is asked.
       reasons: Record<string, Record<string, string>>
-      // The review notes of each ticket in the person's language, original
-      // text to the text shown; a note without an entry is shown as written.
+      // The head and review notes of each ticket in the person's language,
+      // original text to the text shown, while Translate is on for it; a text
+      // without an entry is shown as written.
       rephrased: Record<string, Record<string, string>>
+      // The ticket whose Translate waits for the model, or null.
+      translating: string | null
       // The newest bug hunt of each ticket the band shows, as jaira's brief
       // says it stands: ok, fail, unknown or skipped.
       hunts: Record<string, 'ok' | 'fail' | 'unknown' | 'skipped'>
@@ -94,11 +100,13 @@ declare module 'claude-code' {
       // null when that read failed.
       overview: Overview | null
       // The Overview pane's tab, its folded sections and the people its Log
-      // is filtered to, kept for the session across closing and opening it.
+      // is filtered to — chosen and left out, per row — kept for the session
+      // across closing and opening it. New keys, not overviewPeople/Lanes:
+      // those held string[] in older builds and may survive a hot reload.
       overviewTab: 'queue' | 'log' | 'workers'
       overviewFolded: Record<string, boolean>
-      overviewPeople: string[]
-      overviewLanes: string[]
+      overviewPeopleFilter: { only: string[]; not: string[] }
+      overviewLanesFilter: { only: string[]; not: string[] }
       // The Workers tab: its agents, read while it is open; each ticket's
       // colour and hat, kept while it stays on the board; when each agent
       // (<id>/<kind>) was first seen; the first line of each ticket's last

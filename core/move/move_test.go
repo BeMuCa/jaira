@@ -518,3 +518,68 @@ func TestMoveReportsUntickedDoDOutOfImplementing(t *testing.T) {
 		})
 	}
 }
+
+// The commits a requires-commits gate accepted are the commits the move
+// writes: one derivation, read by the gate and written in the same move, so
+// a ticket cannot pass on commits and land with an empty list (8FE2EG).
+// A sha recorded by hand stays beside them.
+func TestMoveIntoDoneWritesTheCommitsItsGateFound(t *testing.T) {
+	s, env := fixture(t)
+	if l, ok := env.Lanes.Get("done"); !ok || !l.RequiresCommits {
+		t.Skip("the shipped done lane no longer requires commits")
+	}
+	tk, err := s.Create(map[string]string{
+		ticket.FieldID:    ticket.NewID(time.Date(2026, 9, 6, 8, 0, 0, 0, time.UTC)),
+		ticket.FieldTitle: "t", ticket.FieldStatus: "signoff",
+	}, map[string][]string{ticket.FieldCommits: {"cafe0001"}}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	derived := []string{"aaaa0001", "aaaa0002"}
+	env.DeriveCommits = func(*ticket.Ticket) []string { return derived }
+
+	if _, err := Move(s, env, tk.ID, Request{To: "done", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	after, err := s.Load(tk.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"aaaa0001", "aaaa0002", "cafe0001"}
+	if strings.Join(after.Commits, ",") != strings.Join(want, ",") {
+		t.Errorf("commits = %v, want %v", after.Commits, want)
+	}
+
+	// The gate refuses a ticket with no commits when nothing is derived; with
+	// the same derivation on offer it passes, and what it passed on is written.
+	bare := mk(t, s, map[string]string{
+		ticket.FieldID:     ticket.NewID(time.Date(2026, 9, 6, 9, 0, 0, 0, time.UTC)),
+		ticket.FieldStatus: "signoff",
+	})
+	bareT, _ := s.Load(bare.ID)
+	for _, v := range gate.CheckAdvance(env, bareT, gate.Request{To: "done"}) {
+		if v.Code == gate.CodeNeedsCommits {
+			t.Fatalf("gate refused commits it could derive: %s", v.Message)
+		}
+	}
+	if _, err := Move(s, env, bare.ID, Request{To: "done", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.Load(bare.ID); strings.Join(got.Commits, ",") != strings.Join(derived, ",") {
+		t.Errorf("commits = %v, want what the gate derived %v", got.Commits, derived)
+	}
+}
+
+// A lane that does not require commits writes none: the stamp belongs to
+// the lane whose gate reads them, not to every move.
+func TestMoveIntoALaneWithoutTheRequirementWritesNoCommits(t *testing.T) {
+	s, env := fixture(t)
+	tk := mk(t, s, map[string]string{ticket.FieldStatus: "signoff"})
+	env.DeriveCommits = func(*ticket.Ticket) []string { return []string{"aaaa0001"} }
+	if _, err := Move(s, env, tk.ID, Request{To: "in-progress", Actor: "berk", Force: true}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := s.Load(tk.ID); len(got.Commits) != 0 {
+		t.Errorf("commits = %v, want none outside a requires-commits lane", got.Commits)
+	}
+}

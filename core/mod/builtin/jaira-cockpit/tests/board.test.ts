@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { acceptTreeFor, carrierFor, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, rephrasePrompt, seenToTick, snapshotOf, storyOf, type Waiting } from '../hooks/board.ts'
+import { acceptTreeFor, carrierFor, ghRepoOf, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenToTick, snapshotOf, storyOf, translatePrompt, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -36,10 +36,11 @@ type World = {
   prompts: string[]
   // The cheap model gives no answer: offline, or the call failed.
   modelDown?: boolean
-  // The Acceptance pane's head calls and Explain-on-one-note calls, and what
-  // each answers; undefined: no answer.
-  headPrompts: string[]
-  head?: string
+  // Translate answers each text it is handed from this, a text not in it as
+  // it is; undefined: it answers model.
+  translations?: Record<string, string>
+  // The Explain-on-one-note calls, and what each answers; undefined: no
+  // answer.
   reasonPrompts: string[]
   reason?: string
   // What `jaira show --json` adds for a ticket beyond its body and lane, and
@@ -207,7 +208,6 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     model: '',
     modelCalls: 0,
     prompts: [],
-    headPrompts: [],
     reasonPrompts: [],
     shows: {},
     idLog: '',
@@ -406,8 +406,9 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if ((cmd === 'gh' || cmd === 'glab') && args[1] === 'list' && w.prListFails) return failed("HTTP 401: Bad credentials")
     // origin is a fork of upstream/repo: pull requests are asked of the parent.
     // Its default branch is main; the fork's own lags behind as master.
+    // On GitHub Enterprise gh is asked host/owner/repo (XSGWPX).
     if (cmd === 'gh' && args[0] === 'repo') {
-      return ok(JSON.stringify(args[2] === 'upstream/repo'
+      return ok(JSON.stringify(args[2]?.replace(/^ghe\.example\.com\//, '') === 'upstream/repo'
         ? { isFork: false, nameWithOwner: 'upstream/repo', parent: null, defaultBranchRef: { name: 'main' } }
         : { isFork: true, nameWithOwner: 'acme/repo', parent: { name: 'repo', owner: { login: 'upstream' } }, defaultBranchRef: { name: 'master' } }))
     }
@@ -455,13 +456,8 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   on('agent.list', () => ({ value: w.agents }) as never)
   on('model.complete', async ($, e) => {
     const prompt = (e as { prompt: string }).prompt
-    // The Acceptance pane's head and Explain on one note are calls of their
-    // own, answered from their own fields and never held: the counts and the
-    // holds below are the review notes'.
-    if (prompt.startsWith('Translate each text')) {
-      w.headPrompts.push(prompt)
-      return (w.head === undefined ? { value: { isAnswered: false } } : { value: { isAnswered: true, text: w.head, usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }) as never
-    }
+    // Explain on one note is a call of its own, answered from its own field
+    // and never held: the counts and the holds below are Translate's.
     if (prompt.startsWith('A person decides whether to accept')) {
       w.reasonPrompts.push(prompt)
       return (w.reason === undefined ? { value: { isAnswered: false } } : { value: { isAnswered: true, text: w.reason, usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }) as never
@@ -469,7 +465,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     w.modelCalls++
     w.prompts.push(prompt)
     if (w.modelDown) return { value: { isAnswered: false } } as never
-    const text = w.model
+    const text = w.translations === undefined ? w.model : JSON.stringify((JSON.parse(prompt.slice(prompt.lastIndexOf('\n') + 1)) as string[]).map(x => w.translations![x] ?? x))
     if (w.modelHeld) await new Promise<void>(go => w.modelHeld!.push(go))
     return { value: { isAnswered: true, text, usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }
   })
@@ -641,7 +637,7 @@ describe('waiting for you', () => {
     expect(texts[0]).toBe('● red: 1 blocker in the review (+4 more)')
     const title = texts.indexOf('cache key')
     expect(title).toBeGreaterThan(0)
-    expect(texts.slice(title, title + 2)).toEqual(['cache key', 'Goal: Two branches never share a cache entry.'])
+    expect(texts.slice(title, title + 2)).toEqual(['cache key', '┃ Goal: Two branches never share a cache entry.'])
     for (const text of ['? keep the old key?', '🔴 blocker: the key ignores the branch', '🟡 note: a test is missing', '🟡 note: a comment is stale']) {
       expect(texts).toContain(text)
     }
@@ -1707,6 +1703,22 @@ describe('after Accept', () => {
     w.forge = 'gitlab'
     await press($, w)
     expect(ran(w, 'glab', 'mr')).toEqual([['glab', 'mr', 'list', '--repo', 'upstream/repo', '--source-branch', 'feat/mg677r', '--all', '-F', 'json', '@/repo']])
+    expect(prLane(w)).toHaveLength(1)
+  })
+
+  test('GitHub Enterprise behind a user@host:owner/repo remote: gh is asked host/owner/repo every time (XSGWPX)', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 1
+    w.forge = 'github'
+    w.origin = 'alice@ghe.example.com:acme/repo.git'
+    w.remotes = 'origin\talice@ghe.example.com:acme/repo.git (fetch)\nupstream\talice@ghe.example.com:upstream/repo.git (fetch)\n'
+    await press($, w)
+    expect(ran(w, 'gh')).toEqual([
+      ['gh', 'repo', 'view', 'ghe.example.com/acme/repo', '--json', 'isFork,parent,nameWithOwner,defaultBranchRef', '@/repo'],
+      ['gh', 'repo', 'view', 'ghe.example.com/upstream/repo', '--json', 'isFork,parent,nameWithOwner,defaultBranchRef', '@/repo'],
+      ['gh', 'pr', 'list', '--repo', 'ghe.example.com/upstream/repo', '--head', 'feat/mg677r', '--state', 'all', '--json', 'number', '@/repo'],
+    ])
+    expect(ran(w, 'git', 'fetch')).toEqual([['git', 'fetch', 'upstream', 'main', '@/repo']])
     expect(prLane(w)).toHaveLength(1)
   })
 
@@ -3847,6 +3859,7 @@ describe('the overview', () => {
     expect((await pane.find({ key: 'overview-person-Berk' }))?.props.variant).toBe('primary')
     await pane.press({ key: 'overview-person-Carla' })
     expect(await handles()).toEqual(['B1B1B1', 'C1C1C1'])
+    // A second press leaves Berk out: Carla's stays.
     await pane.press({ key: 'overview-person-Berk' })
     expect(await handles()).toEqual(['C1C1C1'])
     await pane.press({ key: 'overview-close' })
@@ -3887,6 +3900,7 @@ describe('the overview', () => {
     // Both filters hold at once: blocked or signoff, and Alex's.
     await pane.press({ key: 'overview-person-Alex' })
     expect(await handles()).toEqual(['S1S1S1'])
+    // signoff pressed again is left out: blocked is Berk's, so nothing stays.
     await pane.press({ key: 'overview-lane-signoff' })
     expect(await handles()).toEqual([])
     expect(await pane.find({ type: 'Text', text: 'none' })).toBeDefined()
@@ -3895,7 +3909,7 @@ describe('the overview', () => {
     expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBe('primary')
   })
 
-  test('a lane or person chosen with no event left keeps its button, and pressing it clears the filter', async ($, on) => {
+  test('a lane or person chosen with no event left keeps its button, and pressing it on clears the filter', async ($, on) => {
     const w = world(on)
     w.tickets = [
       { handle: 'S1S1S1', title: 'judged', status: 'signoff', creator: 'Alex', created_at: ago(0.03), updated_at: ago(0.03) },
@@ -3919,6 +3933,11 @@ describe('the overview', () => {
     expect(await handles()).toEqual([])
     expect((await pane.find({ key: 'overview-lane-signoff' }))?.props.variant).toBe('primary')
     expect((await pane.find({ key: 'overview-person-Alex' }))?.props.variant).toBe('primary')
+    // Left out, the buttons stay, so the next press can still clear them.
+    await pane.press({ key: 'overview-lane-signoff' })
+    await pane.press({ key: 'overview-person-Alex' })
+    expect((await pane.find({ key: 'overview-lane-signoff' }))?.props.label).toBe('✕ signoff')
+    expect((await pane.find({ key: 'overview-person-Alex' }))?.props.label).toBe('✕ Alex')
     await pane.press({ key: 'overview-lane-signoff' })
     await pane.press({ key: 'overview-person-Alex' })
     expect(await handles()).toEqual(['S1S1S1'])
@@ -3926,6 +3945,115 @@ describe('the overview', () => {
     expect(await pane.find({ key: 'overview-lane-signoff' })).toBeUndefined()
     expect(await pane.find({ key: 'overview-person-Alex' })).toBeUndefined()
     expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBe('primary')
+  })
+
+  test('a chip cycles off, chosen, left out and off again, and shows when it is left out', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'A1A1A1', title: 'by Alex', status: 'backlog', creator: 'Alex', updated_by: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'B1B1B1', title: 'by Berk', status: 'backlog', creator: 'Berk', updated_by: 'Berk', created_at: ago(0.02), updated_at: ago(0.02) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const handles = async () => (await pane.findAll({ type: 'Text', text: LOG_LINE })).map(x => x.text.replace(LOG_LINE, '').slice(0, 6))
+    const chip = async () => {
+      const p = (await pane.find({ key: 'overview-person-Berk' }))!.props as { label: string; variant?: string; dimColor?: boolean }
+      return { label: p.label, variant: p.variant ?? null, dimColor: p.dimColor ?? false }
+    }
+    expect(await chip()).toEqual({ label: 'Berk', variant: null, dimColor: true })
+    await pane.press({ key: 'overview-person-Berk' })
+    expect(await chip()).toEqual({ label: 'Berk', variant: 'primary', dimColor: false })
+    expect(await handles()).toEqual(['B1B1B1'])
+    await pane.press({ key: 'overview-person-Berk' })
+    expect(await chip()).toEqual({ label: '✕ Berk', variant: null, dimColor: false })
+    expect((await pane.find({ type: 'Text', text: '✕ Berk' }))?.props.color).toBe('error')
+    expect(await handles()).toEqual(['A1A1A1'])
+    await pane.press({ key: 'overview-person-Berk' })
+    expect(await chip()).toEqual({ label: 'Berk', variant: null, dimColor: true })
+    expect(await handles()).toEqual(['A1A1A1', 'B1B1B1'])
+  })
+
+  test('left out alone, the Log shows everything else, several left out at once', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'N1N1N1', title: 'new', status: 'backlog', creator: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'B1B1B1', title: 'stuck', status: 'blocked', creator: 'Berk', blocked_reason: 'x', created_at: ago(0.02), updated_at: ago(0.02) },
+      { handle: 'S1S1S1', title: 'judged', status: 'signoff', creator: 'Alex', created_at: ago(0.03), updated_at: ago(0.03) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const handles = async () => (await pane.findAll({ type: 'Text', text: LOG_LINE })).map(x => x.text.replace(LOG_LINE, '').slice(0, 6))
+    const out = async (key: string) => {
+      await pane.press({ key })
+      await pane.press({ key })
+    }
+    await out('overview-lane-signoff')
+    expect(await handles()).toEqual(['N1N1N1', 'B1B1B1'])
+    await out('overview-lane-blocked')
+    expect(await handles()).toEqual(['N1N1N1'])
+    // All is not lit while anything is left out.
+    expect((await pane.find({ key: 'overview-lanes-all' }))?.props.variant).toBeUndefined()
+  })
+
+  test('chosen and left out together, across both rows: what is chosen and not left out', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'N1N1N1', title: 'new', status: 'backlog', creator: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'B1B1B1', title: 'stuck', status: 'blocked', creator: 'Berk', blocked_reason: 'x', created_at: ago(0.02), updated_at: ago(0.02) },
+      { handle: 'S1S1S1', title: 'judged', status: 'signoff', creator: 'Alex', created_at: ago(0.03), updated_at: ago(0.03) },
+      { handle: 'C1C1C1', title: 'by Carla', status: 'signoff', creator: 'Carla', created_at: ago(0.04), updated_at: ago(0.04) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const handles = async () => (await pane.findAll({ type: 'Text', text: LOG_LINE })).map(x => x.text.replace(LOG_LINE, '').slice(0, 6))
+    // Not Carla, but signoff and backlog: Alex's two.
+    await pane.press({ key: 'overview-person-Carla' })
+    await pane.press({ key: 'overview-person-Carla' })
+    await pane.press({ key: 'overview-lane-signoff' })
+    await pane.press({ key: 'overview-lane-backlog' })
+    expect(await handles()).toEqual(['N1N1N1', 'S1S1S1'])
+    // Alex chosen too, and backlog left out in the same row as signoff chosen.
+    await pane.press({ key: 'overview-person-Alex' })
+    await pane.press({ key: 'overview-lane-backlog' })
+    expect(await handles()).toEqual(['S1S1S1'])
+  })
+
+  test('All clears its row of chosen and left out alike and is lit only then; the other row stays', async ($, on) => {
+    const w = world(on)
+    w.tickets = [
+      { handle: 'N1N1N1', title: 'new', status: 'backlog', creator: 'Alex', created_at: ago(0.01), updated_at: ago(0.01) },
+      { handle: 'B1B1B1', title: 'stuck', status: 'blocked', creator: 'Berk', blocked_reason: 'x', created_at: ago(0.02), updated_at: ago(0.02) },
+      { handle: 'S1S1S1', title: 'judged', status: 'signoff', creator: 'Alex', created_at: ago(0.03), updated_at: ago(0.03) },
+    ]
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'overview' })
+    const pane = await $.ui.mount(OVERVIEW)
+    await pane.press({ key: 'overview-tab-log' })
+    const handles = async () => (await pane.findAll({ type: 'Text', text: LOG_LINE })).map(x => x.text.replace(LOG_LINE, '').slice(0, 6))
+    const lit = async (key: string) => (await pane.find({ key }))?.props.variant === 'primary'
+    await pane.press({ key: 'overview-person-Berk' })
+    await pane.press({ key: 'overview-person-Berk' })
+    await pane.press({ key: 'overview-lane-signoff' })
+    await pane.press({ key: 'overview-lane-backlog' })
+    await pane.press({ key: 'overview-lane-backlog' })
+    expect(await handles()).toEqual(['S1S1S1'])
+    expect(await lit('overview-lanes-all')).toBe(false)
+    expect(await lit('overview-people-all')).toBe(false)
+    await pane.press({ key: 'overview-lanes-all' })
+    expect(await lit('overview-lanes-all')).toBe(true)
+    expect((await pane.find({ key: 'overview-lane-backlog' }))?.props.label).toBe('backlog')
+    // Berk stays left out: the people row was not cleared.
+    expect(await handles()).toEqual(['N1N1N1', 'S1S1S1'])
+    expect(await lit('overview-people-all')).toBe(false)
+    await pane.press({ key: 'overview-people-all' })
+    expect(await lit('overview-people-all')).toBe(true)
+    expect(await handles()).toEqual(['N1N1N1', 'B1B1B1', 'S1S1S1'])
   })
 
   test('the top row is one line of buttons alike — the tabs on the left, Close at the right — and the open tab is the one highlighted', async ($, on) => {
@@ -4792,21 +4920,28 @@ describe('review notes as a person reads them', () => {
   const SETTINGS = '/home/a/.jaira/settings.json'
   const ru = ['Заголовок пишется дважды.', 'Нет проверки размера.', 'Пути Windows длиннее 260 символов.', 'load.go:41 принимает пустой файл.']
   const de = ['Der Header wird doppelt geschrieben.', 'Die Größenprüfung fehlt.', 'Windows-Pfade über 260 Zeichen.', 'load.go:41 nimmt eine leere Datei an.']
+  const noteList = NOTES.split('\n')
+  const dictionary = (answer: readonly string[]) => Object.fromEntries(noteList.map((n, i) => [n, answer[i]!]))
 
-  function withNotes(on: On, language?: string, answer: string[] = ru) {
+  function withNotes(on: On, language?: string, answer: readonly string[] = ru) {
     const w = world(on)
     w.tickets = [{ ...SIGNOFF, review: { verdict: SIGNOFF.review.verdict, gaps: NOTES } }, HUMAN, WORKING]
     w.bodies.MG677R = CLASSES
     if (language !== undefined) w.files.set(SETTINGS, JSON.stringify({ dispatch: 'worker', language }))
-    w.model = JSON.stringify(answer)
+    w.translations = dictionary(answer)
     return w
   }
-  async function verdictNotes($: Test$) {
-    const { texts } = await verdictOf($, await $.ui.mount(BAND), 'MG677R')
+  // The pane as it opens, or after one press on Translate.
+  async function verdictNotes($: Test$, translated = false) {
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    if (translated) await pane.press({ key: 'translate-MG677R' })
+    const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+    await pane.unmount()
     return texts.filter(x => /^\p{Extended_Pictographic}/u.test(x))
   }
-  async function giveBackRows($: Test$) {
+  async function giveBackRows($: Test$, translated = false) {
     const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    if (translated) await pane.press({ key: 'translate-MG677R' })
     const marks = (await pane.findAll({ type: 'Text' })).map(x => x.text).filter(x => /^[🔴🟡⚪🔵] /u.test(x))
     const out: string[] = []
     for (let i = 0; i < marks.length; i++) {
@@ -4816,32 +4951,45 @@ describe('review notes as a person reads them', () => {
     }
     return { out, pane }
   }
+  const ORIGINAL = ['🔴 blocker: the header is written twice', '🟡 note: the size check is missing', '⚪ note: windows paths over 260 characters', '🔵 note: pre-existing: load.go:41 accepts an empty file']
 
-  test('each class has its mark in the Acceptance pane; without a language nothing is sent', async ($, on) => {
+  test('each class has its mark in the Acceptance pane; without a language there is no Translate and nothing is sent', async ($, on) => {
     const w = withNotes(on)
     await startSession($)
-    expect(await verdictNotes($)).toEqual([
-      '🔴 blocker: the header is written twice',
-      '🟡 note: the size check is missing',
-      '⚪ note: windows paths over 260 characters',
-      '🔵 note: pre-existing: load.go:41 accepts an empty file',
-    ])
+    expect(await verdictNotes($)).toEqual(ORIGINAL)
     expect((await giveBackRows($)).out).toEqual([
       '[fix now] 🔴 blocker: the header is written twice',
       '[accept] 🟡 note: the size check is missing',
       '[accept] ⚪ note: windows paths over 260 characters',
       '[accept] 🔵 note: pre-existing: load.go:41 accepts an empty file',
     ])
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    expect(await pane.find({ key: 'translate-MG677R' })).toBeUndefined()
+    expect(w.modelCalls).toBe(0)
+  })
+
+  // FMWBA8: a language set is no call - the pane opens on the original, as
+  // often as it opens, until Translate is pressed.
+  test('with a language set the pane opens on the original and asks nothing until Translate is pressed', async ($, on) => {
+    const w = withNotes(on, 'Русский')
+    await startSession($)
+    expect(await verdictNotes($)).toEqual(ORIGINAL)
+    expect(await verdictNotes($)).toEqual(ORIGINAL)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    const button = await pane.find({ key: 'translate-MG677R' })
+    expect(button?.props.hotkey).toBe('t')
+    expect(button?.text).toContain('Translate')
     expect(w.modelCalls).toBe(0)
   })
 
   // Two people, two machines: one test each, as each has its own settings.
   for (const [language, answer] of [['Русский', ru], ['Deutsch', de]] as const) {
-    test(`a person who set ${language} reads the notes in it, the ticket keeps its words`, async ($, on) => {
+    test(`a person who set ${language} presses Translate and reads the notes in it, the ticket keeps its words`, async ($, on) => {
       const w = withNotes(on, language, answer)
       await startSession($)
-      expect(await verdictNotes($)).toEqual([`🔴 ${answer[0]}`, `🟡 ${answer[1]}`, `⚪ ${answer[2]}`, `🔵 ${answer[3]}`])
-      expect(w.prompts.at(-1)).toContain(`in ${language}`)
+      expect(await verdictNotes($, true)).toEqual([`🔴 ${answer[0]}`, `🟡 ${answer[1]}`, `⚪ ${answer[2]}`, `🔵 ${answer[3]}`])
+      expect(w.modelCalls).toBe(1)
+      expect(w.prompts.at(-1)).toContain(`into ${language}`)
       expect(w.prompts.at(-1)).toContain('blocker: the header is written twice')
       // Nothing of it reaches the board: no jaira command writes a word of it.
       expect(w.ran.filter(r => r[0] === 'jaira' && ['note', 'set', 'move'].includes(r[1]!))).toEqual([])
@@ -4849,10 +4997,44 @@ describe('review notes as a person reads them', () => {
     })
   }
 
-  test('Give back shows the notes in the language and writes the originals onto the ticket', async ($, on) => {
+  test('one press translates the head and every note in one call; a second press goes back to the original', async ($, on) => {
+    const w = withNotes(on, 'Русский')
+    w.shows.MG677R = { title: 'cache key', goal: 'a key per branch', outcome: { what: 'the key names the branch', why: 'two branches shared one' } }
+    w.translations = { ...dictionary(ru), 'cache key': 'ключ кэша', 'a key per branch': 'ключ на ветку', 'the key names the branch': 'ключ называет ветку', 'two branches shared one': 'две ветки делили один' }
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await w.clock.settle()
+    await pane.press({ key: 'translate-MG677R' })
+    const all = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+    expect(w.modelCalls).toBe(1)
+    const asked = JSON.parse(w.prompts[0]!.slice(w.prompts[0]!.lastIndexOf('\n') + 1)) as string[]
+    expect(asked.slice(0, 4)).toEqual(['cache key', 'a key per branch', 'the key names the branch', 'two branches shared one'])
+    expect(asked.slice(-4)).toEqual(noteList)
+    for (const text of ['ключ кэша', '┃ Goal: ключ на ветку', '┃ Done: ключ называет ветку', '┃ Why: две ветки делили один', `🔴 ${ru[0]}`]) expect(all).toContain(text)
+    expect((await pane.find({ key: 'translate-MG677R' }))?.text).toContain('Original')
+    await pane.press({ key: 'translate-MG677R' })
+    const back = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+    expect(back).toContain('cache key')
+    expect(back).toContain(ORIGINAL[0])
+    expect(w.modelCalls).toBe(1)
+  })
+
+  test('a head the pane draws from the board row - no goal in show - is translated as drawn', async ($, on) => {
+    const w = withNotes(on, 'Русский')
+    w.tickets = [{ ...SIGNOFF, goal: 'a key per branch', review: { verdict: SIGNOFF.review.verdict, gaps: NOTES } }, HUMAN, WORKING]
+    w.shows.MG677R = { title: 'cache key', goal: '' }
+    w.translations = { ...dictionary(ru), 'a key per branch': 'ключ на ветку' }
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('┃ Goal: a key per branch')
+    await pane.press({ key: 'translate-MG677R' })
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('┃ Goal: ключ на ветку')
+  })
+
+  test('Give back shows the notes translated and writes the originals onto the ticket', async ($, on) => {
     const w = withNotes(on, 'Русский')
     await startSession($)
-    const { out, pane } = await giveBackRows($)
+    const { out, pane } = await giveBackRows($, true)
     expect(out).toEqual([`[fix now] 🔴 ${ru[0]}`, `[accept] 🟡 ${ru[1]}`, `[accept] ⚪ ${ru[2]}`, `[accept] 🔵 ${ru[3]}`])
     await pane.input({ key: 'typed-MG677R', text: '' })
     const written = ran(w, 'jaira', 'note', 'MG677R').map(r => r[3]).join('\n')
@@ -4860,107 +5042,82 @@ describe('review notes as a person reads them', () => {
     expect(written).not.toContain(ru[0])
   })
 
-  test('kept per ticket and notes: a second look asks nothing, other notes or another language ask again', async ($, on) => {
+  test('kept in the store per ticket and texts: a press on a ticket translated before asks nothing, other notes or another language ask again', async ($, on) => {
     const w = withNotes(on, 'Русский')
     await startSession($)
-    await verdictNotes($)
-    await verdictNotes($)
-    await giveBackRows($)
+    await verdictNotes($, true)
+    expect(await verdictNotes($)).toEqual(ORIGINAL)
+    expect((await verdictNotes($, true))[0]).toBe(`🔴 ${ru[0]}`)
+    await giveBackRows($, true)
     expect(w.modelCalls).toBe(1)
     w.files.set(SETTINGS, JSON.stringify({ language: 'Deutsch' }))
-    w.model = JSON.stringify(de)
-    expect((await verdictNotes($))[0]).toBe(`🔴 ${de[0]}`)
+    w.translations = dictionary(de)
+    expect((await verdictNotes($, true))[0]).toBe(`🔴 ${de[0]}`)
     expect(w.modelCalls).toBe(2)
     w.tickets = [{ ...SIGNOFF, review: { verdict: SIGNOFF.review.verdict, gaps: 'note: only one now' } }, HUMAN, WORKING]
-    w.model = JSON.stringify(['Nur noch eine.'])
+    w.translations = { 'note: only one now': 'Nur noch eine.' }
     await w.clock.advance(60_000)
-    expect(await verdictNotes($)).toEqual(['🟡 Nur noch eine.'])
+    expect(await verdictNotes($, true)).toEqual(['🟡 Nur noch eine.'])
     expect(w.modelCalls).toBe(3)
   })
 
   for (const answer of ['not json at all', JSON.stringify(ru.slice(0, 3)), JSON.stringify(['', ...ru.slice(1)]), JSON.stringify([1, 2, 3, 4]), '{"a": 1}']) {
     test(`an answer that does not fit leaves the original text with its mark: ${answer.slice(0, 30)}`, async ($, on) => {
       const w = withNotes(on, 'Русский')
+      w.translations = undefined
       w.model = answer
       await startSession($)
-      expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
+      expect((await verdictNotes($, true))[0]).toBe('🔴 blocker: the header is written twice')
       expect(w.modelCalls).toBe(1)
     })
   }
 
-  test('a rewrite shown before goes once the language is taken away, or the next call gives none', async ($, on) => {
-    const w = withNotes(on, 'Deutsch', de)
-    await startSession($)
-    expect((await verdictNotes($))[0]).toBe(`🔴 ${de[0]}`)
-    w.files.set(SETTINGS, JSON.stringify({ dispatch: 'worker' }))
-    expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
-    expect((await giveBackRows($)).out[0]).toBe('[fix now] 🔴 blocker: the header is written twice')
-    w.files.set(SETTINGS, JSON.stringify({ language: 'Deutsch' }))
-    expect((await verdictNotes($))[0]).toBe(`🔴 ${de[0]}`)
-    w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
+  test('a model that does not answer leaves the original, and the next press asks again', async ($, on) => {
+    const w = withNotes(on, 'Русский')
     w.modelDown = true
-    expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await pane.press({ key: 'translate-MG677R' })
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain(ORIGINAL[1])
+    expect((await pane.find({ key: 'translate-MG677R' }))?.text).toContain('Translate')
+    w.modelDown = false
+    await pane.press({ key: 'translate-MG677R' })
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain(`🟡 ${ru[1]}`)
+    expect(w.modelCalls).toBe(2)
   })
 
-  test('an older call answered after a newer press shows nothing; the newest press wins', async ($, on) => {
+  test('a call answered after a second press, or after the pane opened again, shows nothing', async ($, on) => {
     const w = withNotes(on, 'Deutsch', de)
     w.modelHeld = []
     await startSession($)
     const band = await $.ui.mount(BAND)
-    void band.press({ key: 'acceptance-MG677R' })
+    const pane = await acceptancePane($, band, 'MG677R')
+    void pane.press({ key: 'translate-MG677R' })
     await w.clock.settle()
     expect(w.modelHeld).toHaveLength(1)
-    // The language taken away while the Deutsch call waits.
-    w.files.set(SETTINGS, JSON.stringify({ dispatch: 'worker' }))
-    await band.press({ key: 'acceptance-MG677R' })
+    expect((await pane.find({ key: 'translate-MG677R' }))?.text).toContain('translating…')
+    // The second press while it waits: back to the original at once.
+    await pane.press({ key: 'translate-MG677R' })
     w.modelHeld.shift()!()
     await w.clock.settle()
-    expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
-    // Русский asked and waiting, then Deutsch again - kept from the first
-    // call, so answered at once: the Russian answer, coming back last, is
-    // the older press's and shows nothing.
-    w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
-    w.model = JSON.stringify(ru)
-    void band.press({ key: 'acceptance-MG677R' })
-    await w.clock.settle()
-    w.files.set(SETTINGS, JSON.stringify({ language: 'Deutsch' }))
-    await band.press({ key: 'acceptance-MG677R' })
-    expect(w.modelHeld).toHaveLength(1)
-    w.modelHeld.shift()!()
-    await w.clock.settle()
-    w.modelHeld = undefined
-    // Read off the pane as it stands, without a press that would ask again.
-    const shownNow = async () => {
-      const pane = await $.ui.mount(ACCEPT('Acceptance of MG677R'))
-      const first = (await pane.findAll({ type: 'Text' })).map(x => x.text).find(x => x.startsWith('🔴'))
-      await pane.unmount()
-      return first
-    }
-    expect(await shownNow()).toBe(`🔴 ${de[0]}`)
-    // Two presses on one language while nothing is kept: both ask, the
-    // newest shows - no call is held back for another (decision 22.11.).
-    w.files.set(SETTINGS, JSON.stringify({ language: 'English' }))
-    w.model = JSON.stringify(['The header twice.', 'No size check.', 'Long Windows paths.', 'load.go:41 takes an empty file.'])
-    w.modelHeld = []
-    void band.press({ key: 'acceptance-MG677R' })
-    await w.clock.settle()
-    void band.press({ key: 'acceptance-MG677R' })
-    await w.clock.settle()
-    expect(w.modelHeld).toHaveLength(2)
-    w.modelHeld.splice(1, 1)[0]!()
-    await w.clock.settle()
-    w.modelHeld.shift()!()
-    await w.clock.settle()
-    w.modelHeld = undefined
-    expect(await shownNow()).toBe('🔴 The header twice.')
-  })
-
-  test('a model that does not answer leaves the original text with its mark', async ($, on) => {
-    const w = withNotes(on, 'Русский')
-    w.modelDown = true
-    await startSession($)
-    expect((await verdictNotes($))[1]).toBe('🟡 note: the size check is missing')
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain(ORIGINAL[0])
+    // The answer that came back is kept all the same: the next press shows
+    // it at once, without a call.
+    await pane.press({ key: 'translate-MG677R' })
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain(`🔴 ${de[0]}`)
     expect(w.modelCalls).toBe(1)
+    // Another language, pressed, and the pane opened anew while the call waits.
+    w.translations = dictionary(ru)
+    w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
+    const ru_ = await acceptancePane($, band, 'MG677R')
+    void ru_.press({ key: 'translate-MG677R' })
+    await w.clock.settle()
+    expect(w.modelHeld).toHaveLength(1)
+    const again = await acceptancePane($, band, 'MG677R')
+    w.modelHeld.shift()!()
+    await w.clock.settle()
+    w.modelHeld = undefined
+    expect((await again.findAll({ type: 'Text' })).map(x => x.text)).toContain(ORIGINAL[0])
   })
 })
 
@@ -4978,11 +5135,14 @@ describe('the language and the rephrased answer, read alone', () => {
     for (const answer of ['', 'a, b', '["a"]', '["a", "b", "c"]', '["a", " "]', '["a", null]', '["a", "b"']) expect(rephrasedOf(answer, 2)).toBeUndefined()
   })
 
-  test('the prompt names the language and carries every note word for word', () => {
-    const p = rephrasePrompt('Русский', ['blocker: `x` in a.go:3', 'note: "quoted"'])
-    expect(p).toContain('in Русский')
-    expect(p).toContain('exactly 2 strings')
-    expect(p).toContain(JSON.stringify(['blocker: `x` in a.go:3', 'note: "quoted"']))
+  test('the prompt names the language and carries the head and every note word for word, in one array', () => {
+    const p = translatePrompt('Русский', ['cache key'], ['blocker: `x` in a.go:3', 'note: "quoted"'])
+    expect(p).toContain('into Русский')
+    expect(p).toContain('The first 1 are the title')
+    expect(p).toContain('The last 2 are review notes')
+    expect(p).toContain('exactly 3 strings')
+    expect(p).toContain(JSON.stringify(['cache key', 'blocker: `x` in a.go:3', 'note: "quoted"']))
+    expect(translatePrompt('Deutsch', ['cache key'], [])).not.toContain('review notes')
   })
 })
 
@@ -5317,36 +5477,33 @@ describe('the Acceptance pane', () => {
     await w.clock.settle()
     const all = await texts(pane)
     expect(all).toContain('cache key')
-    expect(all).toContain('Goal: Two branches never share a cache entry.')
-    expect(all).toContain('Done: the key names the branch')
-    expect(all).toContain('Why: two branches shared one entry')
+    expect(all).toContain('┃ Goal: Two branches never share a cache entry.')
+    expect(all).toContain('┃ Done: the key names the branch')
+    expect(all).toContain('┃ Why: two branches shared one entry')
     expect(all).toContain('round 2 | back 1x from signoff | 3 days')
     expect(all).toContain('DoD 2/2 (1 superseded) | bughunt ✓ on HEAD | review: accept')
     expect(all).toContain('2 commits, 2 files | pull request exists')
-    expect(all).toContain('Release note: Press Acceptance to decide a ticket.')
+    expect(all).toContain('Press Acceptance to decide a ticket.')
+    // MK8HD2: each block opens with its title and a rule; each head field
+    // has its own colour; what the ticket went through is dim, where it
+    // stands is not.
+    for (const title of ['History', 'Release note', 'Review notes - choose for each']) expect(all.some(x => x.startsWith(title) && x.endsWith('───'))).toBe(true)
+    const colour = async (key: string) => JSON.stringify(await pane.find({ key }))
+    expect(await colour('goal')).toContain('"color":"suggestion"')
+    expect(await colour('what')).toContain('"color":"success"')
+    expect(await colour('why')).toContain('"color":"warning"')
+    const dim = async (text: string) => (await pane.find({ type: 'Text', text }))?.props.dimColor
+    expect(await dim('round 2 | back 1x from signoff | 3 days')).toBe(true)
+    // Where it stands wraps on a line of its own under the title, never cut
+    // with the rule.
+    expect(await dim('MG677R | signoff')).toBe(true)
+    expect(await dim('2 commits, 2 files | pull request exists')).toBe(true)
+    expect(await dim('DoD 2/2 (1 superseded) | bughunt ✓ on HEAD | review: accept')).toBeFalsy()
     // The light follows the marks: one 🟡 note makes it yellow.
     expect(all[0]).toBe('● yellow: 1 review note to weigh')
     // Looked up from the ticket's own worktree, without a fetch.
     expect(ran(w, 'git', 'log', '--format=%h')[0]?.at(-1)).toBe('@/.worktrees/repo-mg677r')
     expect(ran(w, 'git', 'fetch')).toEqual([])
-  })
-
-  test('the head comes in the person\'s language, the notes in theirs too, and no word of it reaches the ticket', async ($, on) => {
-    const w = world(on)
-    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: a test is missing' } }, HUMAN, WORKING]
-    w.shows.MG677R = { title: 'cache key', goal: 'a key per branch', outcome: { what: 'the key names the branch', why: 'two branches shared one' } }
-    w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
-    w.model = JSON.stringify(['Нет теста.'])
-    w.head = JSON.stringify(['ключ кэша', 'ключ на ветку', 'ключ называет ветку', 'две ветки делили один', 'одна заметка'])
-    await startSession($)
-    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
-    await w.clock.settle()
-    const all = await texts(pane)
-    expect(w.headPrompts.at(-1)).toContain('into Русский')
-    expect(w.headPrompts.at(-1)).toContain(JSON.stringify(['cache key', 'a key per branch', 'the key names the branch', 'two branches shared one', '1 review note to weigh']))
-    for (const text of ['ключ кэша', 'Goal: ключ на ветку', 'Done: ключ называет ветку', 'Why: две ветки делили один', '🟡 Нет теста.']) expect(all).toContain(text)
-    expect(all.some(x => x.includes('одна заметка'))).toBe(true)
-    expect(JSON.stringify(w.ran)).not.toContain('ключ')
   })
 
   test('Explain on one note asks the cheap model once for a sentence, shown under the note', async ($, on) => {
@@ -5475,7 +5632,7 @@ describe('the Acceptance pane', () => {
     await startSession($)
     const all = await texts(await acceptancePane($, await $.ui.mount(BAND), 'MG677R'))
     await w.clock.settle()
-    expect(all.some(x => x.startsWith('Release note:'))).toBe(false)
+    expect(all.some(x => x.startsWith('Release note'))).toBe(false)
   })
 
   test('the pull request is asked once in five minutes, however often the pane opens', async ($, on) => {
@@ -5589,10 +5746,13 @@ describe('what the person checks themselves', () => {
     setUp(on)
     await startSession($)
     const all = await texts(await acceptancePane($, await $.ui.mount(BAND), 'MG677R'))
-    const heading = all.indexOf('Check yourself - tick what you have seen:')
+    const heading = all.indexOf('Check yourself - tick what you have seen')
     expect(heading).toBeGreaterThan(-1)
-    expect(all[heading + 1]).toBe('[ ] 2. seen by a person: the band shows the branch')
-    expect(all.indexOf('Review notes - choose for each:')).toBeGreaterThan(heading + 1)
+    // MK8HD2's section heading: the title, then a dim rule as a text of its own.
+    const item = all.indexOf('[ ] 2. seen by a person: the band shows the branch')
+    expect(item).toBeGreaterThan(heading)
+    expect(all.slice(heading + 1, item).every(x => /^\s*─+$/.test(x))).toBe(true)
+    expect(all.indexOf('Review notes - choose for each')).toBeGreaterThan(item)
     expect(all.some(x => x.includes('already ticked') || x.includes('person: superseded'))).toBe(false)
     expect(all).toContain('Execute: tick what you checked above first, then done')
   })
@@ -5704,4 +5864,47 @@ describe('what the person checks themselves', () => {
     expect(executionOf([], 'missing', 'done', 1).step).toBe('giveBack')
     expect(executionOf([], '', null, 1).step).toBe('notTerminal')
   })
+})
+
+// Every form git takes for a remote, taken apart as core/pr's parseRemote
+// does (XSGWPX): the user before the @ and the port are no part of the host.
+describe('parseRemote', () => {
+  const cases: [string, { host: string; repo: string } | undefined][] = [
+    ['https://github.com/me/jaira.git', { host: 'github.com', repo: 'me/jaira' }],
+    ['https://token@github.com/me/jaira.git/', { host: 'github.com', repo: 'me/jaira' }],
+    ['https://ghe.example.com:8443/team/app.git', { host: 'ghe.example.com', repo: 'team/app' }],
+    ['ssh://alice@ghe.example.com:2222/team/app.git', { host: 'ghe.example.com', repo: 'team/app' }],
+    ['git+ssh://git@GHE.Example.com/team/app', { host: 'ghe.example.com', repo: 'team/app' }],
+    ['git@github.com:me/jaira', { host: 'github.com', repo: 'me/jaira' }],
+    ['alice@ghe.example.com:team/app.git', { host: 'ghe.example.com', repo: 'team/app' }],
+    ['ghe.example.com:team/app.git', { host: 'ghe.example.com', repo: 'team/app' }],
+    ['git@gitlab.example.com:group/sub/project.git', { host: 'gitlab.example.com', repo: 'group/sub/project' }],
+    ['/srv/git/app.git', undefined],
+    ['C:/repos/app', undefined],
+    ['C:\\repos\\app', undefined],
+    ['https://ghe.example.com/app', undefined],
+    ['git@host:app.git', undefined],
+    ['file:///srv/git/app.git', undefined],
+  ]
+  for (const [url, want] of cases) {
+    test(url, () => {
+      expect(parseRemote(url)).toEqual(want)
+    })
+  }
+})
+
+// A host gh takes for github.com goes to gh as it is, with no host of its own.
+describe('ghRepoOf', () => {
+  const cases: [string, { repo: string; host?: string }][] = [
+    ['alice@ghe.example.com:team/app.git', { repo: 'ghe.example.com/team/app', host: 'ghe.example.com' }],
+    ['git@github.com:me/jaira.git', { repo: 'git@github.com:me/jaira.git' }],
+    ['ssh://git@ssh.github.com:443/me/jaira.git', { repo: 'ssh://git@ssh.github.com:443/me/jaira.git' }],
+    ['https://www.GitHub.com/me/jaira', { repo: 'https://www.GitHub.com/me/jaira' }],
+    ['/srv/git/app.git', { repo: '/srv/git/app.git' }],
+  ]
+  for (const [url, want] of cases) {
+    test(url, () => {
+      expect(ghRepoOf(url)).toEqual(want)
+    })
+  }
 })

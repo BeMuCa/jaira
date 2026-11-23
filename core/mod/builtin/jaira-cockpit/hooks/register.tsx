@@ -2,11 +2,11 @@ import { atom, read, update } from 'claude-code'
 import type { ElementTable, EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
-  acceptTreeFor, branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
+  acceptTreeFor, branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, ghRepoOf, hasPullRequest, onHost, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
-  clipLines, commitsOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, headPrompt, rephrasedOf, rephrasePrompt, seenItemsOf, seenProof, seenToTick, type SeenItem, standOf, storyOf,
-  type Action, type Agent, type GapItem, type Story, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
+  clipLines, commitsOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenItemsOf, seenProof, seenToTick, type SeenItem, standOf, storyOf, translatePrompt,
+  type Action, type Agent, type GapItem, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
 import { digest, reportLine } from './digest.ts'
@@ -16,7 +16,7 @@ import {
 } from './filter.ts'
 import { body, source } from './frame.ts'
 import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.ts'
-import { COLORS, HATS, overviewOf, pickOf, stoneOf, workerKey, workersOf } from './overview.ts'
+import { COLORS, cycled, HATS, NO_FILTER, overviewOf, pickOf, stoneOf, workerKey, workersOf } from './overview.ts'
 import { drawOverview, headRow, type OverviewTab } from './overview-pane.tsx'
 import {
   backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
@@ -60,6 +60,7 @@ const typedAtom = atom({ plugin: 'jaira-cockpit', key: 'typed' } as const, '')
 const refusalAtom = atom({ plugin: 'jaira-cockpit', key: 'refusal' } as const, null)
 const reasonsAtom = atom({ plugin: 'jaira-cockpit', key: 'reasons' } as const, {})
 const rephrasedAtom = atom({ plugin: 'jaira-cockpit', key: 'rephrased' } as const, {})
+const translatingAtom = atom({ plugin: 'jaira-cockpit', key: 'translating' } as const, null)
 const huntsAtom = atom({ plugin: 'jaira-cockpit', key: 'hunts' } as const, {})
 const explainingAtom = atom({ plugin: 'jaira-cockpit', key: 'explaining' } as const, null)
 const answeringAtom = atom({ plugin: 'jaira-cockpit', key: 'answering' } as const, null)
@@ -70,8 +71,8 @@ const busyAtom = atom({ plugin: 'jaira-cockpit', key: 'busy' } as const, {})
 const overviewAtom = atom({ plugin: 'jaira-cockpit', key: 'overview' } as const, null)
 const overviewTabAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewTab' } as const, 'queue')
 const overviewFoldedAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewFolded' } as const, {})
-const overviewPeopleAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewPeople' } as const, [])
-const overviewLanesAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewLanes' } as const, [])
+const overviewPeopleAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewPeopleFilter' } as const, NO_FILTER)
+const overviewLanesAtom = atom({ plugin: 'jaira-cockpit', key: 'overviewLanesFilter' } as const, NO_FILTER)
 const releaseAtom = atom({ plugin: 'jaira-cockpit', key: 'release' } as const, null)
 const upgradeAtom = atom({ plugin: 'jaira-cockpit', key: 'upgrade' } as const, null)
 const workersAtom = atom({ plugin: 'jaira-cockpit', key: 'workers' } as const, null)
@@ -110,8 +111,10 @@ const READ_FRAMES = 20
 const OVERVIEW_ROWS = 1
 // Between the parts of a line: the band's one separator.
 const SEP = ' | '
-// A filter's choice with one item pressed: out if it was in, in if it was not.
-const toggled = (chosen: string[], x: string) => (chosen.includes(x) ? chosen.filter(y => y !== x) : [...chosen, x])
+// The Acceptance pane's block rule, longer than any pane is wide and cut at
+// its edge, and the bar before each head field (MK8HD2).
+const RULE = '─'.repeat(240)
+const BAR = '┃ '
 // A pane left with nothing to show (its ticket gone from the board, its state
 // cleared) keeps its head: [ Close ] closes it as in every other state.
 const nothingPane = ({ Box, Button, Text }: Pick<ElementTable, 'Box' | 'Button' | 'Text'>, head: string, close: { key: string; onPress: () => void }) => (
@@ -810,29 +813,32 @@ function output(r: Awaited<ReturnType<typeof run>>): string {
 // what "ahead" is counted against. undefined where origin is missing or no
 // forge can be told (the caller counts against the local base then, and a
 // pull request cannot be opened anyway); a string says why it failed.
-type Target = { on: Forge; repo: string; base: string }
+type Target = { on: Forge; repo: string; host?: string; base: string }
 
 // The forge of origin and the repository its pull requests go to - the
 // parent in a fork; undefined where no forge can be told, a string where the
-// forge did not answer.
-async function forgeRepo($: EngineInterface, repoDir: string): Promise<{ on: Forge; repo: string } | string | undefined> {
+// forge did not answer. host is set on GitHub Enterprise: every later gh
+// call names the repository as host/owner/repo (onHost), or gh asks
+// github.com for it.
+async function forgeRepo($: EngineInterface, repoDir: string): Promise<{ on: Forge; repo: string; host?: string } | string | undefined> {
   // Unset, `git config` exits 1 and the host of origin decides.
   const forge = await run($, ['git', 'config', 'jaira.forge'], repoDir)
   const origin = await run($, ['git', 'remote', 'get-url', 'origin'], repoDir)
   const url = origin?.exitCode === 0 ? origin.stdout.trim() : ''
   const on = url ? forgeOf(forge?.exitCode === 0 ? forge.stdout : '', url) : undefined
   if (on === undefined) return undefined
-  const view = await run($, repoViewCommand(on, url), repoDir, 30_000)
+  const asked = on === 'github' ? ghRepoOf(url) : { repo: url }
+  const view = await run($, repoViewCommand(on, asked.repo), repoDir, 30_000)
   const repo = view?.exitCode === 0 ? targetRepoOf(on, view.stdout) : undefined
-  return repo === undefined ? `${on === 'github' ? 'gh' : 'glab'} repo view: ${output(view)}` : { on, repo }
+  return repo === undefined ? `${on === 'github' ? 'gh' : 'glab'} repo view: ${output(view)}` : { on, repo, host: asked.host }
 }
 
 async function pullTarget($: EngineInterface, repoDir: string): Promise<Target | string | undefined> {
   const found = await forgeRepo($, repoDir)
   if (found === undefined || typeof found === 'string') return found
-  const { on, repo } = found
+  const { on, repo, host } = found
   const tool = on === 'github' ? 'gh' : 'glab'
-  const targetView = await run($, repoViewCommand(on, repo), repoDir, 30_000)
+  const targetView = await run($, repoViewCommand(on, onHost(repo, host)), repoDir, 30_000)
   const branch = targetView?.exitCode === 0 ? defaultBranchOf(on, targetView.stdout) : undefined
   if (branch === undefined) return `${tool} repo view ${repo}: ${(targetView?.stderr || 'no default branch').trim()}`
   const remotes = await run($, ['git', 'remote', '-v'], repoDir)
@@ -840,7 +846,7 @@ async function pullTarget($: EngineInterface, repoDir: string): Promise<Target |
   if (remote === undefined) return t.noRemoteFor(repo)
   const fetched = await run($, ['git', 'fetch', remote, branch], repoDir, 60_000)
   if (fetched?.exitCode !== 0) return `git fetch ${remote} ${branch}: ${output(fetched)}`
-  return { on, repo, base: `${remote}/${branch}` }
+  return { on, repo, host, base: `${remote}/${branch}` }
 }
 
 // Which step the press starts, and on which branch: the ticket's branch
@@ -896,7 +902,7 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   }
   if (land) return { step: stepAfterAccept(ahead, pending, false), branch, hint: '', land }
   if (target === undefined) return t.noForge(branch)
-  const cmd = pullRequestsCommand(target.on, target.repo, branch)
+  const cmd = pullRequestsCommand(target.on, onHost(target.repo, target.host), branch)
   const listed = await run($, cmd, b.repo, 30_000)
   const has = listed?.exitCode === 0 ? hasPullRequest(listed.stdout) : undefined
   return { step: stepAfterAccept(ahead, pending, has), branch, hint: has === undefined ? t.prUnchecked(`${cmd[0]}: ${output(listed)}`) : '', has }
@@ -1361,6 +1367,11 @@ async function openAcceptance($: EngineInterface, w: Waiting): Promise<void> {
   // The sentences Explain gave on its notes: asked again on a press, so a
   // changed language or a failed call is not shown on.
   await update($, reasonsAtom, ({ [w.id]: _, ...rest }) => rest)
+  // Every opening starts on the original: Translate asks for the person's
+  // language, never the opening (FMWBA8). A call still out from before shows
+  // nothing.
+  await untranslate($, w.id)
+  const language = languageOf(await settingsJson($))
   const dir = await ticketDir($, board, w.id)
   const shown = await run($, ['jaira', 'show', w.id, '--json'], dir)
   const json = shown?.exitCode === 0 ? shown.stdout : undefined
@@ -1369,17 +1380,17 @@ async function openAcceptance($: EngineInterface, w: Waiting): Promise<void> {
   const seen = json === undefined ? [] : seenItemsOf(json)
   await update($, seenAtom, () => (seen.length === 0 ? null : { id: w.id, items: seen }))
   const story = json === undefined ? undefined : storyOf(json)
-  await update($, storyAtom, () => ({ id: w.id, ...(story !== undefined ? { story } : {}), release: [], pr: false }))
+  await update($, storyAtom, () => ({ id: w.id, ...(story !== undefined ? { story } : {}), ...(language !== undefined ? { language } : {}), release: [], pr: false }))
   const opened = await $.ui.open({ id: ACCEPTANCE, title: t.acceptanceOf(w.id), focus: true, closeOnEscape: true })
   if (!opened.isPlaced) return fail($, t.acceptanceOf(w.id), t.noRoom)
   // The rest fills in while the pane is up, outside the row's lock: Execute
   // pressed meanwhile is not lost to a lock the reading still holds.
-  void readStory($, w, story, items)
+  void readStory($, w)
 }
 
-// The Acceptance pane's history from git and the forge, and its texts in the
-// person's language: added to what the pane already shows.
-async function readStory($: EngineInterface, w: Waiting, story: Story | undefined, items: readonly GapItem[]): Promise<void> {
+// The Acceptance pane's history from git and the forge: added to what the
+// pane already shows.
+async function readStory($: EngineInterface, w: Waiting): Promise<void> {
   const code = await codeDir($, w.id)
   const log = await run($, ['git', 'log', '--format=%h', '--name-only', '-F', `--grep=${w.id}`, 'HEAD'], code)
   // A release note where the repository keeps them as jaira does, one file
@@ -1391,9 +1402,6 @@ async function readStory($: EngineInterface, w: Waiting, story: Story | undefine
   } catch {}
   const pr = await openPullRequest($, w.id)
   await update($, storyAtom, s => (s?.id !== w.id ? s : { ...s, ...(log?.exitCode === 0 ? { commits: commitsOf(log.stdout) } : {}), release: releaseLines(note), pr }))
-  await rephrase($, w.id, items.map(x => x.text))
-  const reason = lightOf(w, (await read($, huntsAtom))[w.id], items.map(x => x.cls)).reasons[0]
-  await rephrase($, `${w.id}${HEAD}`, [...(story === undefined ? [w.title] : [story.title, story.goal, story.what, story.why]), ...(reason === undefined ? [] : [t.lightReason(reason)])].filter(x => x !== ''), headPrompt)
 }
 
 const RELEASE_NOTES = 'core/release/notes'
@@ -1432,7 +1440,7 @@ async function askPullRequest($: EngineInterface, id: string): Promise<boolean |
   const found = await forgeRepo($, board.repo)
   if (found === undefined) return false
   if (typeof found === 'string') return undefined
-  const listed = await run($, pullRequestsCommand(found.on, found.repo, branch), board.repo, 30_000)
+  const listed = await run($, pullRequestsCommand(found.on, onHost(found.repo, found.host), branch), board.repo, 30_000)
   return listed?.exitCode === 0 ? hasPullRequest(listed.stdout) : undefined
 }
 
@@ -1525,43 +1533,62 @@ function closeAcceptance($: EngineInterface): void {
 const CLASS_ORDER: readonly NoteClass[] = ['blocker', 'edge', 'limit', 'elsewhere']
 const REPHRASED_PREFIX = 'rephrased:'
 const REPHRASED_TICKETS = 50
-// The newest rephrase of each ticket: an older one still waiting for the
-// model shows nothing once it is answered. No call is held back for one
-// that waits - the newest press wins, a double press may ask twice
-// (decision 22.11.2026: a rule that skips calls kept growing edges).
+// The newest press of each ticket: a call answered after a later press,
+// or after the pane opened again, shows nothing. No call is held back for one
+// that waits (decision 22.11.2026: a rule that skips calls kept growing
+// edges).
 const newest = new Map<string, number>()
 let rephrases = 0
 
-// The review notes of a ticket in the language the person set in their own
-// settings.json, short and plain, for the Verdict and Give back panes to show
-// instead of the ticket's words. The ticket is never written: what Give back
-// and Accept write onto it stays the original text. One call of the cheap
-// model per ticket and notes: the answer is kept in the store for as long as
-// the language and the notes stay the same. No language set, a failed call
-// or an answer that does not fit: nothing is shown but the original, a
-// rewrite shown before included - the language may have been taken away.
-// The head's rewrite is kept under the ticket's id with this after it.
-const HEAD = ':head'
-
-async function rephrase($: EngineInterface, id: string, texts: readonly string[], prompt = rephrasePrompt): Promise<void> {
-  const mine = ++rephrases
-  newest.set(id, mine)
-  const language = texts.length === 0 ? undefined : languageOf(await settingsJson($))
-  const show = (map?: Record<string, string>) =>
-    newest.get(id) !== mine ? undefined : update($, rephrasedAtom, ({ [id]: _, ...rest }) => (map === undefined ? rest : { ...rest, [id]: map }))
-  if (language === undefined) return show()
-  const shown = await rephrased($, REPHRASED_PREFIX + id, language, texts, prompt)
-  await show(shown === undefined ? undefined : Object.fromEntries(texts.map((x, i) => [x, shown[i]!])))
+// Translate in the Acceptance pane (FMWBA8): the head and every review note
+// in the language the person set in their own settings.json, short and plain,
+// asked of the cheap model in one call only when the person presses it - a
+// second press goes back to the original. The ticket is never written: what
+// Execute writes onto it stays the original text. The answer is kept in the
+// store for as long as the language and the texts stay the same, so a ticket
+// translated before is shown at once. No language set, a failed call or an
+// answer that does not fit: the original stays, and the next press asks
+// again.
+async function translate($: EngineInterface, w: Waiting): Promise<void> {
+  const on = (await read($, rephrasedAtom))[w.id] !== undefined || (await read($, translatingAtom)) === w.id
+  await untranslate($, w.id)
+  if (on) return
+  const mine = rephrases
+  // The language the pane opened with, which drew the button.
+  const story = await read($, storyAtom)
+  const language = story?.id === w.id ? story.language : undefined
+  if (language === undefined) return
+  const s = story?.story
+  const c = await read($, choosingAtom)
+  const items = c?.id === w.id ? c.items : []
+  const reason = lightOf(w, (await read($, huntsAtom))[w.id], items.map(x => x.cls)).reasons[0]
+  // The head as the pane draws it, fallbacks included.
+  const head = [s?.title || w.title, s?.goal || w.goal, s?.what ?? '', s?.why ?? '', ...(reason === undefined ? [] : [t.lightReason(reason)])].filter(x => x !== '')
+  const notes = items.map(x => x.text)
+  const texts = [...head, ...notes]
+  await update($, translatingAtom, () => w.id)
+  const shown = await rephrased($, REPHRASED_PREFIX + w.id, language, texts, translatePrompt(language, head, notes))
+  if (newest.get(w.id) !== mine) return
+  await update($, translatingAtom, x => (x === w.id ? null : x))
+  if (shown !== undefined) await update($, rephrasedAtom, r => ({ ...r, [w.id]: Object.fromEntries(texts.map((x, i) => [x, shown[i]!])) }))
 }
 
-// The notes in that language: kept in the store, or asked of the cheap model
+// The ticket's texts back to the original, and a call still out for it
+// shows nothing when it is answered.
+async function untranslate($: EngineInterface, id: string): Promise<void> {
+  newest.set(id, ++rephrases)
+  await update($, translatingAtom, x => (x === id ? null : x))
+  await update($, rephrasedAtom, ({ [id]: _, ...rest }) => rest)
+}
+
+// The texts in that language: kept in the store, or asked of the cheap model
 // and kept; undefined where the call fails or its answer does not fit.
-async function rephrased($: EngineInterface, key: string, language: string, texts: readonly string[], prompt = rephrasePrompt): Promise<string[] | undefined> {
+async function rephrased($: EngineInterface, key: string, language: string, texts: readonly string[], prompt: string): Promise<string[] | undefined> {
   const kept = (await $.store.get(key)) as { language: string; source: string[]; shown: string[] } | undefined
   if (kept?.language === language && kept.source.length === texts.length && kept.source.every((x, i) => x === texts[i])) return kept.shown
   let shown: string[] | undefined
   try {
-    const result = await $.model.complete({ model: 'haiku', prompt: prompt(language, texts), maxTokens: 4000 })
+    const result = await $.model.complete({ model: 'haiku', prompt, maxTokens: 4000 })
     shown = result.isAnswered ? rephrasedOf(result.text, texts.length) : undefined
   } catch {
     return undefined
@@ -2340,9 +2367,9 @@ export const register: Register = (on, options) => {
     const typed = await read($, typedAtom)
     const refusal = await read($, refusalAtom)
     const reasons = (await read($, reasonsAtom))[w.id] ?? {}
-    const rephrased = await read($, rephrasedAtom)
-    const said = { ...rephrased[`${w.id}${HEAD}`], ...rephrased[w.id] }
-    const tr = (x: string) => said[x] ?? x
+    const said = (await read($, rephrasedAtom))[w.id]
+    const translating = (await read($, translatingAtom)) === w.id
+    const tr = (x: string) => said?.[x] ?? x
     const hunt = (await read($, huntsAtom))[w.id]
     const light = lightOf(w, hunt, items.map(x => x.cls))
     const first = light.reasons[0]
@@ -2358,11 +2385,30 @@ export const register: Register = (on, options) => {
     // A choice's button: the chosen one bold in its colour, the others dim.
     const CHOICES: [GapItem['choice'], string, 'success' | 'error' | 'suggestion'][] = [['accept', t.choiceOk, 'success'], ['now', t.choiceFix, 'error'], ['later', t.choiceTicket, 'suggestion']]
     const story_ = s?.story
-    const history = [
-      ...(story_ !== undefined ? [[t.round(story_.round), ...(story_.back !== undefined ? [t.backFrom(story_.back.count, story_.back.from)] : []), ...(story_.created !== undefined ? [t.age(now - story_.created)] : [])].join(SEP)] : []),
-      [...(story_ !== undefined && story_.dod.total > 0 ? [t.dodCount(story_.dod.done, story_.dod.total, story_.dod.superseded)] : []), t.huntOnHead(hunt?.state ?? ''), t.review(w.verdict)].join(SEP),
-      ...((s?.commits?.commits ?? 0) > 0 || s?.pr ? [[...((s?.commits?.commits ?? 0) > 0 ? [t.commitsFiles(s!.commits!.commits, s!.commits!.files)] : []), ...(s?.pr ? [t.prOpen] : [])].join(SEP)] : []),
+    // What the ticket went through is side information, drawn dim; the line
+    // that says where it stands - DoD, bug hunt, review - stays bright.
+    const history: { line: string; dim: boolean }[] = [
+      ...(story_ !== undefined ? [{ line: [t.round(story_.round), ...(story_.back !== undefined ? [t.backFrom(story_.back.count, story_.back.from)] : []), ...(story_.created !== undefined ? [t.age(now - story_.created)] : [])].join(SEP), dim: true }] : []),
+      { line: [...(story_ !== undefined && story_.dod.total > 0 ? [t.dodCount(story_.dod.done, story_.dod.total, story_.dod.superseded)] : []), t.huntOnHead(hunt?.state ?? ''), t.review(w.verdict)].join(SEP), dim: false },
+      ...((s?.commits?.commits ?? 0) > 0 || s?.pr ? [{ line: [...((s?.commits?.commits ?? 0) > 0 ? [t.commitsFiles(s!.commits!.commits, s!.commits!.files)] : []), ...(s?.pr ? [t.prOpen] : [])].join(SEP), dim: true }] : []),
     ]
+    // MK8HD2: the pane reads in blocks, for a reader who skims. Each block
+    // opens with its title in colour and a dim rule to the pane's edge (the
+    // engine draws a Box's border on all four sides or none, so the rule is
+    // text, cut where the pane ends); each head field starts with a bar in
+    // its own colour. Theme keys only, so a light terminal reads it too.
+    // The title alone shares the row with the rule: what would follow it on
+    // that row goes on a line of its own, where it wraps instead of being cut.
+    const section = (key: string, title: string) => (
+      <Box key={key} marginTop={1}>
+        <Text wrap="truncate-end"><Text bold color="claude">{title}</Text><Text dimColor>{` ${RULE}`}</Text></Text>
+      </Box>
+    )
+    const field = (key: string, label: string, colour: 'suggestion' | 'success' | 'warning', text: string) => (
+      <Box key={key} marginTop={1}>
+        <Text wrap="wrap"><Text bold color={colour}>{`${BAR}${label}`}</Text> {text}</Text>
+      </Box>
+    )
     return (
       <Box flexDirection="column">
         {headRow({ Box, Button }, 'acceptance-head', { key: 'acceptance-close', label: t.close, onPress: () => closeAcceptance($) })}
@@ -2371,22 +2417,24 @@ export const register: Register = (on, options) => {
           : {first === undefined ? t.lightAccept : tr(t.lightReason(first))}{light.reasons.length > 1 ? t.lightMore(light.reasons.length - 1) : ''}
         </Text>
         <Text key="title" bold wrap="wrap">{tr(story_?.title || w.title)}</Text>
-        {(story_?.goal || w.goal) ? <Text key="goal" wrap="wrap"><Text bold>{t.goal}</Text> {tr(story_?.goal || w.goal)}</Text> : null}
-        {story_?.what ? <Text key="what" wrap="wrap"><Text bold>{t.done}</Text> {tr(story_.what)}</Text> : null}
-        {story_?.why ? <Text key="why" wrap="wrap"><Text bold>{t.why}</Text> {tr(story_.why)}</Text> : null}
+        {(story_?.goal || w.goal) ? field('goal', t.goal, 'suggestion', tr(story_?.goal || w.goal)) : null}
+        {story_?.what ? field('what', t.done, 'success', tr(story_.what)) : null}
+        {story_?.why ? field('why', t.why, 'warning', tr(story_.why)) : null}
         {w.question !== '' ? <Text key="question" color="warning" wrap="wrap">? {w.question}</Text> : null}
-        <Box marginTop={1}><Text bold>{t.historyHeading}</Text><Text dimColor wrap="wrap">{`${SEP}${w.id}${SEP}${w.lane}${w.reviewedIn !== undefined ? `${SEP}${t.reviewedIn(w.reviewedIn)}` : ''}`}</Text></Box>
-        {history.map((line, i) => <Text key={`history-${i}`} wrap="wrap">{line}</Text>)}
-        {(s?.release.length ?? 0) > 0 ? <Text key="release" wrap="wrap"><Text bold>{t.releaseNote}</Text> {s!.release.join(' / ')}</Text> : null}
+        {section('history-head', t.historyHeading)}
+        <Text key="history-where" dimColor wrap="wrap">{[w.id, w.lane, ...(w.reviewedIn !== undefined ? [t.reviewedIn(w.reviewedIn)] : [])].join(SEP)}</Text>
+        {history.map(({ line, dim }, i) => <Text key={`history-${i}`} wrap="wrap" dimColor={dim}>{line}</Text>)}
+        {(s?.release.length ?? 0) > 0 ? section('release-head', t.releaseNote) : null}
+        {(s?.release ?? []).map((line, i) => <Text key={`release-${i}`} wrap="wrap">{line}</Text>)}
         {/* DKMG91: what only the person can tick, apart and above the review
             notes; Accept ticks these on the ticket before it moves it. */}
-        {seen.length > 0 ? <Box marginTop={1}><Text bold color="warning">{t.checkYourself}</Text></Box> : null}
+        {seen.length > 0 ? section('seen-head', t.checkYourself) : null}
         {seen.map((x, i) => (
           <Button key={`seen-${w.id}-${x.n}`} label={x.text} plain {...(i === 0 ? { autoFocus: true as const } : {})} onPress={() => tick(x.n)}>
             <Text wrap="wrap" {...(x.checked ? { color: 'success' } : {})}>{`${x.checked ? '[✓]' : '[ ]'} ${x.n}. ${x.text}`}</Text>
           </Button>
         ))}
-        {items.length > 0 ? <Box marginTop={1}><Text bold>{t.notesChoose}</Text></Box> : null}
+        {items.length > 0 ? section('notes-head', t.notesChoose) : null}
         {!w.findingsKnown ? <Text dimColor wrap="wrap">{t.notesNotKept}</Text> : null}
         {items.map((x, i) => (
           <Box key={`note-${w.id}-${i}`} flexDirection="column" marginTop={i > 0 ? 1 : 0}>
@@ -2431,6 +2479,9 @@ export const register: Register = (on, options) => {
         <Box flexDirection="row">
           <Button key={`execute-${w.id}`} label={t.execute} onPress={go}><Text bold dimColor={busy}>{t.execute}</Text></Button>
           <Button key={`explain-all-${w.id}`} label={t.explainAll} onPress={() => void once($, w.id, () => openChat($, w.id, 'explain'))} />
+          {s?.language !== undefined
+            ? <Button key={`translate-${w.id}`} hotkey="t" label={said !== undefined ? t.original : translating ? t.translating : t.translate} onPress={() => void translate($, w)} />
+            : null}
         </Box>
       </Box>
     )
@@ -2549,10 +2600,10 @@ export const register: Register = (on, options) => {
       },
       tab: tab => void showTab($, tab),
       fold: key => void update($, overviewFoldedAtom, f => ({ ...f, [key]: !f[key] })),
-      person: name => void update($, overviewPeopleAtom, p => toggled(p, name)),
-      everybody: () => void update($, overviewPeopleAtom, () => []),
-      lane: id => void update($, overviewLanesAtom, l => toggled(l, id)),
-      allLanes: () => void update($, overviewLanesAtom, () => []),
+      person: name => void update($, overviewPeopleAtom, p => cycled(p, name)),
+      everybody: () => void update($, overviewPeopleAtom, () => NO_FILTER),
+      lane: id => void update($, overviewLanesAtom, l => cycled(l, id)),
+      allLanes: () => void update($, overviewLanesAtom, () => NO_FILTER),
     }, {
       workers: await read($, workersAtom),
       colors: await read($, workersColorsAtom),
