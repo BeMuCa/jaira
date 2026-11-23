@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T15:45:35Z
-updated-at: 2026-11-23T01:39:01Z
+updated-at: 2026-11-23T01:39:20Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-h319tv
@@ -45,4 +45,4 @@ claimed-at: 2026-11-23T01:38:34Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-23 01:39 · BeMuCa** — Entscheidungen (kein Punkt offen fuer die Person): 1) Abschnitt steht als eigenes '## Jaira PM View - Web only' direkt nach '## Start', nicht im Install-Abschnitt - feat/q9f9w4 aendert den Install-Text, so bleibt der Merge trivial. 2) Install-Zeile mit JAIRA_NO_ROLES=1 (so geschrieben in scripts/install.sh:110 und install.ps1:159). 3) 'Not built': nur 'Web UI' faellt weg, die Zeile bleibt fuer 'VS Code extension' mit ihrem Grund. 4) Release-Notiz wird geschrieben, weil DoD 4 sie verlangt, obwohl der Kontext 'nur README und Bild' sagt und CLAUDE.md README-Aenderungen nicht als client-facing zaehlt - die Person kann sie streichen. 5) Screenshot mit chrome-headless-shell aus ~/.cache/ms-playwright auf einem Scratch-Board, nach docs/img/web.png. Kein Plan-Lane: Option 'planning' nicht angehakt.
