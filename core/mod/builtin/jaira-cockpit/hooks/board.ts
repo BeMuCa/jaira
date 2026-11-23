@@ -1089,31 +1089,23 @@ export function languageOf(settingsJson: string | undefined): string | undefined
   return lang === '' ? undefined : lang
 }
 
-// The cheap model's prompt: every note, numbered, back as a JSON array of as
-// many strings in the same order. The class prefix goes - the mark says it.
-export function rephrasePrompt(language: string, notes: readonly string[]): string {
-  return [
-    `Rewrite each review note below in ${language}, for a person who reads slowly and was not there.`,
-    'Each note: one or two short, plain sentences saying what is wrong or missing and what it means.',
-    'Drop a leading "blocker:", "note:", "edge:", "limit:", "elsewhere:", "pre-existing:" or "fix-now:" - a mark in front of the note already says it.',
-    'Keep code identifiers, file paths, commands and ticket handles exactly as written. Add nothing the note does not say.',
-    `Answer with a JSON array of exactly ${notes.length} strings, in the same order, and nothing else.`,
-    '',
-    JSON.stringify(notes),
-  ].join('\n')
-}
-
-// The same for the Acceptance pane's head: the ticket's title, goal, what
-// was done and why, and the reason the light names - a call of its own, so
-// a note's rewrite never waits for, or fails with, the head's.
-export function headPrompt(language: string, texts: readonly string[]): string {
+// The cheap model's prompt for the Acceptance pane's Translate: the head -
+// the ticket's title, goal, what was done and why, the reason the light
+// names - and every review note, in one call, back as one JSON array of as
+// many strings in the same order. A note's class prefix goes - the mark says
+// it.
+export function translatePrompt(language: string, head: readonly string[], notes: readonly string[]): string {
   return [
     `Translate each text below into ${language}, plainly, for a person who reads slowly and was not there.`,
-    'They are the title of a ticket, its goal, what was done and why, and the reason a traffic light shows; a title stays short.',
-    'Keep code identifiers, file paths, commands and ticket handles exactly as written. Add nothing.',
-    `Answer with a JSON array of exactly ${texts.length} strings, in the same order, and nothing else.`,
+    `The first ${head.length} are the title of a ticket, its goal, what was done and why, and the reason a traffic light shows; a title stays short.`,
+    ...(notes.length === 0 ? [] : [
+      `The last ${notes.length} are review notes: each one or two short, plain sentences saying what is wrong or missing and what it means.`,
+      'Drop a leading "blocker:", "note:", "edge:", "limit:", "elsewhere:", "pre-existing:" or "fix-now:" from a review note - a mark in front of it already says it.',
+    ]),
+    'Keep code identifiers, file paths, commands and ticket handles exactly as written. Add nothing a text does not say.',
+    `Answer with a JSON array of exactly ${head.length + notes.length} strings, in the same order, and nothing else.`,
     '',
-    JSON.stringify(texts),
+    JSON.stringify([...head, ...notes]),
   ].join('\n')
 }
 

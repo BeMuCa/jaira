@@ -1,8 +1,8 @@
 // Every text the cockpit shows a person, in English whatever language the
 // person speaks with Claude: one set of words, the same on every machine.
-// The review notes are the one exception: they come from the ticket, and the
-// Verdict and Give back panes show them in the "language" the person set in
-// their own settings.json (register.tsx rephrase).
+// The ticket's own texts are the one exception: they come from the ticket,
+// and the Acceptance pane's Translate shows them in the "language" the person
+// set in their own settings.json (register.tsx translate).
 
 import { type LightReason, oneLine } from './board.ts'
 
@@ -57,6 +57,9 @@ export const t = {
   explaining: 'explaining…',
   noReason: 'no explanation came back',
   explainAll: 'Explain all',
+  translate: 'Translate',
+  translating: 'translating…',
+  original: 'Original',
   execute: 'Execute',
   busyRow: (id: string) => `${id}: an earlier press or an Explain chat is still at work on it - press Execute again once it is done`,
   // What Execute will do, in the pane's last line before the button.

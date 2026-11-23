@@ -139,6 +139,7 @@ d40e4baff1abe221e2ca5882acfd78e3dcebddd2373accf338b4aeeff1060a83  core/mod/built
 0576a4b27d21d2052f75eeb938696c62e5396a056fca459051cafde7ca405691  core/mod/builtin/jaira-cockpit/hooks/board.ts
 075b774ed7edb6791555fb30b63a9e69134eab4bdf2edc901fc7bc00f4072d54  core/mod/builtin/jaira-cockpit/hooks/board.ts
 0c5e345c57dd54318d24bea6bcdf5e8ef1169f856b0433e8a5bd2c6149fa358b  core/mod/builtin/jaira-cockpit/hooks/board.ts
+0ef7bcd063a87793c984684eba9a2c14d792a700e32b58a4761e47b6643252f7  core/mod/builtin/jaira-cockpit/hooks/board.ts
 12b3b4da4078f12b989fb25a15e0503d80766a777b983abe9bc231a68bcc37d0  core/mod/builtin/jaira-cockpit/hooks/board.ts
 138a9a72b6ba6bb208d7b4eff9f6d8369a7c43b277c712b0e3b9ea1cb9afa475  core/mod/builtin/jaira-cockpit/hooks/board.ts
 14415fafe1f54dd6f821126814dc4e1c44021d317bd67a7e7583d5bf845ccb77  core/mod/builtin/jaira-cockpit/hooks/board.ts
@@ -232,6 +233,7 @@ da56f2771d9677f53ad3e2166e196c241312620c740d6f0da60c6ead9bd4da95  core/mod/built
 dc373a01e31fc2e22ab89fc885950a359e43be642f411771581ac53e4fa673a8  core/mod/builtin/jaira-cockpit/hooks/board.ts
 e5057d77fc39b8553686a62cba7db21561dad9d9c9aa6b59af23a8d577945004  core/mod/builtin/jaira-cockpit/hooks/board.ts
 ee77698b9f856e90264eb8b4eaf6958352226b9d088ae2c306cb48897ab9ca83  core/mod/builtin/jaira-cockpit/hooks/board.ts
+ef1437be8039953129db8192d37f7b7bc85a97d90d205fa4af740a9031696f4a  core/mod/builtin/jaira-cockpit/hooks/board.ts
 ef652b30bb4d1fddafa2c3c6523ee60a1052fe54a60f09ee697a0e041425e5f9  core/mod/builtin/jaira-cockpit/hooks/board.ts
 f160bdb908ddfbf0e115c836e091ed95fe8b94a8d6beeadf8316eeb2bf6e8620  core/mod/builtin/jaira-cockpit/hooks/board.ts
 f39b7d23e1cd69bed3f6649884ba157ea6daf2f7cf0d6cb8012abbb950ea38d6  core/mod/builtin/jaira-cockpit/hooks/board.ts
@@ -401,6 +403,7 @@ f3cfdf49985870ac211ef56df54ff4bf030acc5c9c4623fa63d8a0ef8deb9b7f  core/mod/built
 6f5979ac1d3e0b3d98ac696ec2fefcec64153026e0fad75359a0b7105974bacf  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 7040919fe1b3e07c0579ffcb5c41fb5921e8ad108862b52978a367292ddf41c8  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 70ddded0580effa2c9dea3143814db4b918381c0f7b6327482cbf71f27f1ae11  core/mod/builtin/jaira-cockpit/hooks/register.tsx
+7449b5d587c607cc32d83114339b64478b85abe1256cb0e0280b2e93e4232cfa  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 76c9a2d6eb01f8c1c912178e57a93b8c50c1dd92c22052d9b361934faabf9eea  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 7885473ab058ae732d2ea2fd1e905ddcd3e4c2fe2b47950fc8e48f50c759c0f5  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 78b54b7a62eca6d4b63eeceffe84cb4ce60826180336fce4b0a9892ddc62ed15  core/mod/builtin/jaira-cockpit/hooks/register.tsx
@@ -445,6 +448,7 @@ ad629e889b228b1a9071a6d6f02a72752281d8f940f4345d49e4a898f83f3345  core/mod/built
 af85f97e6a247c639dd1a7d164ac271fcb960cb9a381dc23efc6d1c868eefb97  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 afe113385a8613717841183079cd0a507879b1d3ee5a1aad2ead9cb5c8ae5bac  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 b34d0e9834b97cd7685cfa1c59df5428a0b09e1994db2a60f55cbdfbf1830299  core/mod/builtin/jaira-cockpit/hooks/register.tsx
+b628a448c7c187eb3c6b474503a26bdd70b12bc3c72fb28f2959ead71fdb23fc  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 b6609d2c76ceb73ea17b8584c6ffcde150b38b49e702aa991e6462db2f7b8316  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 b68439eeaa10b40d5a477d8dd6acf476382daa5fd90863133db12376756baea5  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 b74c6dc2516cc36c34735da064c0ec70331518742008479a0800ed0adca2a2ed  core/mod/builtin/jaira-cockpit/hooks/register.tsx
@@ -487,8 +491,10 @@ eab947b4072ac2e9dd1d1e9d9ce8a673ce3d6a96c64b66954a28fd44ca80c4da  core/mod/built
 f4035432382cd519de8a35cc683afab5ddb4b5de7d44a61e9a0800379e9b9e7e  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 f437c6487d6efbe9548da2163a0d8c453c1681e19718a80a4567d15584632735  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 f5c783e4c137edcf5ab9aa447534a28ff59d156e280067d9f406c0132f5df21d  core/mod/builtin/jaira-cockpit/hooks/register.tsx
+f6f6ab3cdaf8115ac61b71eb93fc3d855a14131275ec112bb0e965ed8fbb952f  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 f7b944243c55ae1e134cf941001fb5a087a92e243de6e48efd9c47a64665a6af  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 f879e5b41437697e175fa56e9f55c0f79598a05af0407d1a9cbb90a5e835db8e  core/mod/builtin/jaira-cockpit/hooks/register.tsx
+f90f465bd05a613619028c04c5a8bf0de0f1f345e5303c8e890a5076fcc75ea7  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 faeb5f5875b84f97c7fc6d95565bf39a4e5897008affed7ebd0f4455b59ef657  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 fce4bd672288553ce313e51e6eecf088bbfdb19ece3b2ded5ac6652c142ea62b  core/mod/builtin/jaira-cockpit/hooks/register.tsx
 feaa849013d6c12bb5219bc83b7a862579740fd624ddf049a03a5cb53cb7d965  core/mod/builtin/jaira-cockpit/hooks/register.tsx
@@ -595,6 +601,7 @@ e0d0d24250ad20bc7e3079b8dd0cf2381aa71d98b24268e8f8bc1695acf0e7fe  core/mod/built
 e15d18163624b4fbad8c3524aed1a58747eb6becbf543c55d5d626eaf31d19d3  core/mod/builtin/jaira-cockpit/hooks/texts.ts
 e30ce6dd7dec94ff5560ac876ff49430094acc8f39f9a68547ea1086fc07d822  core/mod/builtin/jaira-cockpit/hooks/texts.ts
 e70ab3c55a70609c17ab1343784ef3da14acd788ec820bda4bd2de389e7002a4  core/mod/builtin/jaira-cockpit/hooks/texts.ts
+e76e7f23f6a83c7bfd4bf925831bf19473ac7784e191fd099b598dde41ecdead  core/mod/builtin/jaira-cockpit/hooks/texts.ts
 ec146b54f49009150e0407df00a3395124709b9db954689323eec2a1a878dc9d  core/mod/builtin/jaira-cockpit/hooks/texts.ts
 ef536f178e71f0379f36452e1b964d3b39a7c96ed72d02722e47da280d7288e3  core/mod/builtin/jaira-cockpit/hooks/texts.ts
 f2a64fdf8a40681fb7b8a235d7e6b5e3019eb6d0fa82be0035316d593d9d9a8a  core/mod/builtin/jaira-cockpit/hooks/texts.ts
@@ -636,6 +643,7 @@ bac7d341743c73ad56b2b9f909635040a7bee632e9da957a1207f34791ce84f6  core/mod/built
 bbf8a56cf7b531fb82aefa512863851aae279f7c32d31dfdd5e120b6118d95d7  core/mod/builtin/jaira-cockpit/types/index.d.ts
 c577e2c79826918c42d9116d43a68365af24037ae2aa557e31b0b029e9527196  core/mod/builtin/jaira-cockpit/types/index.d.ts
 ca4a2461e342a0e35b642b4d3ef2152440e22a9df483c11e68539d27f429179f  core/mod/builtin/jaira-cockpit/types/index.d.ts
+cf2fb8b59b4b4226264a278e59f42af3cf561e2e8e2dc047241edeb61a39f9be  core/mod/builtin/jaira-cockpit/types/index.d.ts
 da0f9392e5465428a38afdcebd942f941aebe460ff974003c29ecdd48ca951d1  core/mod/builtin/jaira-cockpit/types/index.d.ts
 e691a37c728256b57683c2d8c84c5250fa764cb69e85b42c94646c12d8830373  core/mod/builtin/jaira-cockpit/types/index.d.ts
 ea28439153ae9876cb7a63a4a56fd825c1073001bb08dd11112c1ce80ee5c572  core/mod/builtin/jaira-cockpit/types/index.d.ts

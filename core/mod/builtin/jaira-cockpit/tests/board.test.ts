@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { acceptTreeFor, carrierFor, ghRepoOf, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, rephrasePrompt, snapshotOf, storyOf, type Waiting } from '../hooks/board.ts'
+import { acceptTreeFor, carrierFor, ghRepoOf, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, snapshotOf, storyOf, translatePrompt, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -36,10 +36,11 @@ type World = {
   prompts: string[]
   // The cheap model gives no answer: offline, or the call failed.
   modelDown?: boolean
-  // The Acceptance pane's head calls and Explain-on-one-note calls, and what
-  // each answers; undefined: no answer.
-  headPrompts: string[]
-  head?: string
+  // Translate answers each text it is handed from this, a text not in it as
+  // it is; undefined: it answers model.
+  translations?: Record<string, string>
+  // The Explain-on-one-note calls, and what each answers; undefined: no
+  // answer.
   reasonPrompts: string[]
   reason?: string
   // What `jaira show --json` adds for a ticket beyond its body and lane, and
@@ -205,7 +206,6 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     model: '',
     modelCalls: 0,
     prompts: [],
-    headPrompts: [],
     reasonPrompts: [],
     shows: {},
     idLog: '',
@@ -453,13 +453,8 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   on('agent.list', () => ({ value: w.agents }) as never)
   on('model.complete', async ($, e) => {
     const prompt = (e as { prompt: string }).prompt
-    // The Acceptance pane's head and Explain on one note are calls of their
-    // own, answered from their own fields and never held: the counts and the
-    // holds below are the review notes'.
-    if (prompt.startsWith('Translate each text')) {
-      w.headPrompts.push(prompt)
-      return (w.head === undefined ? { value: { isAnswered: false } } : { value: { isAnswered: true, text: w.head, usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }) as never
-    }
+    // Explain on one note is a call of its own, answered from its own field
+    // and never held: the counts and the holds below are Translate's.
     if (prompt.startsWith('A person decides whether to accept')) {
       w.reasonPrompts.push(prompt)
       return (w.reason === undefined ? { value: { isAnswered: false } } : { value: { isAnswered: true, text: w.reason, usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }) as never
@@ -467,7 +462,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     w.modelCalls++
     w.prompts.push(prompt)
     if (w.modelDown) return { value: { isAnswered: false } } as never
-    const text = w.model
+    const text = w.translations === undefined ? w.model : JSON.stringify((JSON.parse(prompt.slice(prompt.lastIndexOf('\n') + 1)) as string[]).map(x => w.translations![x] ?? x))
     if (w.modelHeld) await new Promise<void>(go => w.modelHeld!.push(go))
     return { value: { isAnswered: true, text, usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }
   })
@@ -4806,21 +4801,28 @@ describe('review notes as a person reads them', () => {
   const SETTINGS = '/home/a/.jaira/settings.json'
   const ru = ['Заголовок пишется дважды.', 'Нет проверки размера.', 'Пути Windows длиннее 260 символов.', 'load.go:41 принимает пустой файл.']
   const de = ['Der Header wird doppelt geschrieben.', 'Die Größenprüfung fehlt.', 'Windows-Pfade über 260 Zeichen.', 'load.go:41 nimmt eine leere Datei an.']
+  const noteList = NOTES.split('\n')
+  const dictionary = (answer: readonly string[]) => Object.fromEntries(noteList.map((n, i) => [n, answer[i]!]))
 
-  function withNotes(on: On, language?: string, answer: string[] = ru) {
+  function withNotes(on: On, language?: string, answer: readonly string[] = ru) {
     const w = world(on)
     w.tickets = [{ ...SIGNOFF, review: { verdict: SIGNOFF.review.verdict, gaps: NOTES } }, HUMAN, WORKING]
     w.bodies.MG677R = CLASSES
     if (language !== undefined) w.files.set(SETTINGS, JSON.stringify({ dispatch: 'worker', language }))
-    w.model = JSON.stringify(answer)
+    w.translations = dictionary(answer)
     return w
   }
-  async function verdictNotes($: Test$) {
-    const { texts } = await verdictOf($, await $.ui.mount(BAND), 'MG677R')
+  // The pane as it opens, or after one press on Translate.
+  async function verdictNotes($: Test$, translated = false) {
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    if (translated) await pane.press({ key: 'translate-MG677R' })
+    const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+    await pane.unmount()
     return texts.filter(x => /^\p{Extended_Pictographic}/u.test(x))
   }
-  async function giveBackRows($: Test$) {
+  async function giveBackRows($: Test$, translated = false) {
     const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    if (translated) await pane.press({ key: 'translate-MG677R' })
     const marks = (await pane.findAll({ type: 'Text' })).map(x => x.text).filter(x => /^[🔴🟡⚪🔵] /u.test(x))
     const out: string[] = []
     for (let i = 0; i < marks.length; i++) {
@@ -4830,32 +4832,45 @@ describe('review notes as a person reads them', () => {
     }
     return { out, pane }
   }
+  const ORIGINAL = ['🔴 blocker: the header is written twice', '🟡 note: the size check is missing', '⚪ note: windows paths over 260 characters', '🔵 note: pre-existing: load.go:41 accepts an empty file']
 
-  test('each class has its mark in the Acceptance pane; without a language nothing is sent', async ($, on) => {
+  test('each class has its mark in the Acceptance pane; without a language there is no Translate and nothing is sent', async ($, on) => {
     const w = withNotes(on)
     await startSession($)
-    expect(await verdictNotes($)).toEqual([
-      '🔴 blocker: the header is written twice',
-      '🟡 note: the size check is missing',
-      '⚪ note: windows paths over 260 characters',
-      '🔵 note: pre-existing: load.go:41 accepts an empty file',
-    ])
+    expect(await verdictNotes($)).toEqual(ORIGINAL)
     expect((await giveBackRows($)).out).toEqual([
       '[fix now] 🔴 blocker: the header is written twice',
       '[accept] 🟡 note: the size check is missing',
       '[accept] ⚪ note: windows paths over 260 characters',
       '[accept] 🔵 note: pre-existing: load.go:41 accepts an empty file',
     ])
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    expect(await pane.find({ key: 'translate-MG677R' })).toBeUndefined()
+    expect(w.modelCalls).toBe(0)
+  })
+
+  // FMWBA8: a language set is no call - the pane opens on the original, as
+  // often as it opens, until Translate is pressed.
+  test('with a language set the pane opens on the original and asks nothing until Translate is pressed', async ($, on) => {
+    const w = withNotes(on, 'Русский')
+    await startSession($)
+    expect(await verdictNotes($)).toEqual(ORIGINAL)
+    expect(await verdictNotes($)).toEqual(ORIGINAL)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    const button = await pane.find({ key: 'translate-MG677R' })
+    expect(button?.props.hotkey).toBe('t')
+    expect(button?.text).toContain('Translate')
     expect(w.modelCalls).toBe(0)
   })
 
   // Two people, two machines: one test each, as each has its own settings.
   for (const [language, answer] of [['Русский', ru], ['Deutsch', de]] as const) {
-    test(`a person who set ${language} reads the notes in it, the ticket keeps its words`, async ($, on) => {
+    test(`a person who set ${language} presses Translate and reads the notes in it, the ticket keeps its words`, async ($, on) => {
       const w = withNotes(on, language, answer)
       await startSession($)
-      expect(await verdictNotes($)).toEqual([`🔴 ${answer[0]}`, `🟡 ${answer[1]}`, `⚪ ${answer[2]}`, `🔵 ${answer[3]}`])
-      expect(w.prompts.at(-1)).toContain(`in ${language}`)
+      expect(await verdictNotes($, true)).toEqual([`🔴 ${answer[0]}`, `🟡 ${answer[1]}`, `⚪ ${answer[2]}`, `🔵 ${answer[3]}`])
+      expect(w.modelCalls).toBe(1)
+      expect(w.prompts.at(-1)).toContain(`into ${language}`)
       expect(w.prompts.at(-1)).toContain('blocker: the header is written twice')
       // Nothing of it reaches the board: no jaira command writes a word of it.
       expect(w.ran.filter(r => r[0] === 'jaira' && ['note', 'set', 'move'].includes(r[1]!))).toEqual([])
@@ -4863,10 +4878,44 @@ describe('review notes as a person reads them', () => {
     })
   }
 
-  test('Give back shows the notes in the language and writes the originals onto the ticket', async ($, on) => {
+  test('one press translates the head and every note in one call; a second press goes back to the original', async ($, on) => {
+    const w = withNotes(on, 'Русский')
+    w.shows.MG677R = { title: 'cache key', goal: 'a key per branch', outcome: { what: 'the key names the branch', why: 'two branches shared one' } }
+    w.translations = { ...dictionary(ru), 'cache key': 'ключ кэша', 'a key per branch': 'ключ на ветку', 'the key names the branch': 'ключ называет ветку', 'two branches shared one': 'две ветки делили один' }
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await w.clock.settle()
+    await pane.press({ key: 'translate-MG677R' })
+    const all = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+    expect(w.modelCalls).toBe(1)
+    const asked = JSON.parse(w.prompts[0]!.slice(w.prompts[0]!.lastIndexOf('\n') + 1)) as string[]
+    expect(asked.slice(0, 4)).toEqual(['cache key', 'a key per branch', 'the key names the branch', 'two branches shared one'])
+    expect(asked.slice(-4)).toEqual(noteList)
+    for (const text of ['ключ кэша', 'Goal: ключ на ветку', 'Done: ключ называет ветку', 'Why: две ветки делили один', `🔴 ${ru[0]}`]) expect(all).toContain(text)
+    expect((await pane.find({ key: 'translate-MG677R' }))?.text).toContain('Original')
+    await pane.press({ key: 'translate-MG677R' })
+    const back = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+    expect(back).toContain('cache key')
+    expect(back).toContain(ORIGINAL[0])
+    expect(w.modelCalls).toBe(1)
+  })
+
+  test('a head the pane draws from the board row - no goal in show - is translated as drawn', async ($, on) => {
+    const w = withNotes(on, 'Русский')
+    w.tickets = [{ ...SIGNOFF, goal: 'a key per branch', review: { verdict: SIGNOFF.review.verdict, gaps: NOTES } }, HUMAN, WORKING]
+    w.shows.MG677R = { title: 'cache key', goal: '' }
+    w.translations = { ...dictionary(ru), 'a key per branch': 'ключ на ветку' }
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Goal: a key per branch')
+    await pane.press({ key: 'translate-MG677R' })
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Goal: ключ на ветку')
+  })
+
+  test('Give back shows the notes translated and writes the originals onto the ticket', async ($, on) => {
     const w = withNotes(on, 'Русский')
     await startSession($)
-    const { out, pane } = await giveBackRows($)
+    const { out, pane } = await giveBackRows($, true)
     expect(out).toEqual([`[fix now] 🔴 ${ru[0]}`, `[accept] 🟡 ${ru[1]}`, `[accept] ⚪ ${ru[2]}`, `[accept] 🔵 ${ru[3]}`])
     await pane.input({ key: 'typed-MG677R', text: '' })
     const written = ran(w, 'jaira', 'note', 'MG677R').map(r => r[3]).join('\n')
@@ -4874,107 +4923,82 @@ describe('review notes as a person reads them', () => {
     expect(written).not.toContain(ru[0])
   })
 
-  test('kept per ticket and notes: a second look asks nothing, other notes or another language ask again', async ($, on) => {
+  test('kept in the store per ticket and texts: a press on a ticket translated before asks nothing, other notes or another language ask again', async ($, on) => {
     const w = withNotes(on, 'Русский')
     await startSession($)
-    await verdictNotes($)
-    await verdictNotes($)
-    await giveBackRows($)
+    await verdictNotes($, true)
+    expect(await verdictNotes($)).toEqual(ORIGINAL)
+    expect((await verdictNotes($, true))[0]).toBe(`🔴 ${ru[0]}`)
+    await giveBackRows($, true)
     expect(w.modelCalls).toBe(1)
     w.files.set(SETTINGS, JSON.stringify({ language: 'Deutsch' }))
-    w.model = JSON.stringify(de)
-    expect((await verdictNotes($))[0]).toBe(`🔴 ${de[0]}`)
+    w.translations = dictionary(de)
+    expect((await verdictNotes($, true))[0]).toBe(`🔴 ${de[0]}`)
     expect(w.modelCalls).toBe(2)
     w.tickets = [{ ...SIGNOFF, review: { verdict: SIGNOFF.review.verdict, gaps: 'note: only one now' } }, HUMAN, WORKING]
-    w.model = JSON.stringify(['Nur noch eine.'])
+    w.translations = { 'note: only one now': 'Nur noch eine.' }
     await w.clock.advance(60_000)
-    expect(await verdictNotes($)).toEqual(['🟡 Nur noch eine.'])
+    expect(await verdictNotes($, true)).toEqual(['🟡 Nur noch eine.'])
     expect(w.modelCalls).toBe(3)
   })
 
   for (const answer of ['not json at all', JSON.stringify(ru.slice(0, 3)), JSON.stringify(['', ...ru.slice(1)]), JSON.stringify([1, 2, 3, 4]), '{"a": 1}']) {
     test(`an answer that does not fit leaves the original text with its mark: ${answer.slice(0, 30)}`, async ($, on) => {
       const w = withNotes(on, 'Русский')
+      w.translations = undefined
       w.model = answer
       await startSession($)
-      expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
+      expect((await verdictNotes($, true))[0]).toBe('🔴 blocker: the header is written twice')
       expect(w.modelCalls).toBe(1)
     })
   }
 
-  test('a rewrite shown before goes once the language is taken away, or the next call gives none', async ($, on) => {
-    const w = withNotes(on, 'Deutsch', de)
-    await startSession($)
-    expect((await verdictNotes($))[0]).toBe(`🔴 ${de[0]}`)
-    w.files.set(SETTINGS, JSON.stringify({ dispatch: 'worker' }))
-    expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
-    expect((await giveBackRows($)).out[0]).toBe('[fix now] 🔴 blocker: the header is written twice')
-    w.files.set(SETTINGS, JSON.stringify({ language: 'Deutsch' }))
-    expect((await verdictNotes($))[0]).toBe(`🔴 ${de[0]}`)
-    w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
+  test('a model that does not answer leaves the original, and the next press asks again', async ($, on) => {
+    const w = withNotes(on, 'Русский')
     w.modelDown = true
-    expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await pane.press({ key: 'translate-MG677R' })
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain(ORIGINAL[1])
+    expect((await pane.find({ key: 'translate-MG677R' }))?.text).toContain('Translate')
+    w.modelDown = false
+    await pane.press({ key: 'translate-MG677R' })
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain(`🟡 ${ru[1]}`)
+    expect(w.modelCalls).toBe(2)
   })
 
-  test('an older call answered after a newer press shows nothing; the newest press wins', async ($, on) => {
+  test('a call answered after a second press, or after the pane opened again, shows nothing', async ($, on) => {
     const w = withNotes(on, 'Deutsch', de)
     w.modelHeld = []
     await startSession($)
     const band = await $.ui.mount(BAND)
-    void band.press({ key: 'acceptance-MG677R' })
+    const pane = await acceptancePane($, band, 'MG677R')
+    void pane.press({ key: 'translate-MG677R' })
     await w.clock.settle()
     expect(w.modelHeld).toHaveLength(1)
-    // The language taken away while the Deutsch call waits.
-    w.files.set(SETTINGS, JSON.stringify({ dispatch: 'worker' }))
-    await band.press({ key: 'acceptance-MG677R' })
+    expect((await pane.find({ key: 'translate-MG677R' }))?.text).toContain('translating…')
+    // The second press while it waits: back to the original at once.
+    await pane.press({ key: 'translate-MG677R' })
     w.modelHeld.shift()!()
     await w.clock.settle()
-    expect((await verdictNotes($))[0]).toBe('🔴 blocker: the header is written twice')
-    // Русский asked and waiting, then Deutsch again - kept from the first
-    // call, so answered at once: the Russian answer, coming back last, is
-    // the older press's and shows nothing.
-    w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
-    w.model = JSON.stringify(ru)
-    void band.press({ key: 'acceptance-MG677R' })
-    await w.clock.settle()
-    w.files.set(SETTINGS, JSON.stringify({ language: 'Deutsch' }))
-    await band.press({ key: 'acceptance-MG677R' })
-    expect(w.modelHeld).toHaveLength(1)
-    w.modelHeld.shift()!()
-    await w.clock.settle()
-    w.modelHeld = undefined
-    // Read off the pane as it stands, without a press that would ask again.
-    const shownNow = async () => {
-      const pane = await $.ui.mount(ACCEPT('Acceptance of MG677R'))
-      const first = (await pane.findAll({ type: 'Text' })).map(x => x.text).find(x => x.startsWith('🔴'))
-      await pane.unmount()
-      return first
-    }
-    expect(await shownNow()).toBe(`🔴 ${de[0]}`)
-    // Two presses on one language while nothing is kept: both ask, the
-    // newest shows - no call is held back for another (decision 22.11.).
-    w.files.set(SETTINGS, JSON.stringify({ language: 'English' }))
-    w.model = JSON.stringify(['The header twice.', 'No size check.', 'Long Windows paths.', 'load.go:41 takes an empty file.'])
-    w.modelHeld = []
-    void band.press({ key: 'acceptance-MG677R' })
-    await w.clock.settle()
-    void band.press({ key: 'acceptance-MG677R' })
-    await w.clock.settle()
-    expect(w.modelHeld).toHaveLength(2)
-    w.modelHeld.splice(1, 1)[0]!()
-    await w.clock.settle()
-    w.modelHeld.shift()!()
-    await w.clock.settle()
-    w.modelHeld = undefined
-    expect(await shownNow()).toBe('🔴 The header twice.')
-  })
-
-  test('a model that does not answer leaves the original text with its mark', async ($, on) => {
-    const w = withNotes(on, 'Русский')
-    w.modelDown = true
-    await startSession($)
-    expect((await verdictNotes($))[1]).toBe('🟡 note: the size check is missing')
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain(ORIGINAL[0])
+    // The answer that came back is kept all the same: the next press shows
+    // it at once, without a call.
+    await pane.press({ key: 'translate-MG677R' })
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain(`🔴 ${de[0]}`)
     expect(w.modelCalls).toBe(1)
+    // Another language, pressed, and the pane opened anew while the call waits.
+    w.translations = dictionary(ru)
+    w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
+    const ru_ = await acceptancePane($, band, 'MG677R')
+    void ru_.press({ key: 'translate-MG677R' })
+    await w.clock.settle()
+    expect(w.modelHeld).toHaveLength(1)
+    const again = await acceptancePane($, band, 'MG677R')
+    w.modelHeld.shift()!()
+    await w.clock.settle()
+    w.modelHeld = undefined
+    expect((await again.findAll({ type: 'Text' })).map(x => x.text)).toContain(ORIGINAL[0])
   })
 })
 
@@ -4992,11 +5016,14 @@ describe('the language and the rephrased answer, read alone', () => {
     for (const answer of ['', 'a, b', '["a"]', '["a", "b", "c"]', '["a", " "]', '["a", null]', '["a", "b"']) expect(rephrasedOf(answer, 2)).toBeUndefined()
   })
 
-  test('the prompt names the language and carries every note word for word', () => {
-    const p = rephrasePrompt('Русский', ['blocker: `x` in a.go:3', 'note: "quoted"'])
-    expect(p).toContain('in Русский')
-    expect(p).toContain('exactly 2 strings')
-    expect(p).toContain(JSON.stringify(['blocker: `x` in a.go:3', 'note: "quoted"']))
+  test('the prompt names the language and carries the head and every note word for word, in one array', () => {
+    const p = translatePrompt('Русский', ['cache key'], ['blocker: `x` in a.go:3', 'note: "quoted"'])
+    expect(p).toContain('into Русский')
+    expect(p).toContain('The first 1 are the title')
+    expect(p).toContain('The last 2 are review notes')
+    expect(p).toContain('exactly 3 strings')
+    expect(p).toContain(JSON.stringify(['cache key', 'blocker: `x` in a.go:3', 'note: "quoted"']))
+    expect(translatePrompt('Deutsch', ['cache key'], [])).not.toContain('review notes')
   })
 })
 
@@ -5343,24 +5370,6 @@ describe('the Acceptance pane', () => {
     // Looked up from the ticket's own worktree, without a fetch.
     expect(ran(w, 'git', 'log', '--format=%h')[0]?.at(-1)).toBe('@/.worktrees/repo-mg677r')
     expect(ran(w, 'git', 'fetch')).toEqual([])
-  })
-
-  test('the head comes in the person\'s language, the notes in theirs too, and no word of it reaches the ticket', async ($, on) => {
-    const w = world(on)
-    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: a test is missing' } }, HUMAN, WORKING]
-    w.shows.MG677R = { title: 'cache key', goal: 'a key per branch', outcome: { what: 'the key names the branch', why: 'two branches shared one' } }
-    w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
-    w.model = JSON.stringify(['Нет теста.'])
-    w.head = JSON.stringify(['ключ кэша', 'ключ на ветку', 'ключ называет ветку', 'две ветки делили один', 'одна заметка'])
-    await startSession($)
-    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
-    await w.clock.settle()
-    const all = await texts(pane)
-    expect(w.headPrompts.at(-1)).toContain('into Русский')
-    expect(w.headPrompts.at(-1)).toContain(JSON.stringify(['cache key', 'a key per branch', 'the key names the branch', 'two branches shared one', '1 review note to weigh']))
-    for (const text of ['ключ кэша', 'Goal: ключ на ветку', 'Done: ключ называет ветку', 'Why: две ветки делили один', '🟡 Нет теста.']) expect(all).toContain(text)
-    expect(all.some(x => x.includes('одна заметка'))).toBe(true)
-    expect(JSON.stringify(w.ran)).not.toContain('ключ')
   })
 
   test('Explain on one note asks the cheap model once for a sentence, shown under the note', async ($, on) => {
