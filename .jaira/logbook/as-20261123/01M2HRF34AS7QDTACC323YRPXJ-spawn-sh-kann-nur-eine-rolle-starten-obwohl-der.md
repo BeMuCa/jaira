@@ -1,7 +1,7 @@
 ---
 id: 01M2HRF34AS7QDTACC323YRPXJ
 title: "spawn.sh kann nur eine Rolle starten, obwohl der Prompt zwei verlangt"
-status: testing
+status: done
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Dispatcher kann mit dem mitgelieferten Skript jede Lane besetzen, die sein eigener Prompt von ihm verlangt - nicht nur die, deren Name fest eingebaut ist."
@@ -12,9 +12,19 @@ tags:
 blocked-by: []
 related:
   - 01M2G9X5HVH29SDS8FAZKSGSKK
-commits: []
+commits:
+  - adeca813fbfd7bc64e594506369fd0b45678c996
+  - 503e70a92a850d96b8507f6e0f88c91264cb1d7f
+  - 148c249d9976120948f1c0f5964caec95a55ded5
+  - b17384e62e0a289079db3c93540ea719c00d92b7
+  - c843730f9b7ecb47b9f48b2f937ea01771b82814
+  - c20059153cc2baab4c77a00acf8209fc98183e2e
+  - e9f922447796ae0dcce04386ace8bfbb161b6701
+  - 4bde53a0af21ff91dcb2e1847733caac5d5d702e
+  - 0061b01b3482a598aea288d8f59d063e92bcad93
+  - 87f640e6d5347b4be0bdcb3a4a0fcdb1f1c6f21e
 created-at: 2026-09-15T05:26:04Z
-updated-at: 2026-11-23T20:15:41Z
+updated-at: 2026-11-23T20:35:02Z
 assignee: "Alexander Sacharov"
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-5256
@@ -22,22 +32,26 @@ claimed-at: 2026-11-23T20:11:42Z
 outcome-what: "Zusaetzlich zu Runde 3: unbeantwortetes pane get vor pane run schliesst den leeren Tab; spaete Race loescht den eigenen Pane-Record; ein scheiternder pane get im come-up-Loop endet in der come-up-Zeile statt stumm per set -e."
 outcome-why: "Rueckgabe aus signoff: drei Kanten liessen einen leeren, nie geernteten Tab, einen Record auf fremder Pane oder einen Abbruch ohne Meldung zurueck."
 outcome-resolves: "DoD 2, 3, 4, 5 (DoD 1 superseded); die drei edge-Notes der Rueckgabe 20:11"
-review-summary: "none"
+review-summary: "Full review (delta since c20059153 was 89 lines). spawn.sh now keeps the tab id from 'herdr tab create' as well as the pane id, and before it writes the reap.sh pane record and again right before it types the role, asks 'herdr pane get' which tab the pane sits in (pane_is_ours). Pane in another tab (two tabs opened at once): it types nothing, closes its own tab, deletes its own pane record if one was written, and names pane, tab and ticket/lane. Herdr does not answer: before claude is started it closes the empty tab; after, it leaves the tab standing; both say 'could not check pane'. The come-up loop no longer dies silently under set -e on a failed 'pane get', and the 'did not come up' line now names pane, tab, label and state. DoD 1 is superseded by Alex's decision (spawn.sh already picks the role by lane name). Three stub-based Go tests cover the race, the come-up line and the three failing-get paths; release note and shipped.sha256 updated."
 round: 4
 back-from: signoff
 back-by: person
 back-count: 1
-review-gaps: "optimize round 4: '${record:-}' -> '$record' (record is set to \"\" before pane_is_ours); no duplicate: pane get|tab_id is the reap.sh/close-tab.sh pattern already noted; nothing dead, no cost on a hot path"
-test-verdict: "pass: round 2 after merge c20059153 - go build/vet ./... and go test -race -count=1 ./... green (RC=0); shipped-history --check green (41 tags); DoD 2-5 re-checked: TestSpawnTypesOnlyIntoItsOwnTab, TestSpawnNamesPaneAndTabWhenClaudeDoesNotComeUp, TestSpawnKeepsItsTabWhenHerdrDoesNotAnswer pass; failure path (pane get exit 1 before send-text) exits 1, nothing typed, no tab close; writes: only the pane record, covered by the two-at-once test"
-hunt-verdict: "pass: bughunt done at c20059153, 1 change (edge, not a blocker: a failed pane get at the first check leaves an empty, unrecorded tab standing), 0 pre-existing"
-review-verdict: "accept: DoD 2-5 are met and tested, DoD 1 dropped by decision; three error-path edges around the pane check, none a wrong result"
-review-round: 3
+review-gaps: |-
+  note: edge: spawn.sh:589 - a failed pane get in the come-up loop sets st="" and so overwrites the last state Herdr reported; when get 19 says 'claude blocked' and get 20 fails, the person reads 'state none, Herdr did not answer' instead of the approval-dialog line; still exits 1 and types nothing; fix: '|| continue' without st="" (bughunt 20:17)
+  note: limit: the race and every failing-get path are reproduced with a Herdr stub only, not against a live Herdr; under herdr-hc.sh pane equals tab and the check always passes
+test-verdict: "pass: go build/vet + go test -count=1 ./... green (RC=0), shipped-history --check green; DoD 2-5 verified in the tree via TestSpawn* (two parallel spawns, early/loop/late pane-get failures with Herdr stub: exit 1, nothing typed, empty tab closed before pane run, foreign record removed at late race); writes only the pane record - two writers covered by the parallel-spawn test; no live Herdr (limit accepted 20:11)"
+hunt-verdict: "pass: bughunt done at 0061b01b3, 1 change (edge, not blocker: failed get in come-up loop overwrites a reported 'claude blocked' with 'none' - still exit 1, nothing typed; note for review/person), 0 pre-existing"
+review-verdict: "accept: DoD 2-5 are met by spawn.sh and its tests, DoD 1 is superseded by decision; go test ./role -run Spawn|Shipped and ./shipped pass; one edge (come-up state lost on a failed last get), no blocker"
+review-round: 4
 review-verdict-gaps: |-
-  note: edge: spawn.sh:471-475 - an unanswered 'pane get' at the first check (line 485, before pane run and before the record) keeps the tab although nothing runs in it yet and reap.sh has no record of it: an empty tab nobody reaps; fix: close the tab at the first call, keep it only at the second (bughunt 19:38)
-  note: edge: spawn.sh:649 - when the late check finds the pane in another tab, claude already runs in that pane and the record from line 492 still names it under this ticket, so reap.sh would later close a tab that is not ours; fix: remove the record before exit at the late check (bughunt 18:04, second half not taken up)
-  note: edge: spawn.sh:574 - under set -e a failing 'herdr pane get' in the come-up loop ends the script with herdr's exit code and no message, the one start failure left that does not say where and why (DoD 3); fix: --default/|| true on that call so the loop falls through to the come-up line
-  note: limit: the race is reproduced with a Herdr stub only, not against a live Herdr; under herdr-hc.sh pane equals tab and the check always passes
-review-check: "1. cd /home/alex/projects/.worktrees/jaira-3yrpxj/core  2. go test ./role -run TestSpawn -count=1 -v  3. you see PASS for TestSpawnTypesOnlyIntoItsOwnTab (two spawns at once, only p2 gets claude and the role, t1 is closed), TestSpawnNamesPaneAndTabWhenClaudeDoesNotComeUp and TestSpawnKeepsItsTabWhenHerdrDoesNotAnswer  4. live: start two lanes at the same moment from two dispatchers in Herdr - each role lands in its own tab labelled <ticket>/<lane>, or one spawn prints 'pane ... is not in tab ...' and its tab disappears"
+  note: edge: spawn.sh:589 - a failed pane get in the come-up loop sets st="" and so overwrites the last state Herdr reported; when get 19 says 'claude blocked' and get 20 fails, the person reads 'state none, Herdr did not answer' instead of the approval-dialog line; still exits 1 and types nothing; fix: '|| continue' without st="" (bughunt 20:17)
+  note: limit: the race and every failing-get path are reproduced with a Herdr stub only, not against a live Herdr; under herdr-hc.sh pane equals tab and the check always passes
+review-check: |-
+  1. cd core && go test ./role -run Spawn -count=1 -v
+  2. you see PASS for TestSpawnTypesOnlyIntoItsOwnTab, TestSpawnNamesPaneAndTabWhenClaudeDoesNotComeUp, TestSpawnKeepsItsTabWhenHerdrDoesNotAnswer and the three subtests of TestSpawnStopsCleanlyWhenAPaneGetGoesWrong
+  3. open core/role/builtin/jaira-dispatcher/scripts/spawn.sh at pane_is_ours (line ~466): it is called with 'early' before the pane record and once more right before 'pane send-text'
+  4. live (optional, needs Herdr): start two lanes at the same moment with scripts/spawn.sh - each role lands in the tab labelled with its own <ticket>/<lane>, or one stops with 'pane ... is not in tab ...' and its tab is gone
 ---
 
 # spawn.sh kann nur eine Rolle starten, obwohl der Prompt zwei verlangt
@@ -108,3 +122,15 @@ angenommen:
 - **2026-11-23 20:11 · Alexander Sacharov** — worker round 4 started: three give-back edges (first-check empty tab, late-check record, come-up loop pane get under set -e)
 - **2026-11-23 20:14 · Alexander Sacharov** — round 4 (give-back): pane_is_ours bekommt 'early' - unbeantwortetes pane get am 1. Check schliesst den leeren Tab; spaete Race loescht den eigenen Pane-Record; come-up-Loop: pane get mit '|| { st=""; continue; }' statt set-e-Abbruch -> come-up-Zeile mit state 'none'. record="" vor der Funktion, damit eine geerbte Env-Variable 'record' nie geloescht wird. Manifest: nur die eine spawn.sh-Zeile eingefuegt; --write haette 18 fremde Hashes anderer Branches mitgenommen. Neuer Test faellt auf altem spawn.sh in allen 3 Faellen.
 - **2026-11-23 20:15 · Alexander Sacharov** — critique round 4: none - Delta seit c20059153 schliesst genau die drei Rueckgabe-Kanten; early-Argument statt zweiter Funktion haelt eine Pruefstelle; Record-Pfad als Variable ist das einzige, was der spaete Check braucht.
+- **2026-11-23 20:15 · Alexander Sacharov** — waiting: bughunt round 4 (background subagent) since 21:15
+- **2026-11-23 20:17 · Alexander Sacharov** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:589 - class: an unanswered 'pane get' in the come-up loop resets st to empty and so overwrites the last state Herdr did report; example: get 19 answers 'claude blocked' (approval dialog), get 20 fails -> the script says 'claude did not come up ... state none, Herdr did not answer' instead of 'an approval dialog is waiting', and the person is sent to look for a missing claude rather than to answer the dialog; still exits 1 and types nothing, so an edge, not a blocker; fix: keep the previous st on a failed get (continue without st=""); ran: read, blame e9f922447
+- **2026-11-23 20:17 · Alexander Sacharov** — hunt report: 1 finding, 1 change (edge, not blocker), as a note on 3YRPXJ | read as a diff since c20059153: spawn.sh, spawnpane_test.go, shipped.sha256, release/notes/3YRPXJ.md; reap.sh read for how a removed pane record is used (harmless: reap matches the tab label) | not run against a real Herdr; go test ./role -run Spawn|Shipped and ./shipped pass
+- **2026-11-23 20:17 · Alexander Sacharov** — bughunt: done at 0061b01b3 - 1 finding (1 change, 0 pre-existing) in 4 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/3YRPXJ.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/spawnpane_test.go core/shipped/shipped.sha256
+- **2026-11-23 20:17 · Alexander Sacharov** — testing: note: edge: class: come-up loop resets st on a failed pane get; example: get 19 'claude blocked', get 20 fails -> 'did not come up, state none' instead of approval-dialog line; fix: '|| continue' without st="" (bughunt 20:17)
+- **2026-11-23 20:17 · Alexander Sacharov** — waiting: review round 3 (fresh agent via run-lane.sh) since 21:17
+- **2026-11-23 20:19 · Alexander Sacharov** — review: done at 0061b01b3
+- **2026-11-23 20:19 · Alexander Sacharov** — report: Runde 4 - drei Rueckgabe-Kanten in spawn.sh zu (leerer Tab beim 1. Check geschlossen, fremder Record beim spaeten Race geloescht, come-up-Loop ohne stummen set-e-Abbruch), Test TestSpawnStopsCleanlyWhenAPaneGetGoesWrong | signoff, context unknown | 1 edge (fehlgeschlagener get im come-up-Loop ueberschreibt 'claude blocked' mit 'none', Fix '|| continue') + limit (nur Stub) - Person entscheidet; Branch nicht gepusht
+- **2026-11-23 20:31 · Alexander Sacharov** — Accepted from signoff: angenommen:
+- note: edge: spawn.sh:589 - a failed pane get in the come-up loop sets st="" and so overwrites the last state Herdr reported; when get 19 says 'claude blocked' and get 20 fails, the person reads 'state none, Herdr did not answer' instead of the approval-dialog line; still exits 1 and types nothing; fix: '|| continue' without st="" (bughunt 20:17)
+- note: limit: the race and every failing-get path are reproduced with a Herdr stub only, not against a live Herdr; under herdr-hc.sh pane equals tab and the check always passes
+- **2026-11-23 20:31 · Alexander Sacharov** — cockpit: accepted by the person, signoff -> done
