@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ59EHSFBNKM048E64BZSR
 title: "jaira show nennt die optionalen Lanes, an denen next_lane vorbeigeht"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "jaira show --json fuehrt neben next_lane die optionalen Lanes (brainstorm, pre-process) auf, die uebersprungen werden, und wie man sie einschaltet (jaira dod <id> --option <lane>); ein Driver kann so Planung waehlen, statt sie unbemerkt zu verpassen."
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:13:17Z
+updated-at: 2026-11-23T01:13:20Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
@@ -25,6 +25,10 @@ outcome-what: "jaira show --json gains skipped_lanes: every unticked optional la
 outcome-why: drivers skipped pre-process on tickets that needed a plan because next_lane walks past optional lanes silently (O11)
 outcome-resolves: 64BZSR
 review-summary: "internal/cli/tickets.go:406 create --json already writes skipped_lanes ([]string, lanes jumped over by create --lane) into the same ticketJSON payload; the new key collides with a different shape and meaning - rename the new field to optional_lanes_off (or similar) everywhere: tickets.go, json_test.go, announce.go, CLAUDE.md, AGENTS.md, release note"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # jaira show nennt die optionalen Lanes, an denen next_lane vorbeigeht
