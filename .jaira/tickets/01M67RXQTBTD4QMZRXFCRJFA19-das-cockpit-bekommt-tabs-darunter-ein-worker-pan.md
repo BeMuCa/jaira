@@ -1,7 +1,7 @@
 ---
 id: 01M67RXQTBTD4QMZRXFCRJFA19
 title: "Das Cockpit bekommt Tabs, darunter ein Worker-Panel: je Agent ein Icon, sein Ticket, seine Lane und ob er festhaengt"
-status: critique
+status: testing
 ready: true
 creator: berkc
 assignee: Alexander Sacharov
@@ -19,13 +19,28 @@ related:
   - 01M5M7JTVR8G7DZ1MGHJQ63EEV
 commits: []
 created-at: 2026-10-31T01:24:27Z
-updated-at: 2026-11-23T19:44:12Z
+updated-at: 2026-11-23T19:51:56Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-40650
 claimed-at: 2026-11-23T19:41:00Z
 outcome-what: "Worker-Tab und workers-Tool zeigen 'waits for approval' ('!' in warning), wenn Herdr fuer den Agenten-Tab agent_status=blocked meldet; Kopfzeile zaehlt solche Agenten weiter"
 outcome-why: Ein Agent am Freigabe-Dialog sah aus wie ein ruhender und fiel aus der Zaehlung
 outcome-resolves: "DoD 2-4: vierter Zustand im Worker-Tab, im workers-Tool, Release-Notiz"
+review-summary: "none"
+review-gaps: "none: one-line type fix, nothing to remove"
+test-verdict: "pass: claude plugin test 522 pass/0 fail (RC=0), go test core/mod core/release RC=0, shipped-history --check ok; DoD 2-4 in tree verified (overview.ts:154, overview-pane.tsx:132, sessions.ts:151, notes/RJFA19.md) and by 4 new tests; live: hc get liefert status.state (working in this tab), 'blocked' is in hc's vocabulary and herdr-hc.sh passes it through tab list unchanged - a real approval dialog was not provoked (would need a refused permission prompt); failure path: herdr tab list failing leaves tabs [] (unchanged); change writes nothing"
+hunt-verdict: "pass: bughunt done at 7584a4bde, 0 blocker; 1 change edge (types/index.d.ts:20 Worker.state ohne 'blocked', note), 1 pre-existing same subject (register.tsx:1790 Give back in blocked tab, note for the person)"
+review-verdict: "accept: alle drei DoD-Punkte erfuellt und getestet (claude plugin test 522/522); ein fix-now am Typvertrag, kein Blocker"
+review-round: 1
+review-verdict-gaps: |-
+  note: edge: fix-now: core/mod/builtin/jaira-cockpit/types/index.d.ts:20 - der Worker-Typ, der laut Kommentar hooks/overview.ts spiegelt, erlaubt state nur working|idle|question; 'blocked' ergaenzen (eine Zeile, kein neues Verhalten)
+  note: elsewhere: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1790 - Give back behandelt nur 'working' als Agent im Zug; bei einem blocked Worker-Tab mit warmem Cache tippt es backMessage plus Enter in den offenen Freigabe-Dialog, bei kaltem schliesst es den Tab mitten im Zug; vor diesem Ticket da (05a8d99fc, QTQW15), braucht eine eigene Entscheidung - neues Ticket
+review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test  2. erwartet: 522 pass, 0 fail, darunter 'an agent held at an approval dialog waits for approval', 'a worker held at an approval dialog says so instead of a next round', 'an agent held at an approval dialog is still in its turn and counts'  3. live (Herdr noetig): einen Worker per spawn.sh starten und ihn einen Bash-Befehl ausfuehren lassen, der eine Freigabe verlangt; Dialog NICHT beantworten  4. im Cockpit den Overview-Tab Workers oeffnen: die Figur des Tickets traegt ein gelbes '!', die Zeile sagt 'waits for approval'  5. /cockpit workers eingeben: die Zeile des Tickets endet auf 'waits for approval: answer the dialog in its tab'  6. Dialog beantworten: '!' wird zum Spinner, Text 'working'"
+round: 2
+back-from: review
+back-by: lane
+back-count: 1
+stop-after-fix: "true"
 ---
 
 # Das Cockpit bekommt Tabs, darunter ein Worker-Panel: je Agent ein Icon, sein Ticket, seine Lane und ob er festhaengt
@@ -56,3 +71,13 @@ outcome-resolves: "DoD 2-4: vierter Zustand im Worker-Tab, im workers-Tool, Rele
 - **2026-11-23 19:41 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/48662.sock
 - **2026-11-23 19:41 · Alexander Sacharov** — decision (worker): keine offenen Entscheidungen. Zustand heisst 'blocked', Text 'waits for approval', Zeichen '!' in warning; blocked schlaegt working und question (ein offener Dialog haelt alles an). Quelle nur Herdr-Tab agent_status=blocked; Subagenten liefern keinen solchen Status (WORKING=pending/running/waiting). workers-Tool: Carrier-Tab blocked -> 'waits for approval: answer the dialog in its tab' statt next round.
 - **2026-11-23 19:43 · Alexander Sacharov** — Geschwister mitgezogen: Kopfzeile zaehlt blocked-Tabs als laufend (board.ts IN_TURN), Discuss/Explain-Tab wird bei blocked nicht abgeraeumt (register.tsx:441). Offen, nicht hier: Give back (register.tsx:1790) tippt in einen blocked Worker-Tab und beantwortet damit evtl. den Dialog - braucht eigene Entscheidung. Subagenten haben keinen Freigabe-Status in der API; workers-Tool listet nur worker/dispatch-Traeger, keine Lane-Agenten.
+- **2026-11-23 19:44 · Alexander Sacharov** — critique: none. Stehen gelassen: cache-Angabe im workers-Tool fuer blocked bleibt die aus lastAnswerAt (ein Agent am Dialog macht keinen API-Call, 'warm (working)' waere falsch); Strings in sessions.ts inline wie die bestehenden.
+- **2026-11-23 19:45 · Alexander Sacharov** — waiting: bughunt (background subagent) since 20:45
+- **2026-11-23 19:47 · Alexander Sacharov** — bughunt: pre-existing: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1790 - class: Give back treats only Herdr 'working' as an agent in its turn, so a tab held at an approval dialog ('blocked') is handled like a resting worker; this change put IN_TURN on board.ts:175 and register.tsx:441 but not on this one; example: give back a ticket whose <id>/worker tab is 'blocked' - with a warm cache the cockpit types backMessage plus Enter into that pane, so the Enter lands on the approval dialog the person has not read; with a cold cache it runs 'herdr tab close' on the tab mid-turn and spawns a new worker, which the comment at 1786-1789 says must never happen; blame: 05a8d99fc (QTQW15, before the ticket); read
+- **2026-11-23 19:47 · Alexander Sacharov** — bughunt: change: core/mod/builtin/jaira-cockpit/types/index.d.ts:20 - class: the plugin's public state contract no longer mirrors hooks/overview.ts; WorkerState gained 'blocked' (overview.ts:122) but the Worker type in index.d.ts, which says it mirrors it, still allows only 'working' | 'idle' | 'question', and PluginState.workers is typed by it; example: a consumer that switches over Worker.state by this contract never handles 'blocked'; nothing typechecks it (claude plugin test passes 522/522); not a blocker; read
+- **2026-11-23 19:47 · Alexander Sacharov** — hunt report: 2 findings (1 change edge, 1 pre-existing), notes on RJFA19 | first hunt: read the cockpit hooks unit whole where it touches agent status (board.ts, overview.ts, overview-pane.tsx, sessions.ts, texts.ts, register.tsx at every agent_status/state use), plus types/index.d.ts; claude plugin test: 522 pass | could not run Herdr here, so what Enter does on a live approval dialog in the Give-back finding is read from code, not reproduced
+- **2026-11-23 19:47 · Alexander Sacharov** — bughunt: done at 7584a4bde - 2 findings (1 change, 1 pre-existing) in 7 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/sessions.ts core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/RJFA19.md
+- **2026-11-23 19:47 · Alexander Sacharov** — waiting: review (fresh agent via run-lane.sh) since 20:47
+- **2026-11-23 19:49 · Alexander Sacharov** — review: done at 7584a4bde
+- **2026-11-23 19:49 · Alexander Sacharov** — review: fix-now: types/index.d.ts:20 Worker.state um 'blocked' ergaenzen (spiegelt hooks/overview.ts:122)
+- **2026-11-23 19:50 · Alexander Sacharov** — fix-now geschlossen: types/index.d.ts:20 Worker.state um 'blocked' ergaenzt (1 Zeile). stop-after-fix=true von mir gesetzt (Fix < 50 Zeilen, kein Lock/Parser). 'elsewhere'-Notiz (Give back register.tsx:1790) bleibt Zeile fuer die Person.

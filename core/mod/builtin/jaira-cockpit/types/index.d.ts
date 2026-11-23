@@ -17,7 +17,7 @@ export type Overview = {
 }
 
 // What the Workers tab draws: these mirror hooks/overview.ts.
-export type Worker = { id: string; role: string; state: 'working' | 'idle' | 'question'; lane: string; title: string; open: number }
+export type Worker = { id: string; role: string; state: 'working' | 'idle' | 'question' | 'blocked'; lane: string; title: string; open: number }
 
 declare module 'claude-code' {
   interface PluginState {
