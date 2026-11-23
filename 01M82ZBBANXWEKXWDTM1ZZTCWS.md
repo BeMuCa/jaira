@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:28:01Z
+updated-at: 2026-11-23T21:28:05Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -94,3 +94,4 @@ back-count: 2
 - **2026-11-23 21:27 · Alexander Sacharov** — bughunt: change: internal/tui/signoff.go:170-174 (blockerLines, 2880173dd) - class: a blocker label line that carries no finding of its own (a label standing alone with the finding on the next line, or a label followed only by leftover emphasis); the row shows the label or the leftover in place of the finding, and the lines after it are never read. example: review-gaps 'blocker:\n- the limit resets on restart' renders 'blocker      blocker:', '**Blocker:**\n  token leaks to log' renders 'blocker      **Blocker:**', 'blocker: **' renders 'blocker      **'. The person sees that a blocker exists but not what it is unless they press 'i'. Not a blocker: the row is there and the full gaps sit behind 'i'. ran: scratch test calling renderSignOff on those three inputs (go test ./internal/tui -run TestZZHunt -v, output as quoted); the new test in signoff_test.go:114-124 only checks that the row is not empty, so it passes
 - **2026-11-23 21:27 · Alexander Sacharov** — hunt report: 1 finding (1 change, edge, not a blocker), note on ZZTCWS | none read whole; read as a diff since 383b42d9e: internal/tui/signoff.go, internal/tui/signoff_test.go (the other 7 files have no diff) | did not compare with the cockpit's own handling of a lone label (hooks/board.ts is outside this change)
 - **2026-11-23 21:27 · Alexander Sacharov** — bughunt: done at 2880173dd - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since 383b42d9e; concurrency, error paths, input, permissions checked; files: core/release/notes/ZZTCWS.md internal/tui/diffpane.go internal/tui/diffpane_test.go internal/tui/model.go internal/tui/owed_test.go internal/tui/signoff.go internal/tui/signoff_test.go internal/tui/tags_test.go internal/tui/view.go
+- **2026-11-23 21:28 · Alexander Sacharov** — waiting: fresh review agent (run-lane.sh, herdr tab) since 22:28
