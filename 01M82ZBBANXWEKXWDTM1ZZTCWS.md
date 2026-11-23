@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:26:12Z
+updated-at: 2026-11-23T21:26:18Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -28,7 +28,7 @@ outcome-what: "Sign-off screen (signoff and human) shows blocker lines, check, w
 outcome-why: "Berk 2026-11-23: the check sat last under a page of account; rounds 2-3: bughunt found blocker forms hidden or emptied, and human-lane context/notes unreachable."
 outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSignOffKeepsBlockersOnTop (11 forms, 3 label-alone, 5 non-blockers), TestHumanLaneOpensTheDecisionScreen, TestDetailsCarryContextAndNotes; checked: concurrency n/a (render only), error paths n/a, unusual input - blocker forms, label alone, empty fields; permissions n/a"
 review-summary: none
-review-gaps: "round 2: the repair removed the hand-picked details list, gapLines and isBlockerLine (no callers left - grep clean); detailBody now composes header + detailFields, no duplicate renderer. firstNonEmpty, laneFields, sourced, owedRow, fieldRow all still called. Left: the regex mirrors the TS one in hooks/board.ts - two languages, cannot share code; the gaps row inside Details repeats the blocker lines shown on top (the full ticket, by design)."
+review-gaps: "round 3: nothing to remove - the fallback is 3 lines inside blockerLines. Earlier rounds: hand-picked details list, gapLines, isBlockerLine removed; regex mirrors hooks/board.ts (two languages). Left: Details repeat Commits/DoD (whole detail pane by design)."
 test-verdict: "pass: go vet ./... + go test -race -count=1 ./internal/tui RC=0 at 383b42d9e; DoD 1-5 verified; render-only"
 hunt-verdict: "fail: bughunt done at 383b42d9e - change: a label-only blocker line ('**Blocker:**', 'blocker:' with the finding on the next line) loses its row; change edge (note): Details repeat Commits/DoD and show 'Before this can start'"
 round: 3
