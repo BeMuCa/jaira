@@ -25,7 +25,7 @@ related: []
 follows: 01M67K72RDJY2N2R2KQGATDG74
 commits: []
 created-at: 2026-11-23T22:43:41Z
-updated-at: 2026-11-23T22:56:53Z
+updated-at: 2026-11-23T22:56:55Z
 updated-by: BeMuCa
 claimed-by: worker-fspjp9
 claimed-at: 2026-11-23T22:56:02Z
@@ -52,6 +52,7 @@ claimed-at: 2026-11-23T22:56:02Z
 
 - [ ] read the max-rounds path end to end: lane.go parser 422-431, flow.go 750 and 815, tickets.go lanes show 1523 and 1536
 - [ ] failing tests in core/lane: default 1, 1 to 9 accepted, 0 -1 10 x 2.5 refused with file and key named, agents>1 refused on an outcome-what or plan lane
+- [ ] failing test in internal/cli: show --for-lane json agents 1 without key and 3 with key; text line only above 1; lanes show
 
 ## Progress
 
