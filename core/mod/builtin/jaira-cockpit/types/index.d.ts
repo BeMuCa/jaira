@@ -55,6 +55,9 @@ declare module 'claude-code' {
         id: string
         story?: { title: string; goal: string; what: string; why: string; round: number; back?: { count: number; from: string }; dod: { done: number; superseded: number; total: number }; verdict: string; created?: number }
         commits?: { commits: number; files: number }
+        // The language the person set in settings.json when the pane opened;
+        // without one the pane has no Translate.
+        language?: string
         release: string[]
         pr: boolean
       } | null
@@ -66,9 +69,12 @@ declare module 'claude-code' {
       // Explain on one note, by ticket and note text: the sentence, or ''
       // while the model is asked.
       reasons: Record<string, Record<string, string>>
-      // The review notes of each ticket in the person's language, original
-      // text to the text shown; a note without an entry is shown as written.
+      // The head and review notes of each ticket in the person's language,
+      // original text to the text shown, while Translate is on for it; a text
+      // without an entry is shown as written.
       rephrased: Record<string, Record<string, string>>
+      // The ticket whose Translate waits for the model, or null.
+      translating: string | null
       // The newest bug hunt of each ticket the band shows, as jaira's brief
       // says it stands: ok, fail, unknown or skipped.
       hunts: Record<string, 'ok' | 'fail' | 'unknown' | 'skipped'>
