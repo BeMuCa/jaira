@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:12:47Z
+updated-at: 2026-11-23T01:12:48Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
@@ -31,7 +31,8 @@ claimed-at: 2026-11-23T01:10:10Z
   proof: internal/cli/tickets.go:406 1810 skippedLanesJSON from lane.Set.SkippedAhead (core/lane/next.go); TestTicketJSONNamesTheSkippedOptionalLanes; live: show 64BZSR --json in backlog listed brainstorm+pre-process with enable lines
 - [x] Der Agent-Block nennt --option in einem Satz
   proof: core/board/announce.go:318 (and the same sentence in CLAUDE.md/AGENTS.md)
-- [ ] Release-Notiz in core/release/notes/<ID>.md
+- [x] Release-Notiz in core/release/notes/<ID>.md
+  proof: core/release/notes/64BZSR.md
 
 ## Options
 
