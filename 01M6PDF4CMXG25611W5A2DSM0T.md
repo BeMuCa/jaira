@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:31:27Z
+updated-at: 2026-11-23T01:31:29Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -29,6 +29,7 @@ outcome-resolves: "2DSM0T: gate.Env.OutsideRepo (lazy, asked only on the refusal
 review-summary: none
 review-gaps: "none: duplication - no other .git walk in the tree (only core/ticket/store.go names .git, for a different purpose); gitref.Usable kept separate on purpose (critique note). Dead code - nothing orphaned. Fluff - the one-line comments at the two wiring sites match their neighbours' style, kept. Cost - OutsideRepo runs only on the refusal path and at logbook with zero commits."
 test-verdict: "fail: bughunt change blocker - OutsideRepo reads a symlinked repo path with git missing as 'no repository' and waives commits inside a real repo; own passes were green (vet/build rc=0, scratch boards behaved)"
+hunt-verdict: "fail: 1 change blocker (core/gitrepo/git.go OutsideRepo, symlink + git missing)"
 ---
 
 # Ein Board ohne Git-Repo schiebt Tickets nach done, ohne Commits zu verlangen
