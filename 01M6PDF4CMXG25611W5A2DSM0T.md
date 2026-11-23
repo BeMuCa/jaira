@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:35:58Z
+updated-at: 2026-11-23T01:36:55Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -78,3 +78,4 @@ back-count: 2
 - **2026-11-23 01:34 · BeMuCa** — bughunt: done at 1488c67d8 - 1 finding (1 change, 0 pre-existing) in 1 module, follow-up hunt since 821aa6f78 (diff: core/gitrepo/git.go, core/gitrepo/outside_test.go, core/release/notes/2DSM0T.md; no new files); concurrency, error paths, input, permissions checked; files: core/gate/commits_test.go core/gate/gate.go core/gitrepo/git.go core/gitrepo/outside_test.go core/release/notes/2DSM0T.md internal/cli/logbook.go internal/cli/root.go internal/tui/model.go
 - **2026-11-23 01:34 · BeMuCa** — Round 3 fix direction (mine): the class is 'a git failure read as no repository'. IsRepo folds every failure into false, so OutsideRepo stops using it and asks git itself with LC_ALL=C: true only when rev-parse fails AND says 'not a git repository'. Success (true or false, e.g. inside a bare repo) and any other failure keep the rule. The .git walk over the real path stays as the guard that does not depend on git's wording.
 - **2026-11-23 01:35 · BeMuCa** — critique round 3: OutsideRepo runs its own exec instead of runTolerating because it needs LC_ALL=C and stderr; runTolerating's error message carries stderr but not the locale, so reusing it would make the check depend on the user's language. Matching git's English wording fails safe: if git ever rewords it, the answer turns false and the commit rule stays. Nothing to change.
+- **2026-11-23 01:36 · BeMuCa** — bughunt: change: blocker: core/gitrepo/git.go:82-86 - class: a repository named explicitly through GIT_DIR (or GIT_WORK_TREE+GIT_DIR) that git cannot open is reported by git with the same words 'fatal: not a git repository: '<path>'' as a plain directory, so OutsideRepo answers true and the gate (core/gate/gate.go:372, internal/cli/logbook.go:324) drops the commit rule - exactly what TestOutsideRepoGitFailureKeepsTheRule says must not happen, only the broken-config variant is covered; examples: GIT_DIR pointing at a bare repo with chmod 000, a repo whose HEAD file is missing (damaged/half-written), a GIT_DIR path that no longer exists (unmounted disk, moved repo); ran: LC_ALL=C GIT_DIR=<bare,chmod 000> git -C <plain dir> rev-parse --is-inside-work-tree -> exit 128 'fatal: not a git repository: '<path>''; same for missing HEAD and for a missing path. Hint: plain discovery failure says 'not a git repository (or any of the parent directories)'; the ': '<path>'' form only comes from an explicit GIT_DIR/gitfile, or check GIT_DIR in the environment and keep the rule
