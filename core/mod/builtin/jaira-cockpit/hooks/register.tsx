@@ -1783,10 +1783,6 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   const tabs = await run($, [bin, 'tab', 'list'], dir)
   const tab = tabs?.exitCode === 0 ? carrierTab(tabsOf(tabs.stdout), id) : undefined
   const record = carrierOf(await readRecords($), id)
-  // A worker at work is never replaced: closing its tab would end it in the
-  // middle of a step, and a new one beside it is the second worker this
-  // press must never make. It gets the decision typed in like any old
-  // worker, whatever its cache and context say.
   // A worker at an approval dialog is never typed into: the text would land
   // in the dialog and the Enter would answer it for the person, unseen.
   // spawn.sh refuses the same pane for the same reason. Nor is it replaced:
@@ -1796,6 +1792,10 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
     await handedTo('none', `the old worker waits at an approval dialog in tab ${label}; nothing typed, no second worker started`, `${label} waits at an approval dialog: answer it there, then type the decision into that tab`)
     return say($, t.workerBlocked(id, label))
   }
+  // A worker at work is never replaced: closing its tab would end it in the
+  // middle of a step, and a new one beside it is the second worker this
+  // press must never make. It gets the decision typed in like any old
+  // worker, whatever its cache and context say.
   const working = tab?.agent_status === 'working'
   const choice = working
     ? { reuse: true, why: 'the old worker is at work in its tab' }

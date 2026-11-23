@@ -20,13 +20,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T20:35:39Z
-updated-at: 2026-11-23T20:41:03Z
+updated-at: 2026-11-23T20:41:39Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-41227
 claimed-at: 2026-11-23T20:36:42Z
 outcome-what: "Give back stops before the reuse/replace choice when the carrier tab's agent_status is blocked: nothing typed, no Enter, no tab closed, no new worker; ticket note, teamlead line and toast name the waiting tab"
 outcome-why: "send-text + Enter into a pane at an approval dialog answered the dialog for the person, unseen"
 outcome-resolves: "M31BYV: decision no longer lands in an approval dialog"
+review-summary: "core/mod/builtin/jaira-cockpit/hooks/register.tsx:1790 the blocked check is wedged between the 'A worker at work is never replaced' comment and the line it explains; put the blocked block above that comment"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Give back tippt die Entscheidung in einen Worker-Tab, der an einem Freigabe-Dialog haengt
@@ -34,7 +39,7 @@ outcome-resolves: "M31BYV: decision no longer lands in an approval dialog"
 ## Definition of Done
 
 - [x] Give back tippt nichts und drueckt kein Enter in einen Tab mit agent_status=blocked; Test in core/mod/builtin/jaira-cockpit/tests
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1794; test 'give back > a worker at an approval dialog gets nothing typed and no Enter...' tests/board.test.ts:2413
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1790; test 'give back > a worker at an approval dialog gets nothing typed and no Enter...' tests/board.test.ts:2413
 - [x] Die Person sieht in der Meldung von Give back, dass der Worker an einem Freigabe-Dialog wartet und in welchem Tab
   proof: hooks/texts.ts workerBlocked (toast names the tab), asserted in tests/board.test.ts:2413
 - [x] Release-Note in core/release/notes/<ID>.md
@@ -52,3 +57,4 @@ outcome-resolves: "M31BYV: decision no longer lands in an approval dialog"
 ## Progress
 - **2026-11-23 20:36 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/48662.sock
 - **2026-11-23 20:36 · Alexander Sacharov** — decision: blocked tab = like working: never replaced, nothing typed; handedTo none with the tab label, no second worker (the old one still hangs at its dialog). Settled by DoD 2, no question open.
+- **2026-11-23 20:41 · Alexander Sacharov** — critique: blocked block split the working comment from its code (register.tsx:1786-1799); moved above it. Shape otherwise kept: early return like place.stop, reuses handedTo + say, no new helper.
