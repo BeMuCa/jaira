@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:34:30Z
+updated-at: 2026-11-23T01:34:33Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -29,7 +29,7 @@ outcome-resolves: "2DSM0T: gate.Env.OutsideRepo backed by gitrepo.Repo.OutsideRe
 review-summary: none
 review-gaps: "none: round 2 added an early return and one EvalSymlinks call; the trailing !Available() it replaced is gone, nothing orphaned, no duplicate symlink-resolve helper in core/gitrepo"
 test-verdict: "fail: bughunt round 2 change blocker - OutsideRepo reads any git failure after an empty .git walk (GIT_DIR with a broken config) as 'no repository'; vet/build rc=0"
-hunt-verdict: "fail: 1 change blocker (core/gitrepo/git.go OutsideRepo, symlink + git missing)"
+hunt-verdict: "fail: 1 change blocker (core/gitrepo/git.go:79 return !r.IsRepo())"
 round: 2
 back-from: testing
 back-by: lane
