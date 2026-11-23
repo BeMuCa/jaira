@@ -1,7 +1,7 @@
 ---
 id: 01M845PACJSY9V5W6ZY096E1Z4
 title: "Cockpit-Log-Filter: ein Chip schaltet ein, aus und auf 'außer'"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 goal: "In den Filterzeilen des Log-Fensters (Personen und Lanes) lässt sich jeder Chip auch ausschließen, damit 'alles außer X', 'alles außer X und Y' und 'nur A, aber nicht B' mit Klicks gehen."
@@ -17,9 +17,14 @@ tags:
   - cockpit
 blocked-by: []
 related: []
-commits: []
+commits:
+  - cfb1516639b5dccc4555348d9ea6e0cfe30f068d
+  - f6394636dcce912a756a2031285b9ee092b55880
+  - 49cc937282bd84386628cac6f82b338c1cab8f78
+  - 77ae1dfa51ba442aaf279c7d59779bc7b5e712f6
+  - 53365d04b544f7f8c92a599788843a91b2a613e1
 created-at: 2026-11-23T12:22:01Z
-updated-at: 2026-11-23T12:37:42Z
+updated-at: 2026-11-23T12:50:08Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75968
@@ -27,14 +32,23 @@ claimed-at: 2026-11-23T12:22:34Z
 outcome-what: "Log filter chips cycle off → chosen → left out (✕, red) → off; per-row state {only, not} under new atom keys; All clears both"
 outcome-why: "'everything except done' needed one click per other lane; the maintainer chose a per-chip cycle on 23.11."
 outcome-resolves: 96E1Z4 DoD 1-6; bughunt blocker on old-build atom shape
-review-summary: none
-review-gaps: "hoisted f.only.includes(id) into 'on' in filterRow (was computed twice); considered: no other filter cycle in the mod to reuse, toggled() removed with its last callers, no dead imports; left the local 'set' helper (two callers, names the union)"
-test-verdict: "fail: go test ./... RC=1 — core/role TestEveryInstalledFileIsAShippedVersion: shipped.sha256 lacks the 4 changed cockpit files; cockpit suite 484/484 green, DoD 1-6 verified in tree"
-hunt-verdict: "fail: bughunt done at f6394636d — 1 change blocker: an old-build string[] in overviewPeople/overviewLanes crashes the Overview after a hot reload"
+review-summary: "Full review of master..49cc93728 (3 commits). Each Log filter row (people, lanes) now holds {only, not} instead of a plain list. overview.ts gets two pure helpers: cycled() moves a chip off -> chosen -> left out -> off, passes() lets a value through when it is chosen (or nothing is) and not left out. overview-pane.tsx filters each event through both rows with passes(), draws a left-out chip as '✕ name' in the theme's error colour, keeps a button for every chosen or left-out value that has no event left, and lights All only while its row has neither. register.tsx swaps toggled for cycled, All resets to NO_FILTER, and the session atoms moved to new keys overviewPeopleFilter/overviewLanesFilter so an old string[] from an earlier build is never read as a Filter (the bughunt blocker). Four new tests plus three adjusted ones; shipped.sha256 carries the new hashes; release note added."
+review-gaps: |-
+  note: limit: the old session atoms overviewPeople/overviewLanes are left unread in the host store until the session ends - harmless, no shape guard on purpose (note 12:37)
+  note: limit: no strikethrough on a left-out chip - the mod's Text has no such prop in use; the ✕ prefix and error colour carry it (note 12:29)
+test-verdict: "pass: go test ./... RC=0 (manifest test green), claude plugin test . 484/484, DoD 1-6 verified in tree; behaviour exercised in the pane harness: cycle, only-out, mixed across rows, All reset; the filter writes only session atoms via update(), no file — no failure path or parallel writers to exercise"
+hunt-verdict: "pass: bughunt done at 49cc93728, 0 change, 0 pre-existing; round 1 blocker (old atom shape) fixed by new keys"
 round: 2
 back-from: testing
 back-by: lane
 back-count: 1
+review-verdict: "accept: all six DoD items hold in the code and tests; cycled/passes are pure and immutable, the old-key crash is closed by the new atom keys; claude plugin test . 484 pass, go test ./core/shipped ./core/role pass"
+review-round: 2
+review-verdict-gaps: |-
+  note: limit: the old session atoms overviewPeople/overviewLanes are left unread in the host store until the session ends - harmless, no shape guard on purpose (note 12:37)
+  note: limit: no strikethrough on a left-out chip - the mod's Text has no such prop in use; the ✕ prefix and error colour carry it (note 12:29)
+review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> 484 pass  2. claude --plugin-dir $PWD (from that folder), open the cockpit Overview, tab Log  3. click one person chip once -> it turns primary, the Log shows only that person  4. click it again -> it reads '✕ name' in red, the Log shows everybody else  5. click it a third time -> it is dimmed again, All is lit  6. leave out one lane and choose one person -> only that person's events outside that lane remain  7. press All in the people row -> the people row clears, the lane row stays"
+question: ""
 ---
 
 # Cockpit-Log-Filter: ein Chip schaltet ein, aus und auf 'außer'
@@ -75,3 +89,18 @@ back-count: 1
 - **2026-11-23 12:35 · Alexander Sacharov** — hunt report: 1 finding, 1 change (blocker), note on 96E1Z4 | read whole: hooks/overview.ts, hooks/overview-pane.tsx, types/index.d.ts; register.tsx read in the overview atoms and the Overview render/update hook and not end to end (2599 lines); tests/board.test.ts and the uncommitted lane/AGENTS/CLAUDE regenerations read as a diff only (prompt text, no code paths) | not checked: whether the host really hands an old-build atom value to a reloaded mod (taken from the types comment and the existing view.lanes guard), not run inside Claude Code; concurrency of update() is the host's job
 - **2026-11-23 12:35 · Alexander Sacharov** — bughunt: done at f6394636d - 1 finding (1 change, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/96E1Z4.md
 - **2026-11-23 12:37 · Alexander Sacharov** — fix for bughunt blocker: new atom keys overviewPeopleFilter/overviewLanesFilter instead of a shape guard — an old string[] under the old key is never read, no normalise code to maintain; manifest regenerated with scripts/shipped-history.sh --write. No test seeds an old-build atom: the harness offers no way to preload the host store.
+- **2026-11-23 12:38 · Alexander Sacharov** — hunt report: 0 findings, nothing written beyond this report | read as a diff since f6394636d: register.tsx (atom keys renamed to overviewPeopleFilter/overviewLanesFilter, no other reader of the old keys), types/index.d.ts, .jaira/lanes/{critique,in-progress,review,testing}.md (byte-equal to core/lane/builtin), AGENTS.md, CLAUDE.md; read whole as new to the list: core/shipped/shipped.sha256 (current hashes of all four cockpit files present, go test ./shipped passes) | could not run the cockpit tests in tests/board.test.ts: no bun on this machine
+- **2026-11-23 12:38 · Alexander Sacharov** — bughunt: done at 49cc93728 - 0 findings (0 change, 0 pre-existing) in 8 modules, follow-up hunt since f6394636d; concurrency, error paths, input, permissions checked; files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx core/mod/builtin/jaira-cockpit/hooks/overview.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/96E1Z4.md core/shipped/shipped.sha256
+- **2026-11-23 12:39 · Alexander Sacharov** — waiting: review lane (fresh agent via run-lane.sh, herdr tab) since 13:39
+- **2026-11-23 12:41 · Alexander Sacharov** — review: done at 49cc93728
+- **2026-11-23 12:42 · Alexander Sacharov** — review: move to signoff refused - the signoff gate sees uncommitted .jaira/lanes/{critique,in-progress,review,testing}.md, AGENTS.md, CLAUDE.md (a jaira regeneration, not this ticket's code; the hunt at 49cc93728 read them). Review fields are set, verdict accept. Options:
+1. (recommended) commit the regeneration on this branch as its own chore(96E1Z4) commit, then move to signoff - the last hunt already read these files byte-equal to core/lane/builtin
+2. restore them with git checkout -- <paths> and move - the regeneration comes back on the next jaira update
+3. a person moves with --force
+- **2026-11-23 12:42 · Alexander Sacharov** — question for teamlead: signoff gate refuses on uncommitted jaira regeneration (.jaira/lanes/{critique,in-progress,review,testing}.md, AGENTS.md, CLAUDE.md — jaira 0.6.4 block, not this ticket). 1) drop them with git restore (Recommended: reproducible by jaira update, keeps the PR on topic) 2) commit them as a separate chore(96E1Z4) commit on this branch 3) leave them, teamlead moves to signoff with --force
+- **2026-11-23 12:43 · Alexander Sacharov** — decision (teamlead 2026-11-23): option 1 — regenerated lanes/AGENTS.md/CLAUDE.md dropped with git checkout
+- **2026-11-23 12:43 · Alexander Sacharov** — report: Log filter chips cycle off→chosen→left out (✕, red)→off, All clears its row; new atom keys after hunt blocker; manifest regenerated | signoff, context 150k of 1000k, cache warm 60 min after last answer | open: 2 note: limit lines (old atoms unread, no strikethrough); branch feat/96e1z4 pushed to origin, PR is the maintainer's
+- **2026-11-23 12:45 · Alexander Sacharov** — Accepted from signoff: angenommen:
+- note: limit: the old session atoms overviewPeople/overviewLanes are left unread in the host store until the session ends - harmless, no shape guard on purpose (note 12:37)
+- note: limit: no strikethrough on a left-out chip - the mod's Text has no such prop in use; the ✕ prefix and error colour carry it (note 12:29)
+- **2026-11-23 12:45 · Alexander Sacharov** — cockpit: accepted by the person, signoff -> done
