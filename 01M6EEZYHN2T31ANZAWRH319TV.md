@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T15:45:35Z
-updated-at: 2026-11-23T01:45:42Z
+updated-at: 2026-11-23T01:45:45Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-h319tv
@@ -55,3 +55,4 @@ review-summary: "README.md:63-69 the Features bullet 'Epics and jaira web' is wh
 ## Progress
 - **2026-11-23 01:39 · BeMuCa** — Entscheidungen (kein Punkt offen fuer die Person): 1) Abschnitt steht als eigenes '## Jaira PM View - Web only' direkt nach '## Start', nicht im Install-Abschnitt - feat/q9f9w4 aendert den Install-Text, so bleibt der Merge trivial. 2) Install-Zeile mit JAIRA_NO_ROLES=1 (so geschrieben in scripts/install.sh:110 und install.ps1:159). 3) 'Not built': nur 'Web UI' faellt weg, die Zeile bleibt fuer 'VS Code extension' mit ihrem Grund. 4) Release-Notiz wird geschrieben, weil DoD 4 sie verlangt, obwohl der Kontext 'nur README und Bild' sagt und CLAUDE.md README-Aenderungen nicht als client-facing zaehlt - die Person kann sie streichen. 5) Screenshot mit chrome-headless-shell aus ~/.cache/ms-playwright auf einem Scratch-Board, nach docs/img/web.png. Kein Plan-Lane: Option 'planning' nicht angehakt.
 - **2026-11-23 01:44 · BeMuCa** — Gefunden beim Nachstellen: (a) jaira web ohne init auf frischem Clone: 'no .jaira directory found; run jaira init', exit 1 - daher init im Abschnitt. (b) init schreibt CLAUDE.md und AGENTS.md in den Clone. (c) Der erste Fetch laeuft parallel zum Browser-Start (internal/cli/web.go:112-119), die Seite liest nur alle 60 s neu (ReviewPage.svelte REFRESH_MS) - daher 'reload'. (d) NICHT getan: den echten Installer per curl|sh ausfuehren - vom Auto-Mode-Klassifizierer abgelehnt; JAIRA_NO_ROLES=1 nur aus scripts/install.sh:110 und install.ps1:159 gelesen. Die PowerShell-Zeile ($env:JAIRA_NO_ROLES = "1"; irm ... | iex) ist ungetestet. (e) Screenshot mit Windows-Chrome headless (WSL-chrome-headless-shell fehlt libasound) auf einem Demo-Board mit englischen Titeln, User anna, kein echter Name/Host darauf.
+- **2026-11-23 01:45 · BeMuCa** — critique: Features-Bullet 'Epics and jaira web' (README.md:63-69) verlinkt den neuen Abschnitt nicht; Link wie beim Cockpit-Bullet ergaenzen. Sonst stehen lassen: eigene Install-Zeile statt Verweis auf ## Install ist gewollt (Merge mit feat/q9f9w4, Abschnitt soll allein reichen); Release-Notiz trotz README-only steht wegen DoD 4 (Notiz oben).
