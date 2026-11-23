@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:44:07Z
+updated-at: 2026-11-23T01:44:09Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -39,6 +39,14 @@ round: 2
 back-from: testing
 back-by: lane
 back-count: 1
+review-verdict: "accept: DoD 1-4 hold. I checked them on copies of spawn.sh and run-lane.sh: refusal exits 3, --force goes past it, a missing MemAvailable prints one line and carries on, a stray 3 inside spawn.sh exits 1, and run-lane turns spawn's 3 into 6 and every other failure into 1. Build and vet are clean and the shipped hashes match. The findings are notes only. DoD 5 is the person's to tick."
+review-round: 2
+review-verdict-gaps: |-
+  note: the cockpit starts spawn.sh too (register.tsx startPrLane: Accept starts the pr lane, and line 1562: give-back starts a worker), and the check now applies there. The pr lane is not exempt, the person sees only the last 160 characters of the refusal, and the cockpit has no way to pass --force. Fix: exempt lane pr like explain/discuss, or have the cockpit say "too little free memory, try again" when spawn.sh exits 3
+  note: jaira-worker/SKILL.md tells the worker to call spawn.sh --no-worktree <slug> <id> critique directly, and does not say that exit 3 from that call means "too little memory, nothing started". Fix: one sentence beside the exit-6 line
+  note: run-lane.sh --help now lists exit 1 (spawn.sh failed, a tab may already be open), but the exit-code paragraphs in jaira-dispatcher/SKILL.md (~line 380) and jaira-worker/SKILL.md (~line 320) do not mention it. Fix: add the line to both
+  note: no script test covers the refusal, --force, or run-lane turning 3 into 6. TestMain sets JAIRA_MIN_FREE_MB=0 for every test in core/role. Fix: one test with JAIRA_MIN_FREE_MB=999999999 expecting exit 3 and no tab, and one through run-lane expecting 6. I checked all three by hand with copies of the scripts
+  note: known limit, stated in the spawn.sh comment: the check is a snapshot. Two spawns started together both pass, and a worker started just now has not begun its build yet, so the reading is too high
 ---
 
 # spawn.sh startet keinen Worker, wenn der freie Speicher nicht fuer einen weiteren Build reicht
