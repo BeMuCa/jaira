@@ -19,9 +19,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T20:54:55Z
+updated-at: 2026-11-23T20:54:57Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
+claimed-by: DESKTOP-RFTCH11-79231
+claimed-at: 2026-11-23T20:54:57Z
 ---
 
 # Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts
