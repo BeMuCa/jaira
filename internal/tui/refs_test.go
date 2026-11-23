@@ -232,7 +232,7 @@ func TestARejectedMilestoneFlushKeepsTheLocalEdit(t *testing.T) {
 }
 
 // A teammate's rename arrives with the board's background fetch: the open
-// board then shows and acts under the new names without being restarted.
+// board then shows and filters under the new names without being restarted.
 func TestTheBoardFetchBringsInThePeopleList(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git is not on PATH")
@@ -276,8 +276,10 @@ func TestTheBoardFetchBringsInThePeopleList(t *testing.T) {
 		t.Fatalf("background run: %#v", msg)
 	}
 	m.Update(msg)
-	if m.me != "Robert" || s.Actor != "Robert" || !m.isMe("bob") {
-		t.Fatalf("after the fetch: me = %q, actor = %q", m.me, s.Actor)
+	// Who the board acts as stays what it was at open: store, syncer and
+	// commits keep naming one person one way, and "bob" is still Robert's.
+	if m.me != "bob" || s.Actor != "bob" || y.Actor != "bob" {
+		t.Fatalf("after the fetch: me = %q, actor = %q, syncer = %q", m.me, s.Actor, y.Actor)
 	}
 	if boardPeople.Load().Canonical("BOB") != "Robert" {
 		t.Fatal("the board's people list was not read again")

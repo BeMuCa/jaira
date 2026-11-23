@@ -24,12 +24,18 @@ func Current(dir string) string {
 
 // currentIn is Current from what was already read, so Aliases asks git for
 // each of them once.
+//
+// JAIRA_USER, when set, is the only name looked up: it says who is acting on
+// purpose, and git's email belongs to whoever configured this checkout — a
+// second agent or a teammate borrowing it must not become that person.
 func currentIn(list *people.List, raw, email string) string {
 	if p := list.Find(raw); p != nil {
 		return p.Name
 	}
-	if p := list.Find(email); p != nil {
-		return p.Name
+	if strings.TrimSpace(os.Getenv("JAIRA_USER")) == "" {
+		if p := list.Find(email); p != nil {
+			return p.Name
+		}
 	}
 	return raw
 }

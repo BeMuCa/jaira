@@ -228,7 +228,9 @@ func TestCurrentIsTheJairaNameThePeopleListGives(t *testing.T) {
 		{"BeMuCa", "x@example.test", "", "berkc"},                     // by user.name, any case
 		{"Berk on laptop", "berk@example.test", "", "Berk on laptop"}, // email unlisted
 		{"nobody", "x@example.test", "someone", "other"},              // JAIRA_USER is looked up too
-		{"nobody", "x@example.test", "", "nobody"},                    // unknown stays itself
+		{"nobody", "x@example.test", "", "nobody"},
+		{"nobody", "someone", "", "other"},      // by user.email
+		{"nobody", "someone", "grace", "grace"}, // JAIRA_USER is not overruled by git's email                    // unknown stays itself
 	}
 	for _, c := range cases {
 		git("config", "user.name", c.name)
@@ -239,6 +241,7 @@ func TestCurrentIsTheJairaNameThePeopleListGives(t *testing.T) {
 		}
 	}
 	git("config", "user.name", "BeMuCa")
+	git("config", "user.email", "berk@example.test")
 	t.Setenv("JAIRA_USER", "")
 	if a := Aliases(dir); a[0] != "berkc" || !IsMe(dir, "BEMUCA") || !IsMe(dir, "berkc") || IsMe(dir, "someone") {
 		t.Errorf("aliases = %v", a)

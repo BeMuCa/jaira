@@ -1614,8 +1614,8 @@ func (y *Syncer) Pull(id string, steal bool) (*Pulled, error) {
 		// Taken with --steal. Recorded on the ticket itself, because the ref is
 		// the only thing the other person will fetch, and a note there is the
 		// only place they can read why the ticket left them.
-		stolenFrom = h
-		if err := ticket.AppendNote(d, fmt.Sprintf("%s took this ticket over from %s", y.Actor, h), time.Now(), y.Actor); err != nil {
+		stolenFrom = y.name(h)
+		if err := ticket.AppendNote(d, fmt.Sprintf("%s took this ticket over from %s", y.Actor, stolenFrom), time.Now(), y.Actor); err != nil {
 			return nil, err
 		}
 	}
@@ -1793,9 +1793,9 @@ func (y *Syncer) Reject(id, kind, why, duplicateOf string, now time.Time) (rejec
 		return nil, "", err
 	}
 	if t.Rejected.Kind != "" {
-		return t, "", fmt.Errorf("%s: %w (%s by %s)", ticket.Handle(id), ErrAlreadyRejected, t.Rejected.Kind, t.Rejected.By)
+		return t, "", fmt.Errorf("%s: %w (%s by %s)", ticket.Handle(id), ErrAlreadyRejected, t.Rejected.Kind, y.name(t.Rejected.By))
 	}
-	heldBy = strings.TrimSpace(t.Assignee)
+	heldBy = y.name(strings.TrimSpace(t.Assignee))
 	if err := ticket.StampRejection(t, kind, why, y.Actor, duplicateOf, now); err != nil {
 		return nil, "", err
 	}

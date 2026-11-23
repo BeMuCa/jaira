@@ -455,9 +455,9 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 // measurable. Reading from disk each time, rather than applying events to the
 // view, keeps edits made entirely outside this process (a git pull, another
 // session, a hand edit) on the same path as our own.
-// refreshPeople reads the board's people list again, and with it the name
-// this board acts as and the names that mean this person. Moves made from the
-// board then write the name the list gives now, not the one it gave at open.
+// refreshPeople reads the board's people list, and with it the name this
+// board acts as and the names that mean this person. Called when a board is
+// opened, before its ref syncer is made from m.me.
 func (m *Model) refreshPeople() {
 	boardPeople.Store(identity.People(m.store.Root))
 	m.me = identity.Current(m.store.Root)
@@ -1210,8 +1210,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.flash(news)
 		}
 		// A teammate's 'jaira people alias' or 'rename' arrives with this
-		// fetch: who is who, and so who this board acts as, is read again.
-		m.refreshPeople()
+		// fetch: the names the board shows and filters by are read again.
+		// Who it acts as stays what it was at open — the store, the ref
+		// syncer and its commits all name one person one way until the
+		// board is opened again, and that name is still theirs.
+		boardPeople.Store(identity.People(m.store.Root))
 		_ = m.reload()
 		return m, nil
 

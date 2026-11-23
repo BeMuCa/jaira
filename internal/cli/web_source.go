@@ -161,7 +161,7 @@ func (w *webSource) cards(all []*ticket.Ticket, ix *link.Index) map[string]web.T
 		c.Done = ix.Satisfied(id)
 		if place == link.PlaceLogbook {
 			c.FiledAt, _ = ticket.LogbookFolderDay(filepath.Base(filepath.Dir(path)), time.Local)
-		} else if r := rejection(path); r != nil {
+		} else if r := rejection(path, who); r != nil {
 			c.Rejected, c.RejectedWhy, c.FiledAt = r.Kind, r.Why, r.At
 		}
 		out[id] = c
@@ -184,7 +184,7 @@ func card(t *ticket.Ticket, place link.Place, who *people.List) web.Ticket {
 // never rejected. The keys are read straight off the frontmatter rather than
 // through ticket.Ticket, so a ticket rejected by a newer build shows its
 // reason here too.
-func rejection(path string) *web.Rejection {
+func rejection(path string, who *people.List) *web.Rejection {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil
@@ -201,7 +201,7 @@ func rejection(path string) *web.Rejection {
 		v, _, _ := f.Scalar(key)
 		return v
 	}
-	r := &web.Rejection{Kind: str("rejected-kind"), Why: str("rejected-why"), By: str("rejected-by")}
+	r := &web.Rejection{Kind: str("rejected-kind"), Why: str("rejected-why"), By: who.Canonical(str("rejected-by"))}
 	if r.Kind == "" {
 		return nil
 	}
@@ -232,7 +232,7 @@ func (w *webSource) Ticket(id string) (web.TicketDetail, error) {
 	}
 	d := web.TicketDetail{ID: t.ID, Handle: ticket.Handle(t.ID), Title: t.Title, Lane: t.Status, Place: string(place), Goal: t.Goal, Context: t.Context, BehindRef: t.BehindRef}
 	if place == link.PlaceArchive {
-		d.Rejected = rejection(path)
+		d.Rejected = rejection(path, coreidentity.People(w.s.Root))
 	}
 	for _, it := range t.DoDItems {
 		d.DoD = append(d.DoD, web.Check{Text: it.Text, Done: it.Checked()})
