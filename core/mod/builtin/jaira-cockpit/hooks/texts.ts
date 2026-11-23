@@ -312,7 +312,7 @@ export const overviewWords = {
   tabLog: 'Log',
   tabWorkers: 'Workers',
   // What an agent on the Workers tab is doing, on its line in so many words.
-  states: { working: 'working', idle: 'resting', question: 'waits for an answer' },
+  states: { working: 'working', idle: 'resting', question: 'waits for an answer', blocked: 'waits for approval' },
   noWorkers: 'No agent on the board right now.',
   // Above the stone: the definition-of-done items still open on the tickets
   // with an agent at them.
