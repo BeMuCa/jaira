@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:13Z
-updated-at: 2026-11-23T01:26:13Z
+updated-at: 2026-11-23T01:27:57Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-dwrc0h
@@ -29,7 +29,8 @@ claimed-at: 2026-11-23T01:25:43Z
 
 ## Definition of Done
 
-- [ ] Der Agent-Block nennt jaira set fuer goal und context mit einem Beispiel
+- [x] Der Agent-Block nennt jaira set fuer goal und context mit einem Beispiel
+  proof: core/board/announce.go:57-61 (bullet 'a ticket changes after capture'), mirrored in CLAUDE.md:23-27 and AGENTS.md:23-27
 - [ ] Ein DoD-Punkt laesst sich nach dem Anlegen anhaengen, ohne dass bestehende Nummern wandern; ein Test belegt es
 - [ ] jaira create --help verweist auf set fuer spaetere Aenderungen
 
