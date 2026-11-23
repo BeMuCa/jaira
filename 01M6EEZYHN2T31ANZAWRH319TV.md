@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T15:45:35Z
-updated-at: 2026-11-23T01:46:02Z
+updated-at: 2026-11-23T01:46:05Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-h319tv
@@ -41,7 +41,7 @@ back-count: 1
 - [x] README hat den Abschnitt 'Jaira PM View - Web only' mit Install-Zeile ohne Rollen/Cockpit, jaira web, Screenshot und je einem Satz was geht und was nicht
   proof: README.md:301 '## Jaira PM View - Web only' (install lines with JAIRA_NO_ROLES=1, jaira init/web, docs/img/web.png, one sentence each for can/cannot); linked from the Features bullet README.md:67-68
 - [x] Die Zeile 'Web UI, VS Code extension' in der Tabelle 'Not built' ist entfernt oder sagt, was heute gilt
-  proof: README.md:1247 row now '| VS Code extension | ...', Web UI dropped
+  proof: README.md:1248 row now '| VS Code extension | ...', Web UI dropped
 - [x] Auf einem frischen Clone nachgestellt: Install-Zeile, jaira web, Tickets erscheinen; die Wartezeit steht im Abschnitt
   proof: scratch run with the branch binary: bare remote + shared board, 3 tickets on refs, git clone, jaira init (0 refs), jaira web: refs/jaira/* present within 0.5 s, /api/unassigned lists the 3 tickets; wait sentence README.md:331-334. Install line NOT run (curl|sh denied in this session) - read from scripts/install.sh:110
 - [x] Release-Notiz in core/release/notes/<ID>.md
