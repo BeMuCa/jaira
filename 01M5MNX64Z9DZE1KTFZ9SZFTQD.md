@@ -16,7 +16,7 @@ related: []
 commits:
   - a780e3fca9d45d977c7495252e356612ee0ebc1c
 created-at: 2026-10-23T15:26:09Z
-updated-at: 2026-10-27T20:53:36Z
+updated-at: 2026-11-23T01:11:04Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: ""
@@ -62,3 +62,4 @@ DECISION FOR THE MAINTAINER, same four lines — the path puts results for a per
 Left alone: four verbatim copies (the brief asks for one paragraph per skill); the release note's 'Run jaira roles install again' matches core/release/notes/0.5.3/YD4BE9.md:1; placement in worker/dispatcher (end of 'Do not swallow what the human should hear') and in role-lane (Boundaries) fits. Findings 1-4 are clear fixes; finding 5 needs the maintainer and changes the same text, so fix all after the answer.
 - **2026-10-27 00:20 · BeMuCa** — Driver: an human gegeben, weil critique (pass 1) eine echte Entscheidung fand (Ablageort, siehe question). Funde 1-4 sind klar und warten auf in-progress, damit die vier Absaetze nur einmal angefasst werden. Ticket-Datei bleibt untracked im Worktree; der naechste Code-Commit nimmt sie mit. Hinweis: mehrere Schreibvorgaenge meldeten 'was not sent: BeMuCa wrote it first' - der Ref hing hinter der Datei.
 - **2026-10-27 20:53 · BeMuCa** — Aus O6 (27.10.2026): nicht nur Ergebnisse fuer eine Person, auch Session-Zustand lag unter /tmp und ging mit dem WSL-Absturz verloren - Backup-Bundle, SHA-Map der History-Umschreibung, review-check-Dateien. Welcher stabile Pfad auch immer gewaehlt wird: er muss auch fuer solche Zwischenstaende eines Drivers gelten, nicht nur fuer Deliverables.
+- **2026-11-23 01:11 · BeMuCa** — Entscheidung Berk 2026-11-23: Variante (a). Ergebnisse fuer eine Person liegen unter <repo>/.jaira/deliverables/<ID>/, gitignored (core/board/gitignore.go neben /.jaira/lanes/), und verschwinden mit dem Worktree. Begruendung: Ziel der erzeugten Arbeit ist, das Ticket nach done zu bringen; danach braucht niemand die Seite mehr. Das Board-Setting 'deliverables' wird nicht gebaut - die Rollen nennen nur den festen Pfad. Danach die Funde 1-4 aus review-summary.
