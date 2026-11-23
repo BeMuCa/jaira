@@ -27,7 +27,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T23:06:22Z
-updated-at: 2026-11-23T23:06:22Z
+updated-at: 2026-11-23T23:09:35Z
+updated-by: BeMuCa
 ---
 
 # docs/MARKET.md haelt fest, wie der Katalog fuer Lanes und Boards aufgebaut ist
