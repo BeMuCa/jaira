@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:00:56Z
+updated-at: 2026-11-23T21:01:00Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -45,7 +45,7 @@ claimed-at: 2026-11-23T20:54:57Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-- [ ] renderSignOff on person lanes (human+signoff); a/f stay signoff-only
+- [~] renderSignOff on person lanes (human+signoff); a/f stay signoff-only
 - [ ] signOffBody reordered: blocker, check, what, why, question, commits, DoD
 - [ ] 'i' toggles a details block: problem/resolves/summary/verdict/gaps/tags/lane fields
 - [ ] update existing signoff tests, add order/blocker/details tests
