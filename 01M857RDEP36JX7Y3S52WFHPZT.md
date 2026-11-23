@@ -1,0 +1,43 @@
+---
+id: 01M857RDEP36JX7Y3S52WFHPZT
+title: "Der Lane-Verlauf eines Boards ist als Graph zu sehen und einzustellen: Lanes als Knoten, Uebergaenge und Loops als Kanten, je Lane Agent, Modell und Anzahl Agenten"
+status: backlog
+ready: false
+creator: BeMuCa
+goal: "Eine Person sieht den Ablauf eines Boards als Graph - jede Lane ein Knoten, jeder Uebergang und jeder Loop (critique/optimize/testing zurueck nach in-progress) eine Kante mit ihrer Grenze - und stellt je Knoten ein, welcher Agent bzw. welches Modell die Lane laeuft und wie viele Agenten sie gleichzeitig bearbeiten (Fan-out), ohne Lane-Dateien von Hand zu editieren."
+context: |-
+  Wunsch von Berk 2026-11-23: 'lane-verlauf als graph mit nodes, loops und lanes, wo man einstellen kann wieviele agenten die tickets bearbeiten sollen (fan out) oder loops und welcher agent die lane durchlaufen soll'. Vergleich: LangGraph-artige Ansicht.
+  Heute: der Ablauf steht verteilt in .jaira/lanes/order (Reihenfolge), den Lane-Dateien (agentic, model-tier, Prompt) und den Loop-Regeln (max 3 Rueckgaben). Sehen kann man ihn nur als Text: 'jaira lanes', der Lanes-Block in CLAUDE.md, die Lane-Vorschau in den Settings (2B4KC9).
+  Was es dazu schon gibt, nur jeweils ein Teil: ATDG74 (ideas) - N Agenten je Lane (Schwarm), parallel wenn RAM reicht; CXH98W (signoff) - Modell fuer Orchestrator und Worker in den Settings; 403F8T (ideas) - Schwarm-Debatte; ENCFVZ (signoff) - Lane-Arten mit skill/script/receipt; mehrere Boards je Repo (Fan-out ueber Boards, Milestone jaira-board-fan-out).
+  Keines zeigt den Ablauf als Bild, und keines stellt Agent, Anzahl und Loop-Grenze an einer Stelle ein.
+  Offen fuer den Brainstorm: TUI oder jaira web oder beides; was davon nur Ansicht ist und was in die Lane-Dateien zurueckschreibt (Lane-Dateien bleiben die Quelle, die Datei ist die API); wie N Ergebnisse zusammengefuehrt werden (ATDG74).
+definition-of-done: "Brainstorm: Ort (TUI/web), was angezeigt und was eingestellt wird, wie es in die Lane-Dateien zurueckschreibt; als Notiz am Ticket"
+tags:
+  - tui
+blocked-by: []
+related: []
+commits: []
+created-at: 2026-11-23T22:17:22Z
+updated-at: 2026-11-23T22:17:22Z
+---
+
+# Der Lane-Verlauf eines Boards ist als Graph zu sehen und einzustellen: Lanes als Knoten, Uebergaenge und Loops als Kanten, je Lane Agent, Modell und Anzahl Agenten
+
+## Definition of Done
+
+- [ ] Brainstorm: Ort (TUI/web), was angezeigt und was eingestellt wird, wie es in die Lane-Dateien zurueckschreibt; als Notiz am Ticket
+- [ ] Der Graph zeigt jede Lane als Knoten und jeden Uebergang und Loop als Kante, Loops mit ihrer Grenze
+- [ ] Je Lane lassen sich Agent bzw. Modell und Anzahl Agenten einstellen; die Einstellung steht danach in der Lane-Datei
+- [ ] Release-Notiz in core/release/notes/<ID>.md
+
+## Options
+
+- [ ] brainstorm
+- [ ] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+## Progress
+
