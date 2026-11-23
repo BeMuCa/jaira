@@ -1,8 +1,8 @@
 ---
 id: 01M5ZJ5BFTK2EF9RNRJP35PV7F
 title: "jaira milestone create ohne --after sagt, dass der Milestone nicht auf der Roadmap steht"
-status: backlog
-ready: false
+status: todo
+ready: true
 creator: BeMuCa
 goal: "Legt jemand einen Milestone ohne --after an, sagt die Ausgabe, dass er im Picker steht, nicht auf der Roadmap, und wie er dorthin kommt (jaira milestone set <name> --after ...)."
 context: |-
@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:21Z
-updated-at: 2026-11-23T01:20:14Z
+updated-at: 2026-11-23T01:20:17Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-35pv7f
