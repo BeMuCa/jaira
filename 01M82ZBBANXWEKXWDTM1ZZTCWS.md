@@ -19,7 +19,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T01:11:56Z
+updated-at: 2026-11-23T01:12:04Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts
