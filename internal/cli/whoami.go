@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -86,7 +85,7 @@ before a ticket is written rather than after.`,
 				}
 				fmt.Fprintf(w, "Also me:     %s\n", a)
 			}
-			if path != "" && strings.TrimSpace(os.Getenv("JAIRA_USER")) != "" {
+			if path != "" && coreidentity.ByEnv() {
 				path += " (not read under JAIRA_USER)"
 			}
 			fmt.Fprintf(w, "Alias file:  %s\n", dash(path))

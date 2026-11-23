@@ -32,12 +32,18 @@ func currentIn(list *people.List, raw, email string) string {
 	if p := list.Find(raw); p != nil {
 		return p.Name
 	}
-	if strings.TrimSpace(os.Getenv("JAIRA_USER")) == "" {
+	if !ByEnv() {
 		if p := list.Find(email); p != nil {
 			return p.Name
 		}
 	}
 	return raw
+}
+
+// ByEnv reports whether JAIRA_USER names who is acting. Then git's email and
+// the machine's alias file are the checkout owner's, not this person's.
+func ByEnv() bool {
+	return strings.TrimSpace(os.Getenv("JAIRA_USER")) != ""
 }
 
 // raw is who git and the environment say is acting, before the people list
@@ -167,7 +173,6 @@ func AliasesPath() string {
 func Aliases(dir string) []string {
 	list, rawName, email := People(dir), raw(dir), gitConfig(dir, "user.email")
 	me := currentIn(list, rawName, email)
-	byEnv := strings.TrimSpace(os.Getenv("JAIRA_USER")) != ""
 	out := []string{me}
 	add := func(v string) {
 		v = strings.TrimSpace(v)
@@ -185,7 +190,7 @@ func Aliases(dir string) []string {
 		add(n)
 	}
 	add(rawName)
-	if byEnv {
+	if ByEnv() {
 		return out
 	}
 	add(email)
