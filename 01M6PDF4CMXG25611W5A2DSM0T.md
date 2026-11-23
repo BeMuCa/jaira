@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:32:40Z
+updated-at: 2026-11-23T01:32:43Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -27,7 +27,7 @@ outcome-what: "A board that lives in no git repository moves tickets into done a
 outcome-why: "Solo users without a repository could never finish a ticket: the done gate demanded commits that cannot exist. Round 2: the bug hunt showed a symlinked repo with git missing read as 'no repository'."
 outcome-resolves: "2DSM0T: gate.Env.OutsideRepo backed by gitrepo.Repo.OutsideRepo - true only when git is on PATH, no .git above the symlink-resolved path and git sees no work tree; wired in CLI and TUI; logbook drops the hand-record hint there. Round 2 fixed the hunt's blocker (EvalSymlinks; no git -> keep the rule). Checked: concurrency n/a (read-only probe; two parallel moves both landed); error paths - any stat/git/symlink error keeps the rule; input - relative, symlinked, subdir paths; permissions - unreadable parent counts as 'maybe a repo'."
 review-summary: none
-review-gaps: "none: duplication - no other .git walk in the tree (only core/ticket/store.go names .git, for a different purpose); gitref.Usable kept separate on purpose (critique note). Dead code - nothing orphaned. Fluff - the one-line comments at the two wiring sites match their neighbours' style, kept. Cost - OutsideRepo runs only on the refusal path and at logbook with zero commits."
+review-gaps: "none: round 2 added an early return and one EvalSymlinks call; the trailing !Available() it replaced is gone, nothing orphaned, no duplicate symlink-resolve helper in core/gitrepo"
 test-verdict: "fail: bughunt change blocker - OutsideRepo reads a symlinked repo path with git missing as 'no repository' and waives commits inside a real repo; own passes were green (vet/build rc=0, scratch boards behaved)"
 hunt-verdict: "fail: 1 change blocker (core/gitrepo/git.go OutsideRepo, symlink + git missing)"
 round: 2
