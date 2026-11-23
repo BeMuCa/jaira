@@ -26,6 +26,9 @@ import (
 type webSource struct {
 	mu sync.Mutex
 	s  *ticket.Store
+	// pushing is held by a push, which runs outside mu, and by actAsNow while
+	// it renames who acts: the syncer reads Actor while it flushes.
+	pushing sync.Mutex
 }
 
 func newWebSource(s *ticket.Store) *webSource {
@@ -46,10 +49,21 @@ func newWebSource(s *ticket.Store) *webSource {
 // the ref syncer both follow, so one write never carries two names. Called
 // with w.mu held.
 func (w *webSource) actAsNow() {
-	w.s.Actor = identity()
+	who := identity()
+	w.pushing.Lock()
+	defer w.pushing.Unlock()
+	w.s.Actor = who
 	if refs != nil {
-		refs.Actor = w.s.Actor
+		refs.Actor = who
 	}
+}
+
+// push is webPush for the page: it holds pushing so actAsNow cannot change
+// who acts under a flush that is reading it.
+func (w *webSource) push() error {
+	w.pushing.Lock()
+	defer w.pushing.Unlock()
+	return webPush()
 }
 
 // signoff is the lane whose tickets the epic's progress counts apart: finished,
