@@ -1,7 +1,7 @@
 ---
 id: 01M82ZBBANXWEKXWDTM1ZZTCWS
 title: "Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts"
-status: signoff
+status: done
 ready: true
 creator: BeMuCa
 goal: "Oeffnet eine Person ein Ticket in human, review oder signoff in der TUI, sieht sie oben in dieser Reihenfolge: So pruefst du (review-check), Was gemacht wurde (outcome what/why), Offene Frage (question, nur wenn eine da ist), die Code-Aenderungen und die DoD mit Proofs. Felder, die der Person bei der Entscheidung nicht helfen, stehen nicht mehr auf dieser Ansicht."
@@ -17,9 +17,15 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - f03f8598bf40e6c044bc5f76cff66d1934e6ca5c
+  - 0cfce40a229a99940a9313b9fa1283b7c50c0507
+  - 73d06b02459ba0488e0a7cb8ce137a1d5644afc7
+  - 383b42d9eff50fe92ea74b9ac55b245d3a26f297
+  - 2880173dd19a0719180344d11060a1c608f79fcf
+  - f0b0e438bbaccf12bd0da0a0951979e4069daf21
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:38:55Z
+updated-at: 2026-11-23T21:42:17Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
