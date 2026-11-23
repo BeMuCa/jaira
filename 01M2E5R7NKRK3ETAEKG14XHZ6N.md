@@ -4,7 +4,7 @@ title: "Lanes brauchen einen Kanal an den Menschen, nicht nur an die naechste La
 status: backlog
 ready: true
 creator: Alexander Sacharov
-assignee: Alexander Sacharov
+assignee: ""
 goal: "Jede Lane kann eine Zeile hinterlassen, die fuer einen Menschen bestimmt ist; die human-Lane bekommt diese Zeilen gesammelt und in der Reihenfolge, in der sie entstanden sind"
 context: |-
   Heute hat eine Lane zwei Ausgaenge, und beide zielen auf Maschinen.
@@ -22,7 +22,12 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-13T20:01:18Z
-updated-at: 2026-09-13T20:01:18Z
+updated-at: 2026-11-23T12:45:48Z
+rejected-kind: wontfix
+rejected-why: "superseded by cockpit worker reports (report:/needs you:), --question and the Acceptance pane"
+rejected-by: Alexander Sacharov
+rejected-at: "2026-11-23T12:45:48Z"
+updated-by: Alexander Sacharov
 ---
 
 # Lanes brauchen einen Kanal an den Menschen, nicht nur an die naechste Lane
