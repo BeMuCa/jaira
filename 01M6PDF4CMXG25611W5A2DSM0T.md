@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:30:57Z
+updated-at: 2026-11-23T01:31:27Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -28,6 +28,7 @@ outcome-why: "Solo users without a repository could never finish a ticket: the d
 outcome-resolves: "2DSM0T: gate.Env.OutsideRepo (lazy, asked only on the refusal path) backed by gitrepo.Repo.OutsideRepo - true only when no .git in the root or any parent and git does not see a work tree; wired in CLI loadEnv and TUI gateEnv; logbook no longer prints the hand-record hint outside git. Checked: concurrency n/a (read-only probe); error paths - a stat or git error counts as 'in a repo' so the rule never drops by accident; git missing - .git walk alone decides; relative dir made absolute."
 review-summary: none
 review-gaps: "none: duplication - no other .git walk in the tree (only core/ticket/store.go names .git, for a different purpose); gitref.Usable kept separate on purpose (critique note). Dead code - nothing orphaned. Fluff - the one-line comments at the two wiring sites match their neighbours' style, kept. Cost - OutsideRepo runs only on the refusal path and at logbook with zero commits."
+test-verdict: "fail: bughunt change blocker - OutsideRepo reads a symlinked repo path with git missing as 'no repository' and waives commits inside a real repo; own passes were green (vet/build rc=0, scratch boards behaved)"
 ---
 
 # Ein Board ohne Git-Repo schiebt Tickets nach done, ohne Commits zu verlangen
