@@ -19,11 +19,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:28:05Z
+updated-at: 2026-11-23T21:30:43Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-79231
-claimed-at: 2026-11-23T20:54:57Z
+claimed-by: DESKTOP-RFTCH11-22738
+claimed-at: 2026-11-23T21:30:43Z
 outcome-what: "Sign-off screen (signoff and human) shows blocker lines, check, what, why, question, commits, DoD with proofs; 'i' appends the full detail pane body. Blocker detection uses the cockpit's MARKER/BLOCKER regexes; a label standing alone keeps its row as written."
 outcome-why: "Berk 2026-11-23: the check sat last under a page of account; rounds 2-3: bughunt found blocker forms hidden or emptied, and human-lane context/notes unreachable."
 outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSignOffKeepsBlockersOnTop (11 forms, 3 label-alone, 5 non-blockers), TestHumanLaneOpensTheDecisionScreen, TestDetailsCarryContextAndNotes; checked: concurrency n/a (render only), error paths n/a, unusual input - blocker forms, label alone, empty fields; permissions n/a"
