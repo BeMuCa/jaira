@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:13Z
-updated-at: 2026-11-23T01:28:05Z
+updated-at: 2026-11-23T01:28:08Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-dwrc0h
@@ -33,7 +33,8 @@ claimed-at: 2026-11-23T01:25:43Z
   proof: core/board/announce.go:57-61 (bullet 'a ticket changes after capture'), mirrored in CLAUDE.md:23-27 and AGENTS.md:23-27
 - [x] Ein DoD-Punkt laesst sich nach dem Anlegen anhaengen, ohne dass bestehende Nummern wandern; ein Test belegt es
   proof: internal/cli/checklist_test.go TestDodAddKeepsExistingNumbersAndProofs (jaira dod --add, existing command); not run here (no go test in this session), compiles under go vet
-- [ ] jaira create --help verweist auf set fuer spaetere Aenderungen
+- [x] jaira create --help verweist auf set fuer spaetere Aenderungen
+  proof: internal/cli/tickets.go:219-221, last paragraph of 'jaira create --help'
 
 ## Options
 
