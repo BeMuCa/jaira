@@ -16,7 +16,8 @@ related:
   - 01M5GFAV1C3DV9NWZFXC4G07X9
 commits: []
 created-at: 2026-11-23T23:08:55Z
-updated-at: 2026-11-23T23:08:55Z
+updated-at: 2026-11-23T23:09:32Z
+updated-by: BeMuCa
 ---
 
 # Marktplatz fuer Lanes und Boards: fuenf Entscheidungen, bevor gebaut wird
