@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T15:45:35Z
-updated-at: 2026-11-23T01:46:46Z
+updated-at: 2026-11-23T01:47:20Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-h319tv
@@ -33,6 +33,7 @@ back-from: critique
 back-by: lane
 back-count: 1
 review-gaps: "removed the '--port/--no-open' sentence from the new section: it repeated the Commands table (README '## Commands') and docs/COMMANDS.md:57, and a PM does not need it (jaira web prints the address when no browser opens). Left the clone/init steps that overlap '## Start' (teammate join): the section must stand alone. No code, so passes 2-4 n/a."
+test-verdict: "pass: no Go changed - suite not run (house rule tonight: no go test in lanes), go build ok. DoD 1-4 checked in the tree (README.md:301 section, :1247 row, :331-334 wait sentence, core/release/notes/H319TV.md one '- ' line, docs/img/web.png present, anchor #jaira-pm-view---web-only matches GitHub slug). Function: README steps replayed on a fresh clone of a scratch bare remote: jaira web before init exits 1 (no half state), after init jaira web serves 3 tickets within 1.5 s, /api/sync shows last_fetch. Two writers: the change writes nothing. Not verified: the curl|sh and PowerShell install lines themselves (not executed)."
 ---
 
 # README: Abschnitt 'Jaira PM View - Web only' fuer Leute ohne Coding-Agent
