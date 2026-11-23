@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:13Z
-updated-at: 2026-11-23T01:31:22Z
+updated-at: 2026-11-23T01:31:25Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-dwrc0h
@@ -37,6 +37,16 @@ review-round: 1
 review-verdict-gaps: |-
   note: DoD 2 rests on a unit test of ticket.AddItem (core/ticket/proof_test.go:115); internal/cli/checklist.go:240 does call AddItem, but no test drives 'jaira dod --add' end to end since the CLI test was dropped in 60387d0e0 - re-checked by hand on a scratch board, item 2 kept [x] and its proof after --add
   note: the create --help paragraph (internal/cli/tickets.go:219-221) names set and dod --add but not dod <n> --text, which the agent block does name; one more clause would make the two match
+review-check: |-
+  1. In the worktree run: go build -o /tmp/jr ./cmd/jaira
+  2. Make a scratch repo: mkdir /tmp/jt && cd /tmp/jt && git init && git commit --allow-empty -m init && /tmp/jr init
+  3. /tmp/jr create probe --goal g --context c --dod one --dod two   (note the 6-letter id it prints)
+  4. /tmp/jr dod <id> 2 --done --proof P2
+  5. /tmp/jr set <id> goal="new goal" context="new context"
+  6. /tmp/jr dod <id> --add three
+  7. /tmp/jr show <id>  -> goal and context are the new ones; item 1 one [ ], item 2 two [x] with proof P2, item 3 three [ ] - nothing renumbered
+  8. grep -n "changes after capture" CLAUDE.md  -> the new bullet with jaira set and dod --add
+  9. /tmp/jr create --help | tail -15  -> paragraph "What create sets can be changed later"
 ---
 
 # Der Agent-Block sagt, wie man Goal, Kontext und DoD nach dem Anlegen aendert
