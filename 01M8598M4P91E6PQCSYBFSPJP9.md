@@ -1,7 +1,7 @@
 ---
 id: 01M8598M4P91E6PQCSYBFSPJP9
 title: "Eine Lane-Datei kann mit agents: N sagen, dass N Agenten die Lane laufen; show --for-lane reicht es weiter"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -23,12 +23,16 @@ tags:
 blocked-by: []
 related: []
 follows: 01M67K72RDJY2N2R2KQGATDG74
-commits: []
+commits:
+  - 71f812811bd997015ae675670c35cb4dbceefa15
 created-at: 2026-11-23T22:43:41Z
-updated-at: 2026-11-23T23:00:23Z
+updated-at: 2026-11-23T23:00:35Z
 updated-by: BeMuCa
 claimed-by: worker-fspjp9
 claimed-at: 2026-11-23T22:56:02Z
+outcome-what: "agents: N is read from lane files (1..9, default 1), refused above 1 on outcome-what or plan lanes, and carried in show --for-lane and lanes show; both role skills say how to unite N agents' findings"
+outcome-why: "the lanes that judge a ticket can then run several readers at once, without N agents writing the same worktree"
+outcome-resolves: "class checked: bad values (0, -1, 10, x, 2.5, empty, huge) refused naming file and key; writing lanes refused; concurrency: jaira starts nothing, the skill caps at 4 and checks free -h; error path: load refuses before any lane is used; permissions: not applicable, no process started"
 ---
 
 # Eine Lane-Datei kann mit agents: N sagen, dass N Agenten die Lane laufen; show --for-lane reicht es weiter
