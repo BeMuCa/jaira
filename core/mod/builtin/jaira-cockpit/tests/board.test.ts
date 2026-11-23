@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { carrierFor, clipLines, commitNaming, commitsOf, executionOf, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, rephrasePrompt, snapshotOf, storyOf, type Waiting } from '../hooks/board.ts'
+import { acceptTreeFor, carrierFor, clipLines, commitNaming, commitsOf, executionOf, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, rephrasePrompt, snapshotOf, storyOf, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -1716,7 +1716,11 @@ describe('after Accept', () => {
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await pressAccept($, ui, 'ZZ99ZZ', w)
-    expect(ran(w, 'git', 'branch')).toEqual([['git', 'branch', '--list', '--format=%(refname:short)', '*/zz99zz', '@/repo']])
+    // Asked twice: once where Accept moves it — no worktree on that branch,
+    // so the main checkout as before — and once for the pull request.
+    const list = ['git', 'branch', '--list', '--format=%(refname:short)', '*/zz99zz', '@/repo']
+    expect(ran(w, 'git', 'branch')).toEqual([list, list])
+    expect(ran(w, 'jaira', 'move', 'ZZ99ZZ', '--to', 'done', '--force').map(r => r.at(-1))).toEqual(['@/repo'])
     expect(ran(w, 'git', 'log', '--format=%s')).toEqual([['git', 'log', '--format=%s', 'upstream/main..feat/zz99zz', '@/repo']])
     expect(ran(w, 'git', 'worktree', 'add')).toEqual([['git', 'worktree', 'add', '/.worktrees/repo-zz99zz', 'feat/zz99zz', '@/repo']])
     expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-zz99zz', '@/.worktrees/repo-zz99zz']])
@@ -1765,8 +1769,17 @@ describe('after Accept', () => {
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await pressAccept($, ui, 'ZZ99ZZ', w)
-    expect(ran(w, 'git', 'log', '--branches')).toEqual([['git', 'log', '--branches', '--not', 'upstream/main', '--format=%H %s', '@/repo']])
-    expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
+    // Once against the main checkout's HEAD, where Accept moves it, and once
+    // against the target, for the pull request.
+    expect(ran(w, 'git', 'log', '--branches')).toEqual([
+      ['git', 'log', '--branches', '--not', 'HEAD', '--format=%H %s', '@/repo'],
+      ['git', 'log', '--branches', '--not', 'upstream/main', '--format=%H %s', '@/repo'],
+    ])
+    const contains = ['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']
+    expect(ran(w, 'git', 'branch', '--contains')).toEqual([contains, contains])
+    // The move runs where its commits are, the other ticket's worktree, not
+    // the main checkout, which reaches none of them (VHGWQF).
+    expect(ran(w, 'jaira', 'move', 'ZZ99ZZ', '--to', 'done', '--force').map(r => r.at(-1))).toEqual(['@/.worktrees/repo-mg677r'])
     // Its worktree is the other ticket's: the role pushes from there.
     expect(ran(w, 'bash', SPAWN)).toEqual([['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'zz99zz', 'ZZ99ZZ', 'pr', '/.worktrees/repo-mg677r', '@/.worktrees/repo-mg677r']])
   })
@@ -1783,8 +1796,12 @@ describe('after Accept', () => {
     const ui = await $.ui.mount(BAND)
     await pressAccept($, ui, 'ZZ99ZZ', w)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
-    expect(w.toasts.at(-1)).toContain("ZZ99ZZ accepted; feat/mg677r and wip could each be ZZ99ZZ's branch")
-    expect(w.submitted.at(-1)).toContain("feat/mg677r and wip could each be ZZ99ZZ's branch")
+    // Nothing moves, in the main checkout or anywhere: which worktree the
+    // move belongs in is a guess, and the press names the candidates (VHGWQF).
+    expect(ran(w, 'jaira', 'move', 'ZZ99ZZ', '--to', 'done')).toEqual([])
+    expect(ran(w, 'jaira', 'pull', 'ZZ99ZZ')).toEqual([])
+    const pane = await $.ui.mount(MESSAGE('Accept ZZ99ZZ failed'))
+    expect(await pane.find({ type: 'Text', text: /feat\/mg677r and wip could each carry ZZ99ZZ's commits.*nothing moved/ })).toBeDefined()
   })
 
   test('a ticket named only beside others in a subject has no commit of its own: no branch, no pull request (Alex, QTQW15)', async ($, on) => {
@@ -1818,7 +1835,8 @@ describe('after Accept', () => {
     await startSession($)
     const ui = await $.ui.mount(BAND)
     await pressAccept($, ui, 'ZZ99ZZ', w)
-    expect(ran(w, 'git', 'branch', '--contains')).toEqual([['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']])
+    const contains = ['git', 'branch', '--contains', 'abc123', '--format=%(refname:short)', '@/repo']
+    expect(ran(w, 'git', 'branch', '--contains')).toEqual([contains, contains])
   })
 
   test('in a fork, ahead counts against the parent\'s default branch, fetched first — never the lagging local master', async ($, on) => {
@@ -5438,4 +5456,24 @@ describe('the Acceptance pane', () => {
     const all = await texts(await acceptancePane($, await $.ui.mount(BAND), 'MG677R'))
     expect(all).toContain('🟡 note: the size')
   })
+})
+
+// Where Accept moves a ticket (VHGWQF), by input class: its own worktree
+// first, then the worktree of the branch carrying its commits, never a guess.
+describe('where Accept moves a ticket', () => {
+  const OTHER = 'worktree /repo\nHEAD 1\nbranch refs/heads/master\n\nworktree /.worktrees/repo-mg677r\nHEAD 2\nbranch refs/heads/feat/mg677r\n'
+  const OWN = OTHER + '\nworktree /.worktrees/repo-zz99zz\nHEAD 3\nbranch refs/heads/feat/zz99zz\n'
+  const cases: [string, string, Parameters<typeof acceptTreeFor>[2], ReturnType<typeof acceptTreeFor>][] = [
+    ['its own worktree, whatever carries the commits', OWN, { branch: 'feat/mg677r', by: 'commit' }, { dir: '/.worktrees/repo-zz99zz' }],
+    ['its own worktree, even where the carrier is ambiguous', OWN, { ambiguous: ['feat/mg677r', 'wip'] }, { dir: '/.worktrees/repo-zz99zz' }],
+    ["another ticket's branch holds its commits: that worktree", OTHER, { branch: 'feat/mg677r', by: 'commit' }, { dir: '/.worktrees/repo-mg677r' }],
+    ['the carrier has no worktree: the main checkout', OTHER, { branch: 'feat/zz99zz', by: 'name' }, {}],
+    ['no carrier at all: the main checkout', OTHER, undefined, {}],
+    ['several could carry it: named, nothing picked', OTHER, { ambiguous: ['feat/mg677r', 'wip'] }, { ambiguous: ['feat/mg677r', 'wip'] }],
+  ]
+  for (const [name, porcelain, carrier, want] of cases) {
+    test(name, () => {
+      expect(acceptTreeFor(porcelain, 'ZZ99ZZ', carrier)).toEqual(want)
+    })
+  }
 })

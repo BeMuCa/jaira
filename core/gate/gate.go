@@ -168,6 +168,14 @@ type Env struct {
 	// it did before this existed.
 	DeriveCommits func(t *ticket.Ticket) []string
 
+	// CommitsElsewhere names the branches holding commits that name the
+	// ticket where DeriveCommits, which reads only what HEAD reaches, found
+	// none: the refusal then says where the work is instead of telling the
+	// person to commit what they already committed. Injected for the same
+	// reason DeriveCommits is; nil, or nothing found, leaves the refusal as
+	// it read before.
+	CommitsElsewhere func(t *ticket.Ticket) []string
+
 	// Satisfied answers whether a ticket that is not in All has nevertheless
 	// been finished and filed away — in the logbook, or in the archive in a
 	// terminal lane. It is injected for the same reason DeriveCommits is:
@@ -368,6 +376,10 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 			derived = env.DeriveCommits(t)
 		}
 		if len(derived) == 0 {
+			var elsewhere []string
+			if env.CommitsElsewhere != nil {
+				elsewhere = env.CommitsElsewhere(t)
+			}
 			vs = append(vs, Violation{
 				Code:  CodeNeedsCommits,
 				Field: ticket.FieldCommits,
@@ -379,7 +391,7 @@ func CheckAdvance(env Env, t *ticket.Ticket, req Request) Violations {
 				// any commit yet, so that is what is said first.
 				Message: fmt.Sprintf(
 					"lane %q requires the commits that carry this change, and git has none for %s yet. Commit the change with the ticket file alongside it, or name %s in the commit message, and the list fills itself in. To record it by hand instead: 'jaira set %s commits=<sha>[,<sha>]', or pass --commits on the move",
-					target.ID, ticket.Handle(t.ID), ticket.Handle(t.ID), ticket.Handle(t.ID)),
+					target.ID, ticket.Handle(t.ID), ticket.Handle(t.ID), ticket.Handle(t.ID)) + onBranches(t, elsewhere),
 			})
 		}
 	}
@@ -941,4 +953,14 @@ func OwedBy(set *lane.Set, t *ticket.Ticket) map[string]string {
 		}
 	}
 	return owed
+}
+
+// onBranches is what the requires-commits refusal adds when commits naming
+// the ticket exist, only on branches this checkout's HEAD does not reach.
+func onBranches(t *ticket.Ticket, branches []string) string {
+	if len(branches) == 0 {
+		return ""
+	}
+	return fmt.Sprintf(". Commits naming %s sit on %s: run the move in that branch's worktree, or merge it first",
+		ticket.Handle(t.ID), strings.Join(branches, ", "))
 }

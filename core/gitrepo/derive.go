@@ -120,3 +120,47 @@ func (r *Repo) CommitsForTicket(ticketPath, ticketID string) ([]string, error) {
 func namesTicket(ticketID string) string {
 	return fmt.Sprintf(`(^|[^0-9A-Za-z])(%s|%s)([^0-9A-Za-z]|$)`, ticketID, ticket.Handle(ticketID))
 }
+
+// BranchesNamingTicket names the local branches that hold a commit naming the
+// ticket which HEAD does not reach, sorted. It is what a refusal for "git has
+// none for <id>" points at: the work was committed, only on another branch —
+// a follow-up worked on the branch of the ticket it followed, a worktree the
+// move was not run from. Commits HEAD reaches are already in
+// CommitsForTicket's answer and name no branch here. Nothing found, or no
+// git, is an empty answer: the refusal then stands as it always read.
+func (r *Repo) BranchesNamingTicket(ticketID string) ([]string, error) {
+	if !Available() {
+		return nil, ErrNoGit
+	}
+	if !ticket.ValidID(ticketID) {
+		return nil, nil
+	}
+	out, err := r.run("log", "--branches", "--not", "HEAD", "--format=%H", "--extended-regexp", "--regexp-ignore-case", "--grep="+namesTicket(ticketID))
+	if err != nil {
+		return nil, err
+	}
+	// Newest first; the first 64 are plenty to name the branches and keep the
+	// one git branch call below its argument limit on any platform.
+	args := []string{"branch", "--format=%(refname:short)"}
+	for _, line := range strings.Split(out, "\n") {
+		if sha := strings.TrimSpace(line); sha != "" && len(args) < 2+2*64 {
+			args = append(args, "--contains", sha)
+		}
+	}
+	if len(args) == 2 {
+		return nil, nil
+	}
+	// Several --contains list every branch holding any of them, in one call.
+	listed, err := r.run(args...)
+	if err != nil {
+		return nil, err
+	}
+	var branches []string
+	for _, line := range strings.Split(listed, "\n") {
+		if b := strings.TrimSpace(line); b != "" && !strings.HasPrefix(b, "(") {
+			branches = append(branches, b)
+		}
+	}
+	sort.Strings(branches)
+	return branches, nil
+}
