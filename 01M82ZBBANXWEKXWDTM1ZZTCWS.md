@@ -1,7 +1,7 @@
 ---
 id: 01M82ZBBANXWEKXWDTM1ZZTCWS
 title: "Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts"
-status: review
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Oeffnet eine Person ein Ticket in human, review oder signoff in der TUI, sieht sie oben in dieser Reihenfolge: So pruefst du (review-check), Was gemacht wurde (outcome what/why), Offene Frage (question, nur wenn eine da ist), die Code-Aenderungen und die DoD mit Proofs. Felder, die der Person bei der Entscheidung nicht helfen, stehen nicht mehr auf dieser Ansicht."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:31:10Z
+updated-at: 2026-11-23T21:31:16Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -35,10 +35,10 @@ review-gaps: |-
   note: limit: the agent lane 'review' named in the goal keeps the plain detail view - decision note 21:00 reads the goal as the person lanes human and signoff
 test-verdict: "pass: go vet ./... + go test -race -count=1 ./internal/tui RC=0 at 2880173dd (full race suite RC=0 at 73d06b024); DoD 1-5 verified in the tree; screen exercised in tmux on a scratch board; render-only, writes nothing"
 hunt-verdict: "pass: bughunt done at 2880173dd - 0 blocker, 1 change edge (a label-only blocker row shows the label, finding is behind 'i'; note for the person), 0 pre-existing; round 1 pre-existing quoted-path finding left as note (EH6Z0N's diff code)"
-round: 3
-back-from: testing
+round: 4
+back-from: review
 back-by: lane
-back-count: 2
+back-count: 1
 review-verdict: "accept: DoD 1-5 met (go test ./internal/tui ok, go vet clean); two fix-now edges - help screen misses 'i', lone blocker label shows the label instead of the finding"
 review-round: 3
 review-verdict-gaps: |-
