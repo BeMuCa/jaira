@@ -279,7 +279,7 @@ guarantee is gone and nobody can see that it is.
    the fresh lane gets a **new** agent next time, never the one from before.
    A `note:` line in its `review-gaps` is not work for you: it stays a line,
    and no ticket is created from it — the person decides that at acceptance.
-5. It sent the work back with `note: fix-now:` lines and no blocker: close
+5. It sent the work back with `fix-now:` notes and no blocker: close
    exactly those, before the ticket ever reaches signoff, and no other note.
    Each closes in a few lines; one that would need a new rule, flag or
    branch is not fix-now — leave it, and say so in a note, rather than grow

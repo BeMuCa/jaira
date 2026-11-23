@@ -335,9 +335,13 @@ run it, or write the same yourself:
    the branch's head commit; a CI run for an older commit is `?`, a hunt for
    one is ❌, never ✅
 2. one table, a row per open note — the note in one plain sentence and one
-   mark: 🔴 blocker (wrong result, lost data, crash, security), 🟡 small edge
-   (one round of ten minutes), ⚪ known limit, 🔵 not from this ticket (and
-   where it gets fixed)
+   mark, in the four words the review lane writes and the cockpit colours
+   by: 🔴 blocker (`blocker:` — wrong result, lost data, crash, security),
+   🟡 edge (`note: edge:` — one round of ten minutes), ⚪ limit
+   (`note: limit:` — drawn on purpose), 🔵 elsewhere (`note: elsewhere:` —
+   pre-existing or another ticket's, and where it gets fixed). A note that
+   carries its word keeps it — the person sees that colour in the cockpit;
+   your table must not show another
 3. **one recommendation** in bold, with its reason, and both lines ready to
    paste — accept and give back
 

@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { acceptTreeFor, carrierFor, clipLines, commitNaming, commitsOf, executionOf, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, rephrasePrompt, snapshotOf, storyOf, type Waiting } from '../hooks/board.ts'
+import { acceptTreeFor, carrierFor, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, rephrasePrompt, snapshotOf, storyOf, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -4683,6 +4683,66 @@ describe('the verdict light', () => {
     expect([l.color, l.reasons.map(r => r.kind)]).toEqual(['yellow', ['question', 'staleHunt', 'dodOpen', 'byAPerson']])
     // In signoff, where Accept ends the work, the same open items stay red.
     expect(first({ ...asking, lane: 'signoff', acceptTo: 'done' }, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'dodOpen'])
+  })
+
+  // GY8T52: the review states each note's class after 'note:'; the light
+  // and the Acceptance pane read that word, so they show what the teamlead says.
+  test('a note colours the light only when its class is edge, or when it states none', () => {
+    const ok = { state: 'ok', at: 'abc1234' } as const
+    const cases: [string, string][] = [
+      ['note: limit: windows paths over 260 characters', 'green'],
+      ['note: elsewhere: load.go:41 accepts an empty file', 'green'],
+      ['note: pre-existing: load.go:41 accepts an empty file', 'green'],
+      ['note: edge: the size check is missing', 'yellow'],
+      ['note: edge: fix-now: the guard misses an empty name', 'yellow'],
+      ['note: fix-now: the guard misses an empty name', 'yellow'],
+      ['note: the size check is missing', 'yellow'],
+    ]
+    for (const [note, color] of cases) expect([note, lightOf({ ...ready, notes: [note] }, ok).color]).toEqual([note, color])
+  })
+
+  // Every way a review writes a finding, and the class the pane gives it: the
+  // stated word first; without one as before - the Explain note when it
+  // classes every finding, then pre-existing, then edge.
+  test('gapItems reads the class each finding states', () => {
+    const cases: [string, string | undefined, string][] = [
+      ['blocker: the header is written twice', 'blocker', 'blocker'],
+      ['**Blocker**: the header is written twice', 'blocker', 'blocker'],
+      ['note: edge: the size check is missing', 'edge', 'edge'],
+      ['note: limit: windows paths over 260 characters', 'limit', 'limit'],
+      ['note: elsewhere: load.go:41 accepts an empty file', 'elsewhere', 'elsewhere'],
+      ['- **note:** `limit`: windows paths', 'limit', 'limit'],
+      ['note: Limit: windows paths', 'limit', 'limit'],
+      ['note: pre-existing: load.go:41', 'elsewhere', 'elsewhere'],
+      ['note: preexisting: load.go:41', 'elsewhere', 'elsewhere'],
+      ['note: pre-existing load.go:41 accepts an empty file', 'elsewhere', 'elsewhere'],
+      ['note: fix-now: the guard', 'edge', 'edge'],
+      ['note: edge: fix-now: the guard', 'edge', 'edge'],
+      // A class word that is only the sentence's first word is no class.
+      ['note: edge cases are untested', undefined, 'edge'],
+      ['note: limits are not checked', undefined, 'edge'],
+      ['note: the size check is missing', undefined, 'edge'],
+    ]
+    for (const [line, stated, cls] of cases) {
+      expect([line, classOf(line.replace(/^- /, ''))]).toEqual([line, stated])
+      expect([line, gapItems(line)[0]?.cls]).toEqual([line, cls])
+    }
+  })
+
+  test('a stated class outranks the Explain note; an older mark or none still follows it', () => {
+    const gaps = 'note: limit: the paths\nnote: pre-existing: load.go\nnote: the size'
+    const explain = '[small edge] the paths\n[known limit] load.go\n[not this ticket] the size\n'
+    expect(gapItems(gaps, explain).map(i => i.cls)).toEqual(['limit', 'limit', 'elsewhere'])
+    expect(gapItems(gaps).map(i => i.cls)).toEqual(['limit', 'elsewhere', 'edge'])
+  })
+
+  test("a follow-up's title drops the class word and an older mark, once each", () => {
+    expect(followTitle('note: elsewhere: load.go accepts an empty file')).toBe('load.go accepts an empty file')
+    expect(followTitle('note: edge: fix-now: the guard misses an empty name')).toBe('the guard misses an empty name')
+    // Once each: a finding whose own words open with a class word keeps them.
+    expect(followTitle('note: edge: Limit: 0 means unlimited in jaira list')).toBe('Limit: 0 means unlimited in jaira list')
+    expect(followTitle('note: limit: Edge: lanes with one ticket')).toBe('Edge: lanes with one ticket')
+    expect(followTitle('note: pre-existing: load.go accepts an empty file')).toBe('load.go accepts an empty file')
   })
 
   // No hunt finished (jaira's null) is a look, never red: a ticket that

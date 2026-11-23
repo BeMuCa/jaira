@@ -1,6 +1,6 @@
 ---
 name: jaira-role-signoff
-description: "Read tickets waiting in signoff and put each to the person as one status line, one table that sorts every open note into blocker, small edge, known limit or not from this ticket, and one recommendation with both move lines ready to paste. Changes nothing itself. Invoked as /jaira-role-signoff [ticket-id...] by a person or a teamlead. Use when work sits in signoff and someone has to decide whether to accept it or give it back."
+description: "Read tickets waiting in signoff and put each to the person as one status line, one table that sorts every open note into blocker, edge, limit or elsewhere, and one recommendation with both move lines ready to paste. Changes nothing itself. Invoked as /jaira-role-signoff [ticket-id...] by a person or a teamlead. Use when work sits in signoff and someone has to decide whether to accept it or give it back."
 ---
 
 # Signoff: one decision per ticket, made easy
@@ -147,16 +147,23 @@ note the person has not seen — one row:
 |---|---|---|
 
 The sentence says what a user of the software would notice, not what the
-reviewer wrote. The mark is exactly one of:
+reviewer wrote. The mark is exactly one of four, named by the same word the
+review lane writes after `note:` and the cockpit colours the note by:
 
-- 🔴 **blocker** — a wrong result, lost data, a crash, or a security or
-  permission boundary that does not hold. Nothing else is a blocker
-- 🟡 **small edge** — a real gap in this ticket's own change that one round of
-  about ten minutes closes
-- ⚪ **known limit** — a boundary the ticket draws on purpose, written down; no
-  work follows from it
-- 🔵 **not from this ticket** — pre-existing, or another ticket's subject; say
+- 🔴 **blocker** (`blocker:`) — a wrong result, lost data, a crash, or a
+  security or permission boundary that does not hold. Nothing else is a blocker
+- 🟡 **edge** (`note: edge:`) — a real gap in this ticket's own change that
+  one round of about ten minutes closes
+- ⚪ **limit** (`note: limit:`) — a boundary the ticket draws on purpose,
+  written down; no work follows from it
+- 🔵 **elsewhere** (`note: elsewhere:`, or the older `note: pre-existing:`) —
+  not from this ticket: there before it, or another ticket's subject; say
   where it gets fixed (the ticket id, or "new ticket")
+
+A line that already carries one of these words takes that mark: the person's
+acceptance pane shows it, and a table that disagrees with the pane is the
+fault this rule exists against. A line without one is yours to mark; the pane
+shows it as 🟡, so say in its row when you mark it otherwise.
 
 Wording alone — a comment, a name, a sentence that could read better — is never
 🔴 and never 🟡. Leave it out of the table, or ⚪ if the reviewer insisted.
@@ -208,7 +215,7 @@ line comes first: the table only sorts notes, and a red check is no note.
      costs less than a follow-up ticket nobody picks up
    - two or more: **accept**, and hand back a ready follow-up ticket for the
      🟡 rows instead (below). A third round for edges is what this rule ends
-3. **Only ⚪ and 🔵 → accept.** A known limit and someone else's subject are
+3. **Only ⚪ and 🔵 → accept.** A limit and someone else's subject are
    no reason to hold this ticket.
 4. **The same class keeps coming back** — the third finding about, say, CRLF
    input, or error paths that lose the message: name the cause in one line under
