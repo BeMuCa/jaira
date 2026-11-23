@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:37:24Z
+updated-at: 2026-11-23T01:37:26Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -29,7 +29,7 @@ outcome-resolves: "2DSM0T: gate.Env.OutsideRepo backed by gitrepo.Repo.OutsideRe
 review-summary: none
 review-gaps: "none: round 3 replaced the IsRepo call with one exec (own, for LC_ALL=C and stderr - see critique note); IsRepo keeps its other callers (internal/cli/share.go, internal/cli/update.go), nothing orphaned"
 test-verdict: "fail: bughunt round 3 change blocker - a repo named via GIT_DIR that git cannot open (chmod 000, missing HEAD, path gone) is reported as 'not a git repository: <path>' and OutsideRepo answers true; vet/build rc=0, all scratch-board cases otherwise as intended"
-hunt-verdict: "fail: 1 change blocker (core/gitrepo/git.go:79 return !r.IsRepo())"
+hunt-verdict: "fail: 1 change blocker (core/gitrepo/git.go:82-86, explicit GIT_DIR that git cannot open)"
 round: 3
 back-from: testing
 back-by: lane
