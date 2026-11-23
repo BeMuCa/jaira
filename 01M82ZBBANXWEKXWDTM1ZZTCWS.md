@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:31:16Z
+updated-at: 2026-11-23T21:33:29Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -109,3 +109,4 @@ review-check: "1. go build -o /tmp/jaira-zz ./cmd/jaira  2. in a scratch repo: j
 - **2026-11-23 21:28 · Alexander Sacharov** — waiting: fresh review agent (run-lane.sh, herdr tab) since 22:28
 - **2026-11-23 21:31 · Alexander Sacharov** — review: done at 2880173dd
 - **2026-11-23 21:31 · Alexander Sacharov** — review: fix-now: (1) renderHelp lacks the 'i' key row; (2) blockerLines: a label standing alone shows the label - take the next non-empty line as the finding and assert the text in the test
+- **2026-11-23 21:33 · Alexander Sacharov** — review fix-now closed: (1) help row 'a f i' (view.go renderHelp) names 'i' - folded into the a/f row, a separate row pushed '@name' off the 60-row help in TestHelpExplainsEveryCardMark; (2) blockerLines: a label with no finding (bare, or only emphasis left) takes the next non-empty line, list marker dropped, unless that line is a blocker label itself; no next line keeps the label. Let stand: a lone label followed by a 'note:' line takes that line - telling finding kinds apart would be a new rule (edges-grow).
