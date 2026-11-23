@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:36:35Z
+updated-at: 2026-11-23T21:38:06Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -27,7 +27,7 @@ claimed-at: 2026-11-23T21:30:43Z
 outcome-what: "Sign-off screen (signoff and human) shows blocker lines, check, what, why, question, commits, DoD with proofs; 'i' appends the full detail pane body. Blocker detection uses the cockpit's MARKER/BLOCKER regexes; a label standing alone keeps its row as written."
 outcome-why: "Berk 2026-11-23: the check sat last under a page of account; rounds 2-3: bughunt found blocker forms hidden or emptied, and human-lane context/notes unreachable."
 outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSignOffKeepsBlockersOnTop (11 forms, 3 label-alone, 5 non-blockers), TestHumanLaneOpensTheDecisionScreen, TestDetailsCarryContextAndNotes; checked: concurrency n/a (render only), error paths n/a, unusual input - blocker forms, label alone, empty fields; permissions n/a"
-review-summary: "none"
+review-summary: "Delta review from 2880173dd to f0b0e438b. Both fix-now items of the first review are answered: the help screen now has an 'a f i' row naming 'i' (view.go renderHelp), and a blocker label with nothing after it (or only leftover emphasis) now shows the next non-empty line as its finding, list marker dropped, unless that line is another blocker label; with no next line the label stays as written (signoff.go blockerLines/nextFinding). The test asserts the shown text for 5 inputs. go vet and go test ./internal/tui pass."
 review-gaps: "after review give-back: nextFinding is one helper beside blockerLines, both share gapMarker/gapBlocker - nothing duplicated or orphaned. Left: regex mirrors hooks/board.ts (two languages); Details repeat Commits/DoD (whole detail pane by design)."
 test-verdict: "pass: go vet ./... + go test -race -count=1 ./... RC=0 at f0b0e438b; DoD 1-5 verified in the tree; screen exercised in tmux earlier, help row checked by TestHelpExplainsEveryCardMark; render-only, writes nothing"
 hunt-verdict: "pass: bughunt done at f0b0e438b - 0 blocker, 1 change edge (lone blocker label takes the next line whatever it is; note for the person), 0 pre-existing"
