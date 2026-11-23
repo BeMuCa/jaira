@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ5BFTK2EF9RNRJP35PV7F
 title: "jaira milestone create ohne --after sagt, dass der Milestone nicht auf der Roadmap steht"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Legt jemand einen Milestone ohne --after an, sagt die Ausgabe, dass er im Picker steht, nicht auf der Roadmap, und wie er dorthin kommt (jaira milestone set <name> --after ...)."
@@ -16,11 +16,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:21Z
-updated-at: 2026-11-23T01:21:19Z
+updated-at: 2026-11-23T01:21:21Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-35pv7f
 claimed-at: 2026-11-23T01:19:53Z
+outcome-what: "milestone create without --after now prints a second line: the milestone is in the picker (M), not on the roadmap (L), and 'jaira milestone set <name> --after <a,b>' puts it there. --after given (also --after \"\") and --json print nothing new. Test assertions added to TestCreateWritesGoalAndAfter; release note added."
+outcome-why: A milestone made without --after went to the M picker only; the person looked on the roadmap and thought it lost (O14). The hint was only in --help.
+outcome-resolves: "DoD 1 (hint with the set --after command) and DoD 2 (release note). Checked: concurrency (no new write, the line prints after the locked write returned), error paths (an error returns before the line), unusual input (normalised name like 'Round Two' -> round-two is the one printed; --after \"\" counts as placed), permissions n/a. go test not run per worker rules."
 ---
 
 # jaira milestone create ohne --after sagt, dass der Milestone nicht auf der Roadmap steht
