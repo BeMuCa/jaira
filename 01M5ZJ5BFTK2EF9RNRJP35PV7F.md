@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:21Z
-updated-at: 2026-11-23T01:24:28Z
+updated-at: 2026-11-23T01:24:31Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-35pv7f
@@ -29,7 +29,9 @@ round: 2
 back-from: critique
 back-by: lane
 back-count: 1
-review-gaps: "none — the change is one if-block (internal/cli/milestones.go:206-208) reusing the command's own writer and name; nothing duplicated, nothing unused. The test was folded into a table in TestCreateWritesGoalAndAfter rather than a new test, so no new helper."
+review-gaps: |-
+  note: the hint only offers --after <a,b>. For the first milestone on a board there is nothing to put after, so the right command is --after "" (swimlane top). Fix: add "(or --after \"\" for a swimlane of its own)" to the hint and the release note.
+  note: the --json path is not tested for leaving the hint out. A manual run confirms it is left out, because emit returns before the hint line (internal/cli/milestones.go:198). A one-line assertion would pin that.
 test-verdict: "pass: gofmt clean, go vet ./internal/cli RC=0, go build ./... RC=0; go test NOT run (house rule tonight: one suite before the PR, run by the main session) — TestCreateWritesGoalAndAfter is unverified until then. DoD 1 verified on a scratch board: 'milestone create q3' prints the hint line, '--after q1', '--after=' and --json do not, and the hinted 'milestone set q3 --after q1' succeeds (after: [XM44T3] in the file); 'Round Two' hints round-two. DoD 2: core/release/notes/35PV7F.md is one unwrapped '- ' line. Failure paths: duplicate name exit 3, bad name exit 2, unknown --after exit 5 with no file written, none print the hint. Two parallel 'create par': one exit 3, one created + hint, one file."
 hunt-verdict: "pass: bughunt done at 46f276515, 0 change, 0 pre-existing"
 ---
