@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:15:26Z
+updated-at: 2026-11-23T01:16:14Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
@@ -58,3 +58,4 @@ test-verdict: "pass: gofmt clean, go vet (internal/cli, core/lane, core/board) a
 - **2026-11-23 01:13 · BeMuCa** — critique round 1: the key skipped_lanes is taken - create --lane --json puts a []string of jumped lanes into the same ticketJSON payload (internal/cli/tickets.go:406), so one payload could carry two shapes under one key. Rename to optional_lanes_off. Let stand: SkippedAhead repeats Next's 4-line 'parked/question/terminal -> nothing' guard instead of sharing a helper - kept so Next stays untouched; both sit next to each other in core/lane/next.go.
 - **2026-11-23 01:13 · BeMuCa** — in-progress round 2: renamed to unchosen_lanes (the gate already calls an unticked option step 'not chosen', core/gate/gate.go CodeStepNotChosen). create --json keeps its own skipped_lanes untouched.
 - **2026-11-23 01:14 · BeMuCa** — critique round 2: the one finding (key clash with create --json skipped_lanes) is answered by the rename to unchosen_lanes; nothing left.
+- **2026-11-23 01:16 · BeMuCa** — bughunt: change: internal/cli/tickets.go:1725 - class: option name embedded unquoted in the printed 'enable' command; example: a lane with requires-option: "my step" (lane.go:365 only trims) prints 'jaira dod <id> --option my step', which ticks a new option 'my' and exits 0 while the lane stays off the path; ran: jaira dod 6BPZ6P --option my step (exit 0, '[x] my' added; could not get the spaced lane into unchosen_lanes on a scratch board, so the lane side is read). Edge, not a blocker: stock lanes have single-word options
