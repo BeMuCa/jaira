@@ -32,7 +32,7 @@ commits:
   - 07dbb35e8f53f1ab2704e6d690e5dc664216f625
   - 94792682d5ded521fb7f7f7eeed271561c6631fa
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-23T22:58:24Z
+updated-at: 2026-11-23T22:58:25Z
 updated-by: berkc
 claimed-by: berk-ca-423748
 claimed-at: 2026-11-03T23:32:10Z
@@ -119,3 +119,4 @@ F4 Epic-Etikett pro Board - A (Empfohlen) eigenes Ticket: das TUI zeigt heute ga
 - **2026-11-03 23:37 · berkc** — testing 04.11: gezeigt auf Scratch-Board (bare remote, HOME isoliert, Binary aus dem Branch): TUI Kopfzeile 'Auth v2 | Web | Road-1'; delta ohne Road steht in der Lane seines Vorgaengers gamma (Web); beta in zwei Roads (per git gepflanzt) wird von auth (aelter) gezeichnet. Beobachtet, kein Fehler dieses Tickets: Ctrl-U leert das Namensfeld nicht (Backspace geht); 'road ls' holt nicht selbst vom Remote - eine Road eines anderen Klons erscheint nach dem naechsten holenden Befehl (z.B. jaira list), im Fixture zeigte 'epic ls' ein frisches Epic ebenso nicht.
 - **2026-11-03 23:43 · berkc** — review (fresh context): read the whole diff of the 12 commits (count matches git log origin/HEAD..HEAD), vet + tests of touched packages green. No blocker. Notes: stale frontmatter definition-of-done text; no epic lost-race test after rebaseRef refactor; road ls does not fetch; Ctrl-U in name field; road/epic line-file duplication.
 - **2026-11-23 22:53 · berkc** — Merged origin/master (913 commits). Conflicts gitref.go/validate.go purely additive (roads + master's people ref / milestones_tracked). epic.go: master changed rebaseEpic (oursLease kept on requeue, y.fetch, queue with lease, dirty=true); ported into the shared rebaseRef in core/refsync/rebase.go so roads get the same fix; dropped refKind.record, now unused. No overlapping road work on master.
+- **2026-11-23 22:58 · berkc** — Abnahme 23.11.2026, nach Merge c7b4f9fe: review-check Schritt 4 stimmt nicht mit dem Verhalten ueberein. Mit b after a und a in Road web legt 'jaira road create other b' die Road an (exit 0), schon vor dem Merge (6b8b832b gleich). exit 3 kommt nur fuer einen Milestone, der direkt in einer anderen Road steht ('road create third a'). Offen fuer die Person: b haengt per after: in der Lane von web, steht aber in Road other - Fehler oder erlaubt?
