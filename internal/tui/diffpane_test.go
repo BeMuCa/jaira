@@ -606,56 +606,45 @@ func TestIDECommandFillsTheTemplate(t *testing.T) {
 }
 
 // An IDE that is not installed must not be started: 'o' opens the file in the
-// editor instead, and the diff title says which program was missing. The
-// missing program is reported by openInCode as exec.ErrNotFound, the way
-// exec.Cmd.Start reports it.
+// editor instead, and the diff title says which program was missing. Start
+// reports a bare program name that is not on PATH as exec.ErrNotFound, and a
+// path to a missing program (./ide, /opt/x/idea.sh) as fs.ErrNotExist.
 func TestOKeyFallsBackToTheEditorWhenTheIDEIsMissing(t *testing.T) {
-	orig := openInCode
-	openInCode = func(_ string, argv []string) error {
-		if argv[0] != "definitely-not-installed-xyz" {
-			t.Errorf("started %q, want the missing IDE", argv[0])
-		}
-		return &exec.Error{Name: argv[0], Err: exec.ErrNotFound}
+	cases := []struct {
+		name, prog string
+		err        func(prog string) error
+	}{
+		{"not on PATH", "definitely-not-installed-xyz", func(p string) error { return &exec.Error{Name: p, Err: exec.ErrNotFound} }},
+		{"missing path", "/opt/definitely-not-installed-xyz/ide", func(p string) error {
+			return &fs.PathError{Op: "fork/exec", Path: p, Err: fs.ErrNotExist}
+		}},
 	}
-	t.Cleanup(func() { openInCode = orig })
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			orig := openInCode
+			openInCode = func(_ string, argv []string) error {
+				if argv[0] != c.prog {
+					t.Errorf("started %q, want the missing IDE", argv[0])
+				}
+				return c.err(argv[0])
+			}
+			t.Cleanup(func() { openInCode = orig })
 
-	// After diffModel: it gives the model its own JAIRA_HOME, which is where the
-	// setting has to go.
-	m := diffModel(t, 160, "signoff")
-	if _, err := settings.Update(func(cur *settings.Settings) { cur.IDE = "definitely-not-installed-xyz {file}" }); err != nil {
-		t.Fatal(err)
-	}
-	m.diffDir = "/repo/worktree"
-	m.render()
-	_, cmd := m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
-	if cmd == nil {
-		t.Fatal("no editor command was returned for the fallback")
-	}
-	if out := stripANSI(m.render()); !strings.Contains(out, "definitely-not-installed-xyz not found — opened in ") {
-		t.Errorf("diff title does not say the IDE is missing:\n%s", out)
-	}
-}
-
-// A template that names the IDE by path fails Start with fs.ErrNotExist, not
-// exec.ErrNotFound, so 'o' must still fall back to the editor.
-func TestOKeyFallsBackToTheEditorWhenTheIDEPathIsMissing(t *testing.T) {
-	orig := openInCode
-	openInCode = func(_ string, argv []string) error {
-		return &fs.PathError{Op: "fork/exec", Path: argv[0], Err: fs.ErrNotExist}
-	}
-	t.Cleanup(func() { openInCode = orig })
-
-	m := diffModel(t, 160, "signoff")
-	if _, err := settings.Update(func(cur *settings.Settings) { cur.IDE = "/opt/definitely-not-installed-xyz/ide {file}" }); err != nil {
-		t.Fatal(err)
-	}
-	m.diffDir = "/repo/worktree"
-	m.render()
-	_, cmd := m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
-	if cmd == nil {
-		t.Fatal("no editor command was returned for the fallback")
-	}
-	if out := stripANSI(m.render()); !strings.Contains(out, "/opt/definitely-not-installed-xyz/ide not found — opened in ") {
-		t.Errorf("diff title does not say the IDE path is missing:\n%s", out)
+			// After diffModel: it gives the model its own JAIRA_HOME, which is where the
+			// setting has to go.
+			m := diffModel(t, 160, "signoff")
+			if _, err := settings.Update(func(cur *settings.Settings) { cur.IDE = c.prog + " {file}" }); err != nil {
+				t.Fatal(err)
+			}
+			m.diffDir = "/repo/worktree"
+			m.render()
+			_, cmd := m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
+			if cmd == nil {
+				t.Fatal("no editor command was returned for the fallback")
+			}
+			if out := stripANSI(m.render()); !strings.Contains(out, c.prog+" not found — opened in ") {
+				t.Errorf("diff title does not say the IDE is missing:\n%s", out)
+			}
+		})
 	}
 }

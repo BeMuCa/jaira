@@ -1,7 +1,7 @@
 ---
 id: 01M859K8Q9G0DZN4TH3J4BN68F
 title: Editor fuer E und IDE fuer o im Diff sind in den Settings einstellbar
-status: in-progress
+status: testing
 ready: true
 creator: berkc
 assignee: berkc
@@ -22,22 +22,19 @@ follows: 01M67RYAXEZG7QD2XJ37EH6Z0N
 commits:
   - 5343ff6936d48344258c3c15e3bab3a71111dce9
 created-at: 2026-11-23T22:49:30Z
-updated-at: 2026-11-23T23:27:16Z
+updated-at: 2026-11-23T23:29:32Z
 updated-by: berkc
 claimed-by: "w-4bn68f"
-claimed-at: 2026-11-23T23:25:48Z
+claimed-at: 2026-11-23T23:29:07Z
 outcome-what: "S has two new rows: Editor and IDE (o in the diff). Editor is the editor jaira opens every file in (E on a ticket, lane and board files); IDE is a template with {file} and {line} that o starts, default code -g {file}:{line}. Both are stored as editor and ide in settings.json and typed in place. o falls back to the editor, without a line, when the IDE program is missing (exec.ErrNotFound), and the diff title says so."
 outcome-why: "o was hard-wired to VS Code and E to VISUAL, EDITOR or git core.editor with no way to see or change either; people without VS Code or with another IDE could not open a diff line."
 outcome-resolves: "Editor and IDE configurable in settings with the old defaults kept; template fill keeps paths with spaces as one argument; missing IDE (exec.ErrNotFound from openInCode) falls back to the editor with a title message; tests for template, default, fallback and the settings rows; release note 4BN68F.md. Pending: person check of the TUI (dod item 6)."
-review-summary: "Full review at 5343ff693. settings.json gains 'editor' and 'ide' (core/settings: Editor, IDE, DefaultIDE='code -g {file}:{line}', IDETemplate). editorCommand now goes through editorChoice: settings editor first, then VISUAL, EDITOR, git core.editor, nano/vim/vi - so every editor launch (E, lane and board files) honours it. o in the diff builds argv from the IDE template (split on whitespace first, then {file}/{line} filled in per field, path appended when no {file}; no shell) and starts it detached; when Start fails with exec.ErrNotFound it runs the editor on the file via tea.ExecProcess and the diff title says '<prog> not found - opened in <editor>'. The S screen gets 'Editor' and 'IDE (o in the diff)' rows typed in place; the logbook-days edit was folded into the same open/buf/err state, typed text arrives via k.Text and paste. Footer hint now 'o open in IDE'. Three release-note lines. go build, go vet and go test ./internal/tui ./core/settings pass."
+review-summary: "none"
 round: 3
 back-from: review
 back-by: lane
 back-count: 1
-review-gaps: |-
-  note: edge: fix-now: internal/tui/diffpane.go openDiffRow falls back to the editor only on exec.ErrNotFound; an IDE template naming a program by path that does not exist (/opt/idea/bin/idea.sh {file}, ./ide {file}) fails Start with fs.ErrNotExist (probed: 'fork/exec ./nope: no such file or directory', errors.Is ErrNotFound=false), so o shows the error and opens nothing - DoD 3 case missed. Fix: also take the fallback on errors.Is(err, fs.ErrNotExist), plus a test faking that error through the openInCode recorder
-  note: limit: the IDE template and editor are split with strings.Fields, no quoting - a program path containing spaces cannot be configured (same as VISUAL/EDITOR today)
-  note: limit: the editor fallback opens the file without a line number, and the diff is not reloaded after the editor exits (pre-process decisions 4 and 7)
+review-gaps: "folded TestOKeyFallsBackToTheEditorWhenTheIDEPathIsMissing into TestOKeyFallsBackToTheEditorWhenTheIDEIsMissing as two subtests (were the same 20 lines but for the error and template; -11 lines); left the diffpane.go fallback condition and its comment as is (no duplication, nothing dead)"
 test-verdict: "pass: go build ./... && go vet ./internal/tui ./core/settings && go test ./internal/tui ./core/settings -count=1 green (RC=0, scoped per orchestrator, no full suite); DoD 1-5 verified in the tree (proof tests PASS -v); DoD 6 'seen by a person' left for the person, not ticked; failure path: settings home as a regular file, both parallel Updates refused with error, exit 1, no partial write; two parallel settings.Update writers both landed (editor and ide present); missing IDE program: exec.ErrNotFound confirmed for Start on a missing binary, template splits paths with spaces into one argument"
 hunt-verdict: "pass: bughunt done at 5343ff693, 2 change (edge, not blocker: notes for the review), 3 pre-existing (notes for the person; lost body update in external.go is the one to weigh), 0 filed"
 review-verdict: "accept: all five agent-checkable DoD items hold in the code and tests; one fix-now edge (path-qualified missing IDE skips the fallback) goes back once"
@@ -108,3 +105,6 @@ Let stand: editorChoice returning a source word (pre-process decision 5, setting
 - **2026-11-23 23:25 · berkc** — review: done at 5343ff693
 - **2026-11-23 23:25 · berkc** — review: fix-now: internal/tui/diffpane.go openDiffRow - take the editor fallback also on errors.Is(err, fs.ErrNotExist) (IDE template naming a missing program by path, e.g. ./ide {file}: Start returns 'no such file or directory', not exec.ErrNotFound), and add a test faking that error through the openInCode recorder
 - **2026-11-23 23:25 · berkc** — worker set stop-after-fix=true: review's one fix-now (fs.ErrNotExist fallback + test) is a few lines, no lock, no parser; lean round
+- **2026-11-23 23:27 · berkc** — fix-now round: openDiffRow fallback now also takes errors.Is(err, fs.ErrNotExist), for a template naming the IDE by path (./ide {file}). Start fails with a *fs.PathError there, not exec.ErrNotFound. Test TestOKeyFallsBackToTheEditorWhenTheIDEPathIsMissing fakes it through openInCode. DoD 3 proof re-ticked with the new condition and both tests. DoD 6 (seen by a person) untouched. Commit 922c7ef01. Verified: go build ./..., go vet ./internal/tui, go test ./internal/tui -count=1 all exit 0; gofmt -l empty. Not run: the rest of core/settings (not touched this round).
+- **2026-11-23 23:29 · berkc** — critique round 3 (lean, stop-after-fix): read only 922c7ef01 against review's fix-now (fs.ErrNotExist fallback + test) - addressed: openDiffRow falls back on exec.ErrNotFound or fs.ErrNotExist, test fakes a *fs.PathError. 29+/1- lines, no lock/parser, so critique and optimize in one pass. Let stand: a missing diffDir also yields fs.ErrNotExist from Start and would say '<prog> not found'; diffDir is the ticket worktree, normally present, not a DoD break. review-summary=none.
+- **2026-11-23 23:29 · berkc** — optimize round 3 (lean): only 922c7ef01. Pass 1: new test duplicated its sibling line for line -> one table test, cases 'not on PATH' (exec.ErrNotFound) and 'missing path' (*fs.PathError). Passes 2-4: nothing (fs import used, no dead branch, not a hot path). go vet ./internal/tui, go test ./internal/tui -count=1 ok, gofmt clean.
