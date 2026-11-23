@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:12:50Z
+updated-at: 2026-11-23T01:13:16Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
@@ -24,6 +24,7 @@ claimed-at: 2026-11-23T01:10:10Z
 outcome-what: "jaira show --json gains skipped_lanes: every unticked optional lane ahead of the ticket with lane, option and the 'jaira dod <id> --option <opt>' that turns it on; the agent block says so in one sentence"
 outcome-why: drivers skipped pre-process on tickets that needed a plan because next_lane walks past optional lanes silently (O11)
 outcome-resolves: 64BZSR
+review-summary: "internal/cli/tickets.go:406 create --json already writes skipped_lanes ([]string, lanes jumped over by create --lane) into the same ticketJSON payload; the new key collides with a different shape and meaning - rename the new field to optional_lanes_off (or similar) everywhere: tickets.go, json_test.go, announce.go, CLAUDE.md, AGENTS.md, release note"
 ---
 
 # jaira show nennt die optionalen Lanes, an denen next_lane vorbeigeht
