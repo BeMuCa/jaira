@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:13Z
-updated-at: 2026-11-23T01:29:56Z
+updated-at: 2026-11-23T01:30:05Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-dwrc0h
@@ -28,6 +28,8 @@ outcome-why: "Agenten hielten Goal/DoD nach dem Anlegen fuer unveraenderlich und
 outcome-resolves: "Alle drei DoD-Punkte; kein neuer Befehl noetig. Vier Kategorien: keine neue Logik, nur Text und ein Test; Nebenlaeufigkeit/Fehlerpfade/Rechte unveraendert, unuebliche Eingabe (Leerzeichen im set-Wert) auf Scratch-Board geprueft."
 review-summary: none
 review-gaps: "removed internal/cli/checklist_test.go TestDodAddKeepsExistingNumbersAndProofs: core/ticket/proof_test.go:115 TestAddItemAfterProofCarryingLastItem already proves the same (append lands after the proof-carrying last item, earlier numbers and proofs stay); DoD 2 proof repointed there. Nothing else: text only."
+test-verdict: "pass: gofmt clean, go vet (core/board, internal/cli, core/ticket) RC=0, build RC=0; go test not run by house rule (main session runs it). DoD 1 and 3 read in the tree (announce.go:57-61, create --help last paragraph); DoD 2 proof test core/ticket/proof_test.go:115 read, not run. Scratch board: set goal/context and dod --add/--text behave as documented; set on a missing id exits 5, dod --add with empty text exits 2, nothing written; two parallel dod --add both landed (3 items). Agent-file command part identical to jaira init output."
+hunt-verdict: "pass: bughunt done at 60387d0e0, 0 findings (docs-only change)"
 ---
 
 # Der Agent-Block sagt, wie man Goal, Kontext und DoD nach dem Anlegen aendert
