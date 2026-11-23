@@ -2,7 +2,7 @@
 id: 01M857RDEP36JX7Y3S52WFHPZT
 title: "Der Lane-Verlauf eines Boards ist als Graph zu sehen und einzustellen: Lanes als Knoten, Uebergaenge und Loops als Kanten, je Lane Agent, Modell und Anzahl Agenten"
 status: backlog
-ready: false
+ready: true
 creator: BeMuCa
 goal: "Eine Person sieht den Ablauf eines Boards als Graph - jede Lane ein Knoten, jeder Uebergang und jeder Loop (critique/optimize/testing zurueck nach in-progress) eine Kante mit ihrer Grenze - und stellt je Knoten ein, welcher Agent bzw. welches Modell die Lane laeuft und wie viele Agenten sie gleichzeitig bearbeiten (Fan-out), ohne Lane-Dateien von Hand zu editieren."
 context: |-
@@ -15,10 +15,15 @@ definition-of-done: "Brainstorm: Ort (TUI/web), was angezeigt und was eingestell
 tags:
   - tui
 blocked-by: []
-related: []
+related:
+  - 01M67K72RDJY2N2R2KQGATDG74
+  - 01M658C7SP4V29E95574CXH98W
+  - 01M6M72GP39ZAGPEKY6F403F8T
+  - 01M67K7GEZF694985EHTENCFVZ
+  - 01M58G28438KJJD3YDGM2B4KC9
 commits: []
 created-at: 2026-11-23T22:17:22Z
-updated-at: 2026-11-23T22:17:30Z
+updated-at: 2026-11-23T22:17:32Z
 assignee: BeMuCa
 updated-by: BeMuCa
 ---
