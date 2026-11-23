@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:20:28Z
+updated-at: 2026-11-23T21:20:32Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -77,3 +77,4 @@ hunt-verdict: "fail: bughunt done at 73d06b024 - change blocker: isBlockerLine m
 - **2026-11-23 21:19 · Alexander Sacharov** — bughunt: pre-existing: internal/tui/diffpane.go:202-210 (splitDiffGit) and :106-112 ('+++' path) - class: a path git prints quoted (non-ASCII, or containing a quote, backslash or tab) is kept with its quotes and octal escapes; the fallback diff core/gitrepo/git.go:149 (Repo.Diff, 'git show --patch' without -c core.quotePath=false, used when no branch carries the handle) quotes every non-ASCII name. Example: file 'ä.go' becomes header '"b/\303\244.go"' and 'o' opens a file that does not exist; blame: 766032e54 (EH6Z0N) and 29a6fbb83 - no ZZTCWS commit on the path, diffPaneShown's predicate unchanged; ran: git show --patch on a scratch repo with ä.go prints 'diff --git "a/\303\244.go" "b/\303\244.go"'
 - **2026-11-23 21:19 · Alexander Sacharov** — hunt report: 3 findings (2 change - 1 blocker, 1 edge - and 1 pre-existing), all as notes on ZZTCWS | read whole: internal/tui/signoff.go, internal/tui/diffpane.go, core/release/notes/ZZTCWS.md; model.go and view.go (2670/2084 lines) read along every path the change meets - modeDetail key handler, render/renderDetail/detailHints/detailBody/clipToWindow, follow-up split - not every line; test files read only for helpers | not checked: the blocker row inside the live TUI (confirmed at function level only); concurrency is moot here - the TUI is single-threaded and detailsFor/derivedFor/diffFor are memo fields on the model
 - **2026-11-23 21:19 · Alexander Sacharov** — bughunt: done at 73d06b024 - 3 findings (2 change, 1 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/ZZTCWS.md internal/tui/diffpane.go internal/tui/diffpane_test.go internal/tui/model.go internal/tui/owed_test.go internal/tui/signoff.go internal/tui/signoff_test.go internal/tui/tags_test.go internal/tui/view.go
+- **2026-11-23 21:20 · Alexander Sacharov** — testing -> in-progress. fix plan: (1) blocker detection ports the cockpit's MARKER + BLOCKER regexes (core/mod/builtin/jaira-cockpit/hooks/board.ts:340-345) so TUI and cockpit agree on what a blocker is; strip the 'blocker:' prefix in the top row (testing edge). (2) smaller design for the details: 'i' shows the full detail pane body (detailBody without its header) instead of a hand-picked list - context, notes, plan, follows, everything detailBody has, for human and signoff alike; drops the custom details code.
