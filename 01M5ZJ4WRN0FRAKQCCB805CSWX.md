@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:35:30Z
+updated-at: 2026-11-23T01:35:32Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -35,7 +35,8 @@ claimed-at: 2026-11-23T01:32:21Z
   proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:7-12 min_free_mb with comment (1-2 GB per -race build, 2026-10-27 crashes), JAIRA_MIN_FREE_MB
 - [x] jaira-teamlead/SKILL.md sagt, was der Teamlead tut, wenn spawn.sh ablehnt
   proof: core/role/builtin/jaira-teamlead/SKILL.md:237 wait, tell the person, --force only on their word
-- [ ] Ohne /proc/meminfo oder ohne MemAvailable (macOS, Git Bash) ueberspringt spawn.sh die Pruefung mit einer Zeile auf stderr und startet; nie ein Abbruch
+- [x] Ohne /proc/meminfo oder ohne MemAvailable (macOS, Git Bash) ueberspringt spawn.sh die Pruefung mit einer Zeile auf stderr und startet; nie ein Abbruch
+  proof: core/role/builtin/jaira-dispatcher/scripts/spawn.sh:130; extracted check with missing file and with no MemAvailable line -> one stderr line, rc=0
 - [ ] seen by a person: spawn.sh auf macOS oder unter Git Bash gestartet zeigt die Zeile, dass der Speicher nicht geprueft wurde, und oeffnet den Tab
 
 ## Options
