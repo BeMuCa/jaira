@@ -138,8 +138,26 @@ func Move(s *ticket.Store, env gate.Env, id string, req Request) (*Result, error
 		return &Result{Ticket: t, Refused: vs}, nil
 	}
 
+	// A lane that requires commits gets them written in the move itself, from
+	// the very derivation its gate just accepted: same function, same HEAD.
+	// Before this only a doorway's settle stamped, so a plain move into done
+	// passed the gate on derived commits and recorded none — and the logbook
+	// that stamped later often ran from a checkout that no longer reached the
+	// ticket's branch, and wrote an empty list.
+	var derived []string
+	if l, ok := env.Lanes.Get(req.To); ok && l.RequiresCommits && env.DeriveCommits != nil {
+		derived = env.DeriveCommits(t)
+	}
+
 	from := t.Status
 	t, err = s.Mutate(t.ID, func(t *ticket.Ticket) error {
+		if len(derived) > 0 {
+			merged := ticket.MergeCommits(derived, t.Commits)
+			if err := t.Doc().SetList(ticket.FieldCommits, merged); err != nil {
+				return err
+			}
+			t.Commits = merged
+		}
 		if claiming {
 			if err := t.Doc().SetScalar(ticket.FieldAssignee, req.Actor); err != nil {
 				return err
