@@ -25,7 +25,7 @@ related: []
 follows: 01M67K72RDJY2N2R2KQGATDG74
 commits: []
 created-at: 2026-11-23T22:43:41Z
-updated-at: 2026-11-23T23:00:07Z
+updated-at: 2026-11-23T23:00:10Z
 updated-by: BeMuCa
 claimed-by: worker-fspjp9
 claimed-at: 2026-11-23T22:56:02Z
@@ -57,7 +57,7 @@ claimed-at: 2026-11-23T22:56:02Z
 - [x] implement show --for-lane payload and text in internal/cli/flow.go; lanes show in internal/cli/tickets.go
 - [x] skill paragraphs in core/role/builtin/jaira-worker/SKILL.md and jaira-role-lane/SKILL.md, then add the new shipped.sha256 lines with scripts/shipped-history.sh --write
 - [x] template.go comment line, README paragraph beside max-rounds, release note core/release/notes/FSPJP9.md
-- [ ] gofmt, go vet -p 2 on touched packages, targeted tests only, then move to in-progress
+- [x] gofmt, go vet -p 2 on touched packages, targeted tests only, then move to in-progress
 
 ## Progress
 - **2026-11-23 22:57 · BeMuCa** — pre-process: agents has no runtime effect in jaira; facts.go left alone because the board note never shows lane agents. Default 1 is set in the parser so show prints 1 for an absent key. Lanes that write (outcome-what, plan) reject agents>1 at load, because N agents in one worktree collide.
