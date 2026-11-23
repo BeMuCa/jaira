@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { acceptTreeFor, carrierFor, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, rephrasePrompt, snapshotOf, storyOf, type Waiting } from '../hooks/board.ts'
+import { acceptTreeFor, carrierFor, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, rephrasePrompt, seenToTick, snapshotOf, storyOf, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -66,6 +66,8 @@ type World = {
   // `jaira note` with a give-back reason fails after the move went through.
   noteFails: boolean
   toasts: string[]
+  // The definition-of-done item whose `jaira dod` fails (DKMG91).
+  dodFails?: string
   // What `jaira whoami --json` says; undefined: it says nothing.
   me?: { identity: string; aliases: string[] }
   // The ticket bodies `jaira show --json` gives, by id.
@@ -373,6 +375,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'note' && w.noteFails && args[2]?.startsWith('Given back')) {
       return { value: { exitCode: 1, stdout: '', stderr: 'jaira: ticket file is locked', isStdoutTruncated: false, isStderrTruncated: false } }
     }
+    if (cmd === 'jaira' && args[0] === 'dod' && args[2] === w.dodFails) return { value: { exitCode: 3, stdout: '', stderr: 'jaira: the board is locked', isStdoutTruncated: false, isStderrTruncated: false } }
     if (cmd === 'jaira' && args[0] === 'whoami') return ok(w.me === undefined ? '' : JSON.stringify(w.me))
     if (cmd === 'jaira' && args[0] === 'show' && args.includes('--brief')) {
       const id = args[1]!
@@ -5639,6 +5642,60 @@ describe('what the person checks themselves', () => {
     await pane.press({ key: 'seen-MG677R-2' })
     await pane.press({ key: 'seen-MG677R-2' })
     expect(await texts(pane)).toContain('[ ] 2. seen by a person: the band shows the branch')
+  })
+
+  // The pane's list is read when it opens: what changed on the ticket since
+  // is read again before anything is written (bughunt 23.11., two findings).
+  const TWO = [SEEN[1], { n: 5, done: false, state: 'todo', text: 'seen by a person: the docs read well' }]
+  const ticked = async ($: Test$, w: World, items: unknown[]) => {
+    w.shows.MG677R = { title: 'cache key', dod_items: TWO }
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await pane.press({ key: 'seen-MG677R-2' })
+    await pane.press({ key: 'seen-MG677R-5' })
+    w.shows.MG677R = { title: 'cache key', dod_items: items }
+    await pane.press({ key: 'execute-MG677R' })
+    return pane
+  }
+
+  test('a refusal after some items were ticked names them instead of saying nothing changed', async ($, on) => {
+    const w = setUp(on)
+    w.dodFails = '5'
+    const pane = await ticked($, w, TWO)
+    expect(await texts(pane)).toContain('MG677R was not accepted; only definition-of-done item 2 was ticked as seen by you:\njaira: the board is locked')
+    expect(ran(w, 'jaira', 'move').filter(r => r[1] === 'MG677R')).toEqual([])
+  })
+
+  test('a gate refusing after the ticks names them too', async ($, on) => {
+    const w = setUp(on)
+    w.refusals = [...w.refusals, { code: 'needs_nonmodel_signal', message: 'criterion 1 is still open' }]
+    const pane = await ticked($, w, TWO)
+    expect(await texts(pane)).toContain('MG677R was not accepted; only definition-of-done items 2, 5 were ticked as seen by you:\ncriterion 1 is still open')
+  })
+
+  for (const [how, changed] of [['reworded', { ...TWO[1], text: 'seen by a person: the docs and the help read well' }], ['superseded', { ...TWO[1], state: 'superseded' }]] as const) {
+    test(`an item ${how} since the pane opened ticks nothing and accepts nothing`, async ($, on) => {
+      const w = setUp(on)
+      const pane = await ticked($, w, [TWO[0], changed])
+      expect(ran(w, 'jaira', 'dod')).toEqual([])
+      expect(ran(w, 'jaira', 'move').filter(r => r[1] === 'MG677R')).toEqual([])
+      expect(await texts(pane)).toContain('MG677R was not accepted, nothing was changed:\nthis item changed on the ticket since the pane opened - close it, open it again and look once more:\n- seen by a person: the docs read well')
+    })
+  }
+
+  test('an item ticked meanwhile keeps its own proof', async ($, on) => {
+    const w = setUp(on)
+    await ticked($, w, [TWO[0], { ...TWO[1], done: true, state: 'done', proof: 'seen by Berk' }])
+    expect(ran(w, 'jaira', 'dod').map(r => r[3])).toEqual(['2'])
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
+  })
+
+  test('seenToTick: open and unchanged ticks, done meanwhile skips, gone or changed stops', () => {
+    const shown = (items: unknown[]) => JSON.stringify({ dod_items: items })
+    const a = { n: 1, text: 'seen by a person: a', checked: true }
+    expect(seenToTick([a], shown([{ n: 1, done: false, state: 'todo', text: 'seen by a person:  a' }]))).toEqual({ tick: [1], changed: [] })
+    expect(seenToTick([a], shown([{ n: 1, done: true, state: 'done', text: 'seen by a person: a' }]))).toEqual({ tick: [], changed: [] })
+    expect(seenToTick([a], shown([]))).toEqual({ tick: [], changed: ['seen by a person: a'] })
   })
 
   test('executionOf waits for the items; a note to fix still gives back', () => {

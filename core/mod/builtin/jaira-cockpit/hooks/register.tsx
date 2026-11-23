@@ -5,7 +5,7 @@ import {
   acceptTreeFor, branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
-  clipLines, commitsOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, headPrompt, rephrasedOf, rephrasePrompt, seenItemsOf, seenProof, type SeenItem, standOf, storyOf,
+  clipLines, commitsOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, headPrompt, rephrasedOf, rephrasePrompt, seenItemsOf, seenProof, seenToTick, type SeenItem, standOf, storyOf,
   type Action, type Agent, type GapItem, type Story, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
@@ -1500,7 +1500,7 @@ async function execute($: EngineInterface, w: Waiting, typed: string, share: num
     if (items.length === 0) return giveBack($, w.id, w.lane, typed.trim(), share, () => closeAcceptance($))
     return giveBackWith($, w, items, typed.trim(), share, () => closeAcceptance($))
   }
-  const moved = await acceptWith($, w, items, e.asksWhy ? typed : '', why => refuse(`${t.refused(w.id)}\n${why}`), seen)
+  const moved = await acceptWith($, w, items, e.asksWhy ? typed : '', (why, ticked) => refuse(`${ticked.length === 0 ? t.refused(w.id) : t.refusedTicked(w.id, ticked)}\n${why}`), seen)
   if (moved) closeAcceptance($)
 }
 
@@ -1633,10 +1633,12 @@ async function giveBackWith($: EngineInterface, w: Waiting, items: readonly GapI
 // why: what the person typed to accept a blocker not fixed, which goes onto
 // the ticket as a decision of its own.
 // seen: the 'seen by a person' items the person ticked, each ticked on the
-// ticket before the gates run, the person named in its proof (DKMG91).
-async function acceptWith($: EngineInterface, w: Waiting, items: readonly GapItem[], why: string, refused: Refused, seen: readonly SeenItem[] = []): Promise<boolean> {
+// ticket before the gates run, the person named in its proof (DKMG91);
+// refused hears which of them were ticked before a later gate said no.
+async function acceptWith($: EngineInterface, w: Waiting, items: readonly GapItem[], why: string, refused: (why: string, ticked: readonly number[]) => Promise<void>, seen: readonly SeenItem[] = []): Promise<boolean> {
   const stand = await stillIn($, w, t.accept)
   if (stand === undefined) return false
+  const done: number[] = []
   return accept($, w, async dir => {
     const lines = decisionLines(items, await createFollowUps($, dir, w.id, stand.board, items))
     const notes = [...(lines === '' ? [] : [`Accepted from ${w.lane}: ${lines}`]), ...(why.trim() === '' ? [] : [`decision: ${t.acceptedDespite}: ${oneLine(why)}`])]
@@ -1644,10 +1646,15 @@ async function acceptWith($: EngineInterface, w: Waiting, items: readonly GapIte
       const noted = await jaira($, dir, ['note', w.id, note])
       if (!noted.ok) await fail($, t.noteOn(w.id), t.noteLost(w.id, noted.why, note))
     }
-  }, refused, seen.length === 0 ? undefined : async dir => {
-    for (const x of seen) {
-      const ticked = await jaira($, dir, ['dod', w.id, String(x.n), '--done', '--proof', seenProof(me?.[0])])
+  }, why => refused(why, done), seen.length === 0 ? undefined : async dir => {
+    const shown = await jaira($, dir, ['show', w.id, '--json'])
+    if (!shown.ok) return shown.why
+    const { tick, changed } = seenToTick(seen, shown.out)
+    if (changed.length > 0) return t.seenChanged(changed)
+    for (const n of tick) {
+      const ticked = await jaira($, dir, ['dod', w.id, String(n), '--done', '--proof', seenProof(me?.[0])])
       if (!ticked.ok) return ticked.why
+      done.push(n)
     }
     return undefined
   })

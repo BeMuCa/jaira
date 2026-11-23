@@ -76,6 +76,8 @@ export const t = {
   seenMissing: (id: string, texts: string[]) => `${id}: not accepted - ${texts.length === 1 ? 'one item is' : `${texts.length} items are`} still to check yourself and tick:\n${texts.map(x => `- ${x}`).join('\n')}`,
   notTerminal: (id: string, lane: string) => `${id} waits in ${lane}, which does not end the work: nothing to accept there. Mark a note fix, or type what is missing, to give it back.`,
   refused: (id: string) => `${id} was not accepted, nothing was changed:`,
+  refusedTicked: (id: string, ns: readonly number[]) => `${id} was not accepted; only definition-of-done item${ns.length === 1 ? '' : 's'} ${ns.join(', ')} ${ns.length === 1 ? 'was' : 'were'} ticked as seen by you:`,
+  seenChanged: (texts: string[]) => `${texts.length === 1 ? 'this item' : 'these items'} changed on the ticket since the pane opened - close it, open it again and look once more:\n${texts.map(x => `- ${x}`).join('\n')}`,
   explain: 'Explain',
   discuss: 'Discuss',
   more: (n: number) => `+${n} more`,

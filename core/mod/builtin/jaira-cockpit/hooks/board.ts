@@ -248,6 +248,23 @@ export function seenItemsOf(showJson: string): SeenItem[] {
     .map(i => ({ n: i.n!, text: oneLine(i.text), checked: false }))
 }
 
+// Which of the items the person ticked in the pane Accept still ticks, read
+// against the ticket as it is now: the pane's list was read when it opened,
+// and jaira dod --done overwrites whatever an item holds. One ticked
+// meanwhile keeps its own proof; one superseded, reworded or gone is changed,
+// and Accept ticks nothing then - the person saw another text.
+export function seenToTick(ticked: readonly SeenItem[], showJson: string): { tick: number[]; changed: string[] } {
+  const now = new Map((parse<{ dod_items?: Item[] }>(withoutWarnings(showJson))?.dod_items ?? []).map(i => [i.n, i]))
+  const tick: number[] = []
+  const changed: string[] = []
+  for (const x of ticked) {
+    const i = now.get(x.n)
+    if (i === undefined || i.state === 'superseded' || oneLine(i.text) !== x.text) changed.push(x.text)
+    else if (i.done !== true) tick.push(x.n)
+  }
+  return { tick, changed }
+}
+
 // What Accept writes as the proof of a 'seen by a person' item it ticks.
 export const seenProof = (who: string | undefined) => `seen by ${who?.trim() || 'a person'} in the cockpit`
 
