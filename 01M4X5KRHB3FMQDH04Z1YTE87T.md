@@ -1,7 +1,7 @@
 ---
 id: 01M4X5KRHB3FMQDH04Z1YTE87T
 title: "Zwei Worker treffen sich auf einem Join-Board und einigen sich, wie ihre Teile zusammenpassen"
-status: brainstorm
+status: human
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -19,10 +19,11 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:51Z
-updated-at: 2026-11-23T22:45:49Z
+updated-at: 2026-11-23T22:45:53Z
 updated-by: BeMuCa
 claimed-by: teamlead-lane-graph
 claimed-at: 2026-11-23T22:45:37Z
+question: "Join-Board (YTE87T): welche Form? A) Board 'join' mit Lanes vorschlagen -> antworten -> geeinigt, Loop max 3, danach human; Einigung als Notiz auf beiden Tickets, nur per Prompt (klein, fast kein Code). B) wie A plus Kommando 'jaira agree <join-id>' und Gate, das die Einigung auf beide Tickets schreibt und prueft (ein Kommando, ein Gate, Tests). C) kein Board, ein gemeinsames Ticket mit Notizen (am kleinsten, aber unsichtbar im Graph, keine Rundengrenze). Empfehlung: B, erst A bauen, dann agree und Gate. Details in der Brainstorm-Notiz."
 ---
 
 # Zwei Worker treffen sich auf einem Join-Board und einigen sich, wie ihre Teile zusammenpassen
