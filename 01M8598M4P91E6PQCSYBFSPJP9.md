@@ -25,7 +25,7 @@ related: []
 follows: 01M67K72RDJY2N2R2KQGATDG74
 commits: []
 created-at: 2026-11-23T22:43:41Z
-updated-at: 2026-11-23T22:59:49Z
+updated-at: 2026-11-23T22:59:52Z
 updated-by: BeMuCa
 claimed-by: worker-fspjp9
 claimed-at: 2026-11-23T22:56:02Z
@@ -51,7 +51,7 @@ claimed-at: 2026-11-23T22:56:02Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 - [x] read the max-rounds path end to end: lane.go parser 422-431, flow.go 750 and 815, tickets.go lanes show 1523 and 1536
-- [ ] failing tests in core/lane: default 1, 1 to 9 accepted, 0 -1 10 x 2.5 refused with file and key named, agents>1 refused on an outcome-what or plan lane
+- [x] failing tests in core/lane: default 1, 1 to 9 accepted, 0 -1 10 x 2.5 refused with file and key named, agents>1 refused on an outcome-what or plan lane
 - [ ] failing test in internal/cli: show --for-lane json agents 1 without key and 3 with key; text line only above 1; lanes show
 - [ ] implement agents in core/lane/lane.go: field next to MaxRounds, parser, equality; no change to facts.go (the board note never shows lane agents)
 - [ ] implement show --for-lane payload and text in internal/cli/flow.go; lanes show in internal/cli/tickets.go
