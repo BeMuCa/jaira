@@ -1,7 +1,7 @@
 ---
 id: 01M83NMV79RR9HHN2CCHVHGWQF
 title: "Cockpit-Accept führt den Move im Worktree der Branch aus, die die Commits des Tickets trägt, auch wenn ihr Name nicht die Ticket-ID ist"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -16,41 +16,47 @@ tags:
   - cockpit
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 9c9ea6cce049fd3731dbec75792d424ed97ec391
+  - f82525665539b8bb1f02f7904158bc9c216154cb
+  - 3e2816243dae2d27f629a24aab73660b10cff87c
+  - b4a9624aeb542206fda9361c728b357782e84675
+  - faaa19b2cd4bcccd0c8f2f527a72a155c74b6c35
 created-at: 2026-11-23T07:41:36Z
-updated-at: 2026-11-23T08:11:44Z
+updated-at: 2026-11-23T08:28:02Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-70439
-claimed-at: 2026-11-23T07:42:00Z
+claimed-by: DESKTOP-RFTCH11-48007
+claimed-at: 2026-11-23T08:13:18Z
 outcome-what: "Cockpit-Accept fuehrt den Move im Worktree der Branch aus, die die Commits des Tickets traegt (acceptTreeFor + ticketHere carried); mehrdeutig: kein Move, Kandidaten genannt. jaira move --to done nennt Branches mit Commits der ID, die HEAD nicht erreicht (gitrepo.BranchesNamingTicket, gate.Env.CommitsElsewhere)."
 outcome-why: "Accept lief immer im Haupt-Checkout und fand Commits auf anders benannten Branches (Nachbesserung auf feat/<anderes-ticket>) nicht; die Meldung sagte nur 'commit it', obwohl committet war."
 outcome-resolves: "VHGWQF: Accept-Fehler 'git has none for <ID>' bei Arbeit auf fremder Branch"
-review-summary: "Full review of 9c9ea6cce..b4a9624ae (first review). Cockpit: Accept (ticketHere with carriedTo) now reads 'git worktree list' once; without the ticket's own worktree it asks 'git log --branches --not HEAD' in the main checkout for the newest commit whose subject scope is the ticket's handle, then 'git branch --contains' that commit; one holder (default branch excluded) -> the move runs in that branch's worktree and the pulled ticket file stays there; several holders -> nothing moves and acceptAmbiguous names them with the board's terminal lane; holder without worktree, or no commit beyond HEAD -> main checkout as before. Branch names no longer decide for Accept; Give back/PR keep ticketBranch. Go: gitrepo.BranchesNamingTicket lists local branches holding commits naming the ID that HEAD does not reach (first 64 shas, one 'git branch --contains' call); gate.Env.CommitsElsewhere appends them to the requires-commits refusal, wired in CLI and TUI, asked only once DeriveCommits found nothing. Release note and shipped.sha256 added. go test (gate, gitrepo, cli, tui, shipped) and claude plugin test (476 pass) green."
+review-summary: "Delta review from b4a9624ae to faaa19b2c: the Go refusal of 'jaira move --to done' (core/gate/gate.go onBranches) now says 'run the move in the worktree of the branch that carries the work' for one and for several listed branches, and TestNeedsCommitsNamesBranchesElsewhere checks both wordings. The rest of the change, read whole in the previous review: Cockpit Accept runs the move in the worktree of the branch that holds the ticket's newest own commit beyond HEAD (one branch -> its worktree, several -> no move, candidates named), and the Go refusal names branches with commits naming the ID that HEAD does not reach (gitrepo.BranchesNamingTicket)."
 round: 5
 back-from: review
 back-by: lane
 back-count: 1
 review-gaps: |-
-  note: fix-now: core/gate/gate.go onBranches says 'run the move in that branch's worktree, or merge it first' also when it lists two or more branches (a stacked branch is always listed too) - say 'in the worktree of the branch that carries the work' or pick singular/plural by len(branches), and add the plural case to TestNeedsCommitsNamesBranchesElsewhere
-  note: the cockpit finds the carrier only by a subject scope 'type(<ID>):' (commitNaming), the Go hint by the ID anywhere in the message - a commit naming the ID only in its body or as 'fix(A, <ID>):' gets no carrier and the move runs in the main checkout, whose refusal then names the branch; deliberate per the critique note, known limit
-  note: the carrier worktree is another ticket's; the ticket file pulled there stays and rides with that ticket's next commit, also while another worker is busy in it - decided on the ticket ('wie von Hand'), known limit
+  note: the cockpit finds the carrier only by a subject scope 'type(<ID>):' (commitNaming), the Go hint by the ID anywhere in the message - a commit naming the ID only in its body gets no carrier and the move runs in the main checkout, whose refusal then names the branch; deliberate per the critique note, known limit
+  note: the carrier worktree is another ticket's; the ticket file pulled there stays and rides with that ticket's next commit - decided on the ticket ('wie von Hand'), known limit
   note: BranchesNamingTicket reads only the newest 64 shas - a branch holding only older commits of the ticket goes unnamed in the hint; text only
-test-verdict: "pass: round 3 - cockpit 476/476 incl. 'branches named after it do not pick the carrier' (fails on 3e2816243's rule); Go code unchanged since round 1 (go test ./... and -race green there)"
-hunt-verdict: "pass: round 3 at b4a9624ae, 0 findings in 9 modules"
-review-verdict: "accept: all four DoD items are met and tested; no blocker; one fix-now wording in the Go refusal for several branches"
-review-round: 4
+  note: not this ticket: the worktree holds an uncommitted jaira update to 0.6.2 (.jaira/lanes/*.md, AGENTS.md, CLAUDE.md) - commit it separately or drop it, it does not belong in VHGWQF's commits
+test-verdict: "pass: stop-after-fix round 5 - core/gate TestNeedsCommitsNamesBranchesElsewhere (singular and plural wording) and internal/cli Commits|Move green"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 5"
+review-verdict: "accept: delta review - the fix-now wording is closed and tested for one and several branches; all four DoD items met; no blocker"
+review-round: 5
 review-verdict-gaps: |-
-  note: fix-now: core/gate/gate.go onBranches says 'run the move in that branch's worktree, or merge it first' also when it lists two or more branches (a stacked branch is always listed too) - say 'in the worktree of the branch that carries the work' or pick singular/plural by len(branches), and add the plural case to TestNeedsCommitsNamesBranchesElsewhere
-  note: the cockpit finds the carrier only by a subject scope 'type(<ID>):' (commitNaming), the Go hint by the ID anywhere in the message - a commit naming the ID only in its body or as 'fix(A, <ID>):' gets no carrier and the move runs in the main checkout, whose refusal then names the branch; deliberate per the critique note, known limit
-  note: the carrier worktree is another ticket's; the ticket file pulled there stays and rides with that ticket's next commit, also while another worker is busy in it - decided on the ticket ('wie von Hand'), known limit
+  note: the cockpit finds the carrier only by a subject scope 'type(<ID>):' (commitNaming), the Go hint by the ID anywhere in the message - a commit naming the ID only in its body gets no carrier and the move runs in the main checkout, whose refusal then names the branch; deliberate per the critique note, known limit
+  note: the carrier worktree is another ticket's; the ticket file pulled there stays and rides with that ticket's next commit - decided on the ticket ('wie von Hand'), known limit
   note: BranchesNamingTicket reads only the newest 64 shas - a branch holding only older commits of the ticket goes unnamed in the hint; text only
+  note: not this ticket: the worktree holds an uncommitted jaira update to 0.6.2 (.jaira/lanes/*.md, AGENTS.md, CLAUDE.md) - commit it separately or drop it, it does not belong in VHGWQF's commits
 review-check: |-
   1. cd /home/alex/projects/.worktrees/jaira-vhgwqf
-  2. go test ./core/gate -run TestNeedsCommitsNamesBranchesElsewhere ./core/gitrepo -run TestBranchesNamingTicket -v - both PASS
-  3. cd core/mod/builtin/jaira-cockpit && claude plugin test . - 476 pass, 0 fail; the cases 'a ticket worked on another ticket's branch...', 'several branches hold its own commit...' and describe 'where Accept moves a ticket' are among them
-  4. live: commit fix(<ID>): x on a branch feat/<other> with its own worktree, leave master behind; from the main checkout run jaira move <ID> --to done - the refusal ends 'Commits naming <ID> sit on feat/<other>'
-  5. in the cockpit (claude --plugin-dir core/mod/builtin/jaira-cockpit) press Accept on that ticket in signoff - it lands in done, and the ticket file is modified in the feat/<other> worktree, not in the main checkout
-stop-after-fix: "true"
+  2. go test ./core/gate -run TestNeedsCommitsNamesBranchesElsewhere -v - PASS, cases one branch and two branches
+  3. go test ./core/gitrepo -run TestBranchesNamingTicket -v - PASS
+  4. cd core/mod/builtin/jaira-cockpit && claude plugin test . - 0 fail; describe 'where Accept moves a ticket' is among them
+  5. live: commit fix(<ID>): x on a branch feat/<other> with its own worktree; from the main checkout run jaira move <ID> --to done - the refusal ends 'Commits naming <ID> sit on feat/<other>: run the move in the worktree of the branch that carries the work, or merge it first'
+  6. in the cockpit (claude --plugin-dir core/mod/builtin/jaira-cockpit) press Accept on that ticket in signoff - it lands in done, and the ticket file is modified in the feat/<other> worktree, not in the main checkout
+stop-after-fix: ""
 ---
 
 # Cockpit-Accept führt den Move im Worktree der Branch aus, die die Commits des Tickets trägt, auch wenn ihr Name nicht die Ticket-ID ist
@@ -100,3 +106,14 @@ stop-after-fix: "true"
 - **2026-11-23 08:11 · Alexander Sacharov** — review: done at b4a9624ae
 - **2026-11-23 08:11 · Alexander Sacharov** — review: fix-now: core/gate/gate.go onBranches - 'that branch's worktree' when several branches are listed; word it for one or many and test the plural case
 - **2026-11-23 08:11 · Alexander Sacharov** — stop-after-fix=true set by worker: fix-now is one wording line in gate.go onBranches + test, no lock, no parser
+- **2026-11-23 08:12 · Alexander Sacharov** — waiting: review lane round 2 (fresh agent) since 09:12
+- **2026-11-23 08:13 · Alexander Sacharov** — review: done at faaa19b2c
+- **2026-11-23 08:14 · Alexander Sacharov** — report: Cockpit-Accept zieht im Worktree der Branch um, die den eigenen Commit jenseits HEAD haelt (mehrere: nichts bewegt, Kandidaten genannt); jaira move --to done nennt Branches mit Commits der ID | signoff, context 204k of 1000k, cache warm 60 min | offen: Annahme durch Alex; 3 known-limit notes + 1 not-this-ticket (uncommitted jaira update 0.6.2 in .jaira/lanes, AGENTS.md, CLAUDE.md); Branch gepusht, PR nicht geoeffnet
+- **2026-11-23 08:15 · Alexander Sacharov** — hunt report: 0 findings, nothing written | read whole: none; read as a diff since b4a9624ae: core/gate/gate.go (onBranches), core/gate/commits_test.go - only the message wording changed, no other caller or cockpit matcher quotes the old text (grep), go test ./core/gate -run TestNeedsCommits ok | nothing left unchecked
+- **2026-11-23 08:15 · Alexander Sacharov** — bughunt: done at faaa19b2c - 0 findings (0 change, 0 pre-existing) in 1 module, follow-up hunt since b4a9624ae; concurrency, error paths, input, permissions checked; files: .jaira/lanes/critique.md .jaira/lanes/in-progress.md .jaira/lanes/review.md .jaira/lanes/testing.md AGENTS.md CLAUDE.md core/gate/commits_test.go core/gate/gate.go core/gitrepo/derive.go core/gitrepo/derive_test.go core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/VHGWQF.md core/shipped/shipped.sha256 internal/cli/root.go internal/tui/model.go
+- **2026-11-23 08:24 · Alexander Sacharov** — Accepted from signoff: angenommen:
+- note: the cockpit finds the carrier only by a subject scope 'type(<ID>):' (commitNaming), the Go hint by the ID anywhere in the message - a commit naming the ID only in its body gets no carrier and the move runs in the main checkout, whose refusal then names the branch; deliberate per the critique note, known limit
+- note: the carrier worktree is another ticket's; the ticket file pulled there stays and rides with that ticket's next commit - decided on the ticket ('wie von Hand'), known limit
+- note: BranchesNamingTicket reads only the newest 64 shas - a branch holding only older commits of the ticket goes unnamed in the hint; text only
+- note: not this ticket: the worktree holds an uncommitted jaira update to 0.6.2 (.jaira/lanes/*.md, AGENTS.md, CLAUDE.md) - commit it separately or drop it, it does not belong in VHGWQF's commits
+- **2026-11-23 08:25 · Alexander Sacharov** — cockpit: accepted by the person, signoff -> done
