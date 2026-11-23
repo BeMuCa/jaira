@@ -214,7 +214,11 @@ after the first two.
 A new ticket belongs to nobody. Capturing and claiming are two acts, and the
 claim is what happens when someone pulls the ticket into work — moving an
 unassigned ticket assigns the mover. --mine is the opt-in for the case where you
-already know it is yours; --assignee wins over it.`,
+already know it is yours; --assignee wins over it.
+
+What create sets can be changed later: 'jaira set <id> goal=... context=...'
+rewrites the goal and the context, 'jaira dod <id> --add <criterion>' appends a
+definition-of-done item without renumbering the ones already there.`,
 		Args: minArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			s, err := openStore()

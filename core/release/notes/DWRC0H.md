@@ -1,0 +1,1 @@
+- To change a ticket after creating it, use `jaira set <id> goal=... context=...` for the goal and context and `jaira dod <id> --add "<criterion>"` for a new definition-of-done item, not a note; run `jaira update` to get this line into your CLAUDE.md and AGENTS.md, and see `jaira create --help`.

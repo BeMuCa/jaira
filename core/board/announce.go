@@ -54,6 +54,11 @@ const agentNote = "## Task tracking: jaira\n" +
 	"- a ticket you find while working another one follows on from it: on that\n" +
 	"  ticket's branch (`feat/a3k9qp`) `jaira create` sets `follows` to it by itself and\n" +
 	"  says so; `--follows none` when the new ticket is unrelated\n" +
+	"- a ticket changes after capture through the CLI, never through a note:\n" +
+	"  `jaira set <id> goal=\"<...>\" context=\"<...>\"` rewrites the goal and the\n" +
+	"  context, `jaira dod <id> --add \"<criterion>\"` appends a definition-of-done\n" +
+	"  item and `jaira dod <id> <n> --text \"<...>\"` rewords one; the numbers and\n" +
+	"  proofs of the items already there stay as they are\n" +
 	"- `jaira list --actionable --json` — everything that could be started right now\n" +
 	"- `jaira next --json` — the single next actionable ticket\n" +
 	"- `jaira tags` — the tags this board already uses, with how many open tickets\n" +
