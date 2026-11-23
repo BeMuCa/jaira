@@ -383,9 +383,8 @@ func New(s *ticket.Store) (*Model, error) {
 	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), projectRoot: project.Board(s.Root), darkBG: true, anim: true, animStart: time.Now()}
 	m.versionLine, m.releasePill = versionLine()
 	m.versionAt = time.Now()
-	m.me = identity.Current(s.Root)
 	// Mutations from the board record who made them, the same as the CLI's.
-	s.Actor = m.me
+	m.refreshPeople()
 	// And they are queued for the ticket's own ref, the same as the CLI's.
 	// Queued, not sent: nothing in the update loop may wait for a network, so
 	// the board files the write and a command with a route sends it.
@@ -395,8 +394,6 @@ func New(s *ticket.Store) (*Model, error) {
 	// decoded tickets; the CLI is one-shot and never asks for it.
 	s.EnableCache()
 	m.fullAt = time.Now()
-	m.myAliases = identity.Aliases(s.Root)
-	boardPeople.Store(identity.People(s.Root))
 	if err := m.reload(); err != nil {
 		return nil, err
 	}
@@ -424,15 +421,12 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 	m.Close()
 	m.store = s
 	m.projectRoot = project.Board(s.Root)
-	m.me = identity.Current(s.Root)
 	// Mutations from the board record who made them, the same as the CLI's.
-	s.Actor = m.me
+	m.refreshPeople()
 	m.refSync = newSyncer(s, m.me)
 	s.Recorder = m.refSync
 	s.EnableCache()
 	m.fullAt = time.Now()
-	m.myAliases = identity.Aliases(s.Root)
-	boardPeople.Store(identity.People(s.Root))
 	m.scroll = map[string]int{}
 	m.laneIdx, m.cardIdx = 0, 0
 	m.detail = nil

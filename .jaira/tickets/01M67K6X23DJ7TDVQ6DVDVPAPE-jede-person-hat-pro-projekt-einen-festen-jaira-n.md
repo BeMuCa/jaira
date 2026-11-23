@@ -1,7 +1,7 @@
 ---
 id: 01M67K6X23DJ7TDVQ6DVDVPAPE
 title: "Jede Person hat pro Projekt einen festen jaira-Namen, einmal abgefragt und lokal gespeichert; er ersetzt Git-Name und Aliasse"
-status: in-progress
+status: optimize
 ready: true
 creator: berkc
 assignee: Alexander Sacharov
@@ -21,7 +21,7 @@ related:
   - 01M5MNWJF240306ZVDA41K3RA8
 commits: []
 created-at: 2026-10-30T23:44:36Z
-updated-at: 2026-11-23T20:03:30Z
+updated-at: 2026-11-23T20:04:29Z
 updated-by: Alexander Sacharov
 outcome-what: "Neuer Ref refs/jaira/people (core/people) mit jaira people [alias|rename]; core/identity loest den Handelnden darueber auf; list/next/show/TUI zeigen und filtern unter dem jaira-Namen; snapshot sichert die Liste."
 outcome-why: "Dieselben Menschen standen unter mehreren Namen auf dem Board (BeMuCa/berkc, Alexander Sacharov/alex/AlSa); Filter und Eigentum zerfielen danach."
@@ -31,7 +31,7 @@ round: 3
 back-from: testing
 back-by: lane
 back-count: 1
-review-gaps: "core/identity Aliases: git user.name/user.email were each asked twice (currentIn and the alias list) - now read once and passed in. Left: identity.People reads the ref with one 'git show' instead of gitref.Repo.ReadPeople (two execs) on the hot identity path; people.same/containsFold mirror identity.Same because identity imports people, not the other way."
+review-gaps: "internal/tui/model.go: both board-open paths set me/Actor/myAliases/people by hand - now one call to refreshPeople, the same the fetch uses. Left as in round 1: identity.People one 'git show'; people.same mirrors identity.Same (import direction)."
 test-verdict: "pass: go vet + GOOS=windows vet green, race run of people/identity/snapshot/gitref/cli/tui RC=0, full suite RC=0 earlier this round; DoD 4-9 verified against their tests; scratch board with two clones + bare: alias arrives, whoami on the other clone acts as berkc by email; two parallel aliases from both clones both landed (p1, p2); remote gone -> exit 3, nothing written"
 hunt-verdict: "change: 2 findings - TUI keeps the people list/me from board open; gate refusal and updated-by/executed/note authors print stored names"
 ---
