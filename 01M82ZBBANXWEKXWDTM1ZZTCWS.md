@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:31:02Z
+updated-at: 2026-11-23T21:31:07Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -107,3 +107,4 @@ review-check: "1. go build -o /tmp/jaira-zz ./cmd/jaira  2. in a scratch repo: j
 - **2026-11-23 21:27 · Alexander Sacharov** — hunt report: 1 finding (1 change, edge, not a blocker), note on ZZTCWS | none read whole; read as a diff since 383b42d9e: internal/tui/signoff.go, internal/tui/signoff_test.go (the other 7 files have no diff) | did not compare with the cockpit's own handling of a lone label (hooks/board.ts is outside this change)
 - **2026-11-23 21:27 · Alexander Sacharov** — bughunt: done at 2880173dd - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since 383b42d9e; concurrency, error paths, input, permissions checked; files: core/release/notes/ZZTCWS.md internal/tui/diffpane.go internal/tui/diffpane_test.go internal/tui/model.go internal/tui/owed_test.go internal/tui/signoff.go internal/tui/signoff_test.go internal/tui/tags_test.go internal/tui/view.go
 - **2026-11-23 21:28 · Alexander Sacharov** — waiting: fresh review agent (run-lane.sh, herdr tab) since 22:28
+- **2026-11-23 21:31 · Alexander Sacharov** — review: done at 2880173dd
