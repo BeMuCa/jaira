@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:18:23Z
+updated-at: 2026-11-23T01:18:25Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
@@ -43,6 +43,7 @@ review-verdict-gaps: |-
   note: unusual input: the enable command pastes the option name unquoted (internal/cli/tickets.go:1725). A custom lane with requires-option "my step" would print a command that ticks "my". Fix: quote options outside [A-Za-z0-9._-]. pre-existing: the gate's refusal text has the same pattern at core/gate/gate.go:298; fix both together. Stock options are single words.
   note: the test does not cover the parked, question-lane and unknown-lane early returns of UnchosenAhead. They are read-only copies of Next's guard. Fix: add a blocked case and a human case to TestTicketJSONNamesTheUnchosenOptionalLanes.
   note: unchosen_lanes also lands in list/move/resume/create --json, because all of them build on ticketJSON. That is consistent with next_lane, but the release note mentions show only.
+review-check: "1. cd into a new empty directory and run: git init && git commit --allow-empty -m init && jaira init   2. jaira create probe --goal g --context c --dod d --json and note the handle it prints (say ABC123)   3. jaira show ABC123 --json | grep -A12 unchosen_lanes: you see two entries, brainstorm (option brainstorm) and pre-process (option planning), each with enable 'jaira dod ABC123 --option ...'   4. run the planning enable line exactly as printed   5. show --json again: only brainstorm is left in unchosen_lanes   6. jaira move ABC123 --to todo, then show --json: next_lane is pre-process and unchosen_lanes is []   7. open CLAUDE.md: the paragraph about next_lane now ends with the sentence naming unchosen_lanes and jaira dod <id> --option <name>"
 ---
 
 # jaira show nennt die optionalen Lanes, an denen next_lane vorbeigeht
