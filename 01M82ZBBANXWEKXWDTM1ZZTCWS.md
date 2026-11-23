@@ -1,7 +1,7 @@
 ---
 id: 01M82ZBBANXWEKXWDTM1ZZTCWS
 title: "Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts"
-status: testing
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Oeffnet eine Person ein Ticket in human, review oder signoff in der TUI, sieht sie oben in dieser Reihenfolge: So pruefst du (review-check), Was gemacht wurde (outcome what/why), Offene Frage (question, nur wenn eine da ist), die Code-Aenderungen und die DoD mit Proofs. Felder, die der Person bei der Entscheidung nicht helfen, stehen nicht mehr auf dieser Ansicht."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:20:32Z
+updated-at: 2026-11-23T21:20:37Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -31,6 +31,10 @@ review-summary: none
 review-gaps: "duplication: searched core/ and internal/ for a review-gaps prefix parser (blocker:/fix-now:/note:) - none, gapLines stays; atPersonsLane removed the copy of the lane test in diffPaneShown. dead code: none orphaned - firstNonEmpty still used 3 times, laneFields/owedRow/fieldRow still called from the details block. fluff: fixed view.go:134 comment that still said 'human checkpoint' for the wider predicate; left the banner/hint locals. cost: render-only, gapLines splits one short string per render - left."
 test-verdict: "pass: go vet + go test -race -count=1 ./... RC=0; DoD 1-5 verified in the tree; screen exercised in tmux on a scratch board (blocker on top, 'i' details); render-only, writes nothing"
 hunt-verdict: "fail: bughunt done at 73d06b024 - change blocker: isBlockerLine misses '1. blocker:', '**Blocker**:', '`blocker`:', 'blocker :' (cockpit's BLOCKER regex counts them); change edge: human-lane ticket loses context and Progress notes; 1 pre-existing (quoted git paths in diffpane, EH6Z0N's subject - note for the person)"
+round: 2
+back-from: testing
+back-by: lane
+back-count: 1
 ---
 
 # Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts
