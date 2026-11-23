@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:36:58Z
+updated-at: 2026-11-23T01:38:05Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -59,3 +59,4 @@ test-verdict: "pass: go vet + go build ./... green; go test not run by house rul
 - **2026-11-23 01:35 · BeMuCa** — run-lane.sh: spawn.sh lief dort unter set -e in einer Zuweisung, sein Exit 3 waere als run-lane-Exit 3 (= Timeout, Worker laeuft noch, keinen zweiten starten) gelesen worden. Daher bildet run-lane.sh spawns 3 auf 6 ab (nichts gestartet); Dispatcher- und Worker-SKILL nennen 6. Geprueft mit Stub-spawn.sh: 3->6, 1->1. spawn.sh selbst wurde nicht echt ausgefuehrt (oeffnet Tabs; vom Klassifizierer verweigert) - das --force-Parsing ist nur gelesen, die Pruefung als ausgeschnittener Block getestet.
 - **2026-11-23 01:36 · BeMuCa** — critique: nichts. Erwogen und stehen gelassen: (a) Pruefung in run-lane statt spawn.sh - nein, Teamlead und Cockpit rufen spawn.sh direkt; (b) JAIRA_MIN_FREE_MB=0 neben --force doppelt - nein, 0 gilt fuer eine ganze Sitzung/die Tests, --force fuer einen Aufruf; (c) Zahlenpruefung des Env-Werts - bleibt, sonst wuerde [ -gt ] mit Text die Pruefung still ueberspringen.
 - **2026-11-23 01:36 · BeMuCa** — testing: pause - bughunt laeuft im Hintergrund auf 12cccd2, test-verdict steht; hunt-verdict fehlt noch.
+- **2026-11-23 01:38 · BeMuCa** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/run-lane.sh:79-83 - class: spawn.sh runs under set -e, so any failing command inside it (herdr/hc via herdr-hc.sh, jaira json get) leaves with its own exit code, and run-lane maps 3 to 6 and passes every other code through unmapped, where 3/4/5/6 already mean worker states; the new 6 mapping only covers the one code spawn.sh uses on purpose. example 1: a herdr 'pane run' that exits 3 after 'tab create' made a tab -> run-lane exits 6 'nothing was started', the dispatcher waits and starts a second tab beside the first; example 2 (older, same class): tab create answering JSON without result.root_pane.pane_id -> jaira json get exits 5 -> run-lane exits 5 'the worker stopped on a question' with no question on the ticket. Fix the class: give spawn.sh's deliberate memory refusal a code nothing else produces, or map every non-zero spawn rc other than the memory refusal to one 'spawn failed' code. Not a blocker: whether the real herdr/hc ever exit 3 or 4 was not checked. ran: stub herdr + copies of spawn.sh/run-lane.sh in a scratch repo, run-lane.sh --no-worktree TST001 critique (pane run exit 3 -> rc=6, tab create logged; pane_id missing -> rc=5)
