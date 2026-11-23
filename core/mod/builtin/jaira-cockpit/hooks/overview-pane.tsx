@@ -269,10 +269,11 @@ export function drawOverview({ Box, Button, Text }: ElementTable, view: Overview
       <Box key={key} flexDirection="row" flexWrap="wrap" columnGap={2} marginTop={1}>
         <Button key={allKey} label={w.everybody} variant={idle ? 'primary' : undefined} dimColor={!idle} onPress={all} />
         {items.map(id => {
+          const on = f.only.includes(id)
           const out = f.not.includes(id)
           const label = out ? `✕ ${id}` : id
           return (
-            <Button key={`${prefix}-${id}`} label={label} variant={f.only.includes(id) ? 'primary' : undefined} dimColor={!out && !f.only.includes(id)} onPress={() => pick(id)}>
+            <Button key={`${prefix}-${id}`} label={label} variant={on ? 'primary' : undefined} dimColor={!on && !out} onPress={() => pick(id)}>
               <Text color={out ? 'error' : look(id)}>{label}</Text>
             </Button>
           )

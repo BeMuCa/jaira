@@ -1,7 +1,7 @@
 ---
 id: 01M845PACJSY9V5W6ZY096E1Z4
 title: "Cockpit-Log-Filter: ein Chip schaltet ein, aus und auf 'außer'"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "In den Filterzeilen des Log-Fensters (Personen und Lanes) lässt sich jeder Chip auch ausschließen, damit 'alles außer X', 'alles außer X und Y' und 'nur A, aber nicht B' mit Klicks gehen."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T12:22:01Z
-updated-at: 2026-11-23T12:29:31Z
+updated-at: 2026-11-23T12:31:54Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-75968
@@ -27,6 +27,8 @@ claimed-at: 2026-11-23T12:22:34Z
 outcome-what: "Log filter chips in the cockpit cycle off → chosen → left out (✕, red) → off; each row's state is {only, not}; All clears both"
 outcome-why: "'everything except done' needed one click per other lane; the maintainer chose a per-chip cycle on 23.11."
 outcome-resolves: 96E1Z4 DoD 1-6
+review-summary: none
+review-gaps: "hoisted f.only.includes(id) into 'on' in filterRow (was computed twice); considered: no other filter cycle in the mod to reuse, toggled() removed with its last callers, no dead imports; left the local 'set' helper (two callers, names the union)"
 ---
 
 # Cockpit-Log-Filter: ein Chip schaltet ein, aus und auf 'außer'
@@ -34,7 +36,7 @@ outcome-resolves: 96E1Z4 DoD 1-6
 ## Definition of Done
 
 - [x] Ein Chip durchläuft per Klick: aus -> eingeschlossen -> ausgeschlossen -> aus; der ausgeschlossene Zustand ist am Chip sichtbar (✕ vor dem Namen, andere Farbe)
-  proof: core/mod/builtin/jaira-cockpit/hooks/overview.ts:208 cycled; core/mod/builtin/jaira-cockpit/hooks/overview-pane.tsx:266; test 'a chip cycles off, chosen, left out and off again'
+  proof: core/mod/builtin/jaira-cockpit/hooks/overview.ts:208 cycled; hooks/overview-pane.tsx:266 filterRow; test 'a chip cycles off, chosen, left out and off again'
 - [x] Nur Ausschlüsse: gezeigt wird alles außer den ausgeschlossenen; mehrere Ausschlüsse gehen
   proof: core/mod/builtin/jaira-cockpit/hooks/overview.ts:216 passes; test 'left out alone, the Log shows everything else, several left out at once'
 - [x] Ein- und Ausschlüsse gemischt: gezeigt wird, was eingeschlossen und nicht ausgeschlossen ist; ein Eintrag wird über Person und Lane zugleich gefiltert
@@ -60,3 +62,4 @@ outcome-resolves: 96E1Z4 DoD 1-6
 - **2026-11-23 12:23 · Alexander Sacharov** — open decisions: none — variant 'cycle per chip' decided by maintainer in context. settled myself: excluded chip = '✕ name' in theme color 'error' with strikethrough; state per row becomes {only, not} (session atom, no migration needed)
 - **2026-11-23 12:23 · Alexander Sacharov** — edges: an excluded chip with no event left must keep its button (like an included one) so it can be cycled back; filter state is session-only, no on-disk format change
 - **2026-11-23 12:29 · Alexander Sacharov** — done differently than noted: no strikethrough — the mod's Text has no such prop in use anywhere; '✕ ' prefix + theme colour 'error' carry it. Three older Log tests changed: a second press now leaves out instead of clearing (test 3 presses twice more).
+- **2026-11-23 12:29 · Alexander Sacharov** — critique: none — pure cycled/passes beside pickOf in overview.ts (same home as other pure Log helpers); register.tsx only swaps toggled for cycled; no existing exclude pattern in the mod (grep exclud/negat: only board.ts verdict wording, unrelated). AGENTS.md, CLAUDE.md, .jaira/lanes/*.md were modified in the worktree by a jaira regeneration, not by this ticket — left uncommitted on purpose.
