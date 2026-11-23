@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:14:50Z
+updated-at: 2026-11-23T01:14:57Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
@@ -37,7 +37,7 @@ review-gaps: "removed the nil-lanes guard in unchosenLanesJSON (ticketJSON alrea
 ## Definition of Done
 
 - [x] jaira show <id> --json hat ein Feld, das die uebersprungenen optionalen Lanes und den Befehl zum Einschalten nennt
-  proof: internal/cli/tickets.go:1806 unchosen_lanes via unchosenLanesJSON <- lane.Set.UnchosenAhead (core/lane/next.go); TestTicketJSONNamesTheUnchosenOptionalLanes; scratch board: backlog lists brainstorm+pre-process with enable lines, after dod --option planning only brainstorm, and next_lane from todo becomes pre-process
+  proof: internal/cli/tickets.go:1807 unchosen_lanes via unchosenLanesJSON <- lane.Set.UnchosenAhead (core/lane/next.go); TestTicketJSONNamesTheUnchosenOptionalLanes; scratch board: backlog lists brainstorm+pre-process with enable lines, after dod --option planning only brainstorm, and next_lane from todo becomes pre-process
 - [x] Der Agent-Block nennt --option in einem Satz
   proof: core/board/announce.go:318 (and the same sentence in CLAUDE.md/AGENTS.md)
 - [x] Release-Notiz in core/release/notes/<ID>.md
