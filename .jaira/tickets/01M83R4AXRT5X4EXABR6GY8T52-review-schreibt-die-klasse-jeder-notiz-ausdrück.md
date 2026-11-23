@@ -18,13 +18,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T08:25:01Z
-updated-at: 2026-11-23T08:34:40Z
+updated-at: 2026-11-23T08:37:05Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-27805
 claimed-at: 2026-11-23T08:25:28Z
 outcome-what: "review lane writes note: edge:/limit:/elsewhere: beside blocker:; cockpit classOf reads that word for the Acceptance pane and the light; signoff/teamlead skills name the same four words"
 outcome-why: "the cockpit showed every non-blocker note as yellow while the teamlead classed them by meaning, so both showed different colours for the same notes"
 outcome-resolves: "teamlead, signoff table and cockpit show one class per note; limit/elsewhere notes no longer turn the light yellow"
+review-summary: "core/mod/builtin/jaira-cockpit/hooks/board.ts: NOTE_CLASS and OLD_MARK both match pre-existing/fix-now, WORD_CLASS carries each word twice, and gapItems re-tests OLD_MARK to tell a firm class from an old mark. Simpler: NOTE_CLASS only for edge|limit|elsewhere (the firm words), OLD_MARK for the two old marks, key normalised by dropping '-'; gapItems takes the stated class when it is a blocker or NOTE_CLASS matched."
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Review schreibt die Klasse jeder Notiz ausdrücklich, und Cockpit, Abnahme und Teamlead lesen dieselbe Klasse
@@ -54,3 +59,4 @@ outcome-resolves: "teamlead, signoff table and cockpit show one class per note; 
 - **2026-11-23 08:26 · Alexander Sacharov** — decision (worker, nothing open for the person): format: 'blocker:' bleibt wie heute (Move-Gate und BLOCKER-Regex lesen es); Notizen schreiben 'note: edge:', 'note: limit:', 'note: elsewhere:'. 'note: pre-existing:' und 'note: fix-now:' bleiben gültig und zählen als elsewhere bzw. edge; fix-now kombiniert als 'note: edge: fix-now:'. Ein ausdrückliches Präfix schlägt die Explain-Zuordnung nach Position; ohne Präfix wie bisher (Explain, sonst pre-existing->elsewhere, sonst edge).
 - **2026-11-23 08:33 · Alexander Sacharov** — in-progress: .jaira/lanes/*.md, AGENTS.md und CLAUDE.md waren nach dem Claim im Worktree verändert (jaira-Block 0.6.2 / Lanes aktualisiert, nicht von mir) - gehören nicht in diesen Commit, bleiben liegen. Explain-Notiz überstimmt eine ausdrückliche Klasse (edge/limit/elsewhere) nicht mehr; pre-existing:/fix-now: und Notizen ohne Klasse folgen ihr weiter wie bisher (Test 'a stated class outranks the Explain note').
 - **2026-11-23 08:33 · Alexander Sacharov** — waiting: go test ./... (background shell b64230bz3) since 09:33
+- **2026-11-23 08:35 · Alexander Sacharov** — critique: board.ts classOf - split the regexes by meaning (NOTE_CLASS = firm edge|limit|elsewhere, OLD_MARK = pre-existing|fix-now), one WORD_CLASS entry per word, gapItems decides firm by NOTE_CLASS instead of a negated OLD_MARK test

@@ -802,23 +802,23 @@ export type Decided = { choice: Choice; follow?: string }
 // A finding as the review lane writes it: 'blocker:' or 'note:', bare or in
 // markdown emphasis; 'note: pre-existing:' is a fault this change did not make.
 const PREFIXED = /^[*_`]*\s*(blocker|note)\s*[*_`]*\s*:/i
-// The class a note states itself, right after 'note:' (GY8T52): 'edge',
-// 'limit' or 'elsewhere' - the four words the review lane, the signoff role
-// and the teamlead share. 'pre-existing' is an older way to say elsewhere,
-// 'fix-now' a small edge of this change.
-const NOTE_CLASS = /^[*_`]*\s*note\s*[*_`]*\s*:[\s*_`]*(edge|limit|elsewhere|pre-?existing|fix-?now)[\s*_`]*(?::|$)/i
-// The two older marks: they class a note too, but an Explain note that
-// classes every finding still overrides them, as it did before the four words.
+// The class a note states itself, right after 'note:' (GY8T52): edge, limit
+// or elsewhere - the four words, with 'blocker:', that the review lane, the
+// signoff role and the teamlead share. It outranks the Explain note.
+const NOTE_CLASS = /^[*_`]*\s*note\s*[*_`]*\s*:[\s*_`]*(edge|limit|elsewhere)[\s*_`]*(?::|$)/i
+// The two older marks: 'pre-existing' is elsewhere, 'fix-now' a small edge.
+// An Explain note that classes every finding still overrides them, as it did
+// before the four words.
 const OLD_MARK = /^[*_`]*\s*note\s*[*_`]*\s*:[\s*_`]*(pre-?existing|fix-?now)\b/i
-const WORD_CLASS: Record<string, NoteClass> = { edge: 'edge', limit: 'limit', elsewhere: 'elsewhere', preexisting: 'elsewhere', 'pre-existing': 'elsewhere', fixnow: 'edge', 'fix-now': 'edge' }
+const WORD_CLASS: Record<string, NoteClass> = { edge: 'edge', limit: 'limit', elsewhere: 'elsewhere', preexisting: 'elsewhere', fixnow: 'edge' }
 
-// The class a finding carries in its own words: 'blocker:', or a class word
-// after 'note:'. Undefined for a note without one - an older review's - which
-// the caller classes as before.
+// The class a finding carries in its own words: 'blocker:', a class word
+// after 'note:', or an older mark. Undefined for a note without any - an
+// older review's - which the caller classes as before.
 export function classOf(text: string): NoteClass | undefined {
   if (BLOCKER.test(text)) return 'blocker'
   const m = NOTE_CLASS.exec(text) ?? OLD_MARK.exec(text)
-  return m ? WORD_CLASS[m[1]!.toLowerCase()] : undefined
+  return m ? WORD_CLASS[m[1]!.toLowerCase().replace('-', '')] : undefined
 }
 
 // What each class starts as: a blocker fixed now, every other note accepted
@@ -853,7 +853,8 @@ export function gapItems(gaps: string | undefined, explainText?: string, decided
   const explained = explainText === undefined ? [] : explanationOf(explainText).parts.flatMap(p => (p.kind === 'note' ? [p.cls] : []))
   return texts.map((text, i) => {
     const stated = classOf(text)
-    const cls: NoteClass = stated === 'blocker' || (stated !== undefined && !OLD_MARK.test(text)) ? stated : explained.length === texts.length ? explained[i]! : stated ?? 'edge'
+    const firm = BLOCKER.test(text) || NOTE_CLASS.test(text)
+    const cls: NoteClass = firm ? stated! : explained.length === texts.length ? explained[i]! : stated ?? 'edge'
     const earlier = decided?.get(text)
     if (earlier === undefined) return { text, cls, choice: PRESELECTED[cls] }
     return { text, cls, choice: earlier.choice, earlier: earlier.choice, ...(earlier.follow !== undefined ? { follow: earlier.follow } : {}) }
