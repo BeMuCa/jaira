@@ -1249,7 +1249,10 @@ func (y *Syncer) saveSeen(s seen) {
 		return
 	}
 	if b, err := json.MarshalIndent(s, "", "  "); err == nil {
-		_ = os.WriteFile(y.SeenPath, append(b, '\n'), 0o644)
+		// Atomic: a background fetch writes this while a foreground one may
+		// read it, and a torn read parses as empty — losing the departures
+		// this record exists to keep.
+		_ = ticket.WriteAtomic(y.SeenPath, append(b, '\n'))
 	}
 }
 

@@ -50,4 +50,18 @@ func TestAFailedRefListingReportsNoDepartures(t *testing.T) {
 	if !strings.Contains(w.String(), "could not check for tickets taken off the board elsewhere") {
 		t.Errorf("the failed listing was not said: %q", w.String())
 	}
+
+	// whoami's file-only count reads the same listing: it must not answer
+	// silently either way — neither "every file" nor a bare 0.
+	s, err := ticket.At(grace)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w.Reset()
+	if n := fileOnlyCount(s, true, &w); n != 0 {
+		t.Errorf("a failed listing counted %d file(s) as on no ref", n)
+	}
+	if !strings.Contains(w.String(), "could not count the tickets that are on no ref") {
+		t.Errorf("whoami's failed listing was not said: %q", w.String())
+	}
 }
