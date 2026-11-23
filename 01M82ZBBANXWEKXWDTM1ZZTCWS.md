@@ -1,7 +1,7 @@
 ---
 id: 01M82ZBBANXWEKXWDTM1ZZTCWS
 title: "Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Oeffnet eine Person ein Ticket in human, review oder signoff in der TUI, sieht sie oben in dieser Reihenfolge: So pruefst du (review-check), Was gemacht wurde (outcome what/why), Offene Frage (question, nur wenn eine da ist), die Code-Aenderungen und die DoD mit Proofs. Felder, die der Person bei der Entscheidung nicht helfen, stehen nicht mehr auf dieser Ansicht."
@@ -19,11 +19,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:14:02Z
+updated-at: 2026-11-23T21:14:16Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
 claimed-at: 2026-11-23T20:54:57Z
+outcome-what: "Sign-off screen (signoff and now also human) shows blocker lines from review-gaps, check, what, why, question, commits, DoD with proofs; problem, resolves, summary, verdict, remaining gaps, tags and board lane fields moved behind 'i' (details block, per ticket via Model.detailsFor). atPersonsLane() is the one predicate for the screen and EH6Z0N's diff pane; accept/follow-up stay signoff-only."
+outcome-why: The check sat last under a page of account that does not help the decision (Berk 2026-11-23); a ticket in human opened to the generic detail dump.
+outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSignOffKeepsBlockersOnTop, TestHumanLaneOpensTheDecisionScreen; checked: concurrency n/a (render only), error paths n/a, unusual input - gaps with list markers/case/indent and only-blocker gaps, empty fields owed rows; permissions n/a"
 ---
 
 # Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts
