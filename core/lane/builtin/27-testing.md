@@ -117,7 +117,7 @@ gate or an unmet definition-of-done item is a wrong result under any rule. Anyth
 a missing guard that breaks nothing yet, a test that covers the example but
 not its neighbour — rides along in the note of a round that goes back anyway.
 Otherwise it is a note on the ticket for the review and the person
-(`jaira note <handle> "testing: note: <class; example; fix>"`, the hunter's own
+(`jaira note <handle> "testing: note: edge: <class; example; fix>"`, the hunter's own
 note where it came from the hunt), counted in a verdict that still passes; it
 alone never starts a round.
 

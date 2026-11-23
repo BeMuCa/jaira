@@ -259,7 +259,7 @@ export type Light = { color: 'green' | 'yellow' | 'red'; reasons: LightReason[] 
 // nothing. Without them the review's prefixes count, as on the band's row.
 export function lightOf(w: Waiting, hunt: HuntState | undefined, classes?: readonly NoteClass[]): Light {
   const blockers = classes === undefined ? w.blockers.length : classes.filter(c => c === 'blocker').length
-  const notes = classes === undefined ? w.notes.length : classes.filter(c => c === 'edge').length
+  const notes = classes === undefined ? w.notes.filter(n => (classOf(n) ?? 'edge') === 'edge').length : classes.filter(c => c === 'edge').length
   const red: LightReason[] = []
   const yellow: LightReason[] = []
   // The lane's own words where it declares them; a jaira that does not say
@@ -802,7 +802,24 @@ export type Decided = { choice: Choice; follow?: string }
 // A finding as the review lane writes it: 'blocker:' or 'note:', bare or in
 // markdown emphasis; 'note: pre-existing:' is a fault this change did not make.
 const PREFIXED = /^[*_`]*\s*(blocker|note)\s*[*_`]*\s*:/i
-const PRE_EXISTING = /^[*_`]*\s*note\s*[*_`]*\s*:\s*[*_`]*\s*pre-?existing\b/i
+// The class a note states itself, right after 'note:' (GY8T52): 'edge',
+// 'limit' or 'elsewhere' - the four words the review lane, the signoff role
+// and the teamlead share. 'pre-existing' is an older way to say elsewhere,
+// 'fix-now' a small edge of this change.
+const NOTE_CLASS = /^[*_`]*\s*note\s*[*_`]*\s*:[\s*_`]*(edge|limit|elsewhere|pre-?existing|fix-?now)[\s*_`]*(?::|$)/i
+// The two older marks: they class a note too, but an Explain note that
+// classes every finding still overrides them, as it did before the four words.
+const OLD_MARK = /^[*_`]*\s*note\s*[*_`]*\s*:[\s*_`]*(pre-?existing|fix-?now)\b/i
+const WORD_CLASS: Record<string, NoteClass> = { edge: 'edge', limit: 'limit', elsewhere: 'elsewhere', preexisting: 'elsewhere', 'pre-existing': 'elsewhere', fixnow: 'edge', 'fix-now': 'edge' }
+
+// The class a finding carries in its own words: 'blocker:', or a class word
+// after 'note:'. Undefined for a note without one - an older review's - which
+// the caller classes as before.
+export function classOf(text: string): NoteClass | undefined {
+  if (BLOCKER.test(text)) return 'blocker'
+  const m = NOTE_CLASS.exec(text) ?? OLD_MARK.exec(text)
+  return m ? WORD_CLASS[m[1]!.toLowerCase()] : undefined
+}
 
 // What each class starts as: a blocker fixed now, every other note accepted
 // (Alex 21.11.2026). A follow-up ticket is created only for a row the person
@@ -813,11 +830,15 @@ const PRESELECTED: Record<NoteClass, Choice> = { blocker: 'now', edge: 'accept',
 // as. A line without 'blocker:' or 'note:' continues the finding above it —
 // a note wrapped over two lines — but only where the gaps use the prefixes
 // at all; an older review's gaps, without them, are a finding per line.
-// The class comes from the prefix, unless the Explain note classes exactly
-// as many notes as there are findings: then its classes count, in order,
-// which is where a known limit comes from. A 'blocker:' line stays a blocker
-// whatever the Explain note says at its position: matching by position may
-// be off, and a blocker read as a known limit would be accepted unseen. A
+// The class is the one the finding states (classOf): 'blocker:', or 'note:'
+// followed by edge, limit or elsewhere, which the review lane writes since
+// GY8T52 - so the pane shows the class the teamlead and the signoff role
+// read. A finding without one, or with only the older 'pre-existing:' or
+// 'fix-now:' mark, takes the Explain note's class when that note classes
+// exactly as many notes as there are findings, in order; otherwise its mark's
+// class, else edge. A 'blocker:' line stays a blocker whatever the Explain
+// note says at its position: matching by position may be off, and a blocker
+// read as a known limit would be accepted unseen. A
 // note decided before, word for word, starts as it was decided. The acceptance rule: a finding classed
 // wrong is better than one lost or two merged — no line of the gaps but a
 // "none" ever drops out.
@@ -831,7 +852,8 @@ export function gapItems(gaps: string | undefined, explainText?: string, decided
   }
   const explained = explainText === undefined ? [] : explanationOf(explainText).parts.flatMap(p => (p.kind === 'note' ? [p.cls] : []))
   return texts.map((text, i) => {
-    const cls: NoteClass = BLOCKER.test(text) ? 'blocker' : explained.length === texts.length ? explained[i]! : PRE_EXISTING.test(text) ? 'elsewhere' : 'edge'
+    const stated = classOf(text)
+    const cls: NoteClass = stated === 'blocker' || (stated !== undefined && !OLD_MARK.test(text)) ? stated : explained.length === texts.length ? explained[i]! : stated ?? 'edge'
     const earlier = decided?.get(text)
     if (earlier === undefined) return { text, cls, choice: PRESELECTED[cls] }
     return { text, cls, choice: earlier.choice, earlier: earlier.choice, ...(earlier.follow !== undefined ? { follow: earlier.follow } : {}) }
@@ -911,7 +933,7 @@ export function standOf(showJson: string): { status?: string; board: string } {
 // 'pre-existing:' or the review's 'fix-now:' - cut to fit a list row; the
 // whole finding is its context.
 export function followTitle(text: string): string {
-  const bare = text.replace(PREFIXED, '').trim().replace(/^[*_`]*\s*(?:pre-?existing|fix-?now)\s*[*_`]*\s*:/i, '').trim() || text
+  const bare = text.replace(PREFIXED, '').trim().replace(/^(?:[\s*_`]*(?:edge|limit|elsewhere|pre-?existing|fix-?now)[\s*_`]*:\s*)+/i, '').trim() || text
   return bare.length <= 72 ? bare : `${bare.slice(0, 71).trimEnd()}…`
 }
 

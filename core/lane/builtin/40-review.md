@@ -54,40 +54,47 @@ Write four things, in this order:
        jaira set <handle> review-summary="streamed the writer instead of buffering the whole export"
 
 2. `review-gaps` — what is missing or unconvincing, one finding per line, and
-   every line starts with what kind of finding it is:
+   every line starts with its class, exactly one of four, in these words:
 
    - `blocker:` — the diff breaks a definition-of-done item, or ships what
      the ticket's `blocker_rule` names (this lane's payload; by default a
      wrong result, data loss, a crash, a security hole) — whether it was
      written here or came along with copied or moved code. Nothing else is a
      blocker.
-   - `note:` — everything else: a simpler form, a missing test of something
-     that works, a neighbouring fault, a "would be nice". Name the class and
-     the fix in the line, so whoever carries the ticket can close a small edge
-     of this change in the same round instead of handing it to the person. A
-     fault that was there before this change and lies outside its scope is
-     `note: pre-existing: <what and where>`.
+   - `note: edge:` — a real gap in this change that one short round closes:
+     a missing guard, a test of the neighbouring case, a simpler form. Name
+     the class and the fix in the line, so whoever carries the ticket can
+     close it in the same round instead of handing it to the person.
+   - `note: limit:` — a boundary this ticket draws on purpose and says so;
+     no work follows from it.
+   - `note: elsewhere:` — not this change's: a fault that was there before
+     it, or another ticket's subject. Say where — the file and line, the
+     ticket id, or "new ticket".
 
-   Mark every note of this change as one of two: `note: fix-now:` when it can
-   be closed in a few lines and brings no new behaviour — a missing guard, a
-   test of the neighbouring case, a wrong word in a message — and a plain
-   `note:` for everything else, including anything that would need a new
-   rule, a new flag or a design choice. A fix-now note is not sent to the
-   person: the work goes back once to close it (see the end of this prompt).
-   A review marks fix-now only when the ticket's notes carry no earlier
-   `review: fix-now:` line; after one, every review — delta or full — writes
-   plain notes, so the round for fix-now happens at most once.
+   The person's acceptance pane, the signoff role and the teamlead colour a
+   note by this word alone: 🔴 blocker, 🟡 edge, ⚪ limit, 🔵 elsewhere. A
+   note without one is shown as an edge, whatever its sentence says. Wording
+   alone — a comment, a name, a sentence that could read better — is never a
+   blocker and never an edge: leave it out, or write it as a limit.
+
+   Mark every edge you can close in a few lines, with no new behaviour, as
+   `note: edge: fix-now:`; an edge that needs a new rule, a new flag or a
+   design choice stays a plain `note: edge:`. A fix-now note is not sent to
+   the person: the work goes back once to close it (see the end of this
+   prompt). A review marks fix-now only when the ticket's notes carry no
+   earlier `review: fix-now:` line; after one, every review — delta or full —
+   writes plain notes, so the round for fix-now happens at most once.
 
    If you found nothing, write `none` explicitly — an empty field means nobody
    looked, and "none" is you saying you looked and found nothing.
 
        jaira set <handle> review-gaps="none"
-       jaira set <handle> review-gaps="note: the export test covers 1MB, not 40MB"
+       jaira set <handle> review-gaps="note: edge: the export test covers 1MB, not 40MB"
 
    Two findings are two lines, never one line joined with `;` — each line is
    read on its own, and a joined pair is read as one finding:
 
-       jaira set <handle> review-gaps=$'blocker: DoD 2 - an empty export still writes a header\nnote: the export test covers 1MB, not 40MB'
+       jaira set <handle> review-gaps=$'blocker: DoD 2 - an empty export still writes a header\nnote: edge: the export test covers 1MB, not 40MB\nnote: elsewhere: load.go:41 accepts an empty file, there before this change'
 
    Ask yourself specifically:
    - Does the diff actually satisfy the definition of done? If not, what is missing?
