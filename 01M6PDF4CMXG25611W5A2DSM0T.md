@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:35:45Z
+updated-at: 2026-11-23T01:35:48Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -77,3 +77,4 @@ back-count: 2
 - **2026-11-23 01:33 · BeMuCa** — bughunt: change: blocker: core/gitrepo/git.go:79 (return !r.IsRepo()) - class: once the .git walk finds nothing, any git failure is read as 'no repository', which is the case the doc comment above OutsideRepo says it refuses; reached by a repository git finds without a .git entry (GIT_DIR / GIT_WORK_TREE in the environment) that git then fails to read (bad config, a killed git); the waiver then drops the commit rule at core/gate/gate.go:372 (done gate) and internal/cli/logbook.go:324 (logbook); example: GIT_DIR=<bare repo with a broken config line> GIT_WORK_TREE=<board dir> -> git rev-parse exits 128, OutsideRepo = true, while a valid GIT_DIR gives false; narrow setup, but the gate passes when it should refuse; ran: scratch probe built against this worktree calling gitrepo.Repo.OutsideRepo (plain dir: true; valid GIT_DIR: false; broken GIT_DIR: true)
 - **2026-11-23 01:34 · BeMuCa** — bughunt: done at 1488c67d8 - 1 finding (1 change, 0 pre-existing) in 1 module, follow-up hunt since 821aa6f78 (diff: core/gitrepo/git.go, core/gitrepo/outside_test.go, core/release/notes/2DSM0T.md; no new files); concurrency, error paths, input, permissions checked; files: core/gate/commits_test.go core/gate/gate.go core/gitrepo/git.go core/gitrepo/outside_test.go core/release/notes/2DSM0T.md internal/cli/logbook.go internal/cli/root.go internal/tui/model.go
 - **2026-11-23 01:34 · BeMuCa** — Round 3 fix direction (mine): the class is 'a git failure read as no repository'. IsRepo folds every failure into false, so OutsideRepo stops using it and asks git itself with LC_ALL=C: true only when rev-parse fails AND says 'not a git repository'. Success (true or false, e.g. inside a bare repo) and any other failure keep the rule. The .git walk over the real path stays as the guard that does not depend on git's wording.
+- **2026-11-23 01:35 · BeMuCa** — critique round 3: OutsideRepo runs its own exec instead of runTolerating because it needs LC_ALL=C and stderr; runTolerating's error message carries stderr but not the locale, so reusing it would make the check depend on the user's language. Matching git's English wording fails safe: if git ever rewords it, the answer turns false and the commit rule stays. Nothing to change.
