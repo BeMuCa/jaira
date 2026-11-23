@@ -25,7 +25,7 @@ commits:
   - 2880173dd19a0719180344d11060a1c608f79fcf
   - f0b0e438bbaccf12bd0da0a0951979e4069daf21
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:42:17Z
+updated-at: 2026-11-23T21:42:21Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -125,3 +125,8 @@ review-check: "1. cd /home/alex/projects/.worktrees/jaira-zztcws && go run ./cmd
 - **2026-11-23 21:36 · Alexander Sacharov** — waiting: fresh review agent #2 (run-lane.sh) since 22:36
 - **2026-11-23 21:38 · Alexander Sacharov** — review: done at f0b0e438b
 - **2026-11-23 21:38 · Alexander Sacharov** — report: sign-off screen (signoff+human) leads with blocker, check, what, why, question, commits, DoD; 'i' shows the whole ticket; stacked on EH6Z0N, merge after it | signoff, context unknown | 4 review notes for the person: trailing `/** trimmed off a blocker text (small fix: TrimLeft), lone-label next-line heuristic (smaller design: drop nextFinding - reverses review 1's fix-now, person's call), Details repeat Commits/DoD, quoted non-ASCII paths in EH6Z0N's diff pane; branch not pushed
+- **2026-11-23 21:42 · Alexander Sacharov** — Accepted from signoff: angenommen:
+- note: edge: signoff.go:174 blockerLines trims * _ ` from both ends of the finding, so a finding that ends in code or emphasis is cut: 'blocker: run `go test`' shows 'run `go test', '**blocker:** leaks to **stderr**' shows 'leaks to **stderr'; fix: strings.TrimLeft (only the emphasis left over after the label), plus a test with a trailing backtick
+- note: edge: signoff.go:188 nextFinding takes whatever line comes next - a heading, 'none', an edge of another kind, only the first item of a list (bughunt 21:35); the smaller design is to drop nextFinding and show a lone label as written, as the cockpit does, with the whole gaps behind 'i'. That reverses the first review's fix-now, so it is the person's call
+- note: limit: 'i' shows the whole detail pane, so Commits (recorded list only), DoD and 'Before this can start' repeat below the top block - chosen in round 2 to keep one renderer
+- note: elsewhere: internal/tui/diffpane.go:106-112,202-210 keep quoted non-ASCII paths from git show --patch (core/gitrepo/git.go:149 lacks core.quotePath=false); there before this change (EH6Z0N)
