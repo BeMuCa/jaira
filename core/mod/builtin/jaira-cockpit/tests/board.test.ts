@@ -2410,6 +2410,21 @@ describe('give back', () => {
     expect(w.submitted).toEqual(['jaira-cockpit: MG677R given back: der Branch fehlt im Schluessel, worker MG677R/worker at work, not reached: type the decision into its tab, start no other (Person, Cockpit; signoff -> in-progress)'])
   })
 
+  test('a worker at an approval dialog gets nothing typed and no Enter, is not replaced, and the person hears which tab waits', async ($, on) => {
+    // Its pane is recorded: without the check the decision would be typed in.
+    const w = world(on, { herdr: true, store: big(500_000) })
+    w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker', agent_status: 'blocked' }]
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
+    expect(ran(w, 'herdr', 'pane', 'send-keys')).toEqual([])
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
+    expect(spawned(w)).toEqual([])
+    expect(lastNote(w)).toBe('cockpit: given back to nobody (no worker started) - the old worker waits at an approval dialog in tab MG677R/worker; nothing typed, no second worker started')
+    expect(w.toasts.at(-1)).toBe('MG677R back in in-progress; its worker waits at an approval dialog in tab MG677R/worker - answer it there, then type the decision into that tab. Nothing was typed for you.')
+    expect(w.submitted).toEqual(['jaira-cockpit: MG677R given back: der Branch fehlt im Schluessel, worker MG677R/worker waits at an approval dialog: answer it there, then type the decision into that tab (Person, Cockpit; signoff -> in-progress)'])
+  })
+
   test('Give back twice in a row: one worker, the second press finds the ticket already back', async ($, on) => {
     const w = world(on, { herdr: true })
     await startSession($)

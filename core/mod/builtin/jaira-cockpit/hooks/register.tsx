@@ -1787,6 +1787,15 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   // middle of a step, and a new one beside it is the second worker this
   // press must never make. It gets the decision typed in like any old
   // worker, whatever its cache and context say.
+  // A worker at an approval dialog is never typed into: the text would land
+  // in the dialog and the Enter would answer it for the person, unseen.
+  // spawn.sh refuses the same pane for the same reason. Nor is it replaced:
+  // the old one would still hang at its dialog beside a new one.
+  if (tab?.agent_status === 'blocked') {
+    const label = tab.label
+    await handedTo('none', `the old worker waits at an approval dialog in tab ${label}; nothing typed, no second worker started`, `${label} waits at an approval dialog: answer it there, then type the decision into that tab`)
+    return say($, t.workerBlocked(id, label))
+  }
   const working = tab?.agent_status === 'working'
   const choice = working
     ? { reuse: true, why: 'the old worker is at work in its tab' }

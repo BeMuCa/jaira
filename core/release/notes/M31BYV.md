@@ -1,0 +1,1 @@
+- Give back in the cockpit no longer types the decision into a worker tab that waits at an approval dialog: it says which tab waits — answer the dialog there yourself, then type the decision into that tab.
