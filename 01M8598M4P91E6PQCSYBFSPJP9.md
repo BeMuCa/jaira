@@ -1,7 +1,7 @@
 ---
 id: 01M8598M4P91E6PQCSYBFSPJP9
 title: "Eine Lane-Datei kann mit agents: N sagen, dass N Agenten die Lane laufen; show --for-lane reicht es weiter"
-status: critique
+status: human
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -26,7 +26,7 @@ follows: 01M67K72RDJY2N2R2KQGATDG74
 commits:
   - 71f812811bd997015ae675670c35cb4dbceefa15
 created-at: 2026-11-23T22:43:41Z
-updated-at: 2026-11-23T23:01:05Z
+updated-at: 2026-11-23T23:01:07Z
 updated-by: BeMuCa
 claimed-by: worker-fspjp9
 claimed-at: 2026-11-23T22:56:02Z
@@ -34,6 +34,7 @@ outcome-what: "agents: N is read from lane files (1..9, default 1), refused abov
 outcome-why: "the lanes that judge a ticket can then run several readers at once, without N agents writing the same worktree"
 outcome-resolves: "class checked: bad values (0, -1, 10, x, 2.5, empty, huge) refused naming file and key; writing lanes refused; concurrency: jaira starts nothing, the skill caps at 4 and checks free -h; error path: load refuses before any lane is used; permissions: not applicable, no process started"
 review-summary: "core/lane/lane.go agents refusal checks output-produces for outcome-what or plan only; core/lane/builtin/26-optimize.md has output-produces [review-gaps] but says 'Make the changes. This lane edits', so agents: 3 on a copied optimize lane passes the load and three agents edit one worktree. The ticket's rule (read-only lanes only) is not enforced for it. Needs a person's choice, see the question."
+question: "agents above 1 passes the load on a lane that edits code. optimize produces only review-gaps, so the check (outcome-what or plan) cannot see that it writes. Options: (a) keep the check and say in the docs and the role skills that agents above 1 is for read-only lanes only; nothing stops a person who copies optimize and adds the key. Cheapest, no new key. (b) add a lane key that says the lane writes, and refuse agents above 1 on it; one more key to validate and document. (c) refuse agents above 1 on the lane with id optimize by name; a special case in code. Recommendation: (a) now, because the shipped optimize lane sets no agents key and a person has to add it on purpose; (b) if a copied lane is expected to be common. Which?"
 ---
 
 # Eine Lane-Datei kann mit agents: N sagen, dass N Agenten die Lane laufen; show --for-lane reicht es weiter
