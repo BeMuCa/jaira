@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T15:45:35Z
-updated-at: 2026-11-23T01:46:41Z
+updated-at: 2026-11-23T01:46:44Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-h319tv
@@ -32,6 +32,7 @@ round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "removed the '--port/--no-open' sentence from the new section: it repeated the Commands table (README '## Commands') and docs/COMMANDS.md:57, and a PM does not need it (jaira web prints the address when no browser opens). Left the clone/init steps that overlap '## Start' (teammate join): the section must stand alone. No code, so passes 2-4 n/a."
 ---
 
 # README: Abschnitt 'Jaira PM View - Web only' fuer Leute ohne Coding-Agent
