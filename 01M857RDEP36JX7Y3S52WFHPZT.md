@@ -23,9 +23,11 @@ related:
   - 01M58G28438KJJD3YDGM2B4KC9
 commits: []
 created-at: 2026-11-23T22:17:22Z
-updated-at: 2026-11-23T22:39:25Z
+updated-at: 2026-11-23T22:41:04Z
 assignee: BeMuCa
 updated-by: BeMuCa
+claimed-by: teamlead-lane-graph
+claimed-at: 2026-11-23T22:41:04Z
 ---
 
 # Der Lane-Verlauf eines Boards ist als Graph zu sehen und einzustellen: Lanes als Knoten, Uebergaenge und Loops als Kanten, je Lane Agent, Modell und Anzahl Agenten
