@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { ElementTable, EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
-  acceptTreeFor, branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
+  acceptTreeFor, branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, ghRepoOf, hasPullRequest, onHost, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
   clipLines, commitsOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, headPrompt, rephrasedOf, rephrasePrompt, standOf, storyOf,
@@ -801,29 +801,32 @@ function output(r: Awaited<ReturnType<typeof run>>): string {
 // what "ahead" is counted against. undefined where origin is missing or no
 // forge can be told (the caller counts against the local base then, and a
 // pull request cannot be opened anyway); a string says why it failed.
-type Target = { on: Forge; repo: string; base: string }
+type Target = { on: Forge; repo: string; host?: string; base: string }
 
 // The forge of origin and the repository its pull requests go to - the
 // parent in a fork; undefined where no forge can be told, a string where the
-// forge did not answer.
-async function forgeRepo($: EngineInterface, repoDir: string): Promise<{ on: Forge; repo: string } | string | undefined> {
+// forge did not answer. host is set on GitHub Enterprise: every later gh
+// call names the repository as host/owner/repo (onHost), or gh asks
+// github.com for it.
+async function forgeRepo($: EngineInterface, repoDir: string): Promise<{ on: Forge; repo: string; host?: string } | string | undefined> {
   // Unset, `git config` exits 1 and the host of origin decides.
   const forge = await run($, ['git', 'config', 'jaira.forge'], repoDir)
   const origin = await run($, ['git', 'remote', 'get-url', 'origin'], repoDir)
   const url = origin?.exitCode === 0 ? origin.stdout.trim() : ''
   const on = url ? forgeOf(forge?.exitCode === 0 ? forge.stdout : '', url) : undefined
   if (on === undefined) return undefined
-  const view = await run($, repoViewCommand(on, url), repoDir, 30_000)
+  const asked = on === 'github' ? ghRepoOf(url) : { repo: url }
+  const view = await run($, repoViewCommand(on, asked.repo), repoDir, 30_000)
   const repo = view?.exitCode === 0 ? targetRepoOf(on, view.stdout) : undefined
-  return repo === undefined ? `${on === 'github' ? 'gh' : 'glab'} repo view: ${output(view)}` : { on, repo }
+  return repo === undefined ? `${on === 'github' ? 'gh' : 'glab'} repo view: ${output(view)}` : { on, repo, host: asked.host }
 }
 
 async function pullTarget($: EngineInterface, repoDir: string): Promise<Target | string | undefined> {
   const found = await forgeRepo($, repoDir)
   if (found === undefined || typeof found === 'string') return found
-  const { on, repo } = found
+  const { on, repo, host } = found
   const tool = on === 'github' ? 'gh' : 'glab'
-  const targetView = await run($, repoViewCommand(on, repo), repoDir, 30_000)
+  const targetView = await run($, repoViewCommand(on, onHost(repo, host)), repoDir, 30_000)
   const branch = targetView?.exitCode === 0 ? defaultBranchOf(on, targetView.stdout) : undefined
   if (branch === undefined) return `${tool} repo view ${repo}: ${(targetView?.stderr || 'no default branch').trim()}`
   const remotes = await run($, ['git', 'remote', '-v'], repoDir)
@@ -831,7 +834,7 @@ async function pullTarget($: EngineInterface, repoDir: string): Promise<Target |
   if (remote === undefined) return t.noRemoteFor(repo)
   const fetched = await run($, ['git', 'fetch', remote, branch], repoDir, 60_000)
   if (fetched?.exitCode !== 0) return `git fetch ${remote} ${branch}: ${output(fetched)}`
-  return { on, repo, base: `${remote}/${branch}` }
+  return { on, repo, host, base: `${remote}/${branch}` }
 }
 
 // Which step the press starts, and on which branch: the ticket's branch
@@ -887,7 +890,7 @@ async function decideStep($: EngineInterface, b: { dir: string; repo: string }, 
   }
   if (land) return { step: stepAfterAccept(ahead, pending, false), branch, hint: '', land }
   if (target === undefined) return t.noForge(branch)
-  const cmd = pullRequestsCommand(target.on, target.repo, branch)
+  const cmd = pullRequestsCommand(target.on, onHost(target.repo, target.host), branch)
   const listed = await run($, cmd, b.repo, 30_000)
   const has = listed?.exitCode === 0 ? hasPullRequest(listed.stdout) : undefined
   return { step: stepAfterAccept(ahead, pending, has), branch, hint: has === undefined ? t.prUnchecked(`${cmd[0]}: ${output(listed)}`) : '', has }
@@ -1421,7 +1424,7 @@ async function askPullRequest($: EngineInterface, id: string): Promise<boolean |
   const found = await forgeRepo($, board.repo)
   if (found === undefined) return false
   if (typeof found === 'string') return undefined
-  const listed = await run($, pullRequestsCommand(found.on, found.repo, branch), board.repo, 30_000)
+  const listed = await run($, pullRequestsCommand(found.on, onHost(found.repo, found.host), branch), board.repo, 30_000)
   return listed?.exitCode === 0 ? hasPullRequest(listed.stdout) : undefined
 }
 

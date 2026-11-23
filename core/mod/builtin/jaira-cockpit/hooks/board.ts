@@ -693,6 +693,51 @@ export function forgeOf(forge: string, originUrl: string): Forge | undefined {
   return on === 'github' || on === 'gitlab' ? on : undefined
 }
 
+// A git remote URL taken apart, as core/pr's ParseRemote does: the host,
+// without user or port, and the repository's path there without .git — for
+// https://, ssh://, git+ssh://, git:// and the scp form [user@]host:path,
+// whatever the user before the @ is called. A GitHub Enterprise remote often
+// reads alice@ghe.example.com:team/app.git, which gh cannot resolve as it
+// stands (XSGWPX). undefined where it names no host or no owner/repo.
+export function parseRemote(raw: string): { host: string; repo: string } | undefined {
+  const s = raw.trim()
+  let host: string
+  let path: string
+  const scheme = s.indexOf('://')
+  if (scheme > 0) {
+    const rest = s.slice(scheme + 3)
+    const slash = rest.indexOf('/')
+    if (slash < 0) return undefined
+    host = rest.slice(0, slash).replace(/^.*@/, '')
+    if (!host.endsWith(']')) host = host.replace(/:[^:]*$/, '')
+    path = rest.slice(slash + 1)
+  } else {
+    const colon = s.indexOf(':')
+    if (colon <= 0 || /[/\\]/.test(s.slice(0, colon))) return undefined
+    host = s.slice(0, colon).replace(/^.*@/, '')
+    // A drive letter, C:/repos/app, is no host.
+    if (host.length === 1) return undefined
+    path = s.slice(colon + 1)
+  }
+  path = path.replace(/^\/+|\/+$/g, '').replace(/\.git$/, '')
+  return host && path.includes('/') ? { host: host.toLowerCase(), repo: path } : undefined
+}
+
+// How gh is told the repository of origin: on a host other than github.com
+// as host/owner/repo — gh's own [HOST/]OWNER/REPO, which `gh repo view` and
+// --repo both take — with that host, which the answers' owner/repo then
+// carry again. github.com, and a URL that cannot be taken apart, go as they
+// are: gh reads those itself.
+export function ghRepoOf(originUrl: string): { repo: string; host?: string } {
+  const r = parseRemote(originUrl)
+  return r === undefined || r.host === 'github.com' || r.host === 'www.github.com' ? { repo: originUrl } : { repo: `${r.host}/${r.repo}`, host: r.host }
+}
+
+// owner/repo as gh is to be told it on host.
+export function onHost(repo: string, host: string | undefined): string {
+  return host ? `${host}/${repo}` : repo
+}
+
 // Where a pull request of this branch would be, as jaira-role-pr settles it:
 // in a fork, the parent — asking origin there answers for the fork, finds
 // nothing, and a second pull request gets opened onto a merged branch. The

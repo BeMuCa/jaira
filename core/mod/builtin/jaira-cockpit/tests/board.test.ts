@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { acceptTreeFor, carrierFor, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, rephrasePrompt, snapshotOf, storyOf, type Waiting } from '../hooks/board.ts'
+import { acceptTreeFor, carrierFor, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, rephrasePrompt, snapshotOf, storyOf, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -403,8 +403,9 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if ((cmd === 'gh' || cmd === 'glab') && args[1] === 'list' && w.prListFails) return failed("HTTP 401: Bad credentials")
     // origin is a fork of upstream/repo: pull requests are asked of the parent.
     // Its default branch is main; the fork's own lags behind as master.
+    // On GitHub Enterprise gh is asked host/owner/repo (XSGWPX).
     if (cmd === 'gh' && args[0] === 'repo') {
-      return ok(JSON.stringify(args[2] === 'upstream/repo'
+      return ok(JSON.stringify(args[2]?.replace(/^ghe\.example\.com\//, '') === 'upstream/repo'
         ? { isFork: false, nameWithOwner: 'upstream/repo', parent: null, defaultBranchRef: { name: 'main' } }
         : { isFork: true, nameWithOwner: 'acme/repo', parent: { name: 'repo', owner: { login: 'upstream' } }, defaultBranchRef: { name: 'master' } }))
     }
@@ -1704,6 +1705,22 @@ describe('after Accept', () => {
     w.forge = 'gitlab'
     await press($, w)
     expect(ran(w, 'glab', 'mr')).toEqual([['glab', 'mr', 'list', '--repo', 'upstream/repo', '--source-branch', 'feat/mg677r', '--all', '-F', 'json', '@/repo']])
+    expect(prLane(w)).toHaveLength(1)
+  })
+
+  test('GitHub Enterprise behind a user@host:owner/repo remote: gh is asked host/owner/repo every time (XSGWPX)', async ($, on) => {
+    const w = world(on, { herdr: true })
+    w.ahead = 1
+    w.forge = 'github'
+    w.origin = 'alice@ghe.example.com:acme/repo.git'
+    w.remotes = 'origin\talice@ghe.example.com:acme/repo.git (fetch)\nupstream\talice@ghe.example.com:upstream/repo.git (fetch)\n'
+    await press($, w)
+    expect(ran(w, 'gh')).toEqual([
+      ['gh', 'repo', 'view', 'ghe.example.com/acme/repo', '--json', 'isFork,parent,nameWithOwner,defaultBranchRef', '@/repo'],
+      ['gh', 'repo', 'view', 'ghe.example.com/upstream/repo', '--json', 'isFork,parent,nameWithOwner,defaultBranchRef', '@/repo'],
+      ['gh', 'pr', 'list', '--repo', 'ghe.example.com/upstream/repo', '--head', 'feat/mg677r', '--state', 'all', '--json', 'number', '@/repo'],
+    ])
+    expect(ran(w, 'git', 'fetch')).toEqual([['git', 'fetch', 'upstream', 'main', '@/repo']])
     expect(prLane(w)).toHaveLength(1)
   })
 
@@ -5559,6 +5576,33 @@ describe('where Accept moves a ticket', () => {
   for (const [name, porcelain, carrier, want] of cases) {
     test(name, () => {
       expect(acceptTreeFor(porcelain, 'ZZ99ZZ', carrier)).toEqual(want)
+    })
+  }
+})
+
+// Every form git takes for a remote, taken apart as core/pr's ParseRemote
+// does (XSGWPX): the user before the @ and the port are no part of the host.
+describe('parseRemote', () => {
+  const cases: [string, { host: string; repo: string } | undefined][] = [
+    ['https://github.com/me/jaira.git', { host: 'github.com', repo: 'me/jaira' }],
+    ['https://token@github.com/me/jaira.git/', { host: 'github.com', repo: 'me/jaira' }],
+    ['https://ghe.example.com:8443/team/app.git', { host: 'ghe.example.com', repo: 'team/app' }],
+    ['ssh://alice@ghe.example.com:2222/team/app.git', { host: 'ghe.example.com', repo: 'team/app' }],
+    ['git+ssh://git@GHE.Example.com/team/app', { host: 'ghe.example.com', repo: 'team/app' }],
+    ['git@github.com:me/jaira', { host: 'github.com', repo: 'me/jaira' }],
+    ['alice@ghe.example.com:team/app.git', { host: 'ghe.example.com', repo: 'team/app' }],
+    ['ghe.example.com:team/app.git', { host: 'ghe.example.com', repo: 'team/app' }],
+    ['git@gitlab.example.com:group/sub/project.git', { host: 'gitlab.example.com', repo: 'group/sub/project' }],
+    ['/srv/git/app.git', undefined],
+    ['C:/repos/app', undefined],
+    ['C:\\repos\\app', undefined],
+    ['https://ghe.example.com/app', undefined],
+    ['git@host:app.git', undefined],
+    ['file:///srv/git/app.git', undefined],
+  ]
+  for (const [url, want] of cases) {
+    test(url, () => {
+      expect(parseRemote(url)).toEqual(want)
     })
   }
 })
