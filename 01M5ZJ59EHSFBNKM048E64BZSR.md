@@ -16,12 +16,12 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:18:36Z
+updated-at: 2026-11-23T22:39:07Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
 claimed-at: 2026-11-23T01:10:10Z
-outcome-what: "jaira show --json gains skipped_lanes: every unticked optional lane ahead of the ticket with lane, option and the 'jaira dod <id> --option <opt>' that turns it on; the agent block says so in one sentence"
+outcome-what: "jaira show --json gains unchosen_lanes: every unticked optional lane ahead of the ticket with lane, option and the 'jaira dod <id> --option <opt>' that turns it on; the agent block says so in one sentence"
 outcome-why: drivers skipped pre-process on tickets that needed a plan because next_lane walks past optional lanes silently (O11)
 outcome-resolves: 64BZSR
 review-summary: "Added lane.Set.UnchosenAhead (core/lane/next.go). It walks the lanes after the ticket's current lane up to the first terminal lane and collects every lane whose requires-option the ticket's Options leave unticked. It returns nothing for a ticket that is parked, waiting on a question, finished or in an unknown lane, the same guard Next uses. ticketJSON (internal/cli/tickets.go) prints the result as unchosen_lanes, never null: one entry per lane with lane, option and enable='jaira dod <ID> --option <option>'. The field therefore appears in every payload built from ticketJSON: show, list, move, resume and create. The agent block (core/board/announce.go, and its copies in CLAUDE.md and AGENTS.md) gains one sentence pointing drivers at the field. The release note says to read the field and to run jaira update. A table test covers backlog, todo, todo with planning ticked, in-progress and done. A driver that used to see only next_lane=todo from backlog now also learns that pre-process exists and how to switch it on."
