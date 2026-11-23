@@ -1,7 +1,7 @@
 ---
 id: 01M6PDF4CMXG25611W5A2DSM0T
 title: "Ein Board ohne Git-Repo schiebt Tickets nach done, ohne Commits zu verlangen"
-status: testing
+status: human
 ready: true
 creator: BeMuCa
 goal: "Liegt das Board in keinem Git-Repository, verlangt die Lane done keine Commits; in einem Repository bleibt die Regel wie heute."
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-23T01:37:26Z
+updated-at: 2026-11-23T01:37:29Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-2dsm0t
@@ -34,6 +34,7 @@ round: 3
 back-from: testing
 back-by: lane
 back-count: 2
+question: "Testing sent 2DSM0T back three times (stop rule). Every round found one more way that OutsideRepo (core/gitrepo/git.go) reads a repository as 'no repository': (1) symlink + git missing, (2) GIT_DIR with broken config, (3) GIT_DIR that git cannot open (chmod 000, missing HEAD, path gone). All three are GIT_DIR/odd-setup corners; normal plain dirs and normal repos behave right since round 1. Options: A (Recommended) one last narrow fix - keep the commit rule whenever GIT_DIR or GIT_WORK_TREE is set in the environment, and accept only git's discovery wording 'not a git repository (or any of the parent' as 'no repo'; that closes the env class for good, then a final hunt and review. B accept as is - the remaining holes need a hand-set GIT_DIR pointing at a broken repo. C narrow the scope: drop the git call entirely, 'no repo' = git installed and no .git above the real path and no GIT_DIR/GIT_WORK_TREE set. Yes to A?"
 ---
 
 # Ein Board ohne Git-Repo schiebt Tickets nach done, ohne Commits zu verlangen
