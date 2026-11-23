@@ -19,8 +19,10 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:51Z
-updated-at: 2026-11-23T22:45:23Z
+updated-at: 2026-11-23T22:45:37Z
 updated-by: BeMuCa
+claimed-by: teamlead-lane-graph
+claimed-at: 2026-11-23T22:45:37Z
 ---
 
 # Zwei Worker treffen sich auf einem Join-Board und einigen sich, wie ihre Teile zusammenpassen
