@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:38:10Z
+updated-at: 2026-11-23T21:38:13Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -39,13 +39,13 @@ round: 4
 back-from: review
 back-by: lane
 back-count: 1
-review-verdict: "accept: DoD 1-5 met (go test ./internal/tui ok, go vet clean); two fix-now edges - help screen misses 'i', lone blocker label shows the label instead of the finding"
-review-round: 3
+review-verdict: "accept: DoD items 1-5 are met and both earlier fix-now items are closed; the remaining findings are cosmetic edges in how a blocker's text is shown, the row itself always appears"
+review-round: 4
 review-verdict-gaps: |-
-  note: edge: fix-now: the help screen (view.go renderHelp, the 'a f' row ~line 1789) does not list the new 'i' key - add a row 'i  details on a ticket in human or signoff'
-  note: edge: fix-now: signoff.go:170-174 blockerLines - a label standing alone ('blocker:\n- the limit resets', '**Blocker:**') shows the bare label in the blocker row, not the finding; take the next non-empty line as the text when the rest is empty or only emphasis, and assert the text in signoff_test.go:114-124
-  note: limit: 'i' shows the whole detail pane by design (round-2 decision), so Commits (recorded list only), the DoD and the start checklist appear a second time below the top block
-  note: limit: the agent lane 'review' named in the goal keeps the plain detail view - decision note 21:00 reads the goal as the person lanes human and signoff
+  note: edge: signoff.go:174 blockerLines trims * _ ` from both ends of the finding, so a finding that ends in code or emphasis is cut: 'blocker: run `go test`' shows 'run `go test', '**blocker:** leaks to **stderr**' shows 'leaks to **stderr'; fix: strings.TrimLeft (only the emphasis left over after the label), plus a test with a trailing backtick
+  note: edge: signoff.go:188 nextFinding takes whatever line comes next - a heading, 'none', an edge of another kind, only the first item of a list (bughunt 21:35); the smaller design is to drop nextFinding and show a lone label as written, as the cockpit does, with the whole gaps behind 'i'. That reverses the first review's fix-now, so it is the person's call
+  note: limit: 'i' shows the whole detail pane, so Commits (recorded list only), DoD and 'Before this can start' repeat below the top block - chosen in round 2 to keep one renderer
+  note: elsewhere: internal/tui/diffpane.go:106-112,202-210 keep quoted non-ASCII paths from git show --patch (core/gitrepo/git.go:149 lacks core.quotePath=false); there before this change (EH6Z0N)
 review-check: "1. go build -o /tmp/jaira-zz ./cmd/jaira  2. in a scratch repo: jaira init, jaira create 'Test' --goal g --context c --dod d, then move the ticket to signoff (--force where refused)  3. jaira set <id> review-check='step one' review-gaps=$'blocker: resets on restart\\nnote: edge: wording'  4. run /tmp/jaira-zz, open the ticket with enter: top reads 'blocker  resets on restart', then check, what, why, Commits, Definition of Done - no summary/verdict/gaps/problem rows  5. press i: a 'Details' block appears below with goal, context, gaps (both lines), verdict, notes  6. press i again: it closes  7. jaira set <id> question='ok?' and move the ticket to human: the same screen opens, banner says 'waiting on your answer', the question row shows, a/f do nothing"
 ---
 
