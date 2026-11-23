@@ -28,15 +28,24 @@ type webSource struct {
 	s  *ticket.Store
 }
 
-func newWebSource(s *ticket.Store) *webSource { return &webSource{s: s} }
+func newWebSource(s *ticket.Store) *webSource {
+	// The names the syncer prints are looked up afresh each time, as cards()
+	// does, not through the command's peopleList: the server runs for hours,
+	// and a push flushes outside w.mu, so a shared cache would be read and
+	// reset by two goroutines at once.
+	if refs != nil {
+		root := s.Root
+		refs.Name = func(who string) string { return coreidentity.People(root).Canonical(who) }
+	}
+	return &webSource{s: s}
+}
 
 // actAsNow settles who a write from the page is made as, again for each one:
 // the server runs for hours, and a 'jaira people alias' or 'rename' a fetch
-// brought in since it started names the person differently now. The store,
-// the ref syncer and the names its messages print all follow, so one write
-// never carries two names. Called with w.mu held.
+// brought in since it started names the person differently now. The store and
+// the ref syncer both follow, so one write never carries two names. Called
+// with w.mu held.
 func (w *webSource) actAsNow() {
-	peopleCache = nil
 	w.s.Actor = identity()
 	if refs != nil {
 		refs.Actor = w.s.Actor

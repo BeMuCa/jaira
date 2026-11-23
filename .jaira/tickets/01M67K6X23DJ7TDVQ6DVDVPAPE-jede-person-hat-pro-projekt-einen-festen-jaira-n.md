@@ -21,15 +21,15 @@ related:
   - 01M5MNWJF240306ZVDA41K3RA8
 commits: []
 created-at: 2026-10-30T23:44:36Z
-updated-at: 2026-11-23T20:47:44Z
+updated-at: 2026-11-23T20:50:36Z
 updated-by: Alexander Sacharov
 outcome-what: "jaira web schreibt unter dem aktuellen jaira-Namen (actAsNow vor jeder Schreibaktion) und die Seite liest nach jedem Fetch neu"
 outcome-why: "Rueckgabe aus signoff: Namen im Web sollen reaktiv sein"
 outcome-resolves: "Limit 'jaira web handelt unter dem Namen vom Start' fuer web aufgehoben; TUI bleibt wie angenommen"
-review-summary: "delta review from 37a51cd47: create --assignee and set assignee= now pass the typed name through peopleList().Canonical, so an alias (e.g. BeMuCa) is stored as the person's jaira name; an unknown or empty name stays as typed (trimmed); TestAssigneeIsStoredUnderTheJairaName checks the ref file for both paths; release note line added. Closes the signoff give-back edge."
-round: 6
-back-from: signoff
-back-by: person
+review-summary: "internal/cli/web_source.go actAsNow sets the global peopleCache=nil under w.mu, but Server.pushNow -> webPush -> refs.Flush -> winner -> refs.Name (shownName -> peopleList) reads and lazily writes it outside w.mu: data race. Instead: in jaira web give refs.Name its own resolver that reads coreidentity.People(root) per call, as cards() already does, and leave peopleCache alone"
+round: 7
+back-from: critique
+back-by: lane
 back-count: 1
 review-gaps: |-
   note: elsewhere: internal/cli/sync.go:182 stores a Claude Code task owner as assignee without Canonical - an agent task owner, not a typed person name; new ticket if it should resolve too
@@ -44,7 +44,7 @@ review-verdict-gaps: |-
   note: elsewhere: internal/cli/sync.go:182 stores a Claude Code task owner as assignee without Canonical - an agent task owner, not a typed person name; new ticket if it should resolve too
   note: limit: open TUI/jaira web act under the name read at open, note authors keep their written name (accepted at signoff)
 review-check: "1. cd into a jaira checkout with a remote  2. jaira people alias <you> TestAlias  3. jaira create 'probe' --assignee TestAlias  4. jaira show <new id> --json | grep assignee -> your jaira name, not TestAlias  5. jaira set <id> assignee=testalias, then git show refs/jaira/tickets/<ULID>:<ULID>.md | grep assignee -> your jaira name  6. or: go test ./internal/cli -run TestAssigneeIsStoredUnderTheJairaName"
-stop-after-fix: "true"
+stop-after-fix: ""
 ---
 
 # Jede Person hat pro Projekt einen festen jaira-Namen, einmal abgefragt und lokal gespeichert; er ersetzt Git-Name und Aliasse
@@ -135,3 +135,4 @@ angenommen:
 - **2026-11-23 20:42 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/48662.sock
 - **2026-11-23 20:43 · Alexander Sacharov** — in-progress (give-back 2, web reaktiv): Anzeige in jaira web las die Liste schon pro Abruf; offen war (a) Schreiben unter dem Namen vom Start und (b) Seite liest erst im 60s-Takt neu. Plan: webSource loest vor jedem Schreiben neu auf, wer handelt (s.Actor, refs.Actor, peopleCache), hinter einem Mutex; Seite laedt neu, sobald /api/sync einen neuen last_fetch meldet (Heartbeat 10s). TUI bleibt wie angenommen.
 - **2026-11-23 20:47 · Alexander Sacharov** — in-progress: stop-after-fix=true gesetzt - Fix ~50 Zeilen (Go 18 + Svelte 6 + Test), kein neuer Lock (vorhandener webSource-Mutex), kein Parser. Gates: go vet, go test ./..., -race TestWeb*, npm build/test, shipped-history gruen.
+- **2026-11-23 20:48 · Alexander Sacharov** — critique: actAsNow -> peopleCache-Reset racet mit refs.Flush (laeuft in pushNow ausserhalb w.mu, ruft refs.Name=shownName). Fix: web setzt refs.Name auf People(root) pro Aufruf wie cards(); actAsNow fasst peopleCache nicht an. Ausserdem stop-after-fix wieder geloescht: Diff 56 Zeilen + dist, ueber der 50er-Grenze.
