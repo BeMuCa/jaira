@@ -4693,9 +4693,13 @@ describe('the verdict light', () => {
     expect(gapItems(gaps).map(i => i.cls)).toEqual(['limit', 'elsewhere', 'edge'])
   })
 
-  test("a follow-up's title drops every class word in front of the finding", () => {
+  test("a follow-up's title drops the class word and an older mark, once each", () => {
     expect(followTitle('note: elsewhere: load.go accepts an empty file')).toBe('load.go accepts an empty file')
     expect(followTitle('note: edge: fix-now: the guard misses an empty name')).toBe('the guard misses an empty name')
+    // Once each: a finding whose own words open with a class word keeps them.
+    expect(followTitle('note: edge: Limit: 0 means unlimited in jaira list')).toBe('Limit: 0 means unlimited in jaira list')
+    expect(followTitle('note: limit: Edge: lanes with one ticket')).toBe('Edge: lanes with one ticket')
+    expect(followTitle('note: pre-existing: load.go accepts an empty file')).toBe('load.go accepts an empty file')
   })
 
   // No hunt finished (jaira's null) is a look, never red: a ticket that

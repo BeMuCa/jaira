@@ -930,11 +930,13 @@ export function standOf(showJson: string): { status?: string; board: string } {
   return { ...(s?.status !== undefined ? { status: s.status } : {}), board: s?.board ?? '' }
 }
 
-// A follow-up's title: the finding without its 'note:' and its mark -
-// 'pre-existing:' or the review's 'fix-now:' - cut to fit a list row; the
+// A follow-up's title: the finding without its 'note:', its class word and
+// an older mark after it - 'pre-existing:' or the review's 'fix-now:' - once
+// each, so a finding whose own text opens with such a word keeps it; cut to
+// fit a list row; the
 // whole finding is its context.
 export function followTitle(text: string): string {
-  const bare = text.replace(PREFIXED, '').trim().replace(/^(?:[\s*_`]*(?:edge|limit|elsewhere|pre-?existing|fix-?now)[\s*_`]*:\s*)+/i, '').trim() || text
+  const bare = text.replace(PREFIXED, '').trim().replace(/^(?:[\s*_`]*(?:edge|limit|elsewhere)[\s*_`]*:\s*)?(?:[\s*_`]*(?:pre-?existing|fix-?now)[\s*_`]*:\s*)?/i, '').trim() || text
   return bare.length <= 72 ? bare : `${bare.slice(0, 71).trimEnd()}…`
 }
 
