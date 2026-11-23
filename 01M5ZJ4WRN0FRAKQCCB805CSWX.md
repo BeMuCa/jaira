@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:43:52Z
+updated-at: 2026-11-23T01:44:07Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -27,7 +27,12 @@ outcome-what: "spawn.sh prueft MemAvailable vor Worktree und Tab: unter JAIRA_MI
 outcome-why: Drei parallele Go-Builds auf einer 7-GB-WSL stuerzten am 27.10. viermal ab; nichts warnte vor Speicher.
 outcome-resolves: "Kein Worker startet mehr still in eine Maschine, die fuer seinen Build zu wenig freien Speicher hat."
 review-summary: "spawn.sh now reads MemAvailable from /proc/meminfo before it makes a worktree or a tab. Below JAIRA_MIN_FREE_MB (default 2048, set at the top of the file with the reason; 0 turns it off; not a number or more than 9 digits is exit 2) it prints how much is free and exits 3. --force starts anyway, and the person chats explain and discuss are never checked. Where /proc/meminfo or its MemAvailable line is missing it prints 'free memory not checked' and carries on. An EXIT trap turns any other exit 3 inside spawn.sh into 1, so 3 always means this refusal. run-lane.sh used to pass spawn.sh's exit code straight through, but its own 3, 4 and 5 already mean worker states. It now turns spawn's 3 into a new 6 (nothing started, wait and run again) and every other spawn failure into 1. The teamlead, dispatcher and worker SKILLs say what to do in each case, the core/role script tests switch the check off, and there is a release note and new shipped hashes."
-review-gaps: "none: round 2 adds a trap and two mappings, nothing duplicated or orphaned; own unreleased hashes from 12cccd2 replaced in shipped.sha256 rather than piling up"
+review-gaps: |-
+  note: the cockpit starts spawn.sh too (register.tsx startPrLane: Accept starts the pr lane, and line 1562: give-back starts a worker), and the check now applies there. The pr lane is not exempt, the person sees only the last 160 characters of the refusal, and the cockpit has no way to pass --force. Fix: exempt lane pr like explain/discuss, or have the cockpit say "too little free memory, try again" when spawn.sh exits 3
+  note: jaira-worker/SKILL.md tells the worker to call spawn.sh --no-worktree <slug> <id> critique directly, and does not say that exit 3 from that call means "too little memory, nothing started". Fix: one sentence beside the exit-6 line
+  note: run-lane.sh --help now lists exit 1 (spawn.sh failed, a tab may already be open), but the exit-code paragraphs in jaira-dispatcher/SKILL.md (~line 380) and jaira-worker/SKILL.md (~line 320) do not mention it. Fix: add the line to both
+  note: no script test covers the refusal, --force, or run-lane turning 3 into 6. TestMain sets JAIRA_MIN_FREE_MB=0 for every test in core/role. Fix: one test with JAIRA_MIN_FREE_MB=999999999 expecting exit 3 and no tab, and one through run-lane expecting 6. I checked all three by hand with copies of the scripts
+  note: known limit, stated in the spawn.sh comment: the check is a snapshot. Two spawns started together both pass, and a worker started just now has not begun its build yet, so the reading is too high
 test-verdict: "pass: round 2 over 12cccd2..6bc8af7: go vet + go build ./... green (go test not run, house rule). Extracted check of the committed spawn.sh (trap included): 976 MB -> 3, force -> 0, missing meminfo / no MemAvailable -> one line + 0, limit 0 -> 0, 20-digit limit -> 2, 9-digit limit -> 3, abc -> 2, discuss -> 0, a later command failing with 3 -> 1, with 5 -> 5. run-lane.sh copy with stub spawn: 3->6, 4->1, 5->1, 2->1. spawn.sh not run end to end (opens tabs). DoD 5 left for the person."
 hunt-verdict: "pass: bughunt done at 6bc8af7b0, 0 findings; round 1's 2 change findings fixed in 6bc8af7"
 round: 2
