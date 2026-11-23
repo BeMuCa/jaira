@@ -1,7 +1,7 @@
 ---
 id: 01M5ZJ59EHSFBNKM048E64BZSR
 title: "jaira show nennt die optionalen Lanes, an denen next_lane vorbeigeht"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "jaira show --json fuehrt neben next_lane die optionalen Lanes (brainstorm, pre-process) auf, die uebersprungen werden, und wie man sie einschaltet (jaira dod <id> --option <lane>); ein Driver kann so Planung waehlen, statt sie unbemerkt zu verpassen."
@@ -16,11 +16,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:12:48Z
+updated-at: 2026-11-23T01:12:50Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
 claimed-at: 2026-11-23T01:10:10Z
+outcome-what: "jaira show --json gains skipped_lanes: every unticked optional lane ahead of the ticket with lane, option and the 'jaira dod <id> --option <opt>' that turns it on; the agent block says so in one sentence"
+outcome-why: drivers skipped pre-process on tickets that needed a plan because next_lane walks past optional lanes silently (O11)
+outcome-resolves: 64BZSR
 ---
 
 # jaira show nennt die optionalen Lanes, an denen next_lane vorbeigeht
