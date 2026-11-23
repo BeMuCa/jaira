@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:41:16Z
+updated-at: 2026-11-23T01:41:35Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -29,7 +29,7 @@ outcome-resolves: "Kein Worker startet mehr still in eine Maschine, die fuer sei
 review-summary: none
 review-gaps: "none: round 2 adds a trap and two mappings, nothing duplicated or orphaned; own unreleased hashes from 12cccd2 replaced in shipped.sha256 rather than piling up"
 test-verdict: "pass: round 2 over 12cccd2..6bc8af7: go vet + go build ./... green (go test not run, house rule). Extracted check of the committed spawn.sh (trap included): 976 MB -> 3, force -> 0, missing meminfo / no MemAvailable -> one line + 0, limit 0 -> 0, 20-digit limit -> 2, 9-digit limit -> 3, abc -> 2, discuss -> 0, a later command failing with 3 -> 1, with 5 -> 5. run-lane.sh copy with stub spawn: 3->6, 4->1, 5->1, 2->1. spawn.sh not run end to end (opens tabs). DoD 5 left for the person."
-hunt-verdict: "fail: bughunt done at 12cccd2ee, 2 change: run-lane read any spawn.sh exit 3 (e.g. herdr after the tab exists) as 'nothing started' -> second tab; huge JAIRA_MIN_FREE_MB skipped the check"
+hunt-verdict: "pass: bughunt done at 6bc8af7b0, 0 findings; round 1's 2 change findings fixed in 6bc8af7"
 round: 2
 back-from: testing
 back-by: lane
