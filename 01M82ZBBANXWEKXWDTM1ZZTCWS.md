@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T20:54:23Z
+updated-at: 2026-11-23T20:54:27Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 ---
@@ -32,6 +32,7 @@ updated-by: Alexander Sacharov
 - [ ] Felder ohne Nutzen fuer die Entscheidung sind von dieser Ansicht entfernt; welche, steht nach dem Brainstorm als Notiz am Ticket
 - [ ] Ein leeres Pflichtfeld zeigt, welche Lane es haette schreiben muessen
 - [ ] Release-Notiz in core/release/notes/<ID>.md
+- [ ] Eine 'blocker:'-Zeile aus review-gaps bleibt oben sichtbar; problem, resolves, summary, verdict und die uebrigen gaps sind hinter einer Taste erreichbar; Test
 
 ## Options
 
