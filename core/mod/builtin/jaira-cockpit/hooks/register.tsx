@@ -1487,12 +1487,13 @@ async function execute($: EngineInterface, w: Waiting, typed: string, share: num
   const c = await read($, choosingAtom)
   const items = c?.id === w.id ? c.items : []
   const seen = await seenOf($, w.id)
-  const e = executionOf(items, typed, w.acceptTo, seen.filter(x => !x.checked).length)
+  const unticked = seen.filter(x => !x.checked)
+  const e = executionOf(items, typed, w.acceptTo, unticked.length)
   const refuse = async (text: string) => void await update($, refusalAtom, () => ({ id: w.id, text }))
   await update($, refusalAtom, () => null)
   if (e.step === 'notTerminal') return refuse(t.notTerminal(w.id, w.lane))
   if (e.step === 'needWhy') return refuse(canType ? t.blockerNeedsWhy(w.id) : t.blockerNeedsTyping(w.id))
-  if (e.step === 'needSeen') return refuse(t.seenMissing(w.id, seen.filter(x => !x.checked).map(x => x.text)))
+  if (e.step === 'needSeen') return refuse(t.seenMissing(w.id, unticked.map(x => x.text)))
   // The pane closes once the ticket moved, as for Accept: a refusal before
   // that leaves the person's marks in it.
   if (e.step === 'giveBack') {

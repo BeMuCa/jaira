@@ -229,8 +229,9 @@ function wayOf(verdict: string, words: NonNullable<Lane['verdicts']>[]): Verdict
 export type Item = { n?: number; done?: boolean; state?: string; text?: string }
 
 // The items still open: neither done nor superseded.
+const isOpen = (i: Item) => i.state !== 'superseded' && i.done !== true
 export function openOf(items: readonly Item[] | undefined): number {
-  return (items ?? []).filter(i => i.state !== 'superseded' && i.done !== true).length
+  return (items ?? []).filter(isOpen).length
 }
 
 // The open definition-of-done items: those a person ticks at acceptance
@@ -243,7 +244,7 @@ export type SeenItem = { n: number; text: string; checked: boolean }
 export function seenItemsOf(showJson: string): SeenItem[] {
   const items = parse<{ dod_items?: Item[] }>(withoutWarnings(showJson))?.dod_items ?? []
   return items
-    .filter(i => typeof i.n === 'number' && i.state !== 'superseded' && i.done !== true && BY_A_PERSON.test(i.text ?? ''))
+    .filter(i => typeof i.n === 'number' && isOpen(i) && BY_A_PERSON.test(i.text ?? ''))
     .map(i => ({ n: i.n!, text: oneLine(i.text), checked: false }))
 }
 
