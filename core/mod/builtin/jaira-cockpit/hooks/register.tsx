@@ -1356,7 +1356,7 @@ async function openAcceptance($: EngineInterface, w: Waiting): Promise<void> {
   // Every opening starts on the original: Translate asks for the person's
   // language, never the opening (FMWBA8). A call still out from before shows
   // nothing.
-  untranslate($, w.id)
+  await untranslate($, w.id)
   const language = languageOf(await settingsJson($))
   const dir = await ticketDir($, board, w.id)
   const shown = await run($, ['jaira', 'show', w.id, '--json'], dir)
@@ -1525,17 +1525,19 @@ let rephrases = 0
 // again.
 async function translate($: EngineInterface, w: Waiting): Promise<void> {
   const on = (await read($, rephrasedAtom))[w.id] !== undefined || (await read($, translatingAtom)) === w.id
-  untranslate($, w.id)
+  await untranslate($, w.id)
   if (on) return
   const mine = rephrases
-  const language = languageOf(await settingsJson($))
-  if (language === undefined) return
+  // The language the pane opened with, which drew the button.
   const story = await read($, storyAtom)
-  const s = story?.id === w.id ? story.story : undefined
+  const language = story?.id === w.id ? story.language : undefined
+  if (language === undefined) return
+  const s = story?.story
   const c = await read($, choosingAtom)
   const items = c?.id === w.id ? c.items : []
   const reason = lightOf(w, (await read($, huntsAtom))[w.id], items.map(x => x.cls)).reasons[0]
-  const head = [...(s === undefined ? [w.title, w.goal] : [s.title, s.goal, s.what, s.why]), ...(reason === undefined ? [] : [t.lightReason(reason)])].filter(x => x !== '')
+  // The head as the pane draws it, fallbacks included.
+  const head = [s?.title || w.title, s?.goal || w.goal, s?.what ?? '', s?.why ?? '', ...(reason === undefined ? [] : [t.lightReason(reason)])].filter(x => x !== '')
   const notes = items.map(x => x.text)
   const texts = [...head, ...notes]
   await update($, translatingAtom, () => w.id)
@@ -1547,10 +1549,10 @@ async function translate($: EngineInterface, w: Waiting): Promise<void> {
 
 // The ticket's texts back to the original, and a call still out for it
 // shows nothing when it is answered.
-function untranslate($: EngineInterface, id: string): void {
+async function untranslate($: EngineInterface, id: string): Promise<void> {
   newest.set(id, ++rephrases)
-  void update($, translatingAtom, x => (x === id ? null : x))
-  void update($, rephrasedAtom, ({ [id]: _, ...rest }) => rest)
+  await update($, translatingAtom, x => (x === id ? null : x))
+  await update($, rephrasedAtom, ({ [id]: _, ...rest }) => rest)
 }
 
 // The notes in that language: kept in the store, or asked of the cheap model

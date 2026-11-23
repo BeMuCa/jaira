@@ -4883,6 +4883,18 @@ describe('review notes as a person reads them', () => {
     expect(w.modelCalls).toBe(1)
   })
 
+  test('a head the pane draws from the board row - no goal in show - is translated as drawn', async ($, on) => {
+    const w = withNotes(on, 'Русский')
+    w.tickets = [{ ...SIGNOFF, goal: 'a key per branch', review: { verdict: SIGNOFF.review.verdict, gaps: NOTES } }, HUMAN, WORKING]
+    w.shows.MG677R = { title: 'cache key', goal: '' }
+    w.translations = { ...dictionary(ru), 'a key per branch': 'ключ на ветку' }
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Goal: a key per branch')
+    await pane.press({ key: 'translate-MG677R' })
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Goal: ключ на ветку')
+  })
+
   test('Give back shows the notes translated and writes the originals onto the ticket', async ($, on) => {
     const w = withNotes(on, 'Русский')
     await startSession($)
@@ -4953,10 +4965,16 @@ describe('review notes as a person reads them', () => {
     w.modelHeld.shift()!()
     await w.clock.settle()
     expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain(ORIGINAL[0])
-    // Pressed again and the pane opened anew while the call waits.
+    // The answer that came back is kept all the same: the next press shows
+    // it at once, without a call.
+    await pane.press({ key: 'translate-MG677R' })
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain(`🔴 ${de[0]}`)
+    expect(w.modelCalls).toBe(1)
+    // Another language, pressed, and the pane opened anew while the call waits.
     w.translations = dictionary(ru)
     w.files.set(SETTINGS, JSON.stringify({ language: 'Русский' }))
-    void pane.press({ key: 'translate-MG677R' })
+    const ru_ = await acceptancePane($, band, 'MG677R')
+    void ru_.press({ key: 'translate-MG677R' })
     await w.clock.settle()
     expect(w.modelHeld).toHaveLength(1)
     const again = await acceptancePane($, band, 'MG677R')
