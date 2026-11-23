@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"image/color"
+	"io/fs"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -401,7 +402,9 @@ func (m *Model) openDiffRow() tea.Cmd {
 	cur := settings.Load()
 	argv := ideCommand(cur.IDETemplate(), r.path, r.line)
 	err := openInCode(m.diffDir, argv)
-	if errors.Is(err, exec.ErrNotFound) {
+	// A bare program name fails Start with exec.ErrNotFound; a path to a missing
+	// program (./ide, /opt/x/idea.sh) fails with fs.ErrNotExist.
+	if errors.Is(err, exec.ErrNotFound) || errors.Is(err, fs.ErrNotExist) {
 		editor, _ := editorChoice(cur)
 		cmd := exec.Command(editor[0], append(editor[1:], r.path)...)
 		cmd.Dir = m.diffDir

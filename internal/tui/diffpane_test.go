@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"io/fs"
 	"os/exec"
 	"slices"
 	"strings"
@@ -632,5 +633,29 @@ func TestOKeyFallsBackToTheEditorWhenTheIDEIsMissing(t *testing.T) {
 	}
 	if out := stripANSI(m.render()); !strings.Contains(out, "definitely-not-installed-xyz not found — opened in ") {
 		t.Errorf("diff title does not say the IDE is missing:\n%s", out)
+	}
+}
+
+// A template that names the IDE by path fails Start with fs.ErrNotExist, not
+// exec.ErrNotFound, so 'o' must still fall back to the editor.
+func TestOKeyFallsBackToTheEditorWhenTheIDEPathIsMissing(t *testing.T) {
+	orig := openInCode
+	openInCode = func(_ string, argv []string) error {
+		return &fs.PathError{Op: "fork/exec", Path: argv[0], Err: fs.ErrNotExist}
+	}
+	t.Cleanup(func() { openInCode = orig })
+
+	m := diffModel(t, 160, "signoff")
+	if _, err := settings.Update(func(cur *settings.Settings) { cur.IDE = "/opt/definitely-not-installed-xyz/ide {file}" }); err != nil {
+		t.Fatal(err)
+	}
+	m.diffDir = "/repo/worktree"
+	m.render()
+	_, cmd := m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
+	if cmd == nil {
+		t.Fatal("no editor command was returned for the fallback")
+	}
+	if out := stripANSI(m.render()); !strings.Contains(out, "/opt/definitely-not-installed-xyz/ide not found — opened in ") {
+		t.Errorf("diff title does not say the IDE path is missing:\n%s", out)
 	}
 }
