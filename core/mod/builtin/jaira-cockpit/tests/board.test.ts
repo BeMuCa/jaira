@@ -2448,7 +2448,7 @@ describe('give back', () => {
     expect(w.toasts.at(-1)).toBe('MG677R back in in-progress; its worker waits at an approval dialog in pane w1:p9 - answer it there, then type the decision into it. No Enter was pressed for you.')
   })
 
-  test('a dialog that opens in the second between the text and its Enter gets no Enter', async ($, on) => {
+  test('a dialog that opens in the second between the text and its Enter gets no Enter, and the decision counts as handed over', async ($, on) => {
     const w = world(on, { herdr: true, store: big(500_000) })
     w.tabs = [{ tab_id: 'w1:t9', label: 'MG677R/worker', agent_status: 'working' }]
     w.paneStates = ['working', 'blocked']
@@ -2457,7 +2457,11 @@ describe('give back', () => {
     expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
     expect(ran(w, 'herdr', 'pane', 'send-keys')).toEqual([])
     expect(spawned(w)).toEqual([])
-    expect(lastNote(w)).toBe('cockpit: given back to nobody (no worker started) - the old worker waits at an approval dialog in pane w1:p9; no Enter pressed, no second worker started')
+    // The text arrived (Herdr App's hc send even pressed Enter with it): the
+    // old worker has the decision, nobody is told to type it again.
+    expect(lastNote(w)).toBe('cockpit: given back to the old worker - the old worker is at work in its tab; a dialog opened before the Enter, none pressed')
+    expect(w.toasts.at(-1)).toBe('MG677R given back to the worker that carried it; an approval dialog opened in pane w1:p9 before the Enter - answer it there, then press Enter if the decision still waits in its input.')
+    expect(w.submitted.at(-1)).toContain('worker that carried it MG677R/worker (pane w1:p9) at an approval dialog')
   })
 
   test('Give back twice in a row: one worker, the second press finds the ticket already back', async ($, on) => {

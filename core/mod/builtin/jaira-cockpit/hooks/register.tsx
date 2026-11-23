@@ -1811,7 +1811,13 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
     const sent = await run($, [bin, 'pane', 'send-text', record.pane, backMessage(id, lane, reason)], dir)
     if (sent?.exitCode === 0) {
       await $.clock.sleep(1000)
-      if (await paneBlocked($, bin, record.pane, dir)) return atDialog(`pane ${record.pane}`)
+      // The text has arrived either way: Herdr App's hc send pressed Enter
+      // with it, plain Herdr holds it in the input under the dialog. So it
+      // is the old worker's, and only the Enter is left to the person.
+      if (await paneBlocked($, bin, record.pane, dir)) {
+        await handedTo('old', `${why}; a dialog opened before the Enter, none pressed`, `${tab?.label ?? `${id}/worker`} (pane ${record.pane}) at an approval dialog: answer it, then press Enter there if the decision still waits in its input`)
+        return say($, t.dialogBeforeEnter(id, record.pane))
+      }
       await run($, [bin, 'pane', 'send-keys', record.pane, 'enter'], dir)
       return handedTo('old', why, `${tab?.label ?? `${id}/worker`} (pane ${record.pane})`)
     }

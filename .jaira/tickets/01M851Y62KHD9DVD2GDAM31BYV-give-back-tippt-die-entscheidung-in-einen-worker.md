@@ -1,7 +1,7 @@
 ---
 id: 01M851Y62KHD9DVD2GDAM31BYV
 title: "Give back tippt die Entscheidung in einen Worker-Tab, der an einem Freigabe-Dialog haengt"
-status: testing
+status: critique
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -20,21 +20,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T20:35:39Z
-updated-at: 2026-11-23T20:51:53Z
+updated-at: 2026-11-23T20:58:27Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-41227
 claimed-at: 2026-11-23T20:36:42Z
-outcome-what: "Give back never types into or presses Enter in a worker waiting at an approval dialog: the carrier tab's status and the recorded pane's own status (herdr pane get, before the text and before the Enter) are checked; ticket note, teamlead line and toast name the waiting tab or pane; nothing replaced"
+outcome-what: "Give back never types into or presses Enter in a worker waiting at an approval dialog: the carrier tab's status and the recorded pane's own status (herdr pane get, before the text and before the Enter) are checked; a dialog before the text: nothing sent, the tab or pane named; a dialog after it: no Enter, recorded as handed to the old worker, the person told to answer the dialog and press Enter only if the decision still waits"
 outcome-why: "send-text + Enter into a pane at an approval dialog answered the dialog for the person, unseen"
 outcome-resolves: "M31BYV: decision no longer lands in an approval dialog"
 review-summary: "none"
-round: 3
+round: 4
 back-from: testing
 back-by: lane
-back-count: 1
+back-count: 2
 review-gaps: "none to remove: paneBlocked is the only 'herdr pane get' reader in hooks/ (spawn.sh reads it in bash); atDialog serves three callers; added: core/shipped/shipped.sha256 regenerated (TestEveryInstalledFileIsAShippedVersion was red - the plugin suite does not run it)"
-test-verdict: "pass: plugin suite green (rc=0, 523 pass), DoD 1-3 verified in the tree; Herdr not runnable here, behaviour exercised through the mod's test world"
-hunt-verdict: "fail: guard reads the carrier tab's status but types into record.pane, which may be another (blocked) pane; and nothing is re-read before the Enter"
+test-verdict: "pass: go vet + go test ./... rc=0, cockpit plugin test rc=0 (525 pass), shipped-history --check ok; DoD 1-3 verified in the tree; behaviour exercised in the mod's test world: blocked tab, blocked recorded pane under an idle tab, dialog raised before the Enter - each sends no keys, closes no tab, starts no worker; pane get failing falls through to the old send-text path (paneGone test); writes only ticket notes through jaira, no new write path"
+hunt-verdict: "fail: a dialog seen after send-text is reported as 'given back to nobody' although the text arrived (hc send already pressed Enter) - person and teamlead told to type it again"
 ---
 
 # Give back tippt die Entscheidung in einen Worker-Tab, der an einem Freigabe-Dialog haengt
@@ -42,9 +42,9 @@ hunt-verdict: "fail: guard reads the carrier tab's status but types into record.
 ## Definition of Done
 
 - [x] Give back tippt nichts und drueckt kein Enter in einen Tab mit agent_status=blocked; Test in core/mod/builtin/jaira-cockpit/tests
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1794 (tab) and core/mod/builtin/jaira-cockpit/hooks/register.tsx:1844 paneBlocked before send-text and before Enter; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:2418, core/mod/builtin/jaira-cockpit/tests/board.test.ts:2433, core/mod/builtin/jaira-cockpit/tests/board.test.ts:2451
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1794 (tab) and core/mod/builtin/jaira-cockpit/hooks/register.tsx:1850 paneBlocked before send-text and before Enter; tests core/mod/builtin/jaira-cockpit/tests/board.test.ts:2418, core/mod/builtin/jaira-cockpit/tests/board.test.ts:2433, core/mod/builtin/jaira-cockpit/tests/board.test.ts:2451
 - [x] Die Person sieht in der Meldung von Give back, dass der Worker an einem Freigabe-Dialog wartet und in welchem Tab
-  proof: hooks/texts.ts workerBlocked names the tab or pane; asserted in core/mod/builtin/jaira-cockpit/tests/board.test.ts:2418 and core/mod/builtin/jaira-cockpit/tests/board.test.ts:2433
+  proof: hooks/texts.ts workerBlocked / dialogBeforeEnter name the tab or pane; asserted in core/mod/builtin/jaira-cockpit/tests/board.test.ts:2418, core/mod/builtin/jaira-cockpit/tests/board.test.ts:2433, core/mod/builtin/jaira-cockpit/tests/board.test.ts:2451
 - [x] Release-Note in core/release/notes/<ID>.md
   proof: core/release/notes/M31BYV.md
 
@@ -69,3 +69,8 @@ hunt-verdict: "fail: guard reads the carrier tab's status but types into record.
 - **2026-11-23 20:44 · Alexander Sacharov** — testing: class: the blocked check looks at a tab, the keys go to a pane - status of one object, keystrokes to another, read once; example: bughunt notes 1+2 (record.pane in another session's pane at a dialog, carrier tab idle; dialog raised during the 1s before Enter); fix: ask 'herdr pane get <record.pane>' (result.pane.agent_status, as spawn.sh:549) right before send-text and again right before send-keys enter; blocked at either -> no keys, handedTo none naming the pane; keep the tab check (it stops closing a blocked tab and spawning beside it). Test both points.
 - **2026-11-23 20:49 · Alexander Sacharov** — in-progress round 2: blocked is now asked of the recorded pane itself (herdr pane get, as spawn.sh) before send-text and before Enter, besides the tab check. Remaining window: a dialog opening between the last pane get and the Enter (milliseconds) - no check closes that, accepted. Pre-existing bughunt finding (failed tab list -> second worker) left as a note for the person: other subject (tab list error path), not this goal.
 - **2026-11-23 20:51 · Alexander Sacharov** — optimize: core/role TestEveryInstalledFileIsAShippedVersion was red - changed cockpit files need their version in core/shipped/shipped.sha256; regenerated with scripts/shipped-history.sh --write. Gate for this ticket = plugin test AND go test ./...
+- **2026-11-23 20:54 · Alexander Sacharov** — waiting: bughunt round 2 (background subagent) since 21:54
+- **2026-11-23 20:54 · Alexander Sacharov** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1815 - class: the second paneBlocked check runs after send-text already delivered the decision, yet reports it as not handed over (atDialog -> handedTo('none') note, toast, teamlead line 'worker ... type the decision into it'); example: under Herdr App (HC_TERMINAL_ID set, bin = herdr-hc.sh) 'pane send-text' is 'hc send', which pastes AND presses Enter (herdr-hc.sh:116-119), so the old worker has already received and submitted the decision; it then opens an approval dialog within the 1s sleep (likely: it starts acting on the decision), and the ticket gets 'given back to nobody (no worker started) ... no Enter pressed', the person is told to type the decision again (worker gets it twice) and the teamlead is told nobody carries it. On plain Herdr the text sits pasted in the input under the dialog and the same 'type the decision into it' makes a duplicate too; test 'a dialog that opens in the second between the text and its Enter gets no Enter' (board.test.ts) asserts this note; blame: cdf607c97 (names M31BYV); read
+- **2026-11-23 20:55 · Alexander Sacharov** — hunt report: 1 finding, 1 change (blocker), note on M31BYV | read as a diff since 9986c0694: register.tsx, texts.ts, board.test.ts, release note M31BYV.md; read whole (new to the list): core/shipped/shipped.sha256 (current register.tsx/texts.ts hashes present; go test ./core/shipped ./core/role green); claude plugin test: 525 pass | not checkable here: the ms window between paneBlocked and send-text (a dialog opening there still receives the pasted keys) - needs live Herdr, inherent to check-then-act
+- **2026-11-23 20:55 · Alexander Sacharov** — bughunt: done at 191070c36 - 1 finding (1 change, 0 pre-existing) in 5 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/M31BYV.md core/shipped/shipped.sha256
+- **2026-11-23 20:55 · Alexander Sacharov** — testing: class: after send-text the decision has arrived, whatever happens next; any report after that point that says 'nobody / type it again' is wrong; example: bughunt round 2 (register.tsx:1815, herdr-hc.sh:116-119); fix: keep the check before the Enter (plain Herdr: an Enter into the dialog would answer it) but report handedTo old - text is in its pane, Enter not pressed, answer the dialog, then press Enter there only if the decision still waits in its input. Kept rather than dropped: on the working path a dialog within that 1s is likely.
