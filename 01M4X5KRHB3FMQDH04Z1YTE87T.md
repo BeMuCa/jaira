@@ -1,7 +1,7 @@
 ---
 id: 01M4X5KRHB3FMQDH04Z1YTE87T
 title: "Zwei Worker treffen sich auf einem Join-Board und einigen sich, wie ihre Teile zusammenpassen"
-status: backlog
+status: brainstorm
 ready: true
 creator: BeMuCa
 assignee: BeMuCa
@@ -19,7 +19,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:51Z
-updated-at: 2026-11-23T22:45:42Z
+updated-at: 2026-11-23T22:45:46Z
 updated-by: BeMuCa
 claimed-by: teamlead-lane-graph
 claimed-at: 2026-11-23T22:45:37Z
