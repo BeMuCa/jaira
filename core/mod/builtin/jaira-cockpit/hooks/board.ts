@@ -226,16 +226,48 @@ function wayOf(verdict: string, words: NonNullable<Lane['verdicts']>[]): Verdict
   return 'other'
 }
 
-export type Item = { done?: boolean; state?: string; text?: string }
+export type Item = { n?: number; done?: boolean; state?: string; text?: string }
 
 // The items still open: neither done nor superseded.
+const isOpen = (i: Item) => i.state !== 'superseded' && i.done !== true
 export function openOf(items: readonly Item[] | undefined): number {
-  return (items ?? []).filter(i => i.state !== 'superseded' && i.done !== true).length
+  return (items ?? []).filter(isOpen).length
 }
 
 // The open definition-of-done items: those a person ticks at acceptance
 // ('seen by a person: ...') and the rest.
 const BY_A_PERSON = /^\s*seen by a person\s*:/i
+// The open 'seen by a person' items themselves, by number and text, off
+// `jaira show --json`: the Acceptance pane lists them for the person to tick
+// (DKMG91). An item without a number cannot be ticked and is left out.
+export type SeenItem = { n: number; text: string; checked: boolean }
+export function seenItemsOf(showJson: string): SeenItem[] {
+  const items = parse<{ dod_items?: Item[] }>(withoutWarnings(showJson))?.dod_items ?? []
+  return items
+    .filter(i => typeof i.n === 'number' && isOpen(i) && BY_A_PERSON.test(i.text ?? ''))
+    .map(i => ({ n: i.n!, text: oneLine(i.text), checked: false }))
+}
+
+// Which of the items the person ticked in the pane Accept still ticks, read
+// against the ticket as it is now: the pane's list was read when it opened,
+// and jaira dod --done overwrites whatever an item holds. One ticked
+// meanwhile keeps its own proof; one superseded, reworded or gone is changed,
+// and Accept ticks nothing then - the person saw another text.
+export function seenToTick(ticked: readonly SeenItem[], showJson: string): { tick: number[]; changed: string[] } {
+  const now = new Map((parse<{ dod_items?: Item[] }>(withoutWarnings(showJson))?.dod_items ?? []).map(i => [i.n, i]))
+  const tick: number[] = []
+  const changed: string[] = []
+  for (const x of ticked) {
+    const i = now.get(x.n)
+    if (i === undefined || i.state === 'superseded' || oneLine(i.text) !== x.text) changed.push(x.text)
+    else if (i.done !== true) tick.push(x.n)
+  }
+  return { tick, changed }
+}
+
+// What Accept writes as the proof of a 'seen by a person' item it ticks.
+export const seenProof = (who: string | undefined) => `seen by ${who?.trim() || 'a person'} in the cockpit`
+
 function dodOpenOf(items: readonly Item[]): { person: number; other: number } {
   const person = openOf(items.filter(i => BY_A_PERSON.test(i.text ?? '')))
   return { person, other: openOf(items) - person }
@@ -1132,18 +1164,19 @@ export function rephrasedOf(answer: string, n: number): string[] | undefined {
 // words are that reason, not work to do. Nothing to fix accepts — through the
 // same gates as Accept — where the next lane ends the work; in a lane that
 // does not (human -> review) there is nothing to accept: words typed give it
-// back, nothing typed does nothing.
-export type Step = 'giveBack' | 'accept' | 'needWhy' | 'notTerminal'
+// back, nothing typed does nothing. An accept with 'seen by a person' items
+// still unticked in the pane (unseen) is no accept yet: it waits for them.
+export type Step = 'giveBack' | 'accept' | 'needWhy' | 'notTerminal' | 'needSeen'
 export type Execution = { step: Step; fix: number; followUps: number; asksWhy: boolean }
 
-export function executionOf(items: readonly GapItem[], typed: string, acceptTo: string | null): Execution {
+export function executionOf(items: readonly GapItem[], typed: string, acceptTo: string | null, unseen = 0): Execution {
   const fix = items.filter(i => i.choice === 'now').length
   const followUps = items.filter(i => i.choice === 'later' && i.follow === undefined).length
   // Only where the ticket can be accepted at all: elsewhere words typed are
   // what is missing, never a reason to accept.
   const asksWhy = acceptTo !== null && fix === 0 && items.some(i => i.cls === 'blocker' && i.choice !== 'now')
   const words = typed.trim() !== ''
-  const step: Step = fix > 0 || (words && !asksWhy) ? 'giveBack' : acceptTo === null ? 'notTerminal' : asksWhy && !words ? 'needWhy' : 'accept'
+  const step: Step = fix > 0 || (words && !asksWhy) ? 'giveBack' : acceptTo === null ? 'notTerminal' : asksWhy && !words ? 'needWhy' : unseen > 0 ? 'needSeen' : 'accept'
   return { step, fix, followUps, asksWhy }
 }
 

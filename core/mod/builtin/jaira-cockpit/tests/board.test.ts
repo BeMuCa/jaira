@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { acceptTreeFor, carrierFor, ghRepoOf, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, snapshotOf, storyOf, translatePrompt, type Waiting } from '../hooks/board.ts'
+import { acceptTreeFor, carrierFor, ghRepoOf, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenToTick, snapshotOf, storyOf, translatePrompt, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 
@@ -67,6 +67,8 @@ type World = {
   // `jaira note` with a give-back reason fails after the move went through.
   noteFails: boolean
   toasts: string[]
+  // The definition-of-done item whose `jaira dod` fails (DKMG91).
+  dodFails?: string
   // What `jaira whoami --json` says; undefined: it says nothing.
   me?: { identity: string; aliases: string[] }
   // The ticket bodies `jaira show --json` gives, by id.
@@ -373,6 +375,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'note' && w.noteFails && args[2]?.startsWith('Given back')) {
       return { value: { exitCode: 1, stdout: '', stderr: 'jaira: ticket file is locked', isStdoutTruncated: false, isStderrTruncated: false } }
     }
+    if (cmd === 'jaira' && args[0] === 'dod' && args[2] === w.dodFails) return { value: { exitCode: 3, stdout: '', stderr: 'jaira: the board is locked', isStdoutTruncated: false, isStderrTruncated: false } }
     if (cmd === 'jaira' && args[0] === 'whoami') return ok(w.me === undefined ? '' : JSON.stringify(w.me))
     if (cmd === 'jaira' && args[0] === 'show' && args.includes('--brief')) {
       const id = args[1]!
@@ -5718,6 +5721,149 @@ describe('where Accept moves a ticket', () => {
       expect(acceptTreeFor(porcelain, 'ZZ99ZZ', carrier)).toEqual(want)
     })
   }
+})
+
+// DKMG91: a 'seen by a person' item of the definition of done stands in the
+// Acceptance pane as a section of its own, above the review notes; the person
+// ticks it there, and Accept ticks it on the ticket before it moves it.
+describe('what the person checks themselves', () => {
+  const texts = async (pane: { findAll: (q: { type: 'Text' }) => Promise<{ text: string }[]> }) => (await pane.findAll({ type: 'Text' })).map(x => x.text)
+  const SEEN = [
+    { n: 1, done: true, state: 'done', text: 'the key names the branch' },
+    { n: 2, done: false, state: 'todo', text: 'seen by a person: the band shows the branch' },
+    { n: 3, done: true, state: 'done', text: 'seen by a person: already ticked' },
+    { n: 4, done: false, state: 'superseded', text: 'seen by a person: superseded' },
+  ]
+  const setUp = (on: On) => {
+    const w = world(on)
+    w.tickets = [{ ...SIGNOFF, review: { verdict: 'accept', gaps: 'note: a test is missing' } }, HUMAN, WORKING]
+    w.shows.MG677R = { title: 'cache key', dod_items: SEEN }
+    w.me = { identity: 'Alex', aliases: [] }
+    return w
+  }
+
+  test('open items stand above the review notes, each with its text; ticked and superseded ones do not', async ($, on) => {
+    setUp(on)
+    await startSession($)
+    const all = await texts(await acceptancePane($, await $.ui.mount(BAND), 'MG677R'))
+    const heading = all.indexOf('Check yourself - tick what you have seen')
+    expect(heading).toBeGreaterThan(-1)
+    // MK8HD2's section heading: the title, then a dim rule as a text of its own.
+    const item = all.indexOf('[ ] 2. seen by a person: the band shows the branch')
+    expect(item).toBeGreaterThan(heading)
+    expect(all.slice(heading + 1, item).every(x => /^\s*─+$/.test(x))).toBe(true)
+    expect(all.indexOf('Review notes - choose for each')).toBeGreaterThan(item)
+    expect(all.some(x => x.includes('already ticked') || x.includes('person: superseded'))).toBe(false)
+    expect(all).toContain('Execute: tick what you checked above first, then done')
+  })
+
+  test('a ticket without such items shows no section, and Execute accepts as before', async ($, on) => {
+    const w = setUp(on)
+    w.shows.MG677R = { title: 'cache key', dod_items: [SEEN[0], SEEN[2]] }
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    const all = await texts(pane)
+    expect(all.some(x => x.startsWith('Check yourself'))).toBe(false)
+    expect(all).toContain('Execute: done')
+    await pane.press({ key: 'execute-MG677R' })
+    expect(ran(w, 'jaira', 'dod')).toEqual([])
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
+  })
+
+  test('Execute with an item not ticked accepts nothing and names the item', async ($, on) => {
+    const w = setUp(on)
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await pane.press({ key: 'execute-MG677R' })
+    expect(ran(w, 'jaira', 'dod')).toEqual([])
+    expect(ran(w, 'jaira', 'move').filter(r => r[1] === 'MG677R')).toEqual([])
+    expect(await texts(pane)).toContain('MG677R: not accepted - one item is still to check yourself and tick:\n- seen by a person: the band shows the branch')
+    expect(w.closed).not.toContain('cockpit-acceptance')
+  })
+
+  test('ticked, one Execute ticks it on the ticket with the person named, then accepts', async ($, on) => {
+    const w = setUp(on)
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await pane.press({ key: 'seen-MG677R-2' })
+    expect(await texts(pane)).toContain('[✓] 2. seen by a person: the band shows the branch')
+    expect(await texts(pane)).toContain('Execute: done')
+    await pane.press({ key: 'execute-MG677R' })
+    expect(ran(w, 'jaira', 'dod').map(r => r.slice(0, -1))).toEqual([['jaira', 'dod', 'MG677R', '2', '--done', '--proof', 'seen by Alex in the cockpit']])
+    const order = w.ran.filter(r => r[0] === 'jaira' && ['dod', 'move'].includes(r[1]!) && r[2] === 'MG677R').map(r => (r[1] === 'dod' ? 'dod' : r.includes('--dry-run') ? 'dry-run' : 'move'))
+    expect(order).toEqual(['dod', 'dry-run', 'move'])
+    expect(w.closed).toContain('cockpit-acceptance')
+  })
+
+  test('a tick pressed twice is taken back', async ($, on) => {
+    setUp(on)
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await pane.press({ key: 'seen-MG677R-2' })
+    await pane.press({ key: 'seen-MG677R-2' })
+    expect(await texts(pane)).toContain('[ ] 2. seen by a person: the band shows the branch')
+  })
+
+  // The pane's list is read when it opens: what changed on the ticket since
+  // is read again before anything is written (bughunt 23.11., two findings).
+  const TWO = [SEEN[1], { n: 5, done: false, state: 'todo', text: 'seen by a person: the docs read well' }]
+  const ticked = async ($: Test$, w: World, items: unknown[]) => {
+    w.shows.MG677R = { title: 'cache key', dod_items: TWO }
+    await startSession($)
+    const pane = await acceptancePane($, await $.ui.mount(BAND), 'MG677R')
+    await pane.press({ key: 'seen-MG677R-2' })
+    await pane.press({ key: 'seen-MG677R-5' })
+    w.shows.MG677R = { title: 'cache key', dod_items: items }
+    await pane.press({ key: 'execute-MG677R' })
+    return pane
+  }
+
+  test('a refusal after some items were ticked names them instead of saying nothing changed', async ($, on) => {
+    const w = setUp(on)
+    w.dodFails = '5'
+    const pane = await ticked($, w, TWO)
+    expect(await texts(pane)).toContain('MG677R was not accepted; only definition-of-done item 2 was ticked as seen by you:\njaira: the board is locked')
+    expect(ran(w, 'jaira', 'move').filter(r => r[1] === 'MG677R')).toEqual([])
+  })
+
+  test('a gate refusing after the ticks names them too', async ($, on) => {
+    const w = setUp(on)
+    w.refusals = [...w.refusals, { code: 'needs_nonmodel_signal', message: 'criterion 1 is still open' }]
+    const pane = await ticked($, w, TWO)
+    expect(await texts(pane)).toContain('MG677R was not accepted; only definition-of-done items 2, 5 were ticked as seen by you:\ncriterion 1 is still open')
+  })
+
+  for (const [how, changed] of [['reworded', { ...TWO[1], text: 'seen by a person: the docs and the help read well' }], ['superseded', { ...TWO[1], state: 'superseded' }]] as const) {
+    test(`an item ${how} since the pane opened ticks nothing and accepts nothing`, async ($, on) => {
+      const w = setUp(on)
+      const pane = await ticked($, w, [TWO[0], changed])
+      expect(ran(w, 'jaira', 'dod')).toEqual([])
+      expect(ran(w, 'jaira', 'move').filter(r => r[1] === 'MG677R')).toEqual([])
+      expect(await texts(pane)).toContain('MG677R was not accepted, nothing was changed:\nthis item changed on the ticket since the pane opened - close it, open it again and look once more:\n- seen by a person: the docs read well')
+    })
+  }
+
+  test('an item ticked meanwhile keeps its own proof', async ($, on) => {
+    const w = setUp(on)
+    await ticked($, w, [TWO[0], { ...TWO[1], done: true, state: 'done', proof: 'seen by Berk' }])
+    expect(ran(w, 'jaira', 'dod').map(r => r[3])).toEqual(['2'])
+    expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
+  })
+
+  test('seenToTick: open and unchanged ticks, done meanwhile skips, gone or changed stops', () => {
+    const shown = (items: unknown[]) => JSON.stringify({ dod_items: items })
+    const a = { n: 1, text: 'seen by a person: a', checked: true }
+    expect(seenToTick([a], shown([{ n: 1, done: false, state: 'todo', text: 'seen by a person:  a' }]))).toEqual({ tick: [1], changed: [] })
+    expect(seenToTick([a], shown([{ n: 1, done: true, state: 'done', text: 'seen by a person: a' }]))).toEqual({ tick: [], changed: [] })
+    expect(seenToTick([a], shown([]))).toEqual({ tick: [], changed: ['seen by a person: a'] })
+  })
+
+  test('executionOf waits for the items; a note to fix still gives back', () => {
+    expect(executionOf([], '', 'done', 1).step).toBe('needSeen')
+    expect(executionOf([], '', 'done', 0).step).toBe('accept')
+    expect(executionOf([], 'missing', 'done', 1).step).toBe('giveBack')
+    expect(executionOf([], '', null, 1).step).toBe('notTerminal')
+  })
 })
 
 // Every form git takes for a remote, taken apart as core/pr's parseRemote

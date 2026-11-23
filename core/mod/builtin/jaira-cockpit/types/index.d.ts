@@ -31,6 +31,10 @@ declare module 'claude-code' {
       // The review notes that pane lists, each with what the person chose
       // for it (fix now, follow-up, accept).
       choosing: { id: string; items: { text: string; cls: 'blocker' | 'edge' | 'limit' | 'elsewhere'; choice: 'now' | 'later' | 'accept'; earlier?: 'now' | 'later' | 'accept'; follow?: string }[] } | null
+      // The definition-of-done items only a person ticks ('seen by a
+      // person: ...'), open on the ticket the Acceptance pane shows, each
+      // with whether the person ticked it there (board.ts SeenItem).
+      seen: { id: string; items: { n: number; text: string; checked: boolean }[] } | null
       // The ticket the pane shows.
       paneTicket: string | null
       // Moves once a minute, so the cache countdown redraws.
