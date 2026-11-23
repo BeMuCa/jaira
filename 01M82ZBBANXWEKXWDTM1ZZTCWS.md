@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:26:29Z
+updated-at: 2026-11-23T21:27:07Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -91,3 +91,4 @@ back-count: 2
 - **2026-11-23 21:25 · Alexander Sacharov** — testing -> in-progress (round 3): fix - a blocker line whose label stands alone keeps its row, shown as written (no empty string). Let stand as a note for the person: Details repeat the Commits block (recorded list only, the detail pane's own pre-existing behaviour), the DoD and 'Before this can start' - it is the whole detail pane by design; filtering it would bring back a second renderer (the smaller design chosen in round 2).
 - **2026-11-23 21:26 · Alexander Sacharov** — critique+optimize (pass 3, one pass - 20 lines since 383b42d9e): label-alone blocker keeps its row as written - addressed (blockerLines falls back to the line, 3 cases tested). Nothing to simplify or remove. review-summary=none.
 - **2026-11-23 21:26 · Alexander Sacharov** — waiting: round-3 bughunt (subagent) and race run internal/tui (bg) since 22:26
+- **2026-11-23 21:27 · Alexander Sacharov** — bughunt: change: internal/tui/signoff.go:170-174 (blockerLines, 2880173dd) - class: a blocker label line that carries no finding of its own (a label standing alone with the finding on the next line, or a label followed only by leftover emphasis); the row shows the label or the leftover in place of the finding, and the lines after it are never read. example: review-gaps 'blocker:\n- the limit resets on restart' renders 'blocker      blocker:', '**Blocker:**\n  token leaks to log' renders 'blocker      **Blocker:**', 'blocker: **' renders 'blocker      **'. The person sees that a blocker exists but not what it is unless they press 'i'. Not a blocker: the row is there and the full gaps sit behind 'i'. ran: scratch test calling renderSignOff on those three inputs (go test ./internal/tui -run TestZZHunt -v, output as quoted); the new test in signoff_test.go:114-124 only checks that the row is not empty, so it passes
