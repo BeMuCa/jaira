@@ -21,27 +21,35 @@ related:
   - 01M5MNWJF240306ZVDA41K3RA8
 commits: []
 created-at: 2026-10-30T23:44:36Z
-updated-at: 2026-11-23T21:00:03Z
+updated-at: 2026-11-23T21:12:14Z
 updated-by: Alexander Sacharov
 outcome-what: "jaira web schreibt unter dem aktuellen jaira-Namen (actAsNow vor jeder Schreibaktion) und die Seite liest nach jedem Fetch neu"
 outcome-why: "Rueckgabe aus signoff: Namen im Web sollen reaktiv sein"
 outcome-resolves: "Limit 'jaira web handelt unter dem Namen vom Start' fuer web aufgehoben; TUI bleibt wie angenommen"
-review-summary: "none"
-round: 9
-back-from: testing
+review-summary: "Full review (the delta since 4c2ddaf8b is 90 lines and touches locking). Shipped: refs/jaira/people holds one line per person (jaira name: aliases), written by 'jaira people alias|rename' through fetch + leased push that redoes the change on the winner's list when a race is lost; core/identity resolves git user.name/email (JAIRA_USER first, alone) to the jaira name, so creator, assignee, claims, updated_by and ref authors carry it, and create --assignee / set assignee= store the canonical name; list/next/show/JSON/TUI/web/refusals display canonical names without rewriting ticket files; snapshot carries the list as 'people'. Latest round: jaira web re-resolves who acts on every page write (actAsNow, under a new pushing lock shared with the page's push) and the page reloads after every fetch, the first one included. DoD 1-3 were replaced by Alex's decision note (shared ref instead of a local setting) and are struck, not unmet. go test ./... green; -race green on people, identity, snapshot, web and the web/people cli tests."
+round: 10
+back-from: review
 back-by: lane
-back-count: 2
-review-gaps: "none - push() is a 3-line wrapper kept on purpose: it carries the lock webPush must not take for the CLI"
-test-verdict: "fail: suite green (go test -race ./... RC=0, npm test 25/25), DoD verified; but e2e on a scratch board with a bare remote: after 'jaira people alias \"Ada Lovelace\" ada' under a running jaira web, the epic ref commit was still authored 'ada' - refs.Repo.AuthorName stays the name from open"
-hunt-verdict: "pass: bughunt done at cb2fef7de, 0 change, 0 pre-existing"
+back-count: 1
+review-gaps: |-
+  note: edge: fix-now: internal/cli/web_source.go:51 actAsNow takes w.pushing on every write while w.mu is held, so a page write now waits for any running push, and every read (Epics, Ticket, Lanes take w.mu) queues behind it - with an unreachable remote the page hangs until git gives up; fix: resolve who, and return before locking when w.s.Actor, refs.Actor and refs.Repo.AuthorName already equal it (only actAsNow writes them, always under w.mu, so the compare is safe)
+  note: limit: progress-note authors and executed_by keep the name they were written under (release note says so)
+  note: elsewhere: internal/cli/sync.go:182 stores a Claude Code task owner as assignee without Canonical - an agent task owner, new ticket if it should resolve too
+  note: elsewhere: core/identity Aliases adds git user.email even under JAIRA_USER, so IsMe counts the checkout owner's email-assigned tickets; same on master
+  note: elsewhere: core/refsync/refsync.go Departed drops the Repo.List error and reads it as no refs; before this change
+test-verdict: "pass: go vet + go test -race ./... RC=0, npm build/test 25/25; DoD 10 verified (TestWebWritesUnderTheNameThePeopleListGivesNow fails without each fix); e2e on scratch board with bare remote: rename under a running jaira web -> next epic ref commit authored 'Ada King'; empty epic name -> 400, nothing written; two writers: page writes and pushes serialised by webSource.mu/pushing, race suite green"
+hunt-verdict: "pass: bughunt done at 595a841b3, 0 change, 0 pre-existing"
 claimed-by: DESKTOP-RFTCH11-64758
 claimed-at: 2026-11-23T20:42:04Z
-review-verdict: "accept: give-back edge closed in tickets.go create/set; test green; no blocker in the delta"
-review-round: 5
+review-verdict: "accept: DoD 4-10 met with tests, 1-3 struck by decision; one fix-now edge (web write waits on a running push under the read lock)"
+review-round: 9
 review-verdict-gaps: |-
-  note: elsewhere: internal/cli/sync.go:182 stores a Claude Code task owner as assignee without Canonical - an agent task owner, not a typed person name; new ticket if it should resolve too
-  note: limit: open TUI/jaira web act under the name read at open, note authors keep their written name (accepted at signoff)
-review-check: "1. cd into a jaira checkout with a remote  2. jaira people alias <you> TestAlias  3. jaira create 'probe' --assignee TestAlias  4. jaira show <new id> --json | grep assignee -> your jaira name, not TestAlias  5. jaira set <id> assignee=testalias, then git show refs/jaira/tickets/<ULID>:<ULID>.md | grep assignee -> your jaira name  6. or: go test ./internal/cli -run TestAssigneeIsStoredUnderTheJairaName"
+  note: edge: fix-now: internal/cli/web_source.go:51 actAsNow takes w.pushing on every write while w.mu is held, so a page write now waits for any running push, and every read (Epics, Ticket, Lanes take w.mu) queues behind it - with an unreachable remote the page hangs until git gives up; fix: resolve who, and return before locking when w.s.Actor, refs.Actor and refs.Repo.AuthorName already equal it (only actAsNow writes them, always under w.mu, so the compare is safe)
+  note: limit: progress-note authors and executed_by keep the name they were written under (release note says so)
+  note: elsewhere: internal/cli/sync.go:182 stores a Claude Code task owner as assignee without Canonical - an agent task owner, new ticket if it should resolve too
+  note: elsewhere: core/identity Aliases adds git user.email even under JAIRA_USER, so IsMe counts the checkout owner's email-assigned tickets; same on master
+  note: elsewhere: core/refsync/refsync.go Departed drops the Repo.List error and reads it as no refs; before this change
+review-check: "1. go build -o /tmp/jaira ./cmd/jaira  2. in a jaira checkout with a remote: /tmp/jaira people alias \"$(git config user.name)\" TestAlias -> prints '<you> now also goes by TestAlias'  3. /tmp/jaira people -> your name '— also TestAlias'  4. /tmp/jaira create probe --assignee TestAlias, then /tmp/jaira show <id> --json | grep assignee -> your jaira name, not TestAlias  5. /tmp/jaira people rename \"$(git config user.name)\" probe-name; /tmp/jaira list --assignee probe-name -> your older tickets listed  6. /tmp/jaira web, open the page, in another shell rename back; within ~10s the cards show the old name again  7. /tmp/jaira snapshot, then git ls-tree on the snapshot branch -> a file 'people' beside board/"
 stop-after-fix: ""
 ---
 
@@ -146,3 +154,11 @@ angenommen:
 - **2026-11-23 20:58 · Alexander Sacharov** — hunt report: 0 findings (0 change), nothing written besides this report | read whole: internal/cli/web.go (new to the list), core/web/ui/dist/assets/index-BppOAc_B.js (build output of ReviewPage.svelte, not read line by line); read as diff since ed8a1c18b: internal/cli/web_source.go, core/web/ui/src/pages/review/ui/ReviewPage.svelte, core/web/ui/dist/index.html | checked: lock order mu->pushing in actAsNow vs pushing-only in push (webPush never takes mu, no deadlock), Actor written only in actAsNow under pushing and root.go at startup, last_fetch is omitzero so the heartbeat does not reload before a first fetch; ran: go test -race -count=3 -run Web ./internal/cli/ ./core/web/ (ok); not checked: the minified bundle against its source
 - **2026-11-23 20:59 · Alexander Sacharov** — bughunt: done at cb2fef7de - 0 findings (0 change, 0 pre-existing) in 6 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: README.md core/gate/gate.go core/gate/gate_test.go core/gitref/gitref.go core/identity/identity.go core/identity/identity_test.go core/people/people.go core/people/people_test.go core/people/store.go core/refsync/refsync.go core/release/notes/DVPAPE.md core/snapshot/snapshot.go core/snapshot/snapshot_test.go core/web/ui/dist/assets/index-BppOAc_B.js core/web/ui/dist/index.html core/web/ui/src/pages/review/ui/ReviewPage.svelte docs/COMMANDS.md internal/cli/flow.go internal/cli/people.go internal/cli/people_test.go internal/cli/refs.go internal/cli/root.go internal/cli/tickets.go internal/cli/web.go internal/cli/web_source.go internal/cli/web_test.go internal/tui/lanefocus.go internal/tui/model.go internal/tui/refs.go internal/tui/refs_test.go internal/tui/users.go internal/tui/view.go
 - **2026-11-23 20:59 · Alexander Sacharov** — testing: e2e fand - Ref-Commit-Autor (gitref.Repo.AuthorName) blieb beim Namen vom Start. Fix: actAsNow setzt refs.Repo.AuthorName mit; Test prueft Autor des Epic-Ref-Commits (scheitert ohne Fix).
+- **2026-11-23 21:00 · Alexander Sacharov** — critique pass 4: Testing-Finding (Ref-Autor) beantwortet, Zuweisung im selben pushing-Lock wie Actor. Nichts weiter.
+- **2026-11-23 21:00 · Alexander Sacharov** — waiting: bug hunt round 6 (background subagent) since 22:00
+- **2026-11-23 21:01 · Alexander Sacharov** — hunt report: 0 findings, nothing written to the board | read as a diff since cb2fef7de: internal/cli/web_source.go (actAsNow, push, newWebSource, read paths), internal/cli/web_test.go, with gitref.Repo.author and web.go server loop for context; core/web/ui/dist/assets/index-DUl1hCu-.js is new to the list but deleted, nothing to read; ran: go test -race -run TestWeb ./internal/cli (ok) | nothing left unchecked
+- **2026-11-23 21:01 · Alexander Sacharov** — bughunt: done at 595a841b3 - 0 findings (0 change, 0 pre-existing) in 2 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: README.md core/gate/gate.go core/gate/gate_test.go core/gitref/gitref.go core/identity/identity.go core/identity/identity_test.go core/people/people.go core/people/people_test.go core/people/store.go core/refsync/refsync.go core/release/notes/DVPAPE.md core/snapshot/snapshot.go core/snapshot/snapshot_test.go core/web/ui/dist/assets/index-BppOAc_B.js core/web/ui/dist/assets/index-DUl1hCu-.js core/web/ui/dist/index.html core/web/ui/src/pages/review/ui/ReviewPage.svelte docs/COMMANDS.md internal/cli/flow.go internal/cli/people.go internal/cli/people_test.go internal/cli/refs.go internal/cli/root.go internal/cli/tickets.go internal/cli/web.go internal/cli/web_source.go internal/cli/web_test.go internal/tui/lanefocus.go internal/tui/model.go internal/tui/refs.go internal/tui/refs_test.go internal/tui/users.go internal/tui/view.go
+- **2026-11-23 21:05 · Alexander Sacharov** — waiting: fresh review lane (run-lane.sh herdr tab) since 22:05
+- **2026-11-23 21:10 · Alexander Sacharov** — review: done at 595a841b3
+- **2026-11-23 21:10 · Alexander Sacharov** — review: fix-now: internal/cli/web_source.go:51 actAsNow - return before taking w.pushing when w.s.Actor, refs.Actor and refs.Repo.AuthorName already equal identity(); today every page write waits behind a running push while holding w.mu, so reads hang too when the remote is slow or unreachable
+- **2026-11-23 21:12 · Alexander Sacharov** — in-progress (review fix-now): actAsNow kehrt vor dem pushing-Lock zurueck, wenn identity() == w.s.Actor (s.Actor, refs.Actor, AuthorName werden nur gemeinsam gesetzt; refsync.New startet sie gleich). Lean-Runde nicht gesetzt: Fix beruehrt Lock-Pfad.

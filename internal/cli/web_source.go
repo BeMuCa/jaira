@@ -50,6 +50,9 @@ func newWebSource(s *ticket.Store) *webSource {
 // write never carries two names. Called with w.mu held.
 func (w *webSource) actAsNow() {
 	who := identity()
+	if who == w.s.Actor {
+		return // nobody renamed: no need to wait for a push that may be slow
+	}
 	w.pushing.Lock()
 	defer w.pushing.Unlock()
 	w.s.Actor = who
