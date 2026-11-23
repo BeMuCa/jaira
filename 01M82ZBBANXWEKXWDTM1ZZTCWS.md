@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:13:52Z
+updated-at: 2026-11-23T21:13:57Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -36,7 +36,8 @@ claimed-at: 2026-11-23T20:54:57Z
   proof: decision note 'decisions settled (worker...)' lists them; signoff.go:136-160 details block behind detailsFor; TestSignOffViewShowsTheDecisionFirst hidden list
 - [x] Ein leeres Pflichtfeld zeigt, welche Lane es haette schreiben muessen
   proof: signoff.go declared() -> owedRow '— owed by <lane>' for check/what/why; TestSignOffShowsOwedFieldsNamingTheLane
-- [ ] Release-Notiz in core/release/notes/<ID>.md
+- [x] Release-Notiz in core/release/notes/<ID>.md
+  proof: core/release/notes/ZZTCWS.md
 - [ ] Eine 'blocker:'-Zeile aus review-gaps bleibt oben sichtbar; problem, resolves, summary, verdict und die uebrigen gaps sind hinter einer Taste erreichbar; Test
 
 ## Options
