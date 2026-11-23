@@ -19,7 +19,7 @@ related:
   - 01M4X5JKRN4AV3KX56SES0EG0M
 commits: []
 created-at: 2026-10-14T12:18:51Z
-updated-at: 2026-11-23T22:45:46Z
+updated-at: 2026-11-23T22:45:49Z
 updated-by: BeMuCa
 claimed-by: teamlead-lane-graph
 claimed-at: 2026-11-23T22:45:37Z
@@ -43,4 +43,8 @@ claimed-at: 2026-11-23T22:45:37Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-23 22:45 · BeMuCa** — Brainstorm (Teamlead, 2026-11-23). Was der Code zeigt: mehrere Boards je Repo gibt es (S0EG0M, done; .jaira/boards/<name>/ mit eigenen Lanes), Tickets kennen related und blocked-by, Loops mit max-rounds und die human-Lane mit Frage gibt es. Es fehlt nur der Ort und die Regel, wer dort wann schreibt. jaira startet keine Agenten - 'treffen' heisst: beide Worker schreiben nacheinander auf dasselbe Ticket.
+Weg A - Join-Board: ein Board 'join' mit drei Lanes vorschlagen -> antworten -> geeinigt; antworten hat rejects-to vorschlagen mit max-rounds 3. Ein Join-Ticket (related zu beiden, beide blocked-by darauf) laeuft durch. Wer zuerst an den Beruehrungspunkt kommt, legt es an. Nach 3 Runden ohne Einigung greift die bestehende Loop-Grenze und es geht mit Frage in human. Bei 'geeinigt' schreibt der Worker die Einigung als Notiz auf beide Tickets. Kosten: ein mitgeliefertes Board mit 3 Lane-Dateien und ein Absatz im Worker-Skill, fast kein neuer Binary-Code; im Lane-Graph (WFHPZT) von selbst sichtbar. Gibt auf: nichts Erzwungenes - dass die Notiz auf beiden Tickets landet, steht im Prompt, kein Gate prueft es.
+Weg B - wie A, plus ein Kommando 'jaira agree <join-id>', das die Einigung auf beide Tickets schreibt und die blocked-by loest, und ein Gate, das 'geeinigt' ohne das ablehnt. Kosten: ein Kommando, ein Gate, Tests. Gibt: DoD 2 ('steht danach auf beiden Tickets') ist geprueft statt erhofft.
+Weg C - kein Board, nur ein gemeinsames Ticket in den normalen Lanes mit Notizen. Am kleinsten; aber die Runden sind nicht sichtbar, es gibt keine Grenze, und im Graph erscheint nichts - das Gegenteil von dem, was Berk am 14.10. und 23.11. beschrieben hat.
+Empfehlung: B, in zwei Schritten gebaut (erst A als Lanes und Skill-Text, dann agree und Gate). DoD 1 verlangt Berks Freigabe der Form - deshalb human. Nicht am Code geprueft: ob blocked-by ueber Boardgrenzen hinweg greift.
