@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:23:16Z
+updated-at: 2026-11-23T21:24:30Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -84,3 +84,4 @@ back-count: 1
 - **2026-11-23 21:20 · Alexander Sacharov** — testing -> in-progress. fix plan: (1) blocker detection ports the cockpit's MARKER + BLOCKER regexes (core/mod/builtin/jaira-cockpit/hooks/board.ts:340-345) so TUI and cockpit agree on what a blocker is; strip the 'blocker:' prefix in the top row (testing edge). (2) smaller design for the details: 'i' shows the full detail pane body (detailBody without its header) instead of a hand-picked list - context, notes, plan, follows, everything detailBody has, for human and signoff alike; drops the custom details code.
 - **2026-11-23 21:22 · Alexander Sacharov** — critique (pass 2, reads only the hunt findings and their repair 383b42d9e): blocker class - blockerLines ports the cockpit's MARKER+BLOCKER regexes (board.ts:340-345), 11 forms tested - addressed; human-lane context/notes - 'i' now appends detailFields, the detail pane body split out of detailBody (one renderer, no second list) - addressed. Nothing new. review-summary=none.
 - **2026-11-23 21:23 · Alexander Sacharov** — waiting: round-2 bughunt (subagent) and race run of internal/tui (bg) since 22:23
+- **2026-11-23 21:24 · Alexander Sacharov** — bughunt: change: internal/tui/signoff.go:162 (blockerLines) - class: a blocker label with no text after it on its own line is matched and then dropped as an empty string, so the sign-off screen shows no blocker row while the cockpit (hooks/board.ts BLOCKER) counts the line as a blocker and colours the ticket red; the old gapLines showed such a line as is, so this is a regression from 383b42d9e; example: review-gaps '**Blocker:**' or 'blocker:\n- the limit resets on restart' -> blockerLines returns '' and no blocker row appears above the check; with 'blocker: a\nblocker:\nblocker: b' the row gets an empty line in between; ran: scratch go test calling blockerLines + renderSignOff (row absent)
