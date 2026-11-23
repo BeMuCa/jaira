@@ -557,6 +557,12 @@ export function diskOf(showJson: string): { state: 'ref-only' | 'behind' | 'curr
   return { state, path: t?.path ?? '' }
 }
 
+// A ticket's title out of `jaira show --json`; undefined where it says none.
+export function titleOf(showJson: string): string | undefined {
+  const title = parse<{ title?: unknown }>(withoutWarnings(showJson))?.title
+  return typeof title === 'string' && title.trim() !== '' ? title.trim() : undefined
+}
+
 function ticketsTree(trees: Worktree[], id: string): Worktree | undefined {
   const parts = (w: Worktree) => (w.branch === '' ? 2.5 : w.branch.split('/').length)
   return trees.filter(w => isTicketsTree(w, id)).sort((a, b) => parts(a) - parts(b))[0]

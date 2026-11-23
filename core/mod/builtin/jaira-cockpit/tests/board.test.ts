@@ -3,6 +3,7 @@ import { describe, expect, mock, test } from 'claude-code/testing'
 import { acceptTreeFor, carrierFor, ghRepoOf, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenToTick, snapshotOf, storyOf, translatePrompt, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
+import { answer as answerThread, answerLine, asksOf, file, parseFiling, titled, untitled, type Filing } from '../hooks/threads.ts'
 
 // A world beneath the plugin: a repository at /repo with a board, jaira, git
 // and Herdr answering from memory, and every command the plugin runs
@@ -3540,6 +3541,105 @@ describe('conversation threads', () => {
     expect(w.modelCalls).toBe(1)
     // No board: no thread stands on a ticket.
     expect((await $.command.run(typed('threads'))).text).toContain('~ #1 Logo')
+  })
+})
+
+const ASKS_PANE = { plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-asks', props: { title: 'Waiting for you', isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 30 }, view: {} } } as never
+
+describe('open questions with their ticket and options (1M3X77)', () => {
+  const filing = (o: Record<string, unknown>) => parseFiling(JSON.stringify({ thread: null, title: 'T', line: 'l', ticket: null, question: 'Q?', answered: [], ...o }))!
+  // Every shape the cheap model may hand back for the two new fields.
+  for (const [name, raw, want] of [
+    ['named options', { options: ['ja', 'nein'] }, ['ja', 'nein']],
+    ['no options key', {}, []],
+    ['options not a list', { options: 'ja, nein' }, []],
+    ['null in the list, blanks, numbers', { options: [null, ' ', 3, ' ja '] }, ['ja']],
+    ['more than nine', { options: Array.from({ length: 12 }, (_, i) => `o${i}`) }, Array.from({ length: 9 }, (_, i) => `o${i}`)],
+  ] as const) {
+    test(`options: ${name}`, () => {
+      expect(filing(raw).options).toEqual(want)
+    })
+  }
+  for (const [name, about, want] of [
+    ['an id', 'VTSF24', 'VTSF24'],
+    ['lower case', 'vtsf24', 'VTSF24'],
+    ['too long', 'VTSF245', null],
+    ['prose', 'the ticket', null],
+    ['null', null, null],
+    ['a number', 123456, null],
+  ] as const) {
+    test(`about: ${name}`, () => {
+      expect(filing({ about }).about).toBe(want)
+    })
+  }
+
+  const f = (o: Partial<Filing>): Filing => ({ thread: null, title: 'Release', line: '', ticket: null, question: null, about: null, options: [], answered: [], ...o })
+  test('the ticket and options ride with the question and go with it', () => {
+    let ts = file([], f({ question: 'Antworte ja zu VTSF24?', about: 'VTSF24', options: ['ja', 'nein'] }), 1)
+    expect(untitled(ts)).toEqual(['VTSF24'])
+    ts = titled(ts, 'VTSF24', 'Release-Knopf')
+    expect(untitled(ts)).toEqual([])
+    expect(asksOf(ts)).toEqual([{ thread: 1, ticket: 'VTSF24', title: 'Release-Knopf', question: 'Antworte ja zu VTSF24?', options: ['ja', 'nein'] }])
+    // A new question on the same thread replaces ticket, title and options.
+    const again = file(ts, f({ thread: 1, question: 'Welche Farbe?' }), 2)
+    expect(asksOf(again)).toEqual([{ thread: 1, title: 'Release', question: 'Welche Farbe?', options: [] }])
+    // Answered by a filing, or by a pick: nothing of it is left.
+    for (const done of [file(ts, f({ thread: 1, answered: [1] }), 2), answerThread(ts, 1, 2)]) {
+      expect(asksOf(done)).toEqual([])
+      expect(Object.keys(done[0]!).sort()).toEqual(['id', 'lastTurn', 'lines', 'title'])
+    }
+  })
+
+  test('the thread\'s own ticket stands in where the question names none; asked last comes first', () => {
+    const ts = file(file([], f({ title: 'A', ticket: 'AAAAAA', question: 'a?' }), 1), f({ title: 'B', question: 'b?' }), 2)
+    expect(asksOf(ts).map(a => [a.ticket, a.title])).toEqual([[undefined, 'B'], ['AAAAAA', 'A']])
+    expect(answerLine(asksOf(ts)[0]!, 'ja')).toBe('B: ja')
+    expect(answerLine(asksOf(ts)[1]!, 'ja')).toBe('AAAAAA: ja')
+  })
+
+  test('the band opens the pane; a digit answers into the session and the question leaves', async ($, on) => {
+    const w = world(on)
+    w.shows['VTSF24'] = { title: 'Release-Knopf in Actions' }
+    await startSession($)
+    w.model = '{"thread": null, "title": "Release", "line": "Frage zu VTSF24", "ticket": null, "question": "Antworte ja zu VTSF24?", "about": "vtsf24", "options": ["ja", "nein, spaeter"], "answered": []}'
+    await $.prompt.submit({ text: 'Was ist mit dem Release?', origin: { kind: 'composer' }, wait: false })
+    await answer($, 'Naechster Schritt: antworte ja zu VTSF24')
+    await w.clock.settle()
+    const band = await $.ui.mount(BAND)
+    const button = await band.find({ key: 'asks' })
+    expect(button?.props.hotkey).toBe('q')
+    await band.press({ key: 'asks' })
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-asks', title: 'Waiting for you', focus: true })
+    const pane = await $.ui.mount(ASKS_PANE)
+    const text = (await pane.find({ type: 'Box' }))!.text
+    expect(text).toContain('VTSF24')
+    expect(text).toContain('Release-Knopf in Actions')
+    expect(text).toContain('Antworte ja zu VTSF24?')
+    expect((await pane.find({ key: 'ask-1-0' }))?.props.hotkey).toBe('1')
+    expect((await pane.find({ key: 'ask-1-1' }))?.props.hotkey).toBe('2')
+    await pane.press({ key: 'ask-1-1' })
+    await w.clock.settle()
+    expect(w.submitted).toContain('VTSF24: nein, spaeter')
+    expect(w.closed).toContain('cockpit-asks')
+    expect(await (await $.ui.mount(BAND)).find({ key: 'asks' })).toBeUndefined()
+    await pane.unmount()
+    expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('No question is waiting for you.')
+  })
+
+  test('a question with no options is answered in the chat, the prompt started with its ticket', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    w.model = '{"thread": null, "title": "Logo", "line": "Frage", "ticket": "ABCDEF", "question": "Wie gross?", "answered": []}'
+    await $.prompt.submit({ text: 'Logo?', origin: { kind: 'composer' }, wait: false })
+    await answer($, 'Wie gross?')
+    await w.clock.settle()
+    const pane = await $.ui.mount(ASKS_PANE)
+    // The ticket is the thread's own, and jaira was not asked for a title.
+    expect((await pane.find({ type: 'Box' }))!.text).toContain('ABCDEF')
+    expect(ran(w, 'jaira', 'show', 'ABCDEF')).toEqual([])
+    await pane.press({ key: 'ask-1-chat' })
+    expect(w.filled).toEqual(['ABCDEF: '])
+    expect(w.submitted).toEqual([])
   })
 })
 
