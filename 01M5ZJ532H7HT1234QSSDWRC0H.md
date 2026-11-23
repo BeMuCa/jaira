@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:13Z
-updated-at: 2026-11-23T01:28:55Z
+updated-at: 2026-11-23T01:28:57Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-dwrc0h
@@ -27,6 +27,7 @@ outcome-what: "Agent-Block (announce.go, CLAUDE.md, AGENTS.md) nennt jaira set g
 outcome-why: "Agenten hielten Goal/DoD nach dem Anlegen fuer unveraenderlich und behalfen sich mit Notizen, weil der Agent-Block die vorhandenen Befehle nicht nannte."
 outcome-resolves: "Alle drei DoD-Punkte; kein neuer Befehl noetig. Vier Kategorien: keine neue Logik, nur Text und ein Test; Nebenlaeufigkeit/Fehlerpfade/Rechte unveraendert, unuebliche Eingabe (Leerzeichen im set-Wert) auf Scratch-Board geprueft."
 review-summary: none
+review-gaps: "removed internal/cli/checklist_test.go TestDodAddKeepsExistingNumbersAndProofs: core/ticket/proof_test.go:115 TestAddItemAfterProofCarryingLastItem already proves the same (append lands after the proof-carrying last item, earlier numbers and proofs stay); DoD 2 proof repointed there. Nothing else: text only."
 ---
 
 # Der Agent-Block sagt, wie man Goal, Kontext und DoD nach dem Anlegen aendert
