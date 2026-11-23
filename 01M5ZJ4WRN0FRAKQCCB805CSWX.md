@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-11-23T01:44:09Z
+updated-at: 2026-11-23T01:44:12Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-05cswx
@@ -47,6 +47,13 @@ review-verdict-gaps: |-
   note: run-lane.sh --help now lists exit 1 (spawn.sh failed, a tab may already be open), but the exit-code paragraphs in jaira-dispatcher/SKILL.md (~line 380) and jaira-worker/SKILL.md (~line 320) do not mention it. Fix: add the line to both
   note: no script test covers the refusal, --force, or run-lane turning 3 into 6. TestMain sets JAIRA_MIN_FREE_MB=0 for every test in core/role. Fix: one test with JAIRA_MIN_FREE_MB=999999999 expecting exit 3 and no tab, and one through run-lane expecting 6. I checked all three by hand with copies of the scripts
   note: known limit, stated in the spawn.sh comment: the check is a snapshot. Two spawns started together both pass, and a worker started just now has not begun its build yet, so the reading is too high
+review-check: |-
+  1. On Linux or WSL, in a Herdr tab, run: grep MemAvailable /proc/meminfo  - you see the free memory in kB
+  2. Run: JAIRA_MIN_FREE_MB=999999999 bash ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh --no-worktree t1 05CSWX critique; echo rc=$?  - you see "only N MB free, below the 999999999 MB a worker needs: not starting critique for 05CSWX ..." and rc=3, and no new tab opens
+  3. Run the same command again with explain instead of critique - the check does not stop it and a chat tab opens. Close that tab
+  4. Run: JAIRA_MIN_FREE_MB=abc bash ~/.claude/skills/jaira-dispatcher/scripts/spawn.sh t1 05CSWX critique; echo rc=$?  - you see "not a number of MB" and rc=2
+  5. seen by a person (DoD 5): on macOS or in Git Bash on Windows, start a lane with spawn.sh as usual - you see one line, "free memory not checked: no MemAvailable in /proc/meminfo on this system", and the tab still opens
+  6. Read core/role/builtin/jaira-teamlead/SKILL.md, the paragraph that starts "spawn.sh exits 3" - it says to start nothing, tell the person which ticket waits, and use --force only on their word
 ---
 
 # spawn.sh startet keinen Worker, wenn der freie Speicher nicht fuer einen weiteren Build reicht
