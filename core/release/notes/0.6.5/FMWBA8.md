@@ -1,0 +1,1 @@
+- The cockpit's Acceptance pane no longer translates on its own when settings.json sets `language`: press `t` or Translate to read the head and every review note in your language (one call), press again for the original.

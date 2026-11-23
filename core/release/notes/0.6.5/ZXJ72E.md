@@ -1,0 +1,4 @@
+- The project list (launcher, board switcher, `jaira projects`) now shows each repository once, under its main checkout: opening jaira in a linked git worktree records the main checkout, and worktree entries already in `~/.jaira/projects.json` fold into it. Run `jaira board` inside a worktree to open that worktree's own board.
+- Boards in the temporary directory (agent scratch pads, test sandboxes) are no longer recorded in the project list, and ones already recorded no longer show.
+- A repository's line in the launcher and the board switcher counts the agents working in any of its worktrees, and is marked as the open board when you have one of its worktrees open.
+- Several jaira processes starting at once no longer corrupt `~/.jaira/projects.json`; `jaira projects add` now exits non-zero when the list cannot be written instead of printing `Registered`.

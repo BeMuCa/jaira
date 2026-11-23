@@ -226,16 +226,48 @@ function wayOf(verdict: string, words: NonNullable<Lane['verdicts']>[]): Verdict
   return 'other'
 }
 
-export type Item = { done?: boolean; state?: string; text?: string }
+export type Item = { n?: number; done?: boolean; state?: string; text?: string }
 
 // The items still open: neither done nor superseded.
+const isOpen = (i: Item) => i.state !== 'superseded' && i.done !== true
 export function openOf(items: readonly Item[] | undefined): number {
-  return (items ?? []).filter(i => i.state !== 'superseded' && i.done !== true).length
+  return (items ?? []).filter(isOpen).length
 }
 
 // The open definition-of-done items: those a person ticks at acceptance
 // ('seen by a person: ...') and the rest.
 const BY_A_PERSON = /^\s*seen by a person\s*:/i
+// The open 'seen by a person' items themselves, by number and text, off
+// `jaira show --json`: the Acceptance pane lists them for the person to tick
+// (DKMG91). An item without a number cannot be ticked and is left out.
+export type SeenItem = { n: number; text: string; checked: boolean }
+export function seenItemsOf(showJson: string): SeenItem[] {
+  const items = parse<{ dod_items?: Item[] }>(withoutWarnings(showJson))?.dod_items ?? []
+  return items
+    .filter(i => typeof i.n === 'number' && isOpen(i) && BY_A_PERSON.test(i.text ?? ''))
+    .map(i => ({ n: i.n!, text: oneLine(i.text), checked: false }))
+}
+
+// Which of the items the person ticked in the pane Accept still ticks, read
+// against the ticket as it is now: the pane's list was read when it opened,
+// and jaira dod --done overwrites whatever an item holds. One ticked
+// meanwhile keeps its own proof; one superseded, reworded or gone is changed,
+// and Accept ticks nothing then - the person saw another text.
+export function seenToTick(ticked: readonly SeenItem[], showJson: string): { tick: number[]; changed: string[] } {
+  const now = new Map((parse<{ dod_items?: Item[] }>(withoutWarnings(showJson))?.dod_items ?? []).map(i => [i.n, i]))
+  const tick: number[] = []
+  const changed: string[] = []
+  for (const x of ticked) {
+    const i = now.get(x.n)
+    if (i === undefined || i.state === 'superseded' || oneLine(i.text) !== x.text) changed.push(x.text)
+    else if (i.done !== true) tick.push(x.n)
+  }
+  return { tick, changed }
+}
+
+// What Accept writes as the proof of a 'seen by a person' item it ticks.
+export const seenProof = (who: string | undefined) => `seen by ${who?.trim() || 'a person'} in the cockpit`
+
 function dodOpenOf(items: readonly Item[]): { person: number; other: number } {
   const person = openOf(items.filter(i => BY_A_PERSON.test(i.text ?? '')))
   return { person, other: openOf(items) - person }
@@ -693,6 +725,51 @@ export function forgeOf(forge: string, originUrl: string): Forge | undefined {
   return on === 'github' || on === 'gitlab' ? on : undefined
 }
 
+// A git remote URL taken apart, as core/pr's parseRemote does: the host,
+// without user or port, and the repository's path there without .git — for
+// https://, ssh://, git+ssh://, git:// and the scp form [user@]host:path,
+// whatever the user before the @ is called. A GitHub Enterprise remote often
+// reads alice@ghe.example.com:team/app.git, which gh cannot resolve as it
+// stands (XSGWPX). undefined where it names no host or no owner/repo.
+export function parseRemote(raw: string): { host: string; repo: string } | undefined {
+  const s = raw.trim()
+  let host: string
+  let path: string
+  const scheme = s.indexOf('://')
+  if (scheme > 0) {
+    const rest = s.slice(scheme + 3)
+    const slash = rest.indexOf('/')
+    if (slash < 0) return undefined
+    host = rest.slice(0, slash).replace(/^.*@/, '')
+    if (!host.endsWith(']')) host = host.replace(/:[^:]*$/, '')
+    path = rest.slice(slash + 1)
+  } else {
+    const colon = s.indexOf(':')
+    if (colon <= 0 || /[/\\]/.test(s.slice(0, colon))) return undefined
+    host = s.slice(0, colon).replace(/^.*@/, '')
+    // A drive letter, C:/repos/app, is no host.
+    if (host.length === 1) return undefined
+    path = s.slice(colon + 1)
+  }
+  path = path.replace(/^\/+|\/+$/g, '').replace(/\.git$/, '')
+  return host && path.includes('/') ? { host: host.toLowerCase(), repo: path } : undefined
+}
+
+// How gh is told the repository of origin: on a host other than github.com
+// as host/owner/repo — gh's own [HOST/]OWNER/REPO, which `gh repo view` and
+// --repo both take — with that host, which the answers' owner/repo then
+// carry again. github.com — every *.github.com, ssh.github.com among them —
+// and a URL that cannot be taken apart, go as they are: gh reads those itself.
+export function ghRepoOf(originUrl: string): { repo: string; host?: string } {
+  const r = parseRemote(originUrl)
+  return r === undefined || r.host === 'github.com' || r.host.endsWith('.github.com') ? { repo: originUrl } : { repo: `${r.host}/${r.repo}`, host: r.host }
+}
+
+// owner/repo as gh is to be told it on host.
+export function onHost(repo: string, host: string | undefined): string {
+  return host ? `${host}/${repo}` : repo
+}
+
 // Where a pull request of this branch would be, as jaira-role-pr settles it:
 // in a fork, the parent — asking origin there answers for the fork, finds
 // nothing, and a second pull request gets opened onto a merged branch. The
@@ -1044,31 +1121,23 @@ export function languageOf(settingsJson: string | undefined): string | undefined
   return lang === '' ? undefined : lang
 }
 
-// The cheap model's prompt: every note, numbered, back as a JSON array of as
-// many strings in the same order. The class prefix goes - the mark says it.
-export function rephrasePrompt(language: string, notes: readonly string[]): string {
-  return [
-    `Rewrite each review note below in ${language}, for a person who reads slowly and was not there.`,
-    'Each note: one or two short, plain sentences saying what is wrong or missing and what it means.',
-    'Drop a leading "blocker:", "note:", "edge:", "limit:", "elsewhere:", "pre-existing:" or "fix-now:" - a mark in front of the note already says it.',
-    'Keep code identifiers, file paths, commands and ticket handles exactly as written. Add nothing the note does not say.',
-    `Answer with a JSON array of exactly ${notes.length} strings, in the same order, and nothing else.`,
-    '',
-    JSON.stringify(notes),
-  ].join('\n')
-}
-
-// The same for the Acceptance pane's head: the ticket's title, goal, what
-// was done and why, and the reason the light names - a call of its own, so
-// a note's rewrite never waits for, or fails with, the head's.
-export function headPrompt(language: string, texts: readonly string[]): string {
+// The cheap model's prompt for the Acceptance pane's Translate: the head -
+// the ticket's title, goal, what was done and why, the reason the light
+// names - and every review note, in one call, back as one JSON array of as
+// many strings in the same order. A note's class prefix goes - the mark says
+// it.
+export function translatePrompt(language: string, head: readonly string[], notes: readonly string[]): string {
   return [
     `Translate each text below into ${language}, plainly, for a person who reads slowly and was not there.`,
-    'They are the title of a ticket, its goal, what was done and why, and the reason a traffic light shows; a title stays short.',
-    'Keep code identifiers, file paths, commands and ticket handles exactly as written. Add nothing.',
-    `Answer with a JSON array of exactly ${texts.length} strings, in the same order, and nothing else.`,
+    `The first ${head.length} are the title of a ticket, its goal, what was done and why, and the reason a traffic light shows; a title stays short.`,
+    ...(notes.length === 0 ? [] : [
+      `The last ${notes.length} are review notes: each one or two short, plain sentences saying what is wrong or missing and what it means.`,
+      'Drop a leading "blocker:", "note:", "edge:", "limit:", "elsewhere:", "pre-existing:" or "fix-now:" from a review note - a mark in front of it already says it.',
+    ]),
+    'Keep code identifiers, file paths, commands and ticket handles exactly as written. Add nothing a text does not say.',
+    `Answer with a JSON array of exactly ${head.length + notes.length} strings, in the same order, and nothing else.`,
     '',
-    JSON.stringify(texts),
+    JSON.stringify([...head, ...notes]),
   ].join('\n')
 }
 
@@ -1095,18 +1164,19 @@ export function rephrasedOf(answer: string, n: number): string[] | undefined {
 // words are that reason, not work to do. Nothing to fix accepts — through the
 // same gates as Accept — where the next lane ends the work; in a lane that
 // does not (human -> review) there is nothing to accept: words typed give it
-// back, nothing typed does nothing.
-export type Step = 'giveBack' | 'accept' | 'needWhy' | 'notTerminal'
+// back, nothing typed does nothing. An accept with 'seen by a person' items
+// still unticked in the pane (unseen) is no accept yet: it waits for them.
+export type Step = 'giveBack' | 'accept' | 'needWhy' | 'notTerminal' | 'needSeen'
 export type Execution = { step: Step; fix: number; followUps: number; asksWhy: boolean }
 
-export function executionOf(items: readonly GapItem[], typed: string, acceptTo: string | null): Execution {
+export function executionOf(items: readonly GapItem[], typed: string, acceptTo: string | null, unseen = 0): Execution {
   const fix = items.filter(i => i.choice === 'now').length
   const followUps = items.filter(i => i.choice === 'later' && i.follow === undefined).length
   // Only where the ticket can be accepted at all: elsewhere words typed are
   // what is missing, never a reason to accept.
   const asksWhy = acceptTo !== null && fix === 0 && items.some(i => i.cls === 'blocker' && i.choice !== 'now')
   const words = typed.trim() !== ''
-  const step: Step = fix > 0 || (words && !asksWhy) ? 'giveBack' : acceptTo === null ? 'notTerminal' : asksWhy && !words ? 'needWhy' : 'accept'
+  const step: Step = fix > 0 || (words && !asksWhy) ? 'giveBack' : acceptTo === null ? 'notTerminal' : asksWhy && !words ? 'needWhy' : unseen > 0 ? 'needSeen' : 'accept'
   return { step, fix, followUps, asksWhy }
 }
 
