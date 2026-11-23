@@ -1,8 +1,8 @@
 ---
 id: 01M84KMZD7A1JXCHKJTGJ9H38M
 title: "Git-Mittel für den Ref-Sync prüfen: atomic push, git notes, Hooks, Schutz von refs/jaira"
-status: backlog
-ready: false
+status: ideas
+ready: true
 creator: Alexander Sacharov
 goal: "Entscheiden, welche eingebauten Git-Mittel der Ref-Sync aus ES625B nutzt, damit Teilen über refs/jaira/* sicher, automatisch und ohne eigenen Server läuft."
 context: |-
@@ -25,9 +25,13 @@ related: []
 follows: 01M84KJD20SF7R9EAADAES625B
 commits: []
 created-at: 2026-11-23T16:25:57Z
-updated-at: 2026-11-23T16:26:07Z
+updated-at: 2026-11-23T16:26:09Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
+round: 2
+back-from: backlog
+back-by: person
+back-count: 1
 ---
 
 # Git-Mittel für den Ref-Sync prüfen: atomic push, git notes, Hooks, Schutz von refs/jaira
