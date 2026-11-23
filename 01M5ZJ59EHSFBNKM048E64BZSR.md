@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:18:12Z
+updated-at: 2026-11-23T01:18:23Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
@@ -29,9 +29,20 @@ round: 2
 back-from: critique
 back-by: lane
 back-count: 1
-review-gaps: "removed the nil-lanes guard in unchosenLanesJSON (ticketJSON already calls lanes.Get first, nil cannot reach it); dropped the blocked/question exclusions from UnchosenAhead's lane test (no lane is both optional and parking/question - speculative); renamed SkippedAhead to UnchosenAhead to match the field. Left: the 4-line current-lane guard repeated from Next (critique round 1 let it stand); gate.skipped (core/gate/gate.go:823) is the same option predicate but private to gate and a per-lane test, not a walk - not worth a shared export"
+review-gaps: |-
+  note: outcome-what still names the field skipped_lanes, but it shipped as unchosen_lanes (renamed in round 2). A person reading the outcome at signoff will grep for a key that does not exist. Fix: correct outcome-what to unchosen_lanes before accepting.
+  note: unusual input: the enable command pastes the option name unquoted (internal/cli/tickets.go:1725). A custom lane with requires-option "my step" would print a command that ticks "my". Fix: quote options outside [A-Za-z0-9._-]. pre-existing: the gate's refusal text has the same pattern at core/gate/gate.go:298; fix both together. Stock options are single words.
+  note: the test does not cover the parked, question-lane and unknown-lane early returns of UnchosenAhead. They are read-only copies of Next's guard. Fix: add a blocked case and a human case to TestTicketJSONNamesTheUnchosenOptionalLanes.
+  note: unchosen_lanes also lands in list/move/resume/create --json, because all of them build on ticketJSON. That is consistent with next_lane, but the release note mentions show only.
 test-verdict: "pass: gofmt clean, go vet (internal/cli, core/lane, core/board) and go build ./... RC=0; go test NOT run by house rule tonight (main session runs the race suite before the PR) - TestTicketJSONNamesTheUnchosenOptionalLanes unexecuted; DoD 1-3 verified in tree at 25217204c; scratch board: backlog lists brainstorm+pre-process with enable lines, dod --option planning drops pre-process and next_lane from todo becomes pre-process, blocked ticket gives [] and next_lane empty; unknown id exits 5; the change writes nothing, so no two-writer case"
 hunt-verdict: "pass: bughunt done at 25217204c, 1 change (unquoted option name in enable - edge on custom lanes with spaced option names, note for the person), 0 pre-existing"
+review-verdict: "accept: all three DoD items hold. show --json carries unchosen_lanes with lane, option and the enable command (checked on a scratch board: the printed command works and next_lane then becomes pre-process). The agent block names --option in one sentence. The release note exists. I found no blocker in next.go, the ticketJSON hunk or the gate's option predicate it mirrors; gofmt, vet and build are clean."
+review-round: 2
+review-verdict-gaps: |-
+  note: outcome-what still names the field skipped_lanes, but it shipped as unchosen_lanes (renamed in round 2). A person reading the outcome at signoff will grep for a key that does not exist. Fix: correct outcome-what to unchosen_lanes before accepting.
+  note: unusual input: the enable command pastes the option name unquoted (internal/cli/tickets.go:1725). A custom lane with requires-option "my step" would print a command that ticks "my". Fix: quote options outside [A-Za-z0-9._-]. pre-existing: the gate's refusal text has the same pattern at core/gate/gate.go:298; fix both together. Stock options are single words.
+  note: the test does not cover the parked, question-lane and unknown-lane early returns of UnchosenAhead. They are read-only copies of Next's guard. Fix: add a blocked case and a human case to TestTicketJSONNamesTheUnchosenOptionalLanes.
+  note: unchosen_lanes also lands in list/move/resume/create --json, because all of them build on ticketJSON. That is consistent with next_lane, but the release note mentions show only.
 ---
 
 # jaira show nennt die optionalen Lanes, an denen next_lane vorbeigeht
