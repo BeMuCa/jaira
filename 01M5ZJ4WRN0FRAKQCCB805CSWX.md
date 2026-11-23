@@ -18,7 +18,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:06Z
-updated-at: 2026-10-27T20:52:06Z
+updated-at: 2026-11-23T01:32:16Z
+assignee: BeMuCa
+updated-by: BeMuCa
 ---
 
 # spawn.sh startet keinen Worker, wenn der freie Speicher nicht fuer einen weiteren Build reicht
