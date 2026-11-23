@@ -23,11 +23,12 @@ context: |-
 definition-of-done: "docs/MARKET.md beschreibt Repo-Aufbau, index.json mit jedem Feld, die ID-Regel und die Regel fuer min-jaira"
 tags:
   - docs
-blocked-by: []
+blocked-by:
+  - 01M85APT0AZR3XRMFNVJHR3ZK3
 related: []
 commits: []
 created-at: 2026-11-23T23:06:22Z
-updated-at: 2026-11-23T23:09:35Z
+updated-at: 2026-11-23T23:09:40Z
 updated-by: BeMuCa
 ---
 
