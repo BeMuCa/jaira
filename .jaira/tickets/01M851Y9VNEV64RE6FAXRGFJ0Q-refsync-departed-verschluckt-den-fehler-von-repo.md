@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T20:35:43Z
-updated-at: 2026-11-23T20:50:14Z
+updated-at: 2026-11-23T20:53:51Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-49023
 claimed-at: 2026-11-23T20:36:54Z
@@ -25,13 +25,13 @@ outcome-what: "refsync.Departed returns ([]Departure, error); a failed Repo.List
 outcome-why: "A passing git error (lock, broken ref) made every seen ticket look taken off the board elsewhere, so fetch/validate told the person to file or archive live tickets."
 outcome-resolves: "DoD 1-4: Departed errors on List failure (refsync test with a broken packed-refs), both callers report no departure and a warning (CLI test), ForgetDeparted untouched as it never reads Departed, whoami sibling fixed. Checked: concurrency — no new shared state, seen record untouched on error; error paths — List error now surfaces; unusual input — broken packed-refs; permissions — n/a."
 review-summary: none
-review-gaps: "none — checked: departedHere is the one wrapper with two callers (fetch, validate), not a forwarder: it turns the error into the warning; no code orphaned (Departed's old present-map guard replaced, not left); the packed-refs breakage is written in both test packages because refsync_test and cli tests share no helper package — two 4-line copies left as they are"
-test-verdict: "pass: go test ./... RC=0, -race on refsync and cli RC=0, DoD 1-4 verified in the tree (both new tests fail with the old Departed); failure path = broken packed-refs after Usable, exercised by the tests; the change writes nothing new"
-hunt-verdict: "fail: bughunt change: whoami fileOnlyCount turns a failed listing into a silent 0 — say it on stderr like departedHere; pre-existing seen-record truncated read folded into this ticket (same feature: it loses departures)"
-round: 2
+review-gaps: "none — round 2 adds no helper; the seen test is internal (package refsync) because saveSeen/loadSeen are unexported, the only internal test file in that package"
+test-verdict: "pass: vet ok, go test -race refsync+cli RC=0, shipped-history ok, DoD 1-6 verified in the tree"
+hunt-verdict: "fail: bughunt change: release note and whoami comment promise more than the code does (count still printed as 0 beside the stderr warning)"
+round: 3
 back-from: testing
 back-by: lane
-back-count: 1
+back-count: 2
 ---
 
 # refsync.Departed verschluckt den Fehler von Repo.List und liest ihn als 'keine Refs'
@@ -70,3 +70,8 @@ back-count: 1
 - **2026-11-23 20:45 · Alexander Sacharov** — hunt report: 2 findings (1 change edge, not a blocker; 1 pre-existing), notes on RGFJ0Q | read whole: core/refsync/refsync.go (the departed/seen/incoming/stranded paths in full, rest scanned), internal/cli/fetch.go, internal/cli/validate.go, internal/cli/whoami.go, core/refsync/refsync_test.go, internal/cli/departed_test.go, core/release/notes/RGFJ0Q.md; also core/gitref List/listNames | not checked: the race in finding 2 end to end through two real jaira processes (no remote in this session), only the record's truncated-read window
 - **2026-11-23 20:45 · Alexander Sacharov** — bughunt: done at 23ded2de1 - 2 findings (1 change, 1 pre-existing) in 7 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/refsync/refsync.go core/refsync/refsync_test.go core/release/notes/RGFJ0Q.md internal/cli/departed_test.go internal/cli/fetch.go internal/cli/validate.go internal/cli/whoami.go
 - **2026-11-23 20:48 · Alexander Sacharov** — testing: back to in-progress for the bughunt change finding (whoami silent 0). Folded in the pre-existing seen-record finding (fold-into-ticket rule; it is the same feature — a torn read loses the departures Departed reports): fix is saveSeen -> ticket.WriteAtomic. Not a lock: the remaining read-modify-write race only re-reports or re-learns an id, which the next Incoming recomputes from the refs anyway.
+- **2026-11-23 20:50 · Alexander Sacharov** — critique round 2: none — the whoami warning threads cmd.ErrOrStderr() through boardState like departedHere takes it, rather than writing to os.Stderr, so the test can read it; WriteAtomic is the store's existing helper, no second one.
+- **2026-11-23 20:51 · Alexander Sacharov** — bughunt: change: internal/cli/whoami.go:192 - class: a count that could not be worked out is still printed as a real number on stdout; the warning goes only to stderr and nothing on stdout marks the value as unknown; example: Repo.List fails between refs.Usable() and List() (a transient git lock) -> fileOnlyCount returns 0, whoami prints 'File only: 0 tickets on this disk and on no ref' (whoami.go:106) and --json emits "file_only": 0 (whoami.go:74) with no field saying it is unknown, so a JSON consumer that ignores stderr reads 'none'. This contradicts the line added to core/release/notes/RGFJ0Q.md ('instead of reporting a file-only count it could not work out') and the code comment at whoami.go:189-190 ('counted as 0 it would claim none is'). Not a blocker: the value is warned about, the window is narrow. Fix direction: carry 'unknown' through boardGit (e.g. -1 / omit file_only in JSON, print 'unknown' in text) or reword the release note; ran: scratch test with broken packed-refs before whoami (board then reads as ref mode no, so the path is only reachable transiently); read: departed_test.go:61 confirms fileOnlyCount returns 0 on a failed listing
+- **2026-11-23 20:52 · Alexander Sacharov** — hunt report: 1 finding, 1 change (edge, not blocker), as a note on RGFJ0Q | read whole: core/refsync/seen_test.go (new); read as a diff since 23ded2de1: core/refsync/refsync.go (saveSeen/loadSeen, Incoming, Departed, ForgetDeparted followed), internal/cli/whoami.go, internal/cli/departed_test.go, core/release/notes/RGFJ0Q.md; also read ticket.WriteAtomic | could not reproduce the whoami path end to end through the CLI: a ref listing broken from the start makes the board read as ref mode no, so only a transient failure between Usable and List reaches it; the lost-update race on refs-seen.json (Incoming vs ForgetDeparted) was checked and only re-raises a forgotten departure, which the code accepts as a repeated notification
+- **2026-11-23 20:52 · Alexander Sacharov** — bughunt: done at a0a66de74 - 1 finding (1 change, 0 pre-existing) in 8 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: core/refsync/refsync.go core/refsync/refsync_test.go core/refsync/seen_test.go core/release/notes/RGFJ0Q.md internal/cli/departed_test.go internal/cli/fetch.go internal/cli/validate.go internal/cli/whoami.go
+- **2026-11-23 20:53 · Alexander Sacharov** — testing round 2: back for the hunt's whoami edge. Chose the smaller fix the hunter offered — reword the release note and the comment to say what happens (warning on stderr, count reads 0) — over an 'unknown' value in boardGit and the JSON: that would change whoami's output contract for a window only a git error between Usable() and List() opens; edges growing on a sibling ask for a smaller design, not a bigger fix.

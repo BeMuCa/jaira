@@ -1,2 +1,2 @@
 - `jaira fetch` and `jaira validate` no longer report every ticket as "left the board elsewhere" when listing the ticket refs fails for a moment; they print a warning on stderr instead — run the command again once git is free.
-- `jaira whoami` warns on stderr when it cannot list the ticket refs, instead of reporting a file-only count it could not work out.
+- `jaira whoami` warns on stderr when it cannot list the ticket refs; its file-only count then reads 0 instead of every ticket file — trust the count only when no warning came with it.

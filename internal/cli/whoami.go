@@ -186,8 +186,9 @@ func fileOnlyCount(s *ticket.Store, onRefs bool, errw io.Writer) int {
 	if onRefs {
 		ids, err := refs.Repo.List()
 		if err != nil {
-			// Read as "no refs", every file here would count as file-only;
-			// counted as 0 it would claim none is. Say it instead.
+			// Read as "no refs", every file here would count as file-only.
+			// The count reads 0 then, and the warning is what says it is not
+			// a real answer.
 			fmt.Fprintf(errw, "jaira: warning: could not count the tickets that are on no ref: %v\n", err)
 			return 0
 		}
