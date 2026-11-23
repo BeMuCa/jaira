@@ -25,7 +25,9 @@ func (m *Model) openUsers() {
 	add := func(t *ticket.Ticket) {
 		seen := map[string]bool{}
 		for _, name := range []string{t.Assignee, t.Creator} {
-			name = strings.TrimSpace(name)
+			// One row per person, under the name they go by now: a picker
+			// listing "BeMuCa" and "berkc" side by side offers one human twice.
+			name = boardPeople.Canonical(name)
 			k := strings.ToLower(name)
 			if name == "" || seen[k] {
 				continue

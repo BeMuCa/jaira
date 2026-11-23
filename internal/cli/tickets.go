@@ -677,7 +677,7 @@ ticket.`,
 				if laneFilter != "" && t.Status != laneFilter {
 					continue
 				}
-				if assigneeFilter != "" && !strings.EqualFold(t.Assignee, assigneeFilter) {
+				if assigneeFilter != "" && !peopleList().Same(t.Assignee, assigneeFilter) {
 					continue
 				}
 				if tagFilter != "" && !tag.Matches(t.Tags, tagFilter) {
@@ -803,7 +803,7 @@ func printTable(w io.Writer, ts []*ticket.Ticket, env gate.Env) {
 			if t.BehindRef {
 				flags += " [behind ref: pull it]"
 			}
-			fmt.Fprintf(w, "  %-10s %-52s %s%s\n", ticket.Handle(t.ID), truncate(t.Title, 52), t.Assignee, flags)
+			fmt.Fprintf(w, "  %-10s %-52s %s%s\n", ticket.Handle(t.ID), truncate(t.Title, 52), shownName(t.Assignee), flags)
 		}
 	}
 	fmt.Fprintln(w)
@@ -956,8 +956,8 @@ func printDetail(w io.Writer, t *ticket.Ticket, env gate.Env, notesLast int, kid
 	if t.BehindRef {
 		row("behind", "the file here is older than its ref; this is the ref's state — run 'jaira pull "+ticket.Handle(t.ID)+"' before writing")
 	}
-	row("assignee", t.Assignee)
-	row("creator", t.Creator)
+	row("assignee", shownName(t.Assignee))
+	row("creator", shownName(t.Creator))
 	row("updated by", t.UpdatedBy)
 	row("executed", t.ExecutedBy)
 	row("tier", t.ModelTier)
@@ -1764,8 +1764,8 @@ func ticketJSON(t *ticket.Ticket, lanes *lane.Set) map[string]any {
 		"ready":              gate.Ready(t),
 		"on-ref-only":        t.ReadOnly,
 		"behind-ref":         t.BehindRef,
-		"creator":            t.Creator,
-		"assignee":           t.Assignee,
+		"creator":            shownName(t.Creator),
+		"assignee":           shownName(t.Assignee),
 		"executed_by":        t.ExecutedBy,
 		"mode":               t.Mode,
 		"goal":               t.Goal,

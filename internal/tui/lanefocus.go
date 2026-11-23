@@ -188,7 +188,7 @@ func (m *Model) renderLaneCard(t *ticket.Ticket, w int, selected bool) string {
 
 	meta := styHandle.Render(ticket.Handle(t.ID))
 	if t.Assignee != "" {
-		meta += styMeta.Render(" " + t.Assignee)
+		meta += styMeta.Render(" " + boardPeople.Canonical(t.Assignee))
 	}
 	if when := timespan(t.CreatedAt, t.UpdatedAt); when != "" {
 		meta += styMeta.Render("  " + when)

@@ -8,19 +8,41 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/BeMuCa/jaira/core/gitref"
+	"github.com/BeMuCa/jaira/core/people"
 )
 
-// Current determines who is acting, preferring git's configured name so
-// tickets are attributed the same way commits are. dir scopes the git lookup
-// to a particular repository.
+// Current determines who is acting: the jaira name the board's people list
+// gives this person, found by git's user.name or user.email. A person the list
+// does not know acts under git's configured name, so tickets are attributed
+// the same way commits are. dir scopes the git lookup to a particular
+// repository.
 func Current(dir string) string {
+	return currentIn(dir, People(dir))
+}
+
+// currentIn is Current against a list already read, so Aliases reads the ref
+// once rather than twice.
+func currentIn(dir string, list *people.List) string {
+	raw := raw(dir)
+	if p := list.Find(raw); p != nil {
+		return p.Name
+	}
+	if p := list.Find(gitConfig(dir, "user.email")); p != nil {
+		return p.Name
+	}
+	return raw
+}
+
+// raw is who git and the environment say is acting, before the people list
+// has been asked.
+func raw(dir string) string {
 	if v := strings.TrimSpace(os.Getenv("JAIRA_USER")); v != "" {
 		return v
 	}
-	if out, err := exec.Command("git", "-C", dir, "config", "user.name").Output(); err == nil {
-		if name := strings.TrimSpace(string(out)); name != "" {
-			return name
-		}
+	if name := gitConfig(dir, "user.name"); name != "" {
+		return name
 	}
 	for _, k := range []string{"USER", "USERNAME", "LOGNAME"} {
 		if v := strings.TrimSpace(os.Getenv(k)); v != "" {
@@ -28,6 +50,25 @@ func Current(dir string) string {
 		}
 	}
 	return "unknown"
+}
+
+func gitConfig(dir, key string) string {
+	out, err := exec.Command("git", "-C", dir, "config", key).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// People is the board's people list as the local ref in dir carries it. No
+// repository, no ref or an unreadable one is an empty list: who is acting must
+// always have an answer, and without a list it is the one it always was.
+func People(dir string) *people.List {
+	out, err := exec.Command("git", "-C", dir, "show", gitref.PeopleRef+":"+gitref.PeopleFile).Output()
+	if err != nil {
+		return &people.List{}
+	}
+	return people.Parse(out)
 }
 
 // Initials renders name as the first letter of each word, lowercased — the
@@ -109,8 +150,14 @@ func AliasesPath() string {
 // by being refused.
 //
 // The result is deduplicated case-insensitively and never empty.
+//
+// Every name the board's people list gives this person is included too, and
+// git's own user.name when the list renamed it: a ticket written under any of
+// them is this person's.
 func Aliases(dir string) []string {
-	out := []string{Current(dir)}
+	list := People(dir)
+	me := currentIn(dir, list)
+	out := []string{me}
 	add := func(v string) {
 		v = strings.TrimSpace(v)
 		if v == "" {
@@ -123,9 +170,11 @@ func Aliases(dir string) []string {
 		}
 		out = append(out, v)
 	}
-	if email, err := exec.Command("git", "-C", dir, "config", "user.email").Output(); err == nil {
-		add(string(email))
+	for _, n := range list.Names(me)[1:] {
+		add(n)
 	}
+	add(raw(dir))
+	add(gitConfig(dir, "user.email"))
 	if p := AliasesPath(); p != "" {
 		if raw, err := os.ReadFile(p); err == nil {
 			for _, line := range strings.Split(string(raw), "\n") {
