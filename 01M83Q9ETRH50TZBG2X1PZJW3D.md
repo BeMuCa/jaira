@@ -20,7 +20,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T08:10:20Z
-updated-at: 2026-11-23T08:10:20Z
+updated-at: 2026-11-23T08:10:29Z
+updated-by: Alexander Sacharov
 ---
 
 # TUI lässt sich mit der Maus bedienen: Karten anklicken, mit dem Rad scrollen, Knöpfe und Reiter klicken
