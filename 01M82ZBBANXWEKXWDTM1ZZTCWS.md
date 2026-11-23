@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:30:53Z
+updated-at: 2026-11-23T21:30:58Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-22738
@@ -39,6 +39,13 @@ round: 3
 back-from: testing
 back-by: lane
 back-count: 2
+review-verdict: "accept: DoD 1-5 met (go test ./internal/tui ok, go vet clean); two fix-now edges - help screen misses 'i', lone blocker label shows the label instead of the finding"
+review-round: 3
+review-verdict-gaps: |-
+  note: edge: fix-now: the help screen (view.go renderHelp, the 'a f' row ~line 1789) does not list the new 'i' key - add a row 'i  details on a ticket in human or signoff'
+  note: edge: fix-now: signoff.go:170-174 blockerLines - a label standing alone ('blocker:\n- the limit resets', '**Blocker:**') shows the bare label in the blocker row, not the finding; take the next non-empty line as the text when the rest is empty or only emphasis, and assert the text in signoff_test.go:114-124
+  note: limit: 'i' shows the whole detail pane by design (round-2 decision), so Commits (recorded list only), the DoD and the start checklist appear a second time below the top block
+  note: limit: the agent lane 'review' named in the goal keeps the plain detail view - decision note 21:00 reads the goal as the person lanes human and signoff
 ---
 
 # Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts
