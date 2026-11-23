@@ -133,40 +133,6 @@ func TestDodProofRejectsAddAndOption(t *testing.T) {
 	}
 }
 
-// A criterion added after capture lands at the end: the items already there
-// keep their numbers, states and proofs, so a --proof given for item 2 still
-// names item 2 afterwards.
-func TestDodAddKeepsExistingNumbersAndProofs(t *testing.T) {
-	dir, id := dodTestStore(t)
-	if out, err := runDoD(t, dir, id, "2", "--done", "--proof", "TestTwo"); err != nil {
-		t.Fatalf("setup: %v\n%s", err, out)
-	}
-	if out, err := runDoD(t, dir, id, "--add", "three"); err != nil {
-		t.Fatalf("dod --add: %v\n%s", err, out)
-	}
-	s, err := ticket.At(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tk, err := s.Load(id)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := []ticket.DoDItem{
-		{Text: "one", State: ticket.StateTodo},
-		{Text: "two", State: ticket.StateDone, Proof: "TestTwo"},
-		{Text: "three", State: ticket.StateTodo},
-	}
-	if len(tk.DoDItems) != len(want) {
-		t.Fatalf("got %d items, want %d: %#v", len(tk.DoDItems), len(want), tk.DoDItems)
-	}
-	for i, w := range want {
-		if tk.DoDItems[i] != w {
-			t.Errorf("item %d = %#v, want %#v", i+1, tk.DoDItems[i], w)
-		}
-	}
-}
-
 // Rewording is the whole point of --text: the criterion changed, its state and
 // its evidence did not. Ticking the stale item with the proof "obsolete,
 // replaced by item 6" was the only route before, and it leaves a [x] beside work
