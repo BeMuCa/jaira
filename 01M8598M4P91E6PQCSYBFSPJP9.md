@@ -25,7 +25,7 @@ related: []
 follows: 01M67K72RDJY2N2R2KQGATDG74
 commits: []
 created-at: 2026-11-23T22:43:41Z
-updated-at: 2026-11-23T23:00:20Z
+updated-at: 2026-11-23T23:00:23Z
 updated-by: BeMuCa
 claimed-by: worker-fspjp9
 claimed-at: 2026-11-23T22:56:02Z
@@ -43,7 +43,8 @@ claimed-at: 2026-11-23T22:56:02Z
   proof: internal/cli/agents_test.go TestShowForLaneCarriesAgents, TestLanesShowCarriesAgents; internal/cli/flow.go, tickets.go
 - [x] jaira-worker und jaira-role-lane sagen, was bei agents > 1 zu tun ist: N Agenten, Speicherregel, Befunde vereinigen und am Code pruefen, ein Verdict
   proof: core/role/builtin/jaira-worker/SKILL.md 'A lane that runs several agents'; core/role/builtin/jaira-role-lane/SKILL.md 'A lane with several agents'
-- [ ] docs und Release-Notiz in core/release/notes/<ID>.md
+- [x] docs und Release-Notiz in core/release/notes/<ID>.md
+  proof: README.md 'A lane can run several agents'; core/release/notes/FSPJP9.md; core/lane/template.go
 
 ## Options
 
