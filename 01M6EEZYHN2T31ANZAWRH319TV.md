@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T15:45:35Z
-updated-at: 2026-11-23T01:50:29Z
+updated-at: 2026-11-23T01:50:32Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-h319tv
@@ -46,6 +46,13 @@ review-verdict-gaps: |-
   note: pre-existing: the help for jaira init (internal/cli/tickets.go:39-40) says a shared clone 'keeps its .gitignore exactly as it is', but tickets.go:93-95 can add the milestones ignore line.
   note: DoD 3 - the install line was never run end to end (curl|sh was denied in the implementing session). I checked with a stub script that '| JAIRA_NO_ROLES=1 sh' hands the variable to the piped script, and that master's install.sh:110 and install.ps1:159 both read it. The PowerShell line is untested. The check flow below has the person run it.
   note: README.md:338-339 'every drop is pushed at once, so you need push access'. Without push access the drop still lands locally and only the push fails, shown on the page (core/web/web.go:183, 253-266). Possible wording: 'without push access it stays on your machine'.
+review-check: |-
+  1. Open README.md on branch feat/h319tv and find the section '## Jaira PM View - Web only' (around line 300). It has two install lines, then git clone / jaira init / jaira web, a screenshot, and a can / cannot paragraph.
+  2. In a scratch folder, run: curl -fsSL https://raw.githubusercontent.com/BeMuCa/jaira/master/scripts/install.sh | JAIRA_INSTALL_DIR=$PWD/bin JAIRA_NO_ROLES=1 sh. The last line printed must say 'skipped the skills and the Cockpit (JAIRA_NO_ROLES=1)'.
+  3. Clone a repository whose jaira board is shared, cd into it, run ./path/to/bin/jaira init, then git status. Expect possible changes to CLAUDE.md, AGENTS.md or .gitignore (see the first note).
+  4. Run jaira web. A browser opens with the tickets in no epic on the left and the epics on the right, like docs/img/web.png. If the list is empty, reload once after a few seconds and the tickets appear.
+  5. Drag a ticket onto an epic. The epic's count goes up. Ctrl-C stops jaira web.
+  6. Scroll to the 'Not built' table near the end of the README. The row now reads 'VS Code extension', with no 'Web UI'.
 ---
 
 # README: Abschnitt 'Jaira PM View - Web only' fuer Leute ohne Coding-Agent
