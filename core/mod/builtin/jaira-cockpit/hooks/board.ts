@@ -1033,7 +1033,7 @@ export function rephrasePrompt(language: string, notes: readonly string[]): stri
   return [
     `Rewrite each review note below in ${language}, for a person who reads slowly and was not there.`,
     'Each note: one or two short, plain sentences saying what is wrong or missing and what it means.',
-    'Drop a leading "blocker:", "note:" or "pre-existing:" - a mark in front of the note already says it.',
+    'Drop a leading "blocker:", "note:", "edge:", "limit:", "elsewhere:", "pre-existing:" or "fix-now:" - a mark in front of the note already says it.',
     'Keep code identifiers, file paths, commands and ticket handles exactly as written. Add nothing the note does not say.',
     `Answer with a JSON array of exactly ${notes.length} strings, in the same order, and nothing else.`,
     '',
