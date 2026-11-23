@@ -1,7 +1,7 @@
 ---
 id: 01M6EEZYHN2T31ANZAWRH319TV
 title: "README: Abschnitt 'Jaira PM View - Web only' fuer Leute ohne Coding-Agent"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Die README hat einen eigenen Abschnitt, mit dem jemand ohne Agent und ohne Terminal-Board in fuenf Minuten jaira web auf einem geklonten Repo laufen hat: Install-Zeile ohne Rollen/Cockpit, jaira web, ein Screenshot, was man dort kann und was nicht; die Zeile 'Web UI' in der Tabelle 'Not built' ist weg."
@@ -19,11 +19,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T15:45:35Z
-updated-at: 2026-11-23T01:45:11Z
+updated-at: 2026-11-23T01:45:21Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-h319tv
 claimed-at: 2026-11-23T01:38:34Z
+outcome-what: "README has a new section '## Jaira PM View - Web only' (after '## Start'): binary-only install lines for sh and PowerShell with JAIRA_NO_ROLES=1, git clone + jaira init + jaira web, when the tickets show up on a fresh clone, a screenshot docs/img/web.png, one sentence each for what works and what does not. 'Web UI' dropped from the 'Not built' row; VS Code extension stays. Release note core/release/notes/H319TV.md."
+outcome-why: "jaira web is meant for people without a coding agent, but nothing told them how to get there, and the README still listed a web UI as deliberately not built."
+outcome-resolves: "All four DoD items; install line read from the script, not executed. Checked: concurrency n/a (docs); error path: web without init exits 1 -> init step included; unusual input: fresh clone without refs -> wait sentence; permissions: drops push, so push access named."
 ---
 
 # README: Abschnitt 'Jaira PM View - Web only' fuer Leute ohne Coding-Agent
