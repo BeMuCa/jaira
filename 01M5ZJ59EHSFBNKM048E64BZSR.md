@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:16:16Z
+updated-at: 2026-11-23T01:16:39Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
@@ -60,3 +60,4 @@ test-verdict: "pass: gofmt clean, go vet (internal/cli, core/lane, core/board) a
 - **2026-11-23 01:14 · BeMuCa** — critique round 2: the one finding (key clash with create --json skipped_lanes) is answered by the rename to unchosen_lanes; nothing left.
 - **2026-11-23 01:16 · BeMuCa** — bughunt: change: internal/cli/tickets.go:1725 - class: option name embedded unquoted in the printed 'enable' command; example: a lane with requires-option: "my step" (lane.go:365 only trims) prints 'jaira dod <id> --option my step', which ticks a new option 'my' and exits 0 while the lane stays off the path; ran: jaira dod 6BPZ6P --option my step (exit 0, '[x] my' added; could not get the spaced lane into unchosen_lanes on a scratch board, so the lane side is read). Edge, not a blocker: stock lanes have single-word options
 - **2026-11-23 01:16 · BeMuCa** — bughunt: done at 25217204c - 1 finding (1 change, 0 pre-existing) in 3 modules, first hunt; concurrency, error paths, input, permissions checked; files: AGENTS.md CLAUDE.md core/board/announce.go core/lane/next.go core/release/notes/64BZSR.md internal/cli/json_test.go internal/cli/tickets.go
+- **2026-11-23 01:16 · BeMuCa** — testing: note: class: option name pasted unquoted into a shell command; example: a custom lane with requires-option 'my step' would get enable 'jaira dod <id> --option my step', which ticks 'my'; fix: quote the option when it holds anything but [A-Za-z0-9._-] - the gate's own refusal at core/gate/gate.go:298 has the same pattern (pre-existing), so fix both together. Not a blocker: stock options are single words and the lane parser does not reject spaces.
