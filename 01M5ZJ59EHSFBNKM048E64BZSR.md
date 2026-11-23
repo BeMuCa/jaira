@@ -16,7 +16,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:12:44Z
+updated-at: 2026-11-23T01:12:47Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
@@ -29,7 +29,8 @@ claimed-at: 2026-11-23T01:10:10Z
 
 - [x] jaira show <id> --json hat ein Feld, das die uebersprungenen optionalen Lanes und den Befehl zum Einschalten nennt
   proof: internal/cli/tickets.go:406 1810 skippedLanesJSON from lane.Set.SkippedAhead (core/lane/next.go); TestTicketJSONNamesTheSkippedOptionalLanes; live: show 64BZSR --json in backlog listed brainstorm+pre-process with enable lines
-- [ ] Der Agent-Block nennt --option in einem Satz
+- [x] Der Agent-Block nennt --option in einem Satz
+  proof: core/board/announce.go:318 (and the same sentence in CLAUDE.md/AGENTS.md)
 - [ ] Release-Notiz in core/release/notes/<ID>.md
 
 ## Options
