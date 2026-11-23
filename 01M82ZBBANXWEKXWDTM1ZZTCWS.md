@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:13:57Z
+updated-at: 2026-11-23T21:14:02Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-79231
@@ -38,7 +38,8 @@ claimed-at: 2026-11-23T20:54:57Z
   proof: signoff.go declared() -> owedRow '— owed by <lane>' for check/what/why; TestSignOffShowsOwedFieldsNamingTheLane
 - [x] Release-Notiz in core/release/notes/<ID>.md
   proof: core/release/notes/ZZTCWS.md
-- [ ] Eine 'blocker:'-Zeile aus review-gaps bleibt oben sichtbar; problem, resolves, summary, verdict und die uebrigen gaps sind hinter einer Taste erreichbar; Test
+- [x] Eine 'blocker:'-Zeile aus review-gaps bleibt oben sichtbar; problem, resolves, summary, verdict und die uebrigen gaps sind hinter einer Taste erreichbar; Test
+  proof: signoff.go:81 gapLines/isBlockerLine; model.go case "i" toggles detailsFor; tests TestSignOffKeepsBlockersOnTop, TestSignOffViewShowsTheDecisionFirst
 
 ## Options
 
