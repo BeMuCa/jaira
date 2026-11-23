@@ -4,7 +4,7 @@ title: Der Lane-Payload zeigt den Diff des Tickets und nicht den des Branches
 status: backlog
 ready: true
 creator: Alexander Sacharov
-assignee: Alexander Sacharov
+assignee: ""
 goal: "Wer 'jaira show <id> --for-lane <lane> --json' liest, bekommt entweder den Diff der ganzen Ticket-Arbeit oder eine Angabe, dass er nur einen Ausschnitt sieht - nicht stillschweigend beides verwechselbar"
 context: |-
   Gefunden in der review-Lane von 01M2NCH8ZK9524JZ00J4GTQHNH (GTQHNH) am 2026-09-17, dort ausdruecklich als vorbestehend und ausserhalb jenes Tickets stehengelassen.
@@ -26,7 +26,12 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-09-17T22:13:48Z
-updated-at: 2026-09-17T22:13:48Z
+updated-at: 2026-11-23T13:16:38Z
+rejected-kind: obsolete
+rejected-why: "fixed by 7XXT00 (PR #29)"
+rejected-by: Alexander Sacharov
+rejected-at: "2026-11-23T13:16:38Z"
+updated-by: Alexander Sacharov
 ---
 
 # Der Lane-Payload zeigt den Diff des Tickets und nicht den des Branches
