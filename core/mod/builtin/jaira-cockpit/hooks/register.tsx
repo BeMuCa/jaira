@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { ElementTable, EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
-  branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
+  acceptTreeFor, branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, hasPullRequest, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
   clipLines, commitsOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, headPrompt, rephrasedOf, rephrasePrompt, standOf, storyOf,
@@ -570,8 +570,30 @@ async function ownTree($: EngineInterface, b: { dir: string; repo: string }, id:
 // copy names the file pulled into the main checkout, the one leave() removes.
 type Here = { ok: true; dir: string; copy?: string; leave: () => Promise<void> } | { ok: false; why: string }
 
-async function ticketHere($: EngineInterface, b: { dir: string; repo: string }, id: string): Promise<Here> {
-  const own = await ownTree($, b, id)
+// carriedTo: Accept's press and the lane it moves to. Where the ticket has no
+// worktree of its own and its newest commit of its own lies beyond the main
+// checkout's HEAD, it takes the worktree of the one branch holding that
+// commit (acceptTreeFor), and refuses where several do. Branches named after
+// the ticket play no part: only where the commit is decides. A HEAD that
+// reaches all of them needs no carrier: the move runs in the main checkout.
+async function ticketHere($: EngineInterface, b: { dir: string; repo: string }, id: string, carriedTo?: string): Promise<Here> {
+  const trees = await run($, ['git', 'worktree', 'list', '--porcelain'], b.dir)
+  const porcelain = trees?.exitCode === 0 ? trees.stdout : ''
+  let own = ownTreeFor(porcelain, id)
+  if (own === undefined && carriedTo !== undefined) {
+    // Counted against the main checkout's HEAD, not the default branch: only
+    // commits the move there cannot reach send it elsewhere, and in a fork
+    // whose master lags every later branch holds a merged ticket's commit.
+    const beyond = await run($, ['git', 'log', '--branches', '--not', 'HEAD', '--format=%H %s'], b.repo)
+    const sha = beyond?.exitCode === 0 ? commitNaming(beyond.stdout, id) : undefined
+    if (sha !== undefined) {
+      const held = await run($, ['git', 'branch', '--contains', sha, '--format=%(refname:short)'], b.repo)
+      const base = branchesFor(porcelain, id).base ?? ''
+      const place = acceptTreeFor(porcelain, id, carrierFor({ base, ...(held?.exitCode === 0 ? { holders: held.stdout } : {}) }))
+      if ('ambiguous' in place) return { ok: false, why: t.acceptAmbiguous(id, place.ambiguous, carriedTo) }
+      own = place.dir
+    }
+  }
   const dir = own ?? b.repo
   const stays: Here = { ok: true, dir, leave: async () => {} }
   const disk = async () => {
@@ -660,7 +682,7 @@ type Refused = (why: string) => Promise<void>
 
 async function accept($: EngineInterface, w: Waiting, after?: (dir: string) => Promise<void>, refused?: Refused): Promise<boolean> {
   if (!board || w.acceptTo === null) return false
-  const here = await ticketHere($, board, w.id)
+  const here = await ticketHere($, board, w.id, w.acceptTo)
   if (!here.ok) {
     await fail($, `${t.accept} ${w.id}`, here.why)
     return false

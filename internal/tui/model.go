@@ -2089,6 +2089,11 @@ func (m *Model) gateEnv() gate.Env {
 			}
 			return shas
 		},
+		// Asked only once DeriveCommits found nothing, at the same lane.
+		CommitsElsewhere: func(t *ticket.Ticket) []string {
+			branches, _ := repo.BranchesNamingTicket(t.ID)
+			return branches
+		},
 		// Asks git only for a move into a lane a person releases.
 		Hunt: func(t *ticket.Ticket) gate.HuntReport {
 			return gate.HuntReport(repo.HuntCheck(t))
