@@ -1,7 +1,7 @@
 ---
 id: 01M7X0CFXEAEXDHVWTD3QTQW15
 title: "Give back im Cockpit startet den neuen Worker mit Teamlead, im Worktree mit dem Code und nie doppelt"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -22,9 +22,22 @@ related:
   - 01M7WX00JXRK922S029Q76ERHH
   - 01M6M878R42NEHQ7HDP0R80Z4G
   - 01M5MNWDKYJGC78B3EKMX2TGXG
-commits: []
+commits:
+  - 05a8d99fc397376a94cb8c2a7672e5f2b2675817
+  - e10ab3abb5ba59155331dc395c800ff6eb2b6bbc
+  - 423737a1bb3f0d4fdfa9ad4460f1ae3000ec086d
+  - 4bf0f1d289b6fad8d2332982d65c7056589330f8
+  - ce1cf0daf2efbb9f3b3113dbb4de128655d38da5
+  - fc7a4d489d9061d79da66e295d29d483af7f20c2
+  - ee89033dafe21527e1a8a06dda202a34d8ae3f18
+  - 721621959c4dde94828eecda0e83efd48f1566e4
+  - 0c6e069ab77196b7f00854c072f868b7890e7d23
+  - 34237f1c997da2013a8b417072629f148bd80a93
+  - f79b4908761266fd1b01cee329a865f20788ead4
+  - 58a9c4390a01e5c2a43fcce8b20b832052af64d8
+  - 153475281c47fc45c95f0eb5e4eea9cb4b434dde
 created-at: 2026-11-20T17:34:35Z
-updated-at: 2026-11-22T21:20:25Z
+updated-at: 2026-11-22T21:54:28Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3483626
 claimed-at: 2026-11-22T21:16:24Z

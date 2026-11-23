@@ -1,7 +1,7 @@
 ---
 id: 01M6EYADS6Z2KGYE03T8Q9F9W4
 title: "Der Installer erkennt den Coding-Agenten und legt die Rollen dort ab, wo er sie liest"
-status: signoff
+status: done
 ready: true
 creator: BeMuCa
 goal: "install.sh und install.ps1 erkennen, welche Agenten auf dem Rechner sind, und jaira roles install kennt neben claude und copilot auch codex, cursor, gemini-cli, opencode, pi und hermes mit ihren Pfaden; ohne erkannten Agenten wird nichts ins Home geschrieben und ein Satz sagt, wie man es nachholt."
@@ -18,9 +18,14 @@ tags:
 blocked-by: []
 related:
   - 01M55S97BCFRNZMARY8WV38STG
-commits: []
+commits:
+  - 9bc791fcafaf32c46773c7271a9891d9bf516eb9
+  - a69f5abdfbb4738118976f080a27904f4464c6b2
+  - 766139a52110ffafcc9e2f2eadec6033e5732ee6
+  - 18ccb3db4b4ba09ab0e26e5b1e73387c3b9762ab
+  - ef61a77aa7bd5e216cbf930e031a5372c605db7f
 created-at: 2026-11-02T20:13:27Z
-updated-at: 2026-11-05T18:15:02Z
+updated-at: 2026-11-23T01:09:47Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: q9f9w4-driver
@@ -121,3 +126,4 @@ left alone: detection in the scripts, not the binary (pre-process note 17:59 poi
 - **2026-11-05 18:08 · BeMuCa** — critique (pass 3): the one finding of pass 2 (docs/AGENTS.md lacked the claude+codex double-listing limit) is fixed in 766139a52 - docs/AGENTS.md:295-297 now says cursor and opencode list each role twice with claude and codex both installed, matching core/role/target.go:47-50. Read only that change, as the lane prompt says; nothing else reopened. Standing on pass 1 and pass 2 notes for everything left alone. review-summary=none.
 - **2026-11-05 18:11 · BeMuCa** — testing: go test NOT run (house rule), install.ps1 NOT run (no pwsh), read against install.sh line by line: same names, order, folders, messages. Gates: rebuilt J rc=0; gofmt -l (4 Go files) empty; go vet ./... rc=0; go build ./... rc=0; sh -n rc=0; dash -n rc=0. Eight agents, scratch HOME and scratch git repo with init: --global lands in .claude/.agents(codex,pi)/.copilot/.cursor/.gemini/.config/opencode/.hermes skills; --project in .claude, .agents (codex,pi,cursor,gemini-cli,opencode), .github, .hermes; jaira-cockpit only under claude (both scopes). Also-dir skip: pre-installed roles in each Also dir (project and global, 19 cases) -> rc=0, 'already reads' line, skill count unchanged. install.sh roles section (sed from '# Roles:' to end, binary = rebuilt J, scratch HOME): no folders -> nothing in HOME + 'no coding agent found ... jaira works without one (e.g. jaira web) ... jaira roles install --agent <name> --global'; .codex only -> ~/.agents/skills; all eight -> only .claude/.agents/.hermes skills written, pi 21 unchanged, copilot/cursor/gemini-cli/opencode 'already reads'; JAIRA_AGENT=cursor,bogus -> bogus skipped, cursor installed; JAIRA_AGENT=bogus -> unknown line + add-later sentence, nothing written; JAIRA_NO_ROLES=1 with .codex -> skipped line, nothing written. README and release note: 4 lines, each '- ', unwrapped, instructions.
 - **2026-11-05 18:15 · BeMuCa** — Driver: delivered into signoff. Branch feat/q9f9w4 is local only, not pushed. The ticket file is modified in the worktree with the review-lane writes; it rides with the logbook commit. Not run: go test (house rule; the race suite runs before the PR), install.ps1 (no pwsh here). The denylist grep over commits, diff and ticket file was clean.
+- **2026-11-23 01:08 · BeMuCa** — Berk accepted in the chat 2026-11-22 and again 2026-11-23 ('Q9F9W4: akzeptiert'); Claude executed the move. Branch merged with master (ef61a77aa) first; install.ps1 never run here (no pwsh).

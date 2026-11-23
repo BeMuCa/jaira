@@ -1,8 +1,8 @@
 ---
 id: 01M6PDF4CMXG25611W5A2DSM0T
 title: "Ein Board ohne Git-Repo schiebt Tickets nach done, ohne Commits zu verlangen"
-status: backlog
-ready: false
+status: human
+ready: true
 creator: BeMuCa
 goal: "Liegt das Board in keinem Git-Repository, verlangt die Lane done keine Commits; in einem Repository bleibt die Regel wie heute."
 context: |-
@@ -18,17 +18,37 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-05T17:52:51Z
-updated-at: 2026-11-05T17:52:51Z
+updated-at: 2026-11-23T01:37:37Z
+assignee: BeMuCa
+updated-by: BeMuCa
+claimed-by: worker-2dsm0t
+claimed-at: 2026-11-23T01:24:05Z
+outcome-what: "A board that lives in no git repository moves tickets into done and the logbook without commits, provided git is installed; inside a repository, remote or not, done still requires them."
+outcome-why: "Solo users without a repository could never finish a ticket: the done gate demanded commits that cannot exist. Round 2: the bug hunt showed a symlinked repo with git missing read as 'no repository'."
+outcome-resolves: "2DSM0T: gate.Env.OutsideRepo backed by gitrepo.Repo.OutsideRepo - true only when git is on PATH, no .git above the symlink-resolved path, and git itself fails with 'not a git repository' (LC_ALL=C); wired in CLI and TUI; logbook drops the hand-record hint there. Rounds 2-3 closed the hunts' blockers (symlink + missing git; a git failure read as no repo). Checked: concurrency n/a (read-only probe; two parallel moves both landed); error paths - any stat/git/symlink error keeps the rule; input - relative, symlinked, subdir paths, German locale; permissions - an unreadable parent counts as 'maybe a repo'."
+review-summary: none
+review-gaps: "none: round 3 replaced the IsRepo call with one exec (own, for LC_ALL=C and stderr - see critique note); IsRepo keeps its other callers (internal/cli/share.go, internal/cli/update.go), nothing orphaned"
+test-verdict: "fail: bughunt round 3 change blocker - a repo named via GIT_DIR that git cannot open (chmod 000, missing HEAD, path gone) is reported as 'not a git repository: <path>' and OutsideRepo answers true; vet/build rc=0, all scratch-board cases otherwise as intended"
+hunt-verdict: "fail: 1 change blocker (core/gitrepo/git.go:82-86, explicit GIT_DIR that git cannot open)"
+round: 3
+back-from: testing
+back-by: lane
+back-count: 2
+question: "Testing sent 2DSM0T back three times (stop rule). Every round found one more way that OutsideRepo (core/gitrepo/git.go) reads a repository as 'no repository': (1) symlink + git missing, (2) GIT_DIR with broken config, (3) GIT_DIR that git cannot open (chmod 000, missing HEAD, path gone). All three are GIT_DIR/odd-setup corners; normal plain dirs and normal repos behave right since round 1. Options: A (Recommended) one last narrow fix - keep the commit rule whenever GIT_DIR or GIT_WORK_TREE is set in the environment, and accept only git's discovery wording 'not a git repository (or any of the parent' as 'no repo'; that closes the env class for good, then a final hunt and review. B accept as is - the remaining holes need a hand-set GIT_DIR pointing at a broken repo. C narrow the scope: drop the git call entirely, 'no repo' = git installed and no .git above the real path and no GIT_DIR/GIT_WORK_TREE set. Yes to A?"
 ---
 
 # Ein Board ohne Git-Repo schiebt Tickets nach done, ohne Commits zu verlangen
 
 ## Definition of Done
 
-- [ ] Ohne Git-Repo geht ein Ticket nach done und ins Logbook, ohne Commits und ohne --force
-- [ ] In einem Repo ohne Remote verlangt done weiter Commits
-- [ ] Ein Test je Fall
-- [ ] Release-Notiz in core/release/notes/<ID>.md
+- [x] Ohne Git-Repo geht ein Ticket nach done und ins Logbook, ohne Commits und ohne --force
+  proof: core/gate/gate.go OutsideRepo waiver in the requires-commits check; core/gitrepo/git.go OutsideRepo; manual: scratch board in plain dir, move to done exit 0 and logbook exit 0 without --force
+- [x] In einem Repo ohne Remote verlangt done weiter Commits
+  proof: gitrepo.OutsideRepo false unless git on PATH, no .git above the real path, and git says 'not a git repository' (LC_ALL=C); manual: git init without remote refused exit 3, also via symlink with/without git, and a broken GIT_DIR refused exit 3
+- [x] Ein Test je Fall
+  proof: TestCommitsWaivedOnlyOutsideARepository (core/gate/commits_test.go); TestOutsideRepo, TestOutsideRepoWithoutGitKeepsTheRule, TestOutsideRepoGitFailureKeepsTheRule (core/gitrepo/outside_test.go); compiled by go vet, not run (worker rule: no go test)
+- [x] Release-Notiz in core/release/notes/<ID>.md
+  proof: core/release/notes/2DSM0T.md
 
 ## Options
 
@@ -39,5 +59,26 @@ updated-at: 2026-11-05T17:52:51Z
 
 <Steps, in order — filled in by the pre-process step, or by you.>
 
-## Progress
+- [x] gitrepo: OutsideRepo() - true only when no .git in Dir or any parent AND git does not report a work tree
+- [x] gate.Env: lazy OutsideRepo func; requires-commits refusal skipped only when derive found nothing and OutsideRepo() is true
+- [x] wire it in internal/cli/root.go loadEnv and internal/tui/model.go gateEnv
+- [x] tests: gate (nil/false keeps refusal, true passes), gitrepo (plain dir, repo without remote, subdir of repo)
+- [x] release note core/release/notes/2DSM0T.md
+- [x] manual: scratch board without git reaches done and logbook; repo without remote still refused
 
+## Progress
+- **2026-11-23 01:25 · BeMuCa** — Reproduced 2026-11-23 on a scratch board in a plain dir (branch build): move to done refused with 'lane "done" requires the commits ...'. Decision (mine, settle-able): 'no repo' = no .git entry in the board root or any parent AND git does not answer true to rev-parse --is-inside-work-tree (or git is not installed). Why both: a git error that is not 'no repo' (dubious ownership, broken config) must never drop the commit rule inside a real repo; a missing git binary alone must not either when a .git is there. Asked lazily, only on the refusal path, so a repo board pays nothing and render paths never call it. Planning option not ticked, so pre-process is skipped; plan written as plan items anyway.
+- **2026-11-23 01:27 · BeMuCa** — Sibling found and fixed in the same change: 'jaira logbook' printed 'Record them by hand with jaira set <id> commits=<sha>' on a git-less board - the same pointless advice. Now silent there (internal/cli/logbook.go). Ownership refusal in manual tests was unrelated: identity falls back to $USER, so the scratch tests set JAIRA_USER. Tests written but not run here (house rule); the main session runs go test.
+- **2026-11-23 01:27 · BeMuCa** — critique: considered reusing gitref.Repo.Usable / ErrNoGitRepo (internal/cli/refs.go:158) as the 'no repo' answer - rejected: it reads any rev-parse failure as no repository, which would drop the commit rule on a real repo that git refuses (dubious ownership). The stricter gitrepo.OutsideRepo is a second notion of 'no repo' on purpose. The trailing IsRepo after the .git walk covers GIT_DIR setups; it runs only on the refusal path. Nothing else to change.
+- **2026-11-23 01:28 · BeMuCa** — testing (worker): gofmt clean, go vet ./... rc=0, go build ./... rc=0; go test NOT run (house rule tonight - main session runs the race suite before the PR). Branch binary on scratch boards: plain dir -> done exit 0 + logbook exit 0, no hand-record hint; git init without remote -> refused exit 3 needs_commits, and with a fix(<id>) commit -> done + logbook 'Stamped 1 commit(s)'; failure path: repo board with git removed from PATH -> still refused exit 3 (the .git walk decides); plain dir without git on PATH -> done exit 0; two parallel moves to done on the plain-dir board both landed. Bug hunt running in background.
+- **2026-11-23 01:30 · BeMuCa** — bughunt: change: blocker: core/gitrepo/git.go:57-71 (OutsideRepo) - class: the repository test is lexical (filepath.Abs keeps symlinks, the .git walk follows the path as written) and its only fallback, !Available() || !IsRepo(), answers true whenever git is missing, so a repository the walk cannot see reads as 'no repository' and the requires-commits gate (core/gate/gate.go:372) is waived inside a real repo - the opposite of the function's own doc (a missing binary must not drop the requirement); same pattern reached from internal/cli/root.go:365, internal/tui/model.go:2069 and the logbook hint at internal/cli/logbook.go:324; example: board at ~/link -> repo/sub (git init'ed repo), git not on PATH: 'jaira move <id> --to done' exit 0, ticket in done with commits: [] - the same repo via its real path refuses with needs_commits, exit 3; fix direction: resolve the path with filepath.EvalSymlinks before the walk (and keep refusing when git is missing and the answer is unsure); ran: scratch board, PATH without git, symlinked cwd (exit 0) vs real path (exit 3)
+- **2026-11-23 01:30 · BeMuCa** — bughunt: done at 821aa6f78 - 1 finding (1 change, 0 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/gate/commits_test.go core/gate/gate.go core/gitrepo/git.go core/gitrepo/outside_test.go core/release/notes/2DSM0T.md internal/cli/logbook.go internal/cli/root.go internal/tui/model.go
+- **2026-11-23 01:31 · BeMuCa** — Decision for the fix (mine): without git on PATH OutsideRepo answers false - the requirement stays. Reason: without git nothing can tell a repository reached through a symlink, GIT_DIR or GIT_WORK_TREE from a plain directory, and the rule says a missing binary must never drop the requirement. Cost: a solo user with no git installed at all still cannot reach done without --force; jaira's gitrepo package already assumes git on PATH. Also resolve symlinks before the .git walk so a git that fails for another reason (dubious ownership) behind a symlink does not read as 'no repository'.
+- **2026-11-23 01:32 · BeMuCa** — critique round 2: the fix is the smallest that closes the class (path as written vs real path, and a missing git) - early return on !Available, EvalSymlinks before the walk. Nothing else; standing on the round-1 critique note for the gitref.Usable question.
+- **2026-11-23 01:33 · BeMuCa** — bughunt: change: blocker: core/gitrepo/git.go:79 (return !r.IsRepo()) - class: once the .git walk finds nothing, any git failure is read as 'no repository', which is the case the doc comment above OutsideRepo says it refuses; reached by a repository git finds without a .git entry (GIT_DIR / GIT_WORK_TREE in the environment) that git then fails to read (bad config, a killed git); the waiver then drops the commit rule at core/gate/gate.go:372 (done gate) and internal/cli/logbook.go:324 (logbook); example: GIT_DIR=<bare repo with a broken config line> GIT_WORK_TREE=<board dir> -> git rev-parse exits 128, OutsideRepo = true, while a valid GIT_DIR gives false; narrow setup, but the gate passes when it should refuse; ran: scratch probe built against this worktree calling gitrepo.Repo.OutsideRepo (plain dir: true; valid GIT_DIR: false; broken GIT_DIR: true)
+- **2026-11-23 01:34 · BeMuCa** — bughunt: done at 1488c67d8 - 1 finding (1 change, 0 pre-existing) in 1 module, follow-up hunt since 821aa6f78 (diff: core/gitrepo/git.go, core/gitrepo/outside_test.go, core/release/notes/2DSM0T.md; no new files); concurrency, error paths, input, permissions checked; files: core/gate/commits_test.go core/gate/gate.go core/gitrepo/git.go core/gitrepo/outside_test.go core/release/notes/2DSM0T.md internal/cli/logbook.go internal/cli/root.go internal/tui/model.go
+- **2026-11-23 01:34 · BeMuCa** — Round 3 fix direction (mine): the class is 'a git failure read as no repository'. IsRepo folds every failure into false, so OutsideRepo stops using it and asks git itself with LC_ALL=C: true only when rev-parse fails AND says 'not a git repository'. Success (true or false, e.g. inside a bare repo) and any other failure keep the rule. The .git walk over the real path stays as the guard that does not depend on git's wording.
+- **2026-11-23 01:35 · BeMuCa** — critique round 3: OutsideRepo runs its own exec instead of runTolerating because it needs LC_ALL=C and stderr; runTolerating's error message carries stderr but not the locale, so reusing it would make the check depend on the user's language. Matching git's English wording fails safe: if git ever rewords it, the answer turns false and the commit rule stays. Nothing to change.
+- **2026-11-23 01:36 · BeMuCa** — bughunt: change: blocker: core/gitrepo/git.go:82-86 - class: a repository named explicitly through GIT_DIR (or GIT_WORK_TREE+GIT_DIR) that git cannot open is reported by git with the same words 'fatal: not a git repository: '<path>'' as a plain directory, so OutsideRepo answers true and the gate (core/gate/gate.go:372, internal/cli/logbook.go:324) drops the commit rule - exactly what TestOutsideRepoGitFailureKeepsTheRule says must not happen, only the broken-config variant is covered; examples: GIT_DIR pointing at a bare repo with chmod 000, a repo whose HEAD file is missing (damaged/half-written), a GIT_DIR path that no longer exists (unmounted disk, moved repo); ran: LC_ALL=C GIT_DIR=<bare,chmod 000> git -C <plain dir> rev-parse --is-inside-work-tree -> exit 128 'fatal: not a git repository: '<path>''; same for missing HEAD and for a missing path. Hint: plain discovery failure says 'not a git repository (or any of the parent directories)'; the ': '<path>'' form only comes from an explicit GIT_DIR/gitfile, or check GIT_DIR in the environment and keep the rule
+- **2026-11-23 01:36 · BeMuCa** — bughunt: done at 1384508fa - 1 finding (1 change, 0 pre-existing) in 1 module, follow-up hunt since 1488c67d8 (diff: core/gitrepo/git.go, core/gitrepo/outside_test.go; no new files); concurrency, error paths, input, permissions checked; files: core/gate/commits_test.go core/gate/gate.go core/gitrepo/git.go core/gitrepo/outside_test.go core/release/notes/2DSM0T.md internal/cli/logbook.go internal/cli/root.go internal/tui/model.go
+- **2026-11-23 01:37 · BeMuCa** — Paused in human after the third testing send-back (stop rule). Worker stopped; all three hunt findings are GIT_DIR/odd-setup corners. Ticket file holds the round-3 verdicts and this question uncommitted in the worktree; commits so far 821aa6f78, 1488c67d8, 1384508fa. Not run: go test (house rule).

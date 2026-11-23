@@ -4,7 +4,7 @@ title: "Nach Eltern-Ticket filtern: das Board zeigt nur die Kinder"
 status: backlog
 ready: true
 creator: Alexander Sacharov
-assignee: Alexander Sacharov
+assignee: ""
 goal: "Ein Eltern-Ticket laesst sich fokussieren: 'jaira list --parent <id>' und ein Fokus-Modus im TUI zeigen nur noch die Tickets, die unter diesem Ticket haengen"
 context: |-
   Das Datenmodell kann Eltern und Kinder schon, die Ansicht nicht.
@@ -27,7 +27,12 @@ related:
   - 01M1KFMETY9MKH4V38TVD0SAHM
 commits: []
 created-at: 2026-09-13T20:15:25Z
-updated-at: 2026-09-13T20:15:25Z
+updated-at: 2026-11-23T12:46:55Z
+rejected-kind: wontfix
+rejected-why: "superseded by epics (jaira epic show, epic layer D0SAHM); a second grouping over parent would compete with it"
+rejected-by: Alexander Sacharov
+rejected-at: "2026-11-23T12:46:55Z"
+updated-by: Alexander Sacharov
 ---
 
 # Nach Eltern-Ticket filtern: das Board zeigt nur die Kinder

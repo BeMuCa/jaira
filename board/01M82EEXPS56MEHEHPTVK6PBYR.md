@@ -1,7 +1,7 @@
 ---
 id: 01M82EEXPS56MEHEHPTVK6PBYR
 title: "Schleifenbremse: nach 3 Rückgaben entscheidet zuerst der Teamlead, erst wenn er nicht kann, die Person"
-status: signoff
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -16,9 +16,14 @@ tags:
   - gates
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 06204142f355efd2a8277d036566ec868d1d9d6d
+  - fe2008000bab949a8c4f176c7b15139305ed55b8
+  - ac250fa6ed432fe3300d81311be8f642a22060d0
+  - 0ca9bdccb39d37c87ea1bfabb2564fe5fdd07743
+  - 5291ae06c33c4021891252b447c3adf46680d4f0
 created-at: 2026-11-22T20:16:47Z
-updated-at: 2026-11-22T21:18:39Z
+updated-at: 2026-11-22T21:54:49Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-3538380
 claimed-at: 2026-11-22T21:18:12Z
