@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -151,11 +152,18 @@ var Stderr io.Writer = os.Stderr
 // without the copy the next write keeps one entry and every other board is
 // gone. A missing or empty file is the ordinary first start and is left alone.
 // The copy goes to projects.json.broken, or, when an earlier copy is there,
-// to one named after the time, so no earlier copy is overwritten. A copy that
-// cannot be written is an error: Remember then leaves the original as it is.
+// to one named after the time, so no earlier copy is overwritten. A file that
+// is there but cannot be read, or a copy that cannot be written, is an error:
+// Remember then leaves the original as it is.
 func keepBroken(path string) error {
 	b, err := os.ReadFile(path)
-	if err != nil || len(bytes.TrimSpace(b)) == 0 || json.Unmarshal(b, new([]Project)) == nil {
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("%s could not be read, so it is left as it is: %w", path, err)
+	}
+	if len(bytes.TrimSpace(b)) == 0 || json.Unmarshal(b, new([]Project)) == nil {
 		return nil
 	}
 	dst := path + ".broken"

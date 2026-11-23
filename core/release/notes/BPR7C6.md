@@ -1,1 +1,2 @@
 - A ~/.jaira/projects.json that no longer parses is now copied to projects.json.broken (or projects.json.broken-<time> when that exists) before jaira writes a new list, with one line on stderr saying where — merge the boards you still want back from that copy instead of re-opening each one.
+- A ~/.jaira/projects.json that exists but cannot be read (no permission, for example) is now left untouched instead of replaced by a one-entry list; fix its permissions and the board list comes back.

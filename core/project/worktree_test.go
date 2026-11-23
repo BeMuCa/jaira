@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -354,6 +355,50 @@ func TestRememberMissingOrEmptyListIsQuiet(t *testing.T) {
 		if len(Load()) != 1 {
 			t.Errorf("content %v: board not recorded", content)
 		}
+	}
+}
+
+// TestRememberLeavesUnreadableList: a projects.json that is there but cannot
+// be read is not replaced - Remember returns an error and writes nothing. A
+// directory stands in for any read error (permissions do not stop root).
+func TestRememberLeavesUnreadableList(t *testing.T) {
+	base := isolate(t)
+	path := projectsPath()
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	b := mkBoard(t, filepath.Join(base, "b"))
+	if _, err := Remember(b); err == nil {
+		t.Fatal("Remember over an unreadable projects.json returned no error")
+	}
+	if fi, err := os.Stat(path); err != nil || !fi.IsDir() {
+		t.Fatalf("projects.json was replaced: %v", err)
+	}
+}
+
+// TestRememberLeavesPermissionDeniedList: the case the directory above cannot
+// show, because a rename over a directory fails anyway - a file with no read
+// permission, which rename would replace.
+func TestRememberLeavesPermissionDeniedList(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("permission bits do not stop this reader")
+	}
+	base := isolate(t)
+	path := projectsPath()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(`[]`), 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(path, 0o644) })
+	b := mkBoard(t, filepath.Join(base, "b"))
+	if _, err := Remember(b); err == nil {
+		t.Fatal("Remember over an unreadable projects.json returned no error")
+	}
+	os.Chmod(path, 0o644)
+	if got, _ := os.ReadFile(path); string(got) != "[]" {
+		t.Fatalf("projects.json was replaced: %q", got)
 	}
 }
 
