@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T15:45:35Z
-updated-at: 2026-11-23T01:46:05Z
+updated-at: 2026-11-23T01:46:07Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-h319tv
@@ -43,7 +43,7 @@ back-count: 1
 - [x] Die Zeile 'Web UI, VS Code extension' in der Tabelle 'Not built' ist entfernt oder sagt, was heute gilt
   proof: README.md:1248 row now '| VS Code extension | ...', Web UI dropped
 - [x] Auf einem frischen Clone nachgestellt: Install-Zeile, jaira web, Tickets erscheinen; die Wartezeit steht im Abschnitt
-  proof: scratch run with the branch binary: bare remote + shared board, 3 tickets on refs, git clone, jaira init (0 refs), jaira web: refs/jaira/* present within 0.5 s, /api/unassigned lists the 3 tickets; wait sentence README.md:331-334. Install line NOT run (curl|sh denied in this session) - read from scripts/install.sh:110
+  proof: scratch run with the branch binary: bare remote + shared board, 3 tickets on refs, git clone, jaira init (0 refs), jaira web: refs/jaira/* present within 0.5 s, /api/unassigned lists the 3 tickets; wait sentence README.md:332-335. Install line NOT run (curl|sh denied in this session) - read from scripts/install.sh:110
 - [x] Release-Notiz in core/release/notes/<ID>.md
   proof: core/release/notes/H319TV.md
 
