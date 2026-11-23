@@ -1,7 +1,7 @@
 ---
 id: 01M6EEZYHN2T31ANZAWRH319TV
 title: "README: Abschnitt 'Jaira PM View - Web only' fuer Leute ohne Coding-Agent"
-status: critique
+status: in-progress
 ready: true
 creator: BeMuCa
 goal: "Die README hat einen eigenen Abschnitt, mit dem jemand ohne Agent und ohne Terminal-Board in fuenf Minuten jaira web auf einem geklonten Repo laufen hat: Install-Zeile ohne Rollen/Cockpit, jaira web, ein Screenshot, was man dort kann und was nicht; die Zeile 'Web UI' in der Tabelle 'Not built' ist weg."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-02T15:45:35Z
-updated-at: 2026-11-23T01:45:45Z
+updated-at: 2026-11-23T01:45:48Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-h319tv
@@ -28,6 +28,10 @@ outcome-what: "README has a new section '## Jaira PM View - Web only' (after '##
 outcome-why: "jaira web is meant for people without a coding agent, but nothing told them how to get there, and the README still listed a web UI as deliberately not built."
 outcome-resolves: "All four DoD items; install line read from the script, not executed. Checked: concurrency n/a (docs); error path: web without init exits 1 -> init step included; unusual input: fresh clone without refs -> wait sentence; permissions: drops push, so push access named."
 review-summary: "README.md:63-69 the Features bullet 'Epics and jaira web' is where a PM first meets jaira web, but it does not point to the new section; add 'See [Jaira PM View - Web only](#jaira-pm-view---web-only).' the way the Cockpit bullet links its section"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # README: Abschnitt 'Jaira PM View - Web only' fuer Leute ohne Coding-Agent
