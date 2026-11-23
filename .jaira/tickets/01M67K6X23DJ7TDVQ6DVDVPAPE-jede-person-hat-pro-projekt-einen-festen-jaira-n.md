@@ -1,7 +1,7 @@
 ---
 id: 01M67K6X23DJ7TDVQ6DVDVPAPE
 title: "Jede Person hat pro Projekt einen festen jaira-Namen, einmal abgefragt und lokal gespeichert; er ersetzt Git-Name und Aliasse"
-status: in-progress
+status: optimize
 ready: true
 creator: berkc
 assignee: Alexander Sacharov
@@ -21,16 +21,17 @@ related:
   - 01M5MNWJF240306ZVDA41K3RA8
 commits: []
 created-at: 2026-10-30T23:44:36Z
-updated-at: 2026-11-23T19:53:54Z
+updated-at: 2026-11-23T19:54:54Z
 updated-by: Alexander Sacharov
 outcome-what: "Neuer Ref refs/jaira/people (core/people) mit jaira people [alias|rename]; core/identity loest den Handelnden darueber auf; list/next/show/TUI zeigen und filtern unter dem jaira-Namen; snapshot sichert die Liste."
 outcome-why: "Dieselben Menschen standen unter mehreren Namen auf dem Board (BeMuCa/berkc, Alexander Sacharov/alex/AlSa); Filter und Eigentum zerfielen danach."
 outcome-resolves: DVPAPE
-review-summary: "internal/cli/people.go alias: 'jaira people alias zed zed' on an unknown person leaves Find nil and the output dereferences it - print 'nothing to change' without the person instead"
+review-summary: "none"
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "core/identity Aliases: git user.name/user.email were each asked twice (currentIn and the alias list) - now read once and passed in. Left: identity.People reads the ref with one 'git show' instead of gitref.Repo.ReadPeople (two execs) on the hot identity path; people.same/containsFold mirror identity.Same because identity imports people, not the other way."
 ---
 
 # Jede Person hat pro Projekt einen festen jaira-Namen, einmal abgefragt und lokal gespeichert; er ersetzt Git-Name und Aliasse

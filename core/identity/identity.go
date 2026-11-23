@@ -19,17 +19,16 @@ import (
 // the same way commits are. dir scopes the git lookup to a particular
 // repository.
 func Current(dir string) string {
-	return currentIn(dir, People(dir))
+	return currentIn(People(dir), raw(dir), gitConfig(dir, "user.email"))
 }
 
-// currentIn is Current against a list already read, so Aliases reads the ref
-// once rather than twice.
-func currentIn(dir string, list *people.List) string {
-	raw := raw(dir)
+// currentIn is Current from what was already read, so Aliases asks git for
+// each of them once.
+func currentIn(list *people.List, raw, email string) string {
 	if p := list.Find(raw); p != nil {
 		return p.Name
 	}
-	if p := list.Find(gitConfig(dir, "user.email")); p != nil {
+	if p := list.Find(email); p != nil {
 		return p.Name
 	}
 	return raw
@@ -155,8 +154,8 @@ func AliasesPath() string {
 // git's own user.name when the list renamed it: a ticket written under any of
 // them is this person's.
 func Aliases(dir string) []string {
-	list := People(dir)
-	me := currentIn(dir, list)
+	list, rawName, email := People(dir), raw(dir), gitConfig(dir, "user.email")
+	me := currentIn(list, rawName, email)
 	out := []string{me}
 	add := func(v string) {
 		v = strings.TrimSpace(v)
@@ -173,8 +172,8 @@ func Aliases(dir string) []string {
 	for _, n := range list.Names(me)[1:] {
 		add(n)
 	}
-	add(raw(dir))
-	add(gitConfig(dir, "user.email"))
+	add(rawName)
+	add(email)
 	if p := AliasesPath(); p != "" {
 		if raw, err := os.ReadFile(p); err == nil {
 			for _, line := range strings.Split(string(raw), "\n") {
