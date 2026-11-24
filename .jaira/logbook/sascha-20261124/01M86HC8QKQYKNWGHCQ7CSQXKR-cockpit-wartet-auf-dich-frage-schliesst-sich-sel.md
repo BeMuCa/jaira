@@ -1,7 +1,7 @@
 ---
 id: 01M86HC8QKQYKNWGHCQ7CSQXKR
 title: "Cockpit 'Wartet auf dich': Frage schliesst sich selbst oder per x, zeigt ihre Zeit und uebersetzt nur auf Knopfdruck"
-status: critique
+status: done
 ready: true
 creator: Sascha
 assignee: Sascha
@@ -18,37 +18,45 @@ tags:
 blocked-by: []
 related: []
 follows: 01M8537VMKP5N8TJ2YC91M3X77
-commits: []
+commits:
+  - 906415bdfc84372c3b1b71af51258e35fd8070e3
+  - 204c409777ae72ec617f42c5779afed9b7332b55
+  - 8a740145073ab9a00465376d3b2968d0f4f60466
+  - f1a48e9d46a8f49c55c985127c01c804f5b32734
+  - 4ed8912b9d3e8c5bd368955e369d2f11a45b4172
+  - ea5a79df29e37bad4e9f4f08151e4b8e066db266
+  - e65c788c53b7c3c1c175d0adcbcc0d989c398bcb
+  - 4de78ee873b05dda22678a3ff06cb84d2ef20b18
+  - 72568ad14313fcbb9ed1e891efca9bcf7cee845a
+  - 63f60514d6c66ebf17a4fcb76a8eec85a43c947c
 created-at: 2026-11-24T10:24:44Z
-updated-at: 2026-11-24T12:12:55Z
+updated-at: 2026-11-24T14:06:07Z
 updated-by: Sascha
-claimed-by: DESKTOP-RFTCH11-52645
-claimed-at: 2026-11-24T11:37:05Z
+claimed-by: DESKTOP-RFTCH11-26182
+claimed-at: 2026-11-24T12:16:17Z
 outcome-what: "Give-back edges closed: settled() ignores threads dropped by the 30-thread cap; file() keeps askedAt when the same question is repeated; translateAsks re-runs after a successful call when texts arrived meanwhile"
 outcome-why: "Signoff give-back: three edges of this change would show wrong state in the Waiting-for-you pane"
 outcome-resolves: "DoD 7-9; checked: concurrency (translate re-run reads state after the call), error paths (failed call stops, no loop), input (30-thread cap, repeated question)"
-review-summary: "none"
+review-summary: "Full review over 906415bdf..4de78ee87 (delta since the last review ea5a79df2 was 175 lines, over 50). The cockpit's 'Waiting for you' pane now settles questions four ways - a pick, x (dismissAsk), a later filing, or the ticket leaving the lane it was asked in: fileTurn records the lane from the same jaira show that reads the title (aboutLane), and every 60s board refresh (settleMoved) compares it with jaira list of all boards, re-reading with jaira show where the list disagrees and settling only on exit 5 or a parsed status. Every change goes through change(), which computes the new threads synchronously after the clock read and moves each vanished question (settled(), threads dropped by the cap excluded) into a 'done' list kept with the threads in the store; the pane shows it dimmed under a rule as 'Answered' for 24h, with 'asked/answered today 07:12' times. The classifier now keeps the question in the assistant's own words; t / Translate translates every shown question and option in one haiku call (cached via rephrased), toggles back to the original, keeps one call in flight (busy, freed also on a throw) and retranslates questions that arrived meanwhile. The 30-thread cap now drops the least recently touched threads without an open question, never the touched or newest one. Release note in core/release/notes/CSQXKR.md; shipped.sha256 updated. claude plugin test: 570 pass; go test ./core/shipped ./core/role ok."
 round: 7
 back-from: testing
 back-by: lane
 back-count: 2
-review-gaps: "none: the three hunt fixes add one condition each and no helper; nothing orphaned"
-test-verdict: "pass: claude plugin test 569/569 (exit 0) at e65c788c5, go test ./core/role ok; DoD 1-10 proofs re-pointed, their tests passing; failure paths: jaira show exit 1 or exit 0 without a status keeps the question, exit 5 settles; stale list re-read via show; t x3 and a reopened pane -> one model call; writes: threads store via change() (earlier round), not re-run"
-hunt-verdict: "fail: 1 change finding (translateAsks leaves busy set when rephrased throws)"
-review-verdict: "accept: DoD 1-9 met with tests; the three give-back edges are closed; claude plugin test 563 pass, go test ./core/shipped ok; two small edges left for the person"
-review-round: 4
+review-gaps: |-
+  note: edge: fileTurn (register.tsx titled call) - a jaira show that exits non-zero at filing time (a lock, a transient error) writes aboutTitle '' without aboutLane, so the question is never looked up again, never in watched() and never settles by lane - only x clears it; retry the lookup on a non-zero exit other than 5, as a timeout is retried
+  note: limit: a model.complete that never returns keeps Translate busy until the session ends; the engine offers no timeout (recorded in the round-4 note)
+  note: limit: hotkey x only on the first open question, the others have the click target, as DoD 2 allows (accepted at signoff)
+  note: limit: that the real engine runs the turn hook only after the refresh handler returns (so settleMoved cannot settle a question filed with a newer lane mid-refresh) is shown by the test engine only, not checked against the real one
+test-verdict: "pass: claude plugin test 570/570 (exit 0) at 4de78ee87, go test ./core/role ok; DoD 1-10 tests passing; failure path: a store refusing the rephrased write -> Translate label back, next t makes a new call"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 7"
+review-verdict: "accept: all 10 DoD items are met in the code and covered by tests (570 pass); no blocker - one edge (a failed title lookup disables auto-settling for that question) and three limits"
+review-round: 7
 review-verdict-gaps: |-
-  note: edge: settleMoved compares lanes from the jaira list read at the start of refreshBoard; a question filed and titled (fileTurn) with a newer lane while that refresh runs is settled at once. Re-read the ticket with jaira show before settling when its listed lane differs from aboutLane
-  note: edge: pressing t while a Translate call is out sets busy=false, so a third press starts a second model call beside the first; keep busy until the running call returns
-  note: limit: hotkey x only on the first open question; the others have the click target, as DoD 2 allows
-review-check: |-
-  1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  - expect 563 pass, 0 fail
-  2. claude --plugin-dir core/mod/builtin/jaira-cockpit, let the assistant ask you a question about a ticket
-  3. Open 'Waiting for you' from the band: the question shows 'asked today HH:MM', in its original language
-  4. Press t: question and options translated; t again: original
-  5. Ask the same question once more: 'asked' time stays the old one
-  6. Press x: question moves below the rule under 'Answered', dimmed, with 'answered today HH:MM'; nothing is sent into the chat
-  7. Ask another question about a ticket, run jaira move <id> --to <other lane> in a shell: within one board refresh it moves to 'Answered'
+  note: edge: fileTurn (register.tsx titled call) - a jaira show that exits non-zero at filing time (a lock, a transient error) writes aboutTitle '' without aboutLane, so the question is never looked up again, never in watched() and never settles by lane - only x clears it; retry the lookup on a non-zero exit other than 5, as a timeout is retried
+  note: limit: a model.complete that never returns keeps Translate busy until the session ends; the engine offers no timeout (recorded in the round-4 note)
+  note: limit: hotkey x only on the first open question, the others have the click target, as DoD 2 allows (accepted at signoff)
+  note: limit: that the real engine runs the turn hook only after the refresh handler returns (so settleMoved cannot settle a question filed with a newer lane mid-refresh) is shown by the test engine only, not checked against the real one
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-csqxkr && claude --plugin-dir core/mod/builtin/jaira-cockpit  2. ask Claude to put a question to you about a ticket in signoff (e.g. 'ask me whether to accept <ID>, with options yes/no')  3. press q to open 'Waiting for you': the question shows in Claude's wording with 'asked today HH:MM'  4. press t: question and options appear in the language of ~/.jaira/settings.json, label 'Original'; press t again: original text  5. press x: the question moves below a line under 'Answered', dimmed, 'asked … · answered today HH:MM'  6. ask a second question about another ticket, then in another terminal 'jaira move <that ID> --to <other lane>' and wait up to 60s: it moves under 'Answered' by itself  7. automated: cd core/mod/builtin/jaira-cockpit && claude plugin test . -> 570 pass"
 stop-after-fix: "true"
 ---
 
@@ -152,3 +160,13 @@ angenommen:
 - **2026-11-24 12:08 · Sascha** — bughunt: done at e65c788c5 - 1 finding (1 change, 0 pre-existing) in 6 modules, follow-up hunt since ea5a79df2; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/hooks/threads.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/CSQXKR.md core/shipped/shipped.sha256
 - **2026-11-24 12:12 · Sascha** — hunt fix (round 4): translateAsks catches a throwing rephrased (store.get/storeNewest sit outside its own try), so busy is always freed; test 'a Translate call that throws frees t' with w.storeRefuses. Known limit, left: a model.complete that never returns keeps busy until the session ends - the engine gives no timeout to hang on, and the old code had the same pane stuck on 'translating'. 570/570
 - **2026-11-24 12:12 · Sascha** — set stop-after-fix=true: round-4 fix is a try/catch plus one test, under 50 lines, no lock, no parser
+- **2026-11-24 12:13 · Sascha** — waiting: fresh review agent (run-lane.sh --no-worktree, Herdr tab) since 13:13
+- **2026-11-24 12:16 · Sascha** — review: done at 4de78ee87
+- **2026-11-24 12:17 · Sascha** — report: give-back 2 closed (stale list re-read via jaira show; t while Translate is out starts no second call) + DoD 10 (thread cap drops least recently touched, never a waiting question, keeps the newest so ids never repeat) + 4 hunt fixes; commits e65c788c5, 4de78ee87 | signoff, context unknown | open: person tries it in cockpit (review-check); 1 edge (failed title lookup at filing disables auto-settle) + 3 limits; branch not pushed
+- **2026-11-24 13:58 · Sascha** — Accepted from signoff: angenommen:
+- note: edge: fileTurn (register.tsx titled call) - a jaira show that exits non-zero at filing time (a lock, a transient error) writes aboutTitle '' without aboutLane, so the question is never looked up again, never in watched() and never settles by lane - only x clears it; retry the lookup on a non-zero exit other than 5, as a timeout is retried
+- note: limit: a model.complete that never returns keeps Translate busy until the session ends; the engine offers no timeout (recorded in the round-4 note)
+- note: limit: hotkey x only on the first open question, the others have the click target, as DoD 2 allows (accepted at signoff)
+- note: limit: that the real engine runs the turn hook only after the refresh handler returns (so settleMoved cannot settle a question filed with a newer lane mid-refresh) is shown by the test engine only, not checked against the real one
+- **2026-11-24 13:58 · Sascha** — cockpit: accepted by the person, signoff -> done
+- **2026-11-24 14:03 · Sascha** — PR-Rolle gestoppt vor dem Push: nach dem Merge von upstream/master fehlt core/shipped/shipped.sha256 der Hash von 2 Dateien (hooks/register.tsx, hooks/texts.ts) — TestEveryInstalledFileIsAShippedVersion (core/role) rot. Sonst grün: go vet, Windows-Build, check-ticket-commits, shipped-history --check, claude plugin test 574/574. Optionen: 1) scripts/shipped-history.sh --write als fix(CSQXKR)-Commit, Suite neu, dann pushen und PR öffnen (empfohlen); 2) nichts tun, Merge-Commit lokal lassen, Person entscheidet.
