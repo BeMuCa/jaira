@@ -378,26 +378,23 @@ func (b *Box) dropLocked(kind Kind, key string) error {
 }
 
 // Settle removes the entry a caller read as seen and has dealt with since —
-// sent it, or found the remote already says it — but only while it is still
-// that entry. A write another session queued for the same key in the meantime
-// stays: dropping it by key would lose it, and for an epic the entry is the
-// only copy of the edit.
-//
-// lease is the SHA the remote now holds for what was sent, or empty. A newer
-// entry is then leased on it: it was queued on top of the bytes just sent (an
-// entry is the whole file, superseding on the same local state), so the
-// remote's new SHA is the state it builds on, and the lease it kept would only
-// lose the next push to a write that was our own. A caller that sent something
-// the newer entry never saw — a merge — passes empty, and the newer entry
-// keeps its lease and loses that race, to be merged in turn.
-func (b *Box) Settle(seen Entry, lease string) error {
-	return b.settle(seen, lease, lease != "")
+// had it refused, merged it, or found the remote already says it — but only
+// while it is still that entry. A write another session queued for the same
+// key in the meantime stays as it is: dropping it by key would lose it, and
+// for an epic the entry is the only copy of the edit. Its lease stays too:
+// nothing that write built on reached the remote, so it keeps the race it
+// would have run anyway.
+func (b *Box) Settle(seen Entry) error {
+	return b.settle(seen, nil)
 }
 
-// settle is Settle with the lease taken as given when releasing: after a sent
-// delete the remote holds no ref, and empty is the lease that says so — a
-// newer write keeping the deleted ref's SHA would lose its push to nothing.
-func (b *Box) settle(seen Entry, lease string, release bool) error {
+// settle is Settle for an entry that was sent as it is. A newer entry is then
+// leased on *lease, the SHA the remote now holds: it was queued on top of the
+// bytes just sent (an entry is the whole file, superseding on the same local
+// state), and the lease it kept would only lose the next push to a write that
+// was our own. After a sent delete *lease is empty, which is the lease that
+// says "no ref". A nil lease leaves a newer entry alone.
+func (b *Box) settle(seen Entry, lease *string) error {
 	unlock, err := b.lock()
 	if err != nil {
 		return err
@@ -411,11 +408,11 @@ func (b *Box) settle(seen Entry, lease string, release bool) error {
 	if sameWrite(now, seen) {
 		return b.dropKind(kind, seen.ID)
 	}
-	if !release {
+	if lease == nil {
 		return nil
 	}
 	// The migration rode on the write just sent; leased, it is not sent again.
-	now.Lease, now.Migration = lease, nil
+	now.Lease, now.Migration = *lease, nil
 	return b.writeEntry(now)
 }
 
@@ -571,7 +568,7 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 
 		switch {
 		case sendErr == nil:
-			if err := b.settle(e, sha, true); err != nil {
+			if err := b.settle(e, &sha); err != nil {
 				return results, err
 			}
 			results = append(results, Result{ID: e.ID, File: e.File, Kind: kind, Op: e.Op, Outcome: Sent})
@@ -581,7 +578,7 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 			// not lose the edit — for an epic, which has no file on disk, the
 			// entry is the only copy of it.
 			if kind != KindMilestone && kind != KindEpic {
-				if err := b.Settle(e, ""); err != nil {
+				if err := b.Settle(e); err != nil {
 					return results, err
 				}
 			}

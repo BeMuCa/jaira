@@ -1,7 +1,7 @@
 ---
 id: 01M865XBRDFR99ENKNMKWV2J2W
 title: "outbox: eine Schreibung, die waehrend eines Pushs fuer denselben Schluessel eingereiht wird, wird geloescht"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Outbox-Eintrag wird nach dem Senden nur geloescht, wenn er noch derselbe ist, der gelesen wurde; eine inzwischen neu eingereihte Schreibung bleibt erhalten."
@@ -20,21 +20,18 @@ related: []
 follows: 01M8543DKBZA0P1CHFGKMMKENA
 commits: []
 created-at: 2026-11-24T07:04:21Z
-updated-at: 2026-11-24T10:24:03Z
+updated-at: 2026-11-24T10:26:56Z
 assignee: Alexander Sacharov
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-2599564
 claimed-at: 2026-11-24T10:20:56Z
-outcome-what: "outbox.Box nimmt ein Lock-File um jedes Lesen-dann-Schreiben (queueKind, RekeyMilestone, Drop*); neu Settle(seen, lease) und Replace(seen, ...) wirken nur auf den gelesenen Eintrag. Box.Flush (Sent/Rejected), rebaseEpic (Erfolg + Requeue), tidyMilestoneEntries und mergeRefused nutzen sie. Nach Sent wird ein zwischendurch eingereihter Eintrag auf die gepushte SHA umgeleast."
-outcome-why: "Ein Eintrag wurde nach Push oder git-Lesen per Schluessel geloescht; eine in diesem Fenster von einer zweiten Session eingereihte Schreibung war weg (Epic: einzige Kopie)."
-outcome-resolves: "DoD 1: race_test.go (alle drei Arten, gesendet + abgelehnt) und epic_race_test.go (pre-receive-Hook, direkt + Merge), rot ohne Fix. DoD 2: Release-Note. Geprueft: Nebenlaeufigkeit (Lock nie ueber Push gehalten), Fehlerpfade (Replace atomar, alter Eintrag bleibt bei Fehler), Altpfade (Settle entfernt legacy/old-milestone wie dropKind), Rechte unveraendert."
-review-summary: "Die Outbox bekommt ein Lock-File (<outbox>/.lock) um jedes Lesen-Vergleichen-Schreiben (Queue, Drop, RekeyMilestone). Nach einem Push loescht Flush den Eintrag nicht mehr per Schluessel, sondern per Settle(gelesen, neue SHA): nur wenn er noch derselbe ist (Op, Content, File, Lease, Migration gleich). Eine waehrend des Pushs neu eingereihte Schreibung bleibt und wird auf die gesendete SHA umgeleast, damit sie den naechsten Push nicht gegen die eigene Schreibung verliert. rebaseEpic ersetzt per Replace nur den gelesenen Eintrag statt DropEpic+QueueEpic; mergeRefused und tidyMilestoneEntries nutzen Settle. DropEpic entfaellt. Tests: race_test.go (Ticket/Milestone/Epic) und epic_race_test.go mit pre-receive-Hook."
-review-gaps: |-
-  note: edge: outbox.go Settle - nach einem gesendeten Delete (sha leer) behaelt eine waehrend des Pushs eingereihte neue Schreibung ihre alte Lease auf einen Ref, den es nicht mehr gibt, und wird beim naechsten Flush als Rejected verworfen; selten (Loeschen und Neuschreiben desselben Tickets in zwei Sessions gleichzeitig), braucht eine Regel fuer die Lease eines geloeschten Refs
-  note: elsewhere: refsync.go:157-161, :222-226 und epic.go:67-71 - die Lease wird vor dem Outbox-Lock gelesen; ein Flush einer anderen Session dazwischen laesst den neuen Eintrag auf einer alten SHA stehen (Bughunt-Notiz, vor diesem Ticket; new ticket)
-  note: elsewhere: core/identity TestCurrentHonoursJairaUserAboveEverything liest den echten people-Ref und ist rot, unabhaengig von dieser Aenderung
-test-verdict: "pass: go test ./... gruen (exit 0); go test -race ./core/... gruen bis auf core/identity TestCurrentHonoursJairaUserAboveEverything - vorbestehend, liest den echten people-Ref (Note); DoD 1 Tests laufen gruen und rot mit sameWrite=true, DoD 2 Datei da; Scratch-Board: 10 parallele 'jaira epic add' auf ein Epic - alter Build 9/10, 10/10, 9/10 auf dem Remote, neuer 10/10 dreimal; offline eingereiht (exit 0, Warnung), mit dem naechsten Schreibbefehl auf dem Remote"
-hunt-verdict: "pass: bughunt done at cb71b1c7a, 0 change, 1 pre-existing (Lease vor dem Box-Lock gelesen in Record*/RecordMilestone/RecordEpic - gleiches Modul, gleiches Thema: Note fuer die Person)"
+outcome-what: "outbox.Box nimmt ein Lock-File um jedes Lesen-dann-Schreiben; Settle(seen) und Replace(seen, ...) wirken nur auf den gelesenen Eintrag; Flush leased einen waehrend des Sendens eingereihten neueren Eintrag auf die gesendete SHA um - nach einem Delete auf 'kein Ref' (leere Lease)."
+outcome-why: "Nach Signoff-Rueckgabe: ein waehrend eines Deletes eingereihter Eintrag behielt die Lease des geloeschten Refs und wurde beim naechsten Flush als Rejected verworfen. Settle(seen, \"\") trug zwei Bedeutungen; jetzt Settle(seen) = nie umleasen, settle(seen, &sha) nur in Flush."
+outcome-resolves: "DoD 1-3: race_test.go (alle Arten, gesendet, abgelehnt, Delete) und epic_race_test.go; DoD 2 Release-Note."
+review-summary: "nichts: Settle(seen)/settle(seen, &sha) trennt die zwei Bedeutungen der leeren Lease; Settle-Kommentar nannte den Rejected-Aufruf in Flush nicht - ergaenzt"
+review-gaps: "nichts: Settle-Signatur verkleinert, keine neue Funktion ausser settle, die Flush braucht"
+test-verdict: "pass: go test -count=1 ./core/... gruen bis auf core/identity TestCurrentHonoursJairaUserAboveEverything (vorbestehend, X2M486); neu TestAWriteQueuedDuringItsDeleteIsLeasedOnNoRef gruen, rot bei 6ee1875e9 ohne Fix"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 2 - settle aendert keine Sperre (Lock-Aufnahme unveraendert), nur welche Lease ein neuerer Eintrag bekommt"
 review-verdict: "accept: DoD 1 und 2 erfuellt (race_test.go, epic_race_test.go, release note); Lock nicht reentrant, aber nirgends verschachtelt genommen; kein Blocker"
 review-round: 1
 review-verdict-gaps: |-
@@ -42,9 +39,9 @@ review-verdict-gaps: |-
   note: elsewhere: refsync.go:157-161, :222-226 und epic.go:67-71 - die Lease wird vor dem Outbox-Lock gelesen; ein Flush einer anderen Session dazwischen laesst den neuen Eintrag auf einer alten SHA stehen (Bughunt-Notiz, vor diesem Ticket; new ticket)
   note: elsewhere: core/identity TestCurrentHonoursJairaUserAboveEverything liest den echten people-Ref und ist rot, unabhaengig von dieser Aenderung
 review-check: "1. cd in den Worktree feat/wv2j2w  2. go test ./core/outbox/ -run 'TestAWriteQueuedDuringThePushOfItsKeySurvivesTheFlush|TestALostRaceDropsOnlyTheRefusedWrite' -v  -> PASS fuer ticket, milestone, epic  3. go test ./core/refsync/ -run TestAnEpicEditQueuedDuringThePushReachesTheRemote -v  -> PASS  4. Gegenprobe: in core/outbox/outbox.go in sameWrite als erste Zeile 'return true' einsetzen, Schritt 2 erneut -> FAIL (die zweite Schreibung geht verloren); danach 'git checkout core/outbox/outbox.go'"
-round: 2
-back-from: signoff
-back-by: person
+round: 3
+back-from: critique
+back-by: lane
 back-count: 1
 stop-after-fix: "true"
 ---
@@ -58,7 +55,7 @@ stop-after-fix: "true"
 - [x] Release-Note in core/release/notes/WV2J2W.md
   proof: core/release/notes/WV2J2W.md
 - [x] Nach einem gesendeten Delete wird eine waehrend des Pushs eingereihte Schreibung auf 'kein Ref' (leere Lease) umgeleast
-  proof: core/outbox/race_test.go TestAWriteQueuedDuringItsDeleteIsLeasedOnNoRef (rot mit Settle(e, sha) in Flush)
+  proof: core/outbox/race_test.go TestAWriteQueuedDuringItsDeleteIsLeasedOnNoRef; core/outbox/outbox.go settle (Flush leased auch auf leere SHA); rot bei 6ee1875e9 mit altem Settle(e, sha)
 
 ## Options
 
@@ -93,3 +90,6 @@ Folge-Ticket:
 - **2026-11-24 10:21 · Sascha** — parent session: uds:/run/user/1000/cc-socks/3417.sock
 - **2026-11-24 10:22 · Sascha** — fix (Rueckgabe signoff): Box.settle(seen, lease, release) - Flush uebergibt release=true, auch bei leerer SHA nach Delete; Settle(seen, lease) bleibt wie bisher (leer = Merge, alte Lease behalten). Leere Lease heisst bei gitref.Write 'kein Ref', also genau der Zustand nach dem Delete. Abgelehntes Delete unveraendert (Folgeticket AEZ3HD-Klasse).
 - **2026-11-24 10:23 · Sascha** — stop-after-fix=true gesetzt: Fix 11 Zeilen + Test, kein neuer Lock, kein Parser
+- **2026-11-24 10:24 · Sascha** — critique: Settle(seen, "") hat nur Aufrufer mit leerer Lease ausser Flush - Signatur auf Settle(seen) verkleinern, settle(seen, lease) fuer Flush; bool faellt weg
+- **2026-11-24 10:25 · Sascha** — critique+optimize (lean, stop-after-fix): nichts mehr; Zeiger statt bool, weil nil = nicht umleasen und "" = kein Ref zwei echte Zustaende sind. Cockpit-Dateien im Diff kommen aus dem upstream-Merge (W80HNH), nicht von hier.
+- **2026-11-24 10:26 · Sascha** — testing: done at 6ee1875e9 (lean: nur outbox/refsync/core neu gelaufen)

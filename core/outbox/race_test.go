@@ -167,7 +167,7 @@ func TestSettleAndReplaceLeaveANewerEntryAlone(t *testing.T) {
 			if err := k.queue(b, "01AAA", "second", "lease-1"); err != nil {
 				t.Fatal(err)
 			}
-			if err := b.Settle(seen, ""); err != nil {
+			if err := b.Settle(seen); err != nil {
 				t.Fatal(err)
 			}
 			if err := b.Replace(seen, []byte("merged"), "lease-2", "ada"); err != nil {
@@ -186,7 +186,7 @@ func TestSettleAndReplaceLeaveANewerEntryAlone(t *testing.T) {
 			if got.Content != "merged" || got.Lease != "lease-2" || !got.QueuedAt.Equal(e.QueuedAt) {
 				t.Fatalf("replace gave %+v", got)
 			}
-			if err := b.Settle(got, ""); err != nil {
+			if err := b.Settle(got); err != nil {
 				t.Fatal(err)
 			}
 			if _, ok := k.pending(b, "01AAA"); ok {

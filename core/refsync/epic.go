@@ -119,7 +119,7 @@ func (y *Syncer) rebaseEpic(r outbox.Result) outbox.Result {
 			// Only the entry read above goes: an edit queued during the push
 			// was made on ours, not on the merge, and stays leased where it
 			// is, to lose the next push and be merged in turn.
-			r.Outcome, r.Err = outbox.Sent, y.Box.Settle(e, "")
+			r.Outcome, r.Err = outbox.Sent, y.Box.Settle(e)
 			return r
 		case errors.Is(err, gitref.ErrRaceLost):
 			// Somebody wrote it again between our read and our push: their
