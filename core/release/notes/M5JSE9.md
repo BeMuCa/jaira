@@ -1,0 +1,1 @@
+- Accept in the cockpit's Acceptance pane now works in every person's lane, not only signoff: in a lane mid-board (a script approval, an answered human question) Execute moves the ticket on to the next lane, and the line above the button names it, e.g. "Execute: accept → build".
