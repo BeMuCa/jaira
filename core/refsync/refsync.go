@@ -56,6 +56,12 @@ type Syncer struct {
 	// hold a second opinion.
 	IsMine func(assignee string) bool
 
+	// Name is the name a person stored on a ref is reported under: the jaira
+	// name the board's people list gives them, so a refusal says "Robert has
+	// it" where 'jaira list' shows Robert. nil reports names as stored. A
+	// function for the same reason IsMine is one.
+	Name func(stored string) string
+
 	// SeenPath records which ref SHA was last reported for each ticket, so
 	// being handed a ticket is announced once instead of on every fetch.
 	SeenPath string
@@ -808,6 +814,10 @@ type Report struct {
 	Conflicts []milestone.Conflict `json:"conflicts,omitempty"`
 }
 
+// listBox reads the outbox. It is a variable only so a test can make one
+// listing fail in Flush while the others succeed (see export_test.go).
+var listBox = (*outbox.Box).List
+
 // Flush sends what the outbox holds and reports each entry, naming who was
 // quicker for every write the remote refused.
 //
@@ -820,7 +830,7 @@ func (y *Syncer) Flush() ([]Report, error) {
 	if y == nil || y.Usable() != nil {
 		return nil, nil
 	}
-	entries, err := y.Box.List()
+	entries, err := listBox(y.Box)
 	if err != nil {
 		return nil, err
 	}
@@ -844,7 +854,13 @@ func (y *Syncer) Flush() ([]Report, error) {
 		return nil, err
 	}
 	queued := map[string]outbox.Entry{}
-	entries, _ = y.Box.List() // again: tidyMilestoneEntries may have rekeyed some
+	// Again: tidyMilestoneEntries may have rekeyed some. A failed listing is
+	// an error, not an empty queue: an empty one would skip the merge of a
+	// refused milestone write below, and the next fetch would overwrite it.
+	entries, err = listBox(y.Box)
+	if err != nil {
+		return nil, err
+	}
 	for _, e := range entries {
 		if e.Kind == outbox.KindMilestone {
 			queued[e.ID] = e
@@ -937,7 +953,7 @@ func (y *Syncer) mergeRefused(e outbox.Entry) (bool, []milestone.Conflict) {
 	}
 	if bytes.Equal(merged, cur) && chosen == file {
 		// Nothing of the edit is left to send: the winner already says it.
-		_ = y.Box.DropMilestone(e.ID)
+		_ = y.Box.Settle(e)
 		return false, nil
 	}
 	dir := milestone.Dir(y.Store.Root)
@@ -996,7 +1012,7 @@ func mergedFile(base, local, winner string) (file, clash string) {
 // the same old file to the same ID, and the second one to push must not be told
 // that the remote wins over a write that said the same thing.
 func (y *Syncer) tidyMilestoneEntries() error {
-	entries, err := y.Box.List()
+	entries, err := listBox(y.Box)
 	if err != nil {
 		return err
 	}
@@ -1006,7 +1022,7 @@ func (y *Syncer) tidyMilestoneEntries() error {
 		}
 		if !milestone.IsID(e.ID) {
 			if milestone.RenamedTo([]byte(e.Content)) != "" {
-				if err := y.Box.DropMilestone(e.ID); err != nil {
+				if err := y.Box.Settle(e); err != nil {
 					return err
 				}
 				continue
@@ -1021,8 +1037,10 @@ func (y *Syncer) tidyMilestoneEntries() error {
 			continue
 		}
 		file, content, _, err := y.Repo.ReadMilestone(e.ID)
+		// Only the entry compared goes: this runs outside the milestone lock,
+		// and a write queued during the read above is a newer edit.
 		if err == nil && file == e.File && string(content) == e.Content {
-			if err := y.Box.DropMilestone(e.ID); err != nil {
+			if err := y.Box.Settle(e); err != nil {
 				return err
 			}
 		}
@@ -1072,7 +1090,16 @@ func (y *Syncer) winner(id string) (*Winner, error) {
 			*f.dst = v
 		}
 	}
+	w.Assignee, w.UpdatedBy = y.name(w.Assignee), y.name(w.UpdatedBy)
 	return w, nil
+}
+
+// name is who as Name reports them.
+func (y *Syncer) name(who string) string {
+	if y.Name == nil || who == "" {
+		return who
+	}
+	return y.Name(who)
 }
 
 // Arrival is a ticket as the ref now has it, seen from this clone.
@@ -1153,6 +1180,7 @@ func (y *Syncer) Incoming() ([]Arrival, error) {
 		if y.IsMine != nil {
 			a.Mine = y.IsMine(a.Assignee)
 		}
+		a.Assignee = y.name(a.Assignee)
 		a.Local = y.hasLocal(id)
 		out = append(out, a)
 	}
@@ -1228,7 +1256,7 @@ func (y *Syncer) loadSeen() seen {
 	if y.SeenPath == "" {
 		return s
 	}
-	b, err := os.ReadFile(y.SeenPath)
+	b, err := ticket.ReadAtomic(y.SeenPath)
 	if err != nil {
 		return s
 	}
@@ -1249,7 +1277,10 @@ func (y *Syncer) saveSeen(s seen) {
 		return
 	}
 	if b, err := json.MarshalIndent(s, "", "  "); err == nil {
-		_ = os.WriteFile(y.SeenPath, append(b, '\n'), 0o644)
+		// Atomic: a background fetch writes this while a foreground one may
+		// read it, and a torn read parses as empty — losing the departures
+		// this record exists to keep.
+		_ = ticket.WriteAtomic(y.SeenPath, append(b, '\n'))
 	}
 }
 
@@ -1598,8 +1629,8 @@ func (y *Syncer) Pull(id string, steal bool) (*Pulled, error) {
 		// Taken with --steal. Recorded on the ticket itself, because the ref is
 		// the only thing the other person will fetch, and a note there is the
 		// only place they can read why the ticket left them.
-		stolenFrom = h
-		if err := ticket.AppendNote(d, fmt.Sprintf("%s took this ticket over from %s", y.Actor, h), time.Now(), y.Actor); err != nil {
+		stolenFrom = y.name(h)
+		if err := ticket.AppendNote(d, fmt.Sprintf("%s took this ticket over from %s", y.Actor, stolenFrom), time.Now(), y.Actor); err != nil {
 			return nil, err
 		}
 	}
@@ -1777,9 +1808,9 @@ func (y *Syncer) Reject(id, kind, why, duplicateOf string, now time.Time) (rejec
 		return nil, "", err
 	}
 	if t.Rejected.Kind != "" {
-		return t, "", fmt.Errorf("%s: %w (%s by %s)", ticket.Handle(id), ErrAlreadyRejected, t.Rejected.Kind, t.Rejected.By)
+		return t, "", fmt.Errorf("%s: %w (%s by %s)", ticket.Handle(id), ErrAlreadyRejected, t.Rejected.Kind, y.name(t.Rejected.By))
 	}
-	heldBy = strings.TrimSpace(t.Assignee)
+	heldBy = y.name(strings.TrimSpace(t.Assignee))
 	if err := ticket.StampRejection(t, kind, why, y.Actor, duplicateOf, now); err != nil {
 		return nil, "", err
 	}
@@ -1966,19 +1997,25 @@ type Departure struct {
 // Nothing is moved. Which of the two is right is a question for the person, and
 // a tool that guessed would sometimes reopen finished work; the caller reports
 // this and names the command that settles it.
-func (y *Syncer) Departed() []Departure {
+//
+// A failure to list the refs is an error, never an empty list: read as "no
+// refs", a passing git hiccup (a lock, a broken ref) would report every ticket
+// this clone has seen as gone.
+func (y *Syncer) Departed() ([]Departure, error) {
 	if y == nil || y.Store == nil || y.Usable() != nil {
-		return nil
+		return nil, nil
 	}
 	seen := y.loadSeen()
 	if len(seen) == 0 {
-		return nil
+		return nil, nil
 	}
-	present := map[string]bool{}
-	if ids, err := y.Repo.List(); err == nil {
-		for _, id := range ids {
-			present[id] = true
-		}
+	ids, err := y.Repo.List()
+	if err != nil {
+		return nil, fmt.Errorf("listing ticket refs: %w", err)
+	}
+	present := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		present[id] = true
 	}
 	var out []Departure
 	for id := range seen {
@@ -1996,7 +2033,7 @@ func (y *Syncer) Departed() []Departure {
 		out = append(out, d)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
-	return out
+	return out, nil
 }
 
 // ForgetDeparted drops a ticket from the seen record, so it stops being

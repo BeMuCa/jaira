@@ -64,6 +64,15 @@ const EpicPrefix = Root + "epics/"
 // EpicRefName is the ref an epic travels on.
 func EpicRefName(name string) string { return EpicPrefix + name }
 
+// PeopleRef is where the board's people travel: one file, PeopleFile, naming
+// each person once with every other name that means them. One ref for all of
+// them rather than one per person, because a rename turns one person into
+// another and must land as one write, never as two that can half-arrive.
+const PeopleRef = Root + "people"
+
+// PeopleFile is the one file PeopleRef carries.
+const PeopleFile = "people"
+
 // DefaultRemote is where refs go when nothing is configured.
 const DefaultRemote = "origin"
 
@@ -428,6 +437,24 @@ func (r *Repo) WriteEpic(name string, content []byte, lease string) (string, err
 	return r.refWrite(EpicRefName(name), name+".md", content, lease)
 }
 
+// PeopleBlob is the blob of the people file the local ref carries, or "" when
+// there is none.
+func (r *Repo) PeopleBlob() string {
+	return r.Rev(PeopleRef + ":" + PeopleFile)
+}
+
+// ReadPeople returns the people file the local ref carries, with its lease.
+// A board nobody has named a person on yet wraps ErrNoRef.
+func (r *Repo) ReadPeople() ([]byte, string, error) {
+	return r.refRead(PeopleRef, PeopleFile)
+}
+
+// WritePeople puts the people file on its ref and pushes it, under the same
+// compare-and-swap as an epic.
+func (r *Repo) WritePeople(content []byte, lease string) (string, error) {
+	return r.refWrite(PeopleRef, PeopleFile, content, lease)
+}
+
 // MigratedFromTrailer is the message trailer of the commit that moved a
 // milestone to its ID ref: the tip of the old name ref it came from, or "none".
 const MigratedFromTrailer = "Jaira-Migrated-From"
@@ -666,8 +693,13 @@ func (r *Repo) Tree(entries map[string]string) (string, error) {
 }
 
 // Nest wraps a tree under a single directory name and returns the outer tree.
-func (r *Repo) Nest(dir, tree string) (string, error) {
-	out, errb, err := r.run(fmt.Sprintf("040000 tree %s\t%s\n", tree, dir), "mktree")
+// files are blobs to put beside the directory, name to blob.
+func (r *Repo) Nest(dir, tree string, files map[string]string) (string, error) {
+	in := fmt.Sprintf("040000 tree %s\t%s\n", tree, dir)
+	for name, blob := range files {
+		in += fmt.Sprintf("100644 blob %s\t%s\n", blob, name)
+	}
+	out, errb, err := r.run(in, "mktree")
 	if err != nil {
 		if errors.Is(err, ErrNoGit) {
 			return "", err

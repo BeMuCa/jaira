@@ -8,19 +8,52 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/BeMuCa/jaira/core/gitref"
+	"github.com/BeMuCa/jaira/core/people"
 )
 
-// Current determines who is acting, preferring git's configured name so
-// tickets are attributed the same way commits are. dir scopes the git lookup
-// to a particular repository.
+// Current determines who is acting: the jaira name the board's people list
+// gives this person, found by git's user.name or user.email. A person the list
+// does not know acts under git's configured name, so tickets are attributed
+// the same way commits are. dir scopes the git lookup to a particular
+// repository.
 func Current(dir string) string {
+	return currentIn(People(dir), raw(dir), gitConfig(dir, "user.email"))
+}
+
+// currentIn is Current from what was already read, so Aliases asks git for
+// each of them once.
+//
+// JAIRA_USER, when set, is the only name looked up: it says who is acting on
+// purpose, and git's email belongs to whoever configured this checkout — a
+// second agent or a teammate borrowing it must not become that person.
+func currentIn(list *people.List, raw, email string) string {
+	if p := list.Find(raw); p != nil {
+		return p.Name
+	}
+	if !ByEnv() {
+		if p := list.Find(email); p != nil {
+			return p.Name
+		}
+	}
+	return raw
+}
+
+// ByEnv reports whether JAIRA_USER names who is acting. Then git's email and
+// the machine's alias file are the checkout owner's, not this person's.
+func ByEnv() bool {
+	return strings.TrimSpace(os.Getenv("JAIRA_USER")) != ""
+}
+
+// raw is who git and the environment say is acting, before the people list
+// has been asked.
+func raw(dir string) string {
 	if v := strings.TrimSpace(os.Getenv("JAIRA_USER")); v != "" {
 		return v
 	}
-	if out, err := exec.Command("git", "-C", dir, "config", "user.name").Output(); err == nil {
-		if name := strings.TrimSpace(string(out)); name != "" {
-			return name
-		}
+	if name := gitConfig(dir, "user.name"); name != "" {
+		return name
 	}
 	for _, k := range []string{"USER", "USERNAME", "LOGNAME"} {
 		if v := strings.TrimSpace(os.Getenv(k)); v != "" {
@@ -28,6 +61,25 @@ func Current(dir string) string {
 		}
 	}
 	return "unknown"
+}
+
+func gitConfig(dir, key string) string {
+	out, err := exec.Command("git", "-C", dir, "config", key).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// People is the board's people list as the local ref in dir carries it. No
+// repository, no ref or an unreadable one is an empty list: who is acting must
+// always have an answer, and without a list it is the one it always was.
+func People(dir string) *people.List {
+	out, err := exec.Command("git", "-C", dir, "show", gitref.PeopleRef+":"+gitref.PeopleFile).Output()
+	if err != nil {
+		return &people.List{}
+	}
+	return people.Parse(out)
 }
 
 // Initials renders name as the first letter of each word, lowercased — the
@@ -109,8 +161,19 @@ func AliasesPath() string {
 // by being refused.
 //
 // The result is deduplicated case-insensitively and never empty.
+//
+// Every name the board's people list gives this person is included too, and
+// git's own user.name when the list renamed it: a ticket written under any of
+// them is this person's.
+//
+// JAIRA_USER, when set, narrows this to that name and the people list's names
+// for it. git's email and the alias file belong to whoever configured this
+// checkout and machine; under JAIRA_USER the one acting may be somebody else,
+// whose list --mine must not show the owner's tickets.
 func Aliases(dir string) []string {
-	out := []string{Current(dir)}
+	list, rawName, email := People(dir), raw(dir), gitConfig(dir, "user.email")
+	me := currentIn(list, rawName, email)
+	out := []string{me}
 	add := func(v string) {
 		v = strings.TrimSpace(v)
 		if v == "" {
@@ -123,9 +186,14 @@ func Aliases(dir string) []string {
 		}
 		out = append(out, v)
 	}
-	if email, err := exec.Command("git", "-C", dir, "config", "user.email").Output(); err == nil {
-		add(string(email))
+	for _, n := range list.Names(me)[1:] {
+		add(n)
 	}
+	add(rawName)
+	if ByEnv() {
+		return out
+	}
+	add(email)
 	if p := AliasesPath(); p != "" {
 		if raw, err := os.ReadFile(p); err == nil {
 			for _, line := range strings.Split(string(raw), "\n") {

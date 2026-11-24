@@ -61,7 +61,12 @@ export const t = {
   translating: 'translating…',
   original: 'Original',
   execute: 'Execute',
-  busyRow: (id: string) => `${id}: an earlier press or an Explain chat is still at work on it - press Execute again once it is done`,
+  // N5ZZP6: Execute while its row is locked - by its own press or an
+  // Explain chat - drawn dim; a press on it does nothing.
+  running: 'running…',
+  // Execute's lock ran out while its step is still at work: it takes a
+  // press again, and a second one may write beside the first.
+  stillRunning: (id: string, seconds: number) => `${id}: Execute still at work after ${seconds} s - it takes a press again; look at the ticket before you press once more`,
   // What Execute will do, in the pane's last line before the button.
   // ends: whether to is the terminal lane; elsewhere the line names the lane
   // the ticket goes on to, so nobody reads it as done (M5JSE9).
@@ -107,6 +112,9 @@ export const t = {
   accepted: (id: string, lane: string) => `${id} accepted: ${lane}`,
   returnedTo: (id: string, who: 'old' | 'new' | 'none') =>
     who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
+  tabsUnreadable: (id: string) => `${id} back in in-progress; Herdr's tab list could not be read, so it is unknown whether its worker still runs - no worker started. Check its tab, and start one only if none runs.`,
+  workerBlocked: (id: string, where: string) => `${id} back in in-progress; its worker waits at an approval dialog in ${where} - answer it there, then type the decision into it. No Enter was pressed for you.`,
+  dialogBeforeEnter: (id: string, pane: string) => `${id} given back to the worker that carried it; an approval dialog opened in pane ${pane} before the Enter - answer it there, then press Enter if the decision still waits in its input.`,
   // The one line Accept and Give back hand this session, the teamlead's,
   // after a move that went through: what happened, and what already runs.
   // Each says who decided — '(Person, Cockpit)' — and leads with the
@@ -264,6 +272,14 @@ export const t = {
   guardHeader: 'Cold cache',
   threadsOpen: (q: number, s: number) => `threads: ${q} open question(s), ${s} left lying`,
   threadsNone: 'No conversation threads yet.',
+  asksTitle: 'Waiting for you',
+  asksNone: 'No question is waiting for you.',
+  asksNoTicket: 'no ticket',
+  answerInChat: 'Answer in the chat…',
+  asksDone: 'x done',
+  asksAnswered: 'Answered',
+  askedAt: (when: string) => `asked ${when}`,
+  answeredAt: (when: string) => `answered ${when}`,
   threadsTitle: 'Conversation threads (? open question to you, ~ left lying, -> ticket):',
   workers: (n: number) => `${n} worker`,
   reviews: (n: number) => `${n} review`,

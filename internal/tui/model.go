@@ -16,6 +16,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"time"
 	"unicode"
 
@@ -30,6 +31,7 @@ import (
 	"github.com/BeMuCa/jaira/core/link"
 	"github.com/BeMuCa/jaira/core/milestone"
 	"github.com/BeMuCa/jaira/core/move"
+	"github.com/BeMuCa/jaira/core/people"
 	"github.com/BeMuCa/jaira/core/pr"
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/refsync"
@@ -381,9 +383,8 @@ func New(s *ticket.Store) (*Model, error) {
 	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), projectRoot: project.Board(s.Root), darkBG: true, anim: true, animStart: time.Now()}
 	m.versionLine, m.releasePill = versionLine()
 	m.versionAt = time.Now()
-	m.me = identity.Current(s.Root)
 	// Mutations from the board record who made them, the same as the CLI's.
-	s.Actor = m.me
+	m.refreshPeople()
 	// And they are queued for the ticket's own ref, the same as the CLI's.
 	// Queued, not sent: nothing in the update loop may wait for a network, so
 	// the board files the write and a command with a route sends it.
@@ -393,7 +394,6 @@ func New(s *ticket.Store) (*Model, error) {
 	// decoded tickets; the CLI is one-shot and never asks for it.
 	s.EnableCache()
 	m.fullAt = time.Now()
-	m.myAliases = identity.Aliases(s.Root)
 	if err := m.reload(); err != nil {
 		return nil, err
 	}
@@ -421,14 +421,12 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 	m.Close()
 	m.store = s
 	m.projectRoot = project.Board(s.Root)
-	m.me = identity.Current(s.Root)
 	// Mutations from the board record who made them, the same as the CLI's.
-	s.Actor = m.me
+	m.refreshPeople()
 	m.refSync = newSyncer(s, m.me)
 	s.Recorder = m.refSync
 	s.EnableCache()
 	m.fullAt = time.Now()
-	m.myAliases = identity.Aliases(s.Root)
 	m.scroll = map[string]int{}
 	m.laneIdx, m.cardIdx = 0, 0
 	m.detail = nil
@@ -457,6 +455,16 @@ func (m *Model) switchBoard(root string) tea.Cmd {
 // measurable. Reading from disk each time, rather than applying events to the
 // view, keeps edits made entirely outside this process (a git pull, another
 // session, a hand edit) on the same path as our own.
+// refreshPeople reads the board's people list, and with it the name this
+// board acts as and the names that mean this person. Called when a board is
+// opened, before its ref syncer is made from m.me.
+func (m *Model) refreshPeople() {
+	boardPeople.Store(identity.People(m.store.Root))
+	m.me = identity.Current(m.store.Root)
+	m.store.Actor = m.me
+	m.myAliases = identity.Aliases(m.store.Root)
+}
+
 func (m *Model) reload() error {
 	lanes, err := lane.LoadBoard(m.store.Root, m.boardName)
 	if errors.Is(err, lane.ErrNoSuchBoard) {
@@ -760,6 +768,14 @@ func (m *Model) currentLane() *lane.Lane {
 	return m.cols[m.laneIdx].lane
 }
 
+// boardPeople is the open board's people list: who goes by which name. The
+// filter is a free function the tests call with nothing else, so the list sits
+// here rather than on the Model; it is set wherever the board is opened, next
+// to myAliases, and a nil list compares names as plain strings, as before.
+// Atomic because the ref syncer's background fetch names people through it
+// while the update loop may be reading the list again.
+var boardPeople atomic.Pointer[people.List]
+
 // matches reports whether t passes the board filter q. Each word of q is a
 // condition of its own and all of them must hold: "user:berk 7mg5gb" is
 // berk's ticket 7MG5GB, not a ticket whose assignee is called "berk 7mg5gb".
@@ -917,12 +933,12 @@ func matchField(t *ticket.Ticket, key, val string, ms milestone.Index) (hit, kno
 	case "context":
 		field = t.Context
 	case "assignee":
-		field = t.Assignee
+		field = boardPeople.Load().Canonical(t.Assignee)
 	case "user":
 		// A person, so exact like tag below — "user:be" is nobody — and
 		// either end of the ticket: the one it is assigned to and the one
 		// who wrote it. The board's user picker writes this key.
-		return strings.EqualFold(t.Assignee, val) || strings.EqualFold(t.Creator, val), true
+		return boardPeople.Load().Same(t.Assignee, val) || boardPeople.Load().Same(t.Creator, val), true
 	case "tag", "tags":
 		// Exact, unlike every other key here, and deliberately: a tag is a
 		// name from a closed vocabulary, not prose. Substring matching made
@@ -1193,6 +1209,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.flash(news)
 		}
+		// A teammate's 'jaira people alias' or 'rename' arrives with this
+		// fetch: the names the board shows and filters by are read again.
+		// Who it acts as stays what it was at open — the store, the ref
+		// syncer and its commits all name one person one way until the
+		// board is opened again, and that name is still theirs.
+		boardPeople.Store(identity.People(m.store.Root))
 		_ = m.reload()
 		return m, nil
 
@@ -2085,8 +2107,9 @@ func (m *Model) linkIndex() *link.Index {
 func (m *Model) gateEnv() gate.Env {
 	repo := &gitrepo.Repo{Dir: m.store.Root}
 	return gate.Env{
-		Lanes: m.lanes,
-		All:   m.allTickets,
+		People: boardPeople.Load(),
+		Lanes:  m.lanes,
+		All:    m.allTickets,
 		// Without this the board and the command line disagree about the
 		// one thing this pair of fields exists for: a blocker that finished
 		// and was filed away clears the dependency in the CLI and went on

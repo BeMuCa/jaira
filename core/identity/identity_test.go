@@ -10,7 +10,9 @@ import (
 
 func TestCurrentHonoursJairaUserAboveEverything(t *testing.T) {
 	t.Setenv("JAIRA_USER", "berk")
-	if got := Current("."); got != "berk" {
+	// A directory of its own, not ".": "." is the checkout the tests run in,
+	// and its refs/jaira/people may map "berk" to another jaira name.
+	if got := Current(t.TempDir()); got != "berk" {
 		t.Errorf("Current() = %q, want %q", got, "berk")
 	}
 }
@@ -196,4 +198,106 @@ func TestInitials(t *testing.T) {
 			t.Errorf("Initials(%q) = %q, want %q", c.name, got, c.want)
 		}
 	}
+}
+
+// The board's people list decides the acting name, found by any of git's two
+// names or by JAIRA_USER; a person the list does not know acts as before.
+func TestCurrentIsTheJairaNameThePeopleListGives(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	dir := t.TempDir()
+	git := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	git("init", "--quiet")
+	git("config", "user.name", "BeMuCa")
+	git("config", "user.email", "berk@example.test")
+	t.Setenv("JAIRA_USER", "")
+	if got := Current(dir); got != "BeMuCa" {
+		t.Fatalf("without a list: %q", got)
+	}
+	list := filepath.Join(dir, "people")
+	if err := os.WriteFile(list, []byte("berkc: bemuca\nother: someone\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git("update-ref", "refs/jaira/people", strings.TrimSpace(gitOut(t, dir, "commit-tree", strings.TrimSpace(gitOut(t, dir, "write-tree-for", list)), "-m", "people")))
+	cases := []struct{ name, email, user, want string }{
+		{"BeMuCa", "x@example.test", "", "berkc"},                     // by user.name, any case
+		{"Berk on laptop", "berk@example.test", "", "Berk on laptop"}, // email unlisted
+		{"nobody", "x@example.test", "someone", "other"},              // JAIRA_USER is looked up too
+		{"nobody", "x@example.test", "", "nobody"},
+		{"nobody", "someone", "", "other"},      // by user.email
+		{"nobody", "someone", "grace", "grace"}, // JAIRA_USER is not overruled by git's email                    // unknown stays itself
+	}
+	for _, c := range cases {
+		git("config", "user.name", c.name)
+		git("config", "user.email", c.email)
+		t.Setenv("JAIRA_USER", c.user)
+		if got := Current(dir); got != c.want {
+			t.Errorf("%+v: Current = %q", c, got)
+		}
+	}
+	git("config", "user.name", "BeMuCa")
+	git("config", "user.email", "berk@example.test")
+	t.Setenv("JAIRA_USER", "")
+	if a := Aliases(dir); a[0] != "berkc" || !IsMe(dir, "BEMUCA") || !IsMe(dir, "berkc") || IsMe(dir, "someone") {
+		t.Errorf("aliases = %v", a)
+	}
+}
+
+// Under JAIRA_USER only that name and the people list's names for it mean me:
+// git's email and the alias file are the checkout owner's, and grace must not
+// see the owner's tickets as hers.
+func TestAliasesUnderJairaUserLeaveOutTheOwnersNames(t *testing.T) {
+	dir := t.TempDir()
+	home := t.TempDir()
+	t.Setenv("JAIRA_HOME", home)
+	gitInit(t, dir, "BeMuCa", "berk@example.test")
+	if err := os.WriteFile(filepath.Join(home, "identity"), []byte("berk.c@partner.example\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	list := filepath.Join(dir, "people")
+	if err := os.WriteFile(list, []byte("grace: grace@example.test\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	commit := strings.TrimSpace(gitOut(t, dir, "commit-tree", strings.TrimSpace(gitOut(t, dir, "write-tree-for", list)), "-m", "people"))
+	gitOut(t, dir, "update-ref", "refs/jaira/people", commit)
+	t.Setenv("JAIRA_USER", "grace")
+
+	for _, owner := range []string{"berk@example.test", "BeMuCa", "berk.c@partner.example"} {
+		if IsMe(dir, owner) {
+			t.Errorf("%q reads as grace: %v", owner, Aliases(dir))
+		}
+	}
+	for _, mine := range []string{"grace", "GRACE@example.test"} {
+		if !IsMe(dir, mine) {
+			t.Errorf("%q is not grace: %v", mine, Aliases(dir))
+		}
+	}
+}
+
+// gitOut runs git in dir; "write-tree-for <file>" is shorthand for a tree that
+// holds that one file under the name "people".
+func gitOut(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+	if args[0] == "write-tree-for" {
+		blob := strings.TrimSpace(gitOut(t, dir, "hash-object", "-w", args[1]))
+		cmd := exec.Command("git", "-C", dir, "mktree")
+		cmd.Stdin = strings.NewReader("100644 blob " + blob + "\tpeople\n")
+		out, err := cmd.Output()
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(out)
+	}
+	out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).Output()
+	if err != nil {
+		t.Fatalf("git %v: %v", args, err)
+	}
+	return string(out)
 }

@@ -66,6 +66,7 @@ Under `--json`, a refusal is structured on stderr with a `code` and often a
 | `jaira lanes` | the installed lanes; `--board <name>` lists another board's. `--json` marks a person's lanes with `human_exit` (signoff) and `requires_question` (human) |
 | `jaira projects` | boards you have opened |
 | `jaira whoami` | the identity jaira acts as, and the other names that mean you |
+| `jaira people` | who is who on this board: each person's jaira name and every other name that means them, from the shared ref `refs/jaira/people`. `jaira people alias <name> <git-name\|email>...` adds names to a person (a name of somebody else: exit 3), `jaira people rename <old> <new>` gives them a new jaira name and keeps the old one as an alias. Writes fetch first and push at once, so they need the remote; two at once both arrive |
 | `jaira sessions` | sessions working this tree |
 | `jaira resume` | everything left mid-flight, with its notes |
 | `jaira validate` | check every ticket for damage; `--strict` fails on warnings. Also warns when the generated agent block no longer matches this board's lanes — which happens when a lane file is edited by hand rather than through `jaira lanes` — and when milestone files are committed, with the `git rm -r --cached .jaira/milestones` that takes them out (`milestones_tracked`) |
@@ -79,6 +80,14 @@ in a ticket a teammate's tooling assigned, a personal address in another
 repository. jaira treats git's `user.email` as you as well as `user.name`, and
 reads `~/.jaira/identity` (one name per line, `#` comments allowed) for the rest.
 `jaira whoami` prints the resolved list.
+
+For the whole team rather than one machine, the board keeps a people list on
+the ref `refs/jaira/people`: one person a line, `<jaira name>: <alias>, <alias>`.
+jaira acts as the person your git `user.name` or `user.email` is a name of, and
+writes their jaira name into creator, assignee, claims and notes. Tickets
+written under an older name are shown and filtered under the jaira name, and
+their files stay as they are. `jaira people alias berkc BeMuCa` makes two names
+one person; `jaira people rename BeMuCa berkc` changes which one is shown.
 
 Names not on that list are somebody else, so their tickets are refused. That is
 the point of the rail — but a rail that refuses your own tickets only teaches you
