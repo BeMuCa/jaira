@@ -1390,6 +1390,9 @@ func TestSpawnTakesUpTheBranchTheWorkRidesOn(t *testing.T) {
 			out, err := run(root, bin)
 			first <- result{out, err}
 		}()
+		// A t.Fatal before the gate below would leave the first spawn's stub
+		// waiting out its whole bound: open the gate on every way out.
+		t.Cleanup(func() { _ = os.WriteFile(gate, nil, 0o644) })
 		claim := filepath.Join(root, ".git", "jaira", "spawning", "AB12CD-REVIEW")
 		deadline := time.Now().Add(10 * time.Second)
 		for {
