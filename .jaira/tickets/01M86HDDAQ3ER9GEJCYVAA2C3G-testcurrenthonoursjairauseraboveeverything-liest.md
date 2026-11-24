@@ -17,22 +17,23 @@ blocked-by: []
 related: []
 commits:
   - 7f6c4f59b
+  - 7f6c4f59b d8c662e2c
 created-at: 2026-11-24T10:25:21Z
-updated-at: 2026-11-24T10:38:04Z
+updated-at: 2026-11-24T10:44:52Z
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-74925
 claimed-at: 2026-11-24T10:25:54Z
-outcome-what: "TestCurrentHonoursJairaUserAboveEverything calls Current(t.TempDir()) instead of Current(\".\")"
-outcome-why: "'.' is the checkout under test; its refs/jaira/people maps berk to Berk, so go test ./... was red in every clone that fetched the ref"
-outcome-resolves: "identity tests no longer read the real people ref; green in a clone with aliases (DoD 1, 2)"
+outcome-what: "identity test runs in t.TempDir(); testhome.Run unsets git's repository variables (GIT_DIR, GIT_WORK_TREE, ...) and sets GIT_CEILING_DIRECTORIES=os.TempDir(), with a test over both cases"
+outcome-why: "the checkout's refs/jaira/people turned go test ./... red in every clone with aliases; under an exported GIT_DIR the same tests even overwrote that ref and .git/config"
+outcome-resolves: "DoD 1-3: identity tests green in a clone with 'Berk: BeMuCa, berkc', no test reads or writes the developer's repo, also under GIT_DIR/TMPDIR"
 review-summary: none
 review-gaps: none
-test-verdict: "fail: suite green (RC=0) but the identity test still reads the checkout's people ref when GIT_DIR is exported or TMPDIR lies in a repo"
-hunt-verdict: "fail: bughunt done at 7f6c4f5, 1 change (GIT_DIR/TMPDIR leak), 1 pre-existing same subject (folded into the fix)"
-round: 2
+test-verdict: "pass: go build + go test -count=1 ./... green (RC=0) after d8c662e2c; DoD 1-3 verified: identity tests green in this worktree with 'Berk: BeMuCa, berkc'; GIT_DIR=<scratch clone> 4 FAIL before/ok after, TMPDIR inside the clone 1 FAIL before/ok after, clone's people ref unchanged; TestIsolateGit red with isolateGit disabled; change writes nothing outside tests, no concurrent writer to check"
+hunt-verdict: "fail: bughunt done at d8c662e, 0 change, 1 pre-existing same subject (packages without testhome.Run: board, gitref, release, shipped, snapshot, scripts) folded into this ticket"
+round: 3
 back-from: testing
 back-by: lane
-back-count: 1
+back-count: 2
 ---
 
 # TestCurrentHonoursJairaUserAboveEverything liest den echten people-Ref und ist in jedem Klon mit Aliassen rot
@@ -45,6 +46,8 @@ back-count: 1
   proof: grep: only identity_test.go:13 passed '.'; mergebranches_test.go repoRoot only feeds go build; go test ./core/identity ./core/people ./internal/cli green in this checkout with the ref set
 - [x] Auch mit exportiertem GIT_DIR oder einem TMPDIR innerhalb eines Repos erreicht kein Test ueber testhome.Run das Repo des Entwicklers (lesen oder schreiben)
   proof: internal/testhome/testhome.go isolateGit; TestIsolateGitKeepsTempDirsOutOfTheDevelopersRepository (both cases red without isolateGit); GIT_DIR=<scratch clone> and TMPDIR=<inside scratch clone> go test ./core/identity: 4 resp. 1 FAIL before, ok after, clone's people ref unchanged
+- [x] Jedes Paket, dessen Tests git aufrufen, hat einen TestMain mit testhome.Run; ein Test in internal/testhome schlaegt fuer jedes fehlende fehl
+  proof: core/{board,gitref,release,shipped,snapshot}/main_test.go, scripts/main_test.go; internal/testhome TestEveryPackageThatRunsGitInTestsCallsRun (fails naming core/board with its main_test.go removed); GIT_DIR=<scratch repo> go test over all eight packages: scratch repo's refs and config unchanged
 
 ## Options
 
@@ -66,3 +69,10 @@ back-count: 1
 - **2026-11-24 10:31 · Sascha** — bughunt: done at 7f6c4f59b - 2 findings (1 change, 1 pre-existing) in 1 module, first hunt; concurrency, error paths, input, permissions checked; files: core/identity/identity_test.go
 - **2026-11-24 10:33 · Sascha** — testing: class: a test's git calls find the developer's repository through the environment, not through its dir - GIT_DIR/GIT_WORK_TREE exported, or TMPDIR inside a checkout; example: bughunt change note (GIT_DIR set -> Current()='Berk'), and the pre-existing one where the same env made gitInit/update-ref overwrite the real refs/jaira/people; fix: at the cause, internal/testhome.Run unsets git's repository variables and sets GIT_CEILING_DIRECTORIES to os.TempDir(), covering every package that calls it
 - **2026-11-24 10:38 · Sascha** — fix in testhome, not per test: 21 packages call testhome.Run, so every git-touching test is covered; GIT_CEILING_DIRECTORIES=os.TempDir() handles TMPDIR inside a checkout. Repro only in a scratch clone - the first hunt's repro with GIT_DIR on the real checkout overwrote refs/jaira/people (restored to upstream f35141c). Dead end in my own test: GIT_DIR set to '' makes git fail outright, so the case must unset it
+- **2026-11-24 10:38 · Sascha** — critique round 2 (reads only the testhome change answering the hunt): fix sits at the one place all 21 test packages pass through (testhome.Run), same shape as its existing JAIRA_* unsets; no finding
+- **2026-11-24 10:38 · Sascha** — optimize round 2: nothing to remove; gitRepoVars is a list because Run's own JAIRA_* unsets are one
+- **2026-11-24 10:39 · Sascha** — waiting: bughunt round 2 (subagent) since 11:39
+- **2026-11-24 10:40 · Sascha** — bughunt: pre-existing: core/gitref/gitref_test.go:38, core/snapshot/snapshot_test.go:25, core/shipped/history_test.go:128 (auch core/release/notes_test.go:32, scripts/*_test.go:58,126) - Klasse: Testpakete, die git in t.TempDir() aufrufen, aber kein TestMain mit testhome.Run haben, bekommen die neue Git-Isolation (isolateGit) nicht; ein exportiertes GIT_DIR (Hook/Wrapper) lenkt ihre git-Aufrufe ins Repo des Entwicklers; Beispiel: GIT_DIR=<wegwerf-repo>/.git go test ./core/gitref ./core/snapshot ./core/shipped -> refs/heads/master des Repos von 06a655d auf 7203dbd umgebogen, user.name/email, remote upstream, jaira.remote in .git/config ueberschrieben, fremde Branches a-d/main/feature und Tags v0.1.0-v0.3.0 angelegt; Gegenprobe core/identity, core/people (mit testhome.Run): Repo unveraendert; Testdateien nicht in Commits von AA2C3G (letzte Aenderung 996c3e735); ran: siehe oben, nur gegen Wegwerf-Repos im scratchpad
+- **2026-11-24 10:40 · Sascha** — hunt report: 1 Befund (0 change, 1 pre-existing), als Note auf AA2C3G | ganz gelesen: internal/testhome/testhome.go, internal/testhome/testhome_test.go (neu in der Liste); als Diff: core/identity/identity_test.go (kein Diff seit 7f6c4f59b) | nicht geprueft: Windows/macOS-Pfade von GIT_CEILING_DIRECTORIES (nur Linux; Slash am Ende von TMPDIR geprueft, harmlos)
+- **2026-11-24 10:40 · Sascha** — bughunt: done at d8c662e2c - 1 finding (0 change, 1 pre-existing) in 2 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: core/identity/identity_test.go internal/testhome/testhome.go internal/testhome/testhome_test.go
+- **2026-11-24 10:42 · Sascha** — testing round 2: class: test packages that run git but have no TestMain with testhome.Run miss isolateGit; example: GIT_DIR=<scratch> go test ./core/gitref ./core/snapshot ./core/shipped rewrote that repo's master, .git/config, tags; fix: main_test.go with testhome.Run in all six, plus a guard test in internal/testhome that fails for any package running git in tests without it. Folded here, not a follow-up ticket: same subject as the goal

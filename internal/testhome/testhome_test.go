@@ -49,3 +49,48 @@ func TestIsolateGitKeepsTempDirsOutOfTheDevelopersRepository(t *testing.T) {
 		})
 	}
 }
+
+// Isolation only reaches a package whose TestMain calls Run. A package whose
+// tests run git and has none sent its git calls into the developer's checkout
+// under an exported GIT_DIR — branches, tags and .git/config rewritten. So
+// every such package is listed here until it has one.
+func TestEveryPackageThatRunsGitInTestsCallsRun(t *testing.T) {
+	root, err := filepath.Abs("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	usesGit := map[string]bool{}
+	callsRun := map[string]bool{}
+	err = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if name := d.Name(); path != root && (strings.HasPrefix(name, ".") || name == "node_modules" || name == "testdata") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !strings.HasSuffix(path, "_test.go") {
+			return nil
+		}
+		src, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		dir := filepath.Dir(path)
+		usesGit[dir] = usesGit[dir] || strings.Contains(string(src), `"git"`)
+		callsRun[dir] = callsRun[dir] || strings.Contains(string(src), "testhome.Run(")
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	own, _ := filepath.Abs(".")
+	for dir := range usesGit {
+		if usesGit[dir] && !callsRun[dir] && dir != own {
+			rel, _ := filepath.Rel(root, dir)
+			t.Errorf("%s runs git in its tests but has no TestMain calling testhome.Run", rel)
+		}
+	}
+}
