@@ -204,6 +204,11 @@ func (b *Box) queueKind(kind Kind, key, file string, op Op, content []byte, leas
 		Lease: lease, Content: string(content), File: file,
 		QueuedAt: now, UpdatedAt: now, By: by, Migration: mig,
 	}
+	unlock, err := b.lock()
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	if old, ok := b.pendingKind(kind, key); ok {
 		e.Lease = old.Lease
 		e.QueuedAt = old.QueuedAt
@@ -211,6 +216,24 @@ func (b *Box) queueKind(kind Kind, key, file string, op Op, content []byte, leas
 			e.Migration = old.Migration
 		}
 	}
+	return b.writeEntry(e)
+}
+
+// lock takes the box's lock, held around every read-then-write of an entry:
+// superseding one, dropping one, rekeying one. Without it a flush that read an
+// entry, pushed it and then dropped it by key would drop a write another
+// session queued for the same key during the push. It is never held across a
+// push or a git read, only across the few file operations of one decision.
+func (b *Box) lock() (func(), error) {
+	if err := os.MkdirAll(b.Dir, 0o755); err != nil {
+		return nil, err
+	}
+	return ticket.LockFile(filepath.Join(b.Dir, ".lock"))
+}
+
+// writeEntry files e under its kind and key. The caller holds the lock.
+func (b *Box) writeEntry(e Entry) error {
+	kind, key := e.Kind.or(KindTicket), e.ID
 	path := b.path(kind, key)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
@@ -338,14 +361,94 @@ func (b *Box) readDir(dir string, kind Kind) ([]Entry, error) {
 	return out, nil
 }
 
-// Drop removes a queued write.
-func (b *Box) Drop(id string) error { return b.dropKind(KindTicket, id) }
+// Drop removes a queued write, whatever it holds by now. A caller that read
+// the entry, did something slow and wants to drop what it read uses Settle.
+func (b *Box) Drop(id string) error { return b.dropLocked(KindTicket, id) }
 
 // DropMilestone removes a queued write of a milestone.
-func (b *Box) DropMilestone(key string) error { return b.dropKind(KindMilestone, key) }
+func (b *Box) DropMilestone(key string) error { return b.dropLocked(KindMilestone, key) }
 
-// DropEpic removes a queued write of an epic.
-func (b *Box) DropEpic(name string) error { return b.dropKind(KindEpic, name) }
+func (b *Box) dropLocked(kind Kind, key string) error {
+	unlock, err := b.lock()
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	return b.dropKind(kind, key)
+}
+
+// Settle removes the entry a caller read as seen and has dealt with since —
+// had it refused, merged it, or found the remote already says it — but only
+// while it is still that entry. A write another session queued for the same
+// key in the meantime stays as it is: dropping it by key would lose it, and
+// for an epic the entry is the only copy of the edit. Its lease stays too:
+// nothing that write built on reached the remote, so it keeps the race it
+// would have run anyway.
+func (b *Box) Settle(seen Entry) error {
+	return b.settle(seen, nil)
+}
+
+// settle is Settle for an entry that was sent as it is. A newer entry is then
+// leased on *lease, the SHA the remote now holds: it was queued on top of the
+// bytes just sent (an entry is the whole file, superseding on the same local
+// state), and the lease it kept would only lose the next push to a write that
+// was our own. After a sent delete *lease is empty, which is the lease that
+// says "no ref". A nil lease leaves a newer entry alone.
+func (b *Box) settle(seen Entry, lease *string) error {
+	unlock, err := b.lock()
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	kind := seen.Kind.or(KindTicket)
+	now, ok := b.pendingKind(kind, seen.ID)
+	if !ok {
+		return nil
+	}
+	if sameWrite(now, seen) {
+		return b.dropKind(kind, seen.ID)
+	}
+	if lease == nil {
+		return nil
+	}
+	// The migration rode on the write just sent; leased, it is not sent again.
+	now.Lease, now.Migration = *lease, nil
+	return b.writeEntry(now)
+}
+
+// Replace puts content, leased on lease, in place of the entry the caller read
+// as seen, while it is still that entry; it keeps when that was first queued.
+// Unlike Queue it takes the given lease, not the queued one. A write queued
+// since stays as it is, as in Settle.
+func (b *Box) Replace(seen Entry, content []byte, lease, by string) error {
+	unlock, err := b.lock()
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	kind := seen.Kind.or(KindTicket)
+	now, ok := b.pendingKind(kind, seen.ID)
+	if ok && !sameWrite(now, seen) {
+		return nil
+	}
+	e := seen
+	e.Kind, e.Content, e.Lease, e.By, e.Migration = kind, string(content), lease, by, nil
+	e.UpdatedAt = time.Now().UTC()
+	return b.writeEntry(e)
+}
+
+// sameWrite reports whether two entries for one key would send the same
+// thing. When they were queued does not count: the same bytes queued again
+// are as sent as the first time.
+func sameWrite(a, b Entry) bool {
+	if a.Op != b.Op || a.Content != b.Content || a.File != b.File || a.Lease != b.Lease {
+		return false
+	}
+	if a.Migration == nil || b.Migration == nil {
+		return a.Migration == b.Migration
+	}
+	return *a.Migration == *b.Migration
+}
 
 // RekeyMilestone replaces the write an older build queued under oldKey — a
 // milestone's name — with one under newKey, its ID, naming the file to commit.
@@ -353,34 +456,31 @@ func (b *Box) DropEpic(name string) error { return b.dropKind(KindEpic, name) }
 // already has a write queued, that one stands: it is newer than anything an
 // old build could have said, and the old entry is dropped.
 func (b *Box) RekeyMilestone(oldKey, newKey, file string, content []byte, lease string) error {
+	unlock, err := b.lock()
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	old, ok := b.pendingKind(KindMilestone, oldKey)
 	if !ok {
 		return nil
 	}
 	if _, exists := b.pendingKind(KindMilestone, newKey); exists {
-		return b.DropMilestone(oldKey)
+		return b.dropKind(KindMilestone, oldKey)
 	}
 	e := Entry{
 		ID: newKey, Op: OpWrite, Ref: gitref.MilestoneRefName(newKey), Kind: KindMilestone,
 		Lease: lease, Content: string(content), File: file,
 		QueuedAt: old.QueuedAt, UpdatedAt: time.Now().UTC(), By: old.By,
 	}
-	path := b.path(KindMilestone, newKey)
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := b.writeEntry(e); err != nil {
 		return err
 	}
-	data, err := json.MarshalIndent(e, "", "  ")
-	if err != nil {
-		return err
-	}
-	if err := ticket.WriteAtomic(path, append(data, '\n')); err != nil {
-		return err
-	}
-	return b.DropMilestone(oldKey)
+	return b.dropKind(KindMilestone, oldKey)
 }
 
 // dropKind removes a queued write of either kind, including one an older build
-// filed at the flat path.
+// filed at the flat path. The caller holds the lock.
 func (b *Box) dropKind(kind Kind, key string) error {
 	if err := os.Remove(b.path(kind, key)); err != nil && !os.IsNotExist(err) {
 		return err
@@ -464,11 +564,11 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 	var results []Result
 	for _, e := range entries {
 		kind := e.Kind.or(KindTicket)
-		sendErr := send(s, kind, e)
+		sha, sendErr := send(s, kind, e)
 
 		switch {
 		case sendErr == nil:
-			if err := b.dropKind(kind, e.ID); err != nil {
+			if err := b.settle(e, &sha); err != nil {
 				return results, err
 			}
 			results = append(results, Result{ID: e.ID, File: e.File, Kind: kind, Op: e.Op, Outcome: Sent})
@@ -478,7 +578,7 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 			// not lose the edit — for an epic, which has no file on disk, the
 			// entry is the only copy of it.
 			if kind != KindMilestone && kind != KindEpic {
-				if err := b.dropKind(kind, e.ID); err != nil {
+				if err := b.Settle(e); err != nil {
 					return results, err
 				}
 			}
@@ -499,35 +599,32 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 //
 // A milestone or an epic is only ever written, never deleted: no command
 // deletes one, so there is nothing to queue.
-func send(s Sender, kind Kind, e Entry) error {
+func send(s Sender, kind Kind, e Entry) (string, error) {
 	switch kind {
 	case KindEpic:
 		if e.Op != OpWrite {
-			return fmt.Errorf("outbox: unknown %s op %q", kind, e.Op)
+			return "", fmt.Errorf("outbox: unknown %s op %q", kind, e.Op)
 		}
-		_, err := s.WriteEpic(e.ID, []byte(e.Content), e.Lease)
-		return err
+		return s.WriteEpic(e.ID, []byte(e.Content), e.Lease)
 	case KindMilestone:
 		if e.Op != OpWrite {
-			return fmt.Errorf("outbox: unknown %s op %q", kind, e.Op)
+			return "", fmt.Errorf("outbox: unknown %s op %q", kind, e.Op)
 		}
 		file := e.File
 		if file == "" {
 			file = e.ID + ".md"
 		}
 		if m, ok := s.(migrationSender); ok && e.Migration != nil && e.Lease == "" {
-			_, err := m.WriteMigration(e.ID, e.Migration.File, []byte(e.Migration.Content), e.Migration.From, file, []byte(e.Content))
-			return err
+			return m.WriteMigration(e.ID, e.Migration.File, []byte(e.Migration.Content), e.Migration.From, file, []byte(e.Content))
 		}
-		_, err := s.WriteMilestone(e.ID, file, []byte(e.Content), e.Lease)
-		return err
+		return s.WriteMilestone(e.ID, file, []byte(e.Content), e.Lease)
 	}
 	switch e.Op {
 	case OpDelete:
-		return s.Delete(e.ID, e.Lease)
+		// A deleted ref has no SHA to lease a later write on.
+		return "", s.Delete(e.ID, e.Lease)
 	case OpWrite:
-		_, err := s.Write(e.ID, []byte(e.Content), e.Lease)
-		return err
+		return s.Write(e.ID, []byte(e.Content), e.Lease)
 	}
-	return fmt.Errorf("outbox: unknown op %q", e.Op)
+	return "", fmt.Errorf("outbox: unknown op %q", e.Op)
 }
