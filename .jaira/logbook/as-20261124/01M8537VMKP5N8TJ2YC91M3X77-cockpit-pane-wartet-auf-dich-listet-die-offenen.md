@@ -1,7 +1,7 @@
 ---
 id: 01M8537VMKP5N8TJ2YC91M3X77
 title: "Cockpit: Pane 'Wartet auf dich' listet die offenen Fragen der Sitzung, Antwort per Taste statt Suchen im Chat"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,23 +18,41 @@ tags:
   - cockpit
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 65446e9473f76adc403d7afe981918b378da3323
+  - b318241d6d24ec4d9ee0fa85deaf0cc4eda74422
+  - 628b531185a10724b51f7a12ce2cd78f1e0c44b7
+  - a78bdb00bcffdbf38027e71183cf6c56f87d89bd
 created-at: 2026-11-23T20:58:25Z
-updated-at: 2026-11-23T21:42:41Z
+updated-at: 2026-11-24T06:08:33Z
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-40547
-claimed-at: 2026-11-23T20:59:00Z
+claimed-by: DESKTOP-RFTCH11-20021
+claimed-at: 2026-11-23T21:49:51Z
 outcome-what: "Cockpit: band entry 'threads: N open question(s)' is a button (q) opening a 'Waiting for you' pane; each open question with ticket, title and numbered options; a digit sends '<ticket>: <option>' into the session, 'Answer in the chat' fills the prompt"
 outcome-why: The person searched the chat for questions the teamlead asked; AskUserQuestion would block the session
 outcome-resolves: 1M3X77
-review-summary: "none"
+review-summary: "Full review of 6e311f200..628b53118. The thread classifier now also returns, for a question it finds, the ticket it is about ('about', a 6-char id) and the options the assistant offered (max 9, clipped). Both live on the thread and leave with the question (answered()). After filing, fileTurn looks up each named ticket's title once via 'jaira show --json' (titleOf); a timeout is retried after the next turn, a missing title falls back to the thread's title. A new atom 'asks' (asksOf: open questions, newest first) feeds a new pane 'Waiting for you': ticket id + title, the question, one Button per option (the engine draws digits 1-9 in front of them), plus 'Answer in the chat…'. The band's threads entry is now a Button with hotkey q that opens the pane. A pick sends '<ticket>: <option>' with a non-blocking $.prompt.submit, clears the question locally and closes the pane when nothing is left. 'Answer in the chat' fills the prompt with '<ticket>: '. Release note and shipped.sha256 updated; 6 new tests plus parse cases, suite 539 pass."
 round: 4
 back-from: testing
 back-by: lane
 back-count: 2
-review-gaps: none
-hunt-verdict: "fail: round 2, 2 change findings (pick queue misfiles agent turns; timeout stored as no title)"
-test-verdict: "fail: suite green; sent back on round-2 hunt findings"
+review-gaps: |-
+  note: limit: the turn a pick starts is never classified (the engine runs none of the mod's own hooks on what it submits) - a question the assistant asks back in direct reply to a pick does not reach the pane; stated in answerAsk's comment and the notes, not in the release note
+  note: limit: the ticket title is looked up only for a ticket the question names (about); a question that only rides on the thread's ticket shows the thread's title (threads.ts asksOf)
+  note: limit: band hotkey q - whether it fires while the person types in the composer was not checked; the test harness does not model key routing
+  note: edge: a new question in the same thread drops aboutTitle (file() builds it from answered(base)), so a repeated question about the same ticket triggers a second jaira show; harmless cost, no wrong output
+  note: edge: answerAsk clears the question even if \$.prompt.submit rejects (void, no catch) - same pattern as decide(); the answer would be lost silently
+hunt-verdict: "pass: round 3 at 628b53118, 0 findings"
+test-verdict: "pass: claude plugin test 539 pass RC=0, shipped-history --check 0, go test core/shipped core/release ok; DoD 1-4 verified in the tree (pane, hotkey q, digit pick submits '<ticket>: <option>', question leaves, title looked up once); failure path: unknown ticket keeps thread title, timeout retried; writes: thread store only, pick and filing reassign from the current list after each await"
+review-verdict: "accept: all four DoD items are met in the code and tested; no blocker found - the remaining gaps are stated limits and two small edges"
+review-round: 4
+review-verdict-gaps: |-
+  note: limit: the turn a pick starts is never classified (the engine runs none of the mod's own hooks on what it submits) - a question the assistant asks back in direct reply to a pick does not reach the pane; stated in answerAsk's comment and the notes, not in the release note
+  note: limit: the ticket title is looked up only for a ticket the question names (about); a question that only rides on the thread's ticket shows the thread's title (threads.ts asksOf)
+  note: limit: band hotkey q - whether it fires while the person types in the composer was not checked; the test harness does not model key routing
+  note: edge: a new question in the same thread drops aboutTitle (file() builds it from answered(base)), so a repeated question about the same ticket triggers a second jaira show; harmless cost, no wrong output
+  note: edge: answerAsk clears the question even if \$.prompt.submit rejects (void, no catch) - same pattern as decide(); the answer would be lost silently
+review-check: "1. In this worktree start: claude --plugin-dir /home/alex/projects/.worktrees/jaira-1m3x77/core/mod/builtin/jaira-cockpit  2. Ask the session something that makes it ask you back with options, e.g. 'Ask me whether ticket 1M3X77 should go to done or back - give me two options'  3. After the answer the band shows 'threads: 1 open question(s)' in brackets  4. Press q (or click it) - the pane 'Waiting for you' opens with 1M3X77, its title, the question and the options numbered 1: 2:  5. Press 1 - the chat gets '1M3X77: <option 1>' as your message, the pane closes, the band entry disappears  6. Repeat 2-4 and choose 'Answer in the chat…' - the prompt is filled with '1M3X77: ' and waits for your text  7. Automated: cd core/mod/builtin/jaira-cockpit && claude plugin test . shows 539 pass"
 ---
 
 # Cockpit: Pane 'Wartet auf dich' listet die offenen Fragen der Sitzung, Antwort per Taste statt Suchen im Chat
@@ -79,3 +97,19 @@ test-verdict: "fail: suite green; sent back on round-2 hunt findings"
 - **2026-11-23 21:37 · Alexander Sacharov** — hunt report: 2 findings, both change (1 blocker: picked answer taken by the wrong turn; 1 edge: failed title lookup never retried), notes on 1M3X77 | follow-up hunt since 65446e947, read as a diff with surrounding handlers: register.tsx, threads.ts, board.test.ts, shipped.sha256; no new files | the picked/turn ordering is confirmed by reading only - the engine's prompt queue cannot be driven from the bun tests
 - **2026-11-23 21:38 · Alexander Sacharov** — bughunt: done at b318241d6 - 2 findings (2 change, 0 pre-existing) in 4 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/hooks/threads.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/1M3X77.md core/shipped/shipped.sha256
 - **2026-11-23 21:42 · Alexander Sacharov** — decision (worker, edges grow -> smaller design): pick queue removed. Probed twice: the mod's own prompt.submit reaches none of its hooks, and $.prompt.submit({wait:true}) returns only {text, origin}, no answer. Nothing tells the pick's turn apart from an agent's, so that turn is not filed. Known limit for the person: a question asked back in direct reply to a pick does not reach the pane. Title lookup: a timeout (run() undefined) is retried after the next turn; a non-zero exit or no title is final.
+- **2026-11-23 21:42 · Alexander Sacharov** — critique/optimize round 4 (delta b318241d6..HEAD): the change only removes the queue and adds one guard; nothing left.
+- **2026-11-23 21:43 · Alexander Sacharov** — waiting: bughunt round 3 (background subagent) since 22:43; suite 539 pass on 628b53118
+- **2026-11-23 21:45 · Alexander Sacharov** — hunt report: 0 findings, nothing filed | read as a diff since b318241d6: hooks/register.tsx (fileTurn title retry, answerAsk, turn.complete), tests/board.test.ts, core/shipped/shipped.sha256; no file new to the change, none read whole | checked against the engine contract that $.process.run rejects on timeout (so the retry fires) and that prompt.submit fires at queue time; cockpit tests not run here, that is the testing lane's
+- **2026-11-23 21:45 · Alexander Sacharov** — bughunt: done at 628b53118 - 0 findings (0 change, 0 pre-existing) in 4 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/hooks/threads.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/1M3X77.md core/shipped/shipped.sha256
+- **2026-11-23 21:45 · Alexander Sacharov** — waiting: fresh review (Herdr tab via run-lane.sh) since 22:45
+- **2026-11-23 21:50 · Alexander Sacharov** — review: done at 628b53118
+- **2026-11-23 21:50 · Alexander Sacharov** — report: cockpit 'Waiting for you' pane (band entry -> button, q), open questions with ticket, title, numbered options; digit sends '<ticket>: <option>'; 3 commits, 539 tests | signoff, context 203k of 1000k, cache warm 60 min after last answer | person: try review-check steps; 3 limits + 2 edges in review-gaps (main: a question asked back in reply to a pick is not listed)
+- **2026-11-23 21:58 · Alexander Sacharov** — Accepted from signoff: angenommen:
+- note: edge: a new question in the same thread drops aboutTitle (file() builds it from answered(base)), so a repeated question about the same ticket triggers a second jaira show; harmless cost, no wrong output
+- note: edge: answerAsk clears the question even if \$.prompt.submit rejects (void, no catch) - same pattern as decide(); the answer would be lost silently
+- note: limit: the turn a pick starts is never classified (the engine runs none of the mod's own hooks on what it submits) - a question the assistant asks back in direct reply to a pick does not reach the pane; stated in answerAsk's comment and the notes, not in the release note
+- note: limit: the ticket title is looked up only for a ticket the question names (about); a question that only rides on the thread's ticket shows the thread's title (threads.ts asksOf)
+- note: limit: band hotkey q - whether it fires while the person types in the composer was not checked; the test harness does not model key routing
+- **2026-11-23 21:58 · Alexander Sacharov** — cockpit: accepted by the person, signoff -> done
+- **2026-11-23 21:58 · Alexander Sacharov** — pr: push stopped — merging upstream/master conflicts in core/mod/builtin/jaira-cockpit/hooks/register.tsx (one hunk; upstream brought DVPAPE, RGFJ0Q, M31BYV). Merge aborted, nothing pushed. Options: 1) (recommended) a worker resolves the conflict on feat/1m3x77, regenerates shipped.sha256, runs the suite, then /jaira-role-pr again; 2) resolve by hand; 3) push the branch without the merge and let the PR show the conflict.
+- **2026-11-23 22:00 · Alexander Sacharov** — pr: conflict resolved in a78bdb00b (import list union: parse from master, titleOf from the branch), shipped.sha256 regenerated; check-ticket-commits and shipped-history --check ok; cockpit plugin tests 542 pass. Stopped on usage limit while go vet + go test ./... -race ran: not pushed, no PR. Rerun /jaira-role-pr 1M3X77 --by-person from step 3.
