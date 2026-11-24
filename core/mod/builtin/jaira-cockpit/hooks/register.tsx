@@ -1054,6 +1054,11 @@ async function settingsJson($: EngineInterface): Promise<string | undefined> {
   }
 }
 
+// Each press's own mark in the lock: two presses in the same millisecond -
+// the band's Acceptance, then Execute in its pane - must not free each
+// other's lock when the first one's BUSY_MS runs out.
+let presses = 0
+
 // A press on Accept, Give back, Explain or Discuss: the row's buttons lock, drawn dim,
 // until the action has done its part or BUSY_MS has passed; a press on a
 // locked row does nothing, so a slow answer is not asked for twice. An action
@@ -1061,10 +1066,6 @@ async function settingsJson($: EngineInterface): Promise<string | undefined> {
 // request sent to this session has no end to wait for, and a double click
 // would send it twice. One still at work when BUSY_MS frees the row says so
 // (N5ZZP6): the person sees the buttons wake and knows why.
-// Each press's own mark in the lock: two presses in the same millisecond -
-// the band's Acceptance, then Execute in its pane - must not free each
-// other's lock when the first one's BUSY_MS runs out.
-let presses = 0
 async function once($: EngineInterface, id: string, action: () => Promise<void | 'hold'>): Promise<void> {
   const at = `${await $.clock.now()}:${++presses}`
   let took = false

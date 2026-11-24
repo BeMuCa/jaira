@@ -18,13 +18,18 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-24T10:21:08Z
-updated-at: 2026-11-24T10:36:19Z
+updated-at: 2026-11-24T10:37:02Z
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-2605896
 claimed-at: 2026-11-24T10:21:37Z
 outcome-what: "Execute in the Acceptance pane reads 'running…' and is drawn dim while its row's lock is held; a press on it or Enter in the field does nothing then (the busyRow toast is gone). When BUSY_MS (20 s) frees a row whose step is still at work, once() says so in one toast; a held request stays silent. The lock is keyed per press, not per millisecond."
 outcome-why: "A press gave no visible answer, so the person pressed again (Alex 24.11.2026)."
 outcome-resolves: "DoD 1-3; checked: concurrency (two presses same ms - fixed key collision), error paths (refused step frees at once, tested), unusual input (Enter with text while locked), permissions (n/a, no outside input)"
+review-summary: "core/mod/builtin/jaira-cockpit/hooks/register.tsx:1063 the new 'let presses' and its comment sit between once()'s doc comment and once() itself - move them above the doc comment so the comment stays on its function"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Cockpit: Execute in der Abnahme wird nach dem Klick grau und nimmt keinen zweiten Klick, bis der Schritt fertig ist
@@ -52,3 +57,4 @@ outcome-resolves: "DoD 1-3; checked: concurrency (two presses same ms - fixed ke
 - **2026-11-24 10:21 · Sascha** — parent session: uds:/run/user/1000/cc-socks/3417.sock
 - **2026-11-24 10:22 · Sascha** — open decisions: none. Settled: (1) the existing row lock (once/busyAtom, BUSY_MS=20s, register.tsx:1063) already blocks a second press and draws the button dim - the gap is only the label and the timeout hint; (2) busy Execute reads 'running…' and its press does nothing (was: busyRow toast), Input submitLabel follows; (3) time limit stays BUSY_MS=20s (DoD says 'e.g. 30 s'; 20 s is already tested and shipped); (4) when the limit frees a row whose action is still running, once() says so in one line - not for 'hold' actions, whose lock is the limit by design.
 - **2026-11-24 10:35 · Sascha** — found out: (1) reading an atom ($.state.get) inside a $.clock.after callback is refused by the host ('no hooks module ... no scan to allow it') - update() works there, so once() learns whether its lock was still there from inside its own update; (2) the lock was keyed by clock.now(), so two presses in the same millisecond (band Acceptance, then Execute) freed each other's lock at BUSY_MS - real life almost never, the mock clock always; now a per-press counter is added. (3) busyRow text removed: a locked Execute now says 'running…' on itself; the old 'said, not dropped' test was changed to check the label instead.
+- **2026-11-24 10:36 · Sascha** — critique: (1) move 'let presses' above once()'s doc comment. Let stand: Execute reads 'running…' also while an Explain chat holds the row lock (hold, 20 s) - the lock is one per row by design (comment at register.tsx 'One lock for the row and its pane'), and a label naming the holder would need a second state for one rare case; stillRunning applies to every once() caller, worded for 'its buttons', which is right for all of them.
