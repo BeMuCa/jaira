@@ -2582,6 +2582,9 @@ export const register: Register = (on, options) => {
                 // Enter in the field never accepts by itself - one Enter too
                 // many would take the ticket to done: that is Execute's.
                 // Words typed, or a note to fix, it carries out.
+                // While Execute reads running…, Enter does nothing at all -
+                // not even the nothing-to-fix notice.
+                if (busy) return
                 const plan = executionOf(items, text, w.acceptTo, unseen)
                 if ((plan.step === 'accept' || plan.step === 'needSeen') && !plan.asksWhy) return void say($, t.nothingToFix(w.id))
                 void once($, w.id, () => execute($, w, text, share), late)

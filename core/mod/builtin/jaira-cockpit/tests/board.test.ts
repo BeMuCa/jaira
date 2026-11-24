@@ -873,6 +873,8 @@ describe('waiting for you', () => {
     // A second press and Enter with words typed: nothing runs, nothing is said.
     await pane.press({ key: 'execute-MG677R' })
     void pane.input({ key: 'typed-MG677R', text: 'the header' })
+    // Enter on an empty field: no nothing-to-fix notice either.
+    void pane.input({ key: 'typed-MG677R', text: '' })
     await w.clock.settle()
     expect(w.toasts.length).toBe(toasts)
     await release(w)
