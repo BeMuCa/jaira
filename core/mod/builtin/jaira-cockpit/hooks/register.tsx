@@ -674,9 +674,9 @@ async function fail($: EngineInterface, what: string, why: string): Promise<void
 }
 
 // The person pressed Accept: that press is the human exit the lane asks for,
-// and nothing more. Accept moves the ticket to its next lane, and only where
-// that lane is the terminal one (snapshotOf sets acceptTo): from signoff to
-// done, never from human past review and signoff. The gates run first as a
+// and nothing more. Accept moves the ticket to its next lane (snapshotOf sets
+// acceptTo), one step: from signoff to done, from a person's lane mid-board
+// on to the lane after it (M5JSE9), never past review and signoff. The gates run first as a
 // dry run; --force follows only when the human exit is all they refuse, so
 // an open definition-of-done item or plan step still stops the press.
 // refused: where a gate's refusal goes instead of the message pane - the
@@ -727,7 +727,8 @@ async function accepting($: EngineInterface, w: Waiting, to: string, dir: string
     // refused or failed Accept writes nothing and creates no follow-up.
     if (after !== undefined) await after(dir)
     await say($, t.accepted(w.id, to))
-    const next = await afterAccept($, w.id, to)
+    // A pull request or a landing follows only the move that ends the work.
+    const next = w.acceptEnds ? await afterAccept($, w.id, to) : ''
     // One line into this session, the teamlead's, once the press has done
     // all it does: it goes on from there — logbook, the next worker — without
     // the person typing it, and never starts the pull request Accept started.
@@ -756,7 +757,7 @@ async function accepting($: EngineInterface, w: Waiting, to: string, dir: string
 // .jaira/pr saying none, a board without a signoff lane before done, and a
 // board whose pr-when cannot be read are not touched.
 async function heldInSignoff($: EngineInterface, w: Waiting): Promise<boolean> {
-  if (!board || w.acceptTo === null) return false
+  if (!board || w.acceptTo === null || !w.acceptEnds) return false
   const b = board
   const hold = async (why: string) => {
     await fail($, `${t.accept} ${w.id}`, `${why}\n${t.staysInLane(w.id, w.lane)}`)
@@ -1499,7 +1500,7 @@ async function execute($: EngineInterface, w: Waiting, typed: string, share: num
   const e = executionOf(items, typed, w.acceptTo, unticked.length)
   const refuse = async (text: string) => void await update($, refusalAtom, () => ({ id: w.id, text }))
   await update($, refusalAtom, () => null)
-  if (e.step === 'notTerminal') return refuse(t.notTerminal(w.id, w.lane))
+  if (e.step === 'noNext') return refuse(t.noNext(w.id, w.lane))
   if (e.step === 'needWhy') return refuse(canType ? t.blockerNeedsWhy(w.id) : t.blockerNeedsTyping(w.id))
   if (e.step === 'needSeen') return refuse(t.seenMissing(w.id, unticked.map(x => x.text)))
   // The pane closes once the ticket moved, as for Accept: a refusal before
@@ -2453,7 +2454,7 @@ export const register: Register = (on, options) => {
             {reasons[x.text] !== undefined ? <Text dimColor wrap="wrap">{`  ${reasons[x.text] === '' ? t.explaining : reasons[x.text]}`}</Text> : null}
           </Box>
         ))}
-        <Box marginTop={1}><Text bold wrap="wrap">{t.summary(exec.step, exec.fix, exec.followUps, w.acceptTo ?? '')}</Text></Box>
+        <Box marginTop={1}><Text bold wrap="wrap">{t.summary(exec.step, exec.fix, exec.followUps, w.acceptTo ?? '', w.acceptEnds)}</Text></Box>
         {refusal?.id === w.id ? <Text key="refusal" color="error" wrap="wrap">{refusal.text}</Text> : null}
         {Input !== undefined
           ? (

@@ -843,15 +843,29 @@ describe('waiting for you', () => {
     await w.clock.advance(20_000)
   })
 
-  test('Acceptance is offered on every waiting ticket; where the next lane does not end the board, Execute accepts nothing and says so', async ($, on) => {
+  // M5JSE9: a person's lane mid-board accepts into the lane after it, and the
+  // pane says where, so nobody reads the press as done.
+  test('Acceptance is offered on every waiting ticket; where the next lane does not end the board, Execute moves it one lane on and says where', async ($, on) => {
     const w = world(on)
     await startSession($)
     const ui = await $.ui.mount(BAND)
     expect(await ui.find({ key: 'acceptance-MG677R' })).toBeDefined()
     expect(await ui.find({ key: 'discuss-K7P2QX' })).toBeDefined()
+    const pane = await quietly($, ui, 'K7P2QX', w)
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Execute: accept → review')
+    await pane.press({ key: 'execute-K7P2QX' })
+    expect(ran(w, 'jaira', 'move', 'K7P2QX').map(r => r.slice(3, 6))).toEqual([['--to', 'review', '--dry-run'], ['--to', 'review', '--force']])
+    expect(ran(w, 'jaira', 'note', 'K7P2QX').map(r => r[3])).toContain('cockpit: accepted by the person, human -> review')
+  })
+
+  test('where jaira names no lane after it, Execute accepts nothing and says so', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...HUMAN, next_lane: undefined }]
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
     const pane = await pressAccept($, ui, 'K7P2QX', w)
     expect(ran(w, 'jaira', 'move')).toEqual([])
-    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('K7P2QX waits in human, which does not end the work: nothing to accept there. Mark a note fix, or type what is missing, to give it back.')
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('K7P2QX waits in human, and jaira names no lane after it: nothing to accept there. Mark a note fix, or type what is missing, to give it back.')
   })
 
   // 2V50Y5 DoD 3: a gate that refuses done says so in the pane, changes
@@ -4809,7 +4823,7 @@ describe('a ticket not on the disk the press writes from', () => {
 describe('the verdict light', () => {
   const ready: Waiting = {
     id: 'MG677R', title: 'cache key', goal: '', lane: 'signoff', verdict: 'approve', question: '', dodComplete: true,
-    dodOpen: { person: 0, other: 0 }, acceptTo: 'done', assignee: '', blockers: [], notes: [], findingsKnown: true, gaps: '',
+    dodOpen: { person: 0, other: 0 }, acceptTo: 'done', acceptEnds: true, assignee: '', blockers: [], notes: [], findingsKnown: true, gaps: '',
   }
   const first = (w: Waiting, hunt: Parameters<typeof lightOf>[1]) => {
     const l = lightOf(w, hunt)
@@ -4848,11 +4862,11 @@ describe('the verdict light', () => {
   // A ticket in human waits for an answer: its open items are no reason to
   // give it back, so the question decides the light.
   test('a question in a lane that does not end the work makes the light yellow, the question first', () => {
-    const asking = { ...ready, lane: 'human', acceptTo: null, question: 'keep the old key?', dodComplete: false, dodOpen: { person: 1, other: 2 } }
+    const asking = { ...ready, lane: 'human', acceptTo: 'review', acceptEnds: false, question: 'keep the old key?', dodComplete: false, dodOpen: { person: 1, other: 2 } }
     const l = lightOf(asking, { state: 'fail', at: 'abc1234' })
     expect([l.color, l.reasons.map(r => r.kind)]).toEqual(['yellow', ['question', 'staleHunt', 'dodOpen', 'byAPerson']])
     // In signoff, where Accept ends the work, the same open items stay red.
-    expect(first({ ...asking, lane: 'signoff', acceptTo: 'done' }, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'dodOpen'])
+    expect(first({ ...asking, lane: 'signoff', acceptTo: 'done', acceptEnds: true }, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'dodOpen'])
   })
 
   // GY8T52: the review states each note's class after 'note:'; the light
@@ -5416,11 +5430,13 @@ describe('the Acceptance pane, read alone', () => {
     ['blocker kept with a reason', [item('blocker', 'accept')], 'ist bekannt', 'done', 'accept', 0, 0],
     ['blocker to a follow-up with a reason', [item('blocker', 'later')], 'später', 'done', 'accept', 0, 1],
     ['blocker kept, another to fix', [item('blocker', 'accept'), item('edge', 'now')], '', 'done', 'giveBack', 1, 0],
-    ['all ok in a lane that does not end', [item('edge', 'accept')], '', null, 'notTerminal', 0, 0],
-    ['to fix in a lane that does not end', [item('edge', 'now')], '', null, 'giveBack', 1, 0],
-    ['words in a lane that does not end', [], 'fehlt', null, 'giveBack', 0, 0],
-    ['blocker kept, words typed, in a lane that does not end', [item('blocker', 'accept')], 'fehlt', null, 'giveBack', 0, 0],
-    ['blocker kept, nothing typed, in a lane that does not end', [item('blocker', 'later')], '', null, 'notTerminal', 0, 1],
+    ['all ok in a lane that does not end', [item('edge', 'accept')], '', 'build', 'accept', 0, 0],
+    ['blocker kept with a reason in a lane that does not end', [item('blocker', 'accept')], 'ist bekannt', 'build', 'accept', 0, 0],
+    ['all ok with no next lane', [item('edge', 'accept')], '', null, 'noNext', 0, 0],
+    ['to fix with no next lane', [item('edge', 'now')], '', null, 'giveBack', 1, 0],
+    ['words with no next lane', [], 'fehlt', null, 'giveBack', 0, 0],
+    ['blocker kept, words typed, with no next lane', [item('blocker', 'accept')], 'fehlt', null, 'giveBack', 0, 0],
+    ['blocker kept, nothing typed, with no next lane', [item('blocker', 'later')], '', null, 'noNext', 0, 1],
   ]
   for (const [name, items, typed, to, step, fix, followUps] of TABLE) {
     test(`Execute: ${name} -> ${step}`, () => {
@@ -5901,7 +5917,7 @@ describe('what the person checks themselves', () => {
     expect(executionOf([], '', 'done', 1).step).toBe('needSeen')
     expect(executionOf([], '', 'done', 0).step).toBe('accept')
     expect(executionOf([], 'missing', 'done', 1).step).toBe('giveBack')
-    expect(executionOf([], '', null, 1).step).toBe('notTerminal')
+    expect(executionOf([], '', null, 1).step).toBe('noNext')
   })
 })
 

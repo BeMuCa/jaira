@@ -25,10 +25,14 @@ export type Waiting = {
   // tick ('seen by a person: ...') and every other one; undefined where jaira
   // listed no items.
   dodOpen?: { person: number; other: number }
-  // Where Accept moves it: the ticket's next lane, when that lane is the
-  // board's terminal one (signoff -> done); null where the next lane is
-  // still work to do (human -> review), so a press never skips a review.
+  // Where Accept moves it: the ticket's next lane, terminal (signoff ->
+  // done) or not (script-approval -> build, human -> review: M5JSE9) - one
+  // step, so a press never skips a lane; null where jaira named none.
   acceptTo: string | null
+  // Whether acceptTo is the board's terminal lane: only there does Accept
+  // end the work - a pull request, the signoff hold - and does a question
+  // stop being what the ticket waits for.
+  acceptEnds: boolean
   // Whose it is; '' for nobody's.
   assignee: string
   // The review's findings, one per line: its blocker lines, and every other
@@ -155,7 +159,8 @@ export function snapshotOf(
       question: oneLine(t.question),
       ...(typeof t.dod_complete === 'boolean' ? { dodComplete: t.dod_complete } : {}),
       ...(t.dod_items !== undefined && t.dod_items.length > 0 ? { dodOpen: dodOpenOf(t.dod_items) } : {}),
-      acceptTo: next?.terminal === true ? next.id : null,
+      acceptTo: next?.id ?? null,
+      acceptEnds: next?.terminal === true,
       assignee,
       // Before a review there are no review notes; after a later round's
       // optimize lane rewrote review-gaps they are in the copy jaira kept.
@@ -326,7 +331,7 @@ export function lightOf(w: Waiting, hunt: HuntState | undefined, classes?: reado
   // A ticket waiting on a question in a lane that does not end the work
   // (human: Accept would not move it to done) is there for the answer, not
   // for acceptance: the question decides, yellow, whatever else is open.
-  if (w.question !== '' && w.acceptTo === null) {
+  if (w.question !== '' && !w.acceptEnds) {
     return { color: 'yellow', reasons: [{ kind: 'question' }, ...red, ...yellow.filter(r => r.kind !== 'question')] }
   }
   const color = red.length > 0 ? 'red' : yellow.length > 0 ? 'yellow' : 'green'
@@ -1165,11 +1170,11 @@ export function rephrasedOf(answer: string, n: number): string[] | undefined {
 // such note are what is missing, and give it back too. A blocker not marked
 // fix now is accepted only with a reason, which the field then asks for: its
 // words are that reason, not work to do. Nothing to fix accepts — through the
-// same gates as Accept — where the next lane ends the work; in a lane that
-// does not (human -> review) there is nothing to accept: words typed give it
-// back, nothing typed does nothing. An accept with 'seen by a person' items
+// same gates as Accept, into the next lane whether or not it ends the work
+// (M5JSE9); where jaira named no next lane there is nothing to accept: words
+// typed give it back, nothing typed does nothing. An accept with 'seen by a person' items
 // still unticked in the pane (unseen) is no accept yet: it waits for them.
-export type Step = 'giveBack' | 'accept' | 'needWhy' | 'notTerminal' | 'needSeen'
+export type Step = 'giveBack' | 'accept' | 'needWhy' | 'noNext' | 'needSeen'
 export type Execution = { step: Step; fix: number; followUps: number; asksWhy: boolean }
 
 export function executionOf(items: readonly GapItem[], typed: string, acceptTo: string | null, unseen = 0): Execution {
@@ -1179,7 +1184,7 @@ export function executionOf(items: readonly GapItem[], typed: string, acceptTo: 
   // what is missing, never a reason to accept.
   const asksWhy = acceptTo !== null && fix === 0 && items.some(i => i.cls === 'blocker' && i.choice !== 'now')
   const words = typed.trim() !== ''
-  const step: Step = fix > 0 || (words && !asksWhy) ? 'giveBack' : acceptTo === null ? 'notTerminal' : asksWhy && !words ? 'needWhy' : unseen > 0 ? 'needSeen' : 'accept'
+  const step: Step = fix > 0 || (words && !asksWhy) ? 'giveBack' : acceptTo === null ? 'noNext' : asksWhy && !words ? 'needWhy' : unseen > 0 ? 'needSeen' : 'accept'
   return { step, fix, followUps, asksWhy }
 }
 
