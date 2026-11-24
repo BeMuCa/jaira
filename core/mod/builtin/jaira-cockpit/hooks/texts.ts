@@ -104,6 +104,7 @@ export const t = {
   accepted: (id: string, lane: string) => `${id} accepted: ${lane}`,
   returnedTo: (id: string, who: 'old' | 'new' | 'none') =>
     who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
+  tabsUnreadable: (id: string) => `${id} back in in-progress; Herdr's tab list could not be read, so it is unknown whether its worker still runs - no worker started. Check its tab, and start one only if none runs.`,
   workerBlocked: (id: string, where: string) => `${id} back in in-progress; its worker waits at an approval dialog in ${where} - answer it there, then type the decision into it. No Enter was pressed for you.`,
   dialogBeforeEnter: (id: string, pane: string) => `${id} given back to the worker that carried it; an approval dialog opened in pane ${pane} before the Enter - answer it there, then press Enter if the decision still waits in its input.`,
   // The one line Accept and Give back hand this session, the teamlead's,

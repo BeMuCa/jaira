@@ -129,6 +129,8 @@ type World = {
   noRoom?: boolean
   // When set, every `herdr tab list` waits here until the test lets it go.
   heldTabs?: (() => void)[]
+  // Every `herdr tab list` fails with this on stderr (W80HNH).
+  tabsFail?: string
   // spawn.sh calls wait here until released, as one waiting for claude does.
   heldSpawn?: (() => void)[]
   // `git worktree list --porcelain`, WORKTREES unless set.
@@ -449,6 +451,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'gh' || cmd === 'glab') return ok(JSON.stringify(w.prs))
     if (cmd === 'jaira' && args[0] === 'next' && w.nextFails) return failed('jaira: board unreadable')
     if (cmd === 'jaira' && args[0] === 'next') return ok(JSON.stringify({ count: w.next.length, tickets: w.next.map(handle => ({ handle })) }))
+    if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list' && w.tabsFail !== undefined) return failed(w.tabsFail)
     if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list') return ok(JSON.stringify({ result: { tabs: w.tabs } }))
     if (cmd === 'herdr' && args[0] === 'pane' && args[1] === 'get' && !w.paneGone) return ok(JSON.stringify({ result: { pane: { agent: 'claude', agent_status: w.paneStates.shift() ?? 'idle' } } }))
     if (cmd === 'herdr' && args[0] === 'pane' && w.paneGone) return { value: { exitCode: 1, stdout: '', stderr: 'no such pane', isStdoutTruncated: false, isStderrTruncated: false } }
@@ -2517,6 +2520,24 @@ describe('give back', () => {
     expect(ran(w, 'herdr', 'tab', 'close')[0]?.[3]).toBe('w1:t9')
     expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 8)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'worker'])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toStartWith('cockpit: given back to a new worker - tab alive, cache warm for 40 more min, context 80k, but its pane took no text; ')
+  })
+  // W80HNH: a tab list Herdr did not give is not "no tab open": the old worker
+  // may still run, and a new one beside it is the second worker Give back must
+  // never make.
+  test('a failed herdr tab list starts no worker, types nothing and says the tab state was unreadable', async ($, on) => {
+    const w = world(on, { herdr: true, store: { 'session:old': {
+      session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
+      lastAnswerAt: 1_000_000 - 70 * 60_000, tokens: 80_000, ttl: 3_600_000, updatedAt: 1_000_000 - 70 * 60_000,
+    } } })
+    w.tabsFail = 'herdr: timed out'
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
+    expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to nobody (no worker started) - herdr tab list failed: herdr: timed out; the tab state could not be read, so no worker started and nothing typed')
+    expect(w.toasts.at(-1)).toBe("MG677R back in in-progress; Herdr's tab list could not be read, so it is unknown whether its worker still runs - no worker started. Check its tab, and start one only if none runs.")
   })
 })
 
