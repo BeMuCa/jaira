@@ -998,10 +998,11 @@ fi
 }
 
 // herdr-hc.sh asks every terminal hc ls names for its label. One that does not
-// answer 'hc get' may be a live worker's: left out of a list that exits 0, its
-// tab reads as closed, and Give back starts a second worker beside it (8NWE4P).
-// The list then still comes out, but with exit 3 and the mute terminals on
-// stderr, which every caller already reads as a failed list.
+// answer 'hc get' may be a live worker's: left out of a list that says nothing,
+// its tab reads as closed, and Give back starts a second worker beside it
+// (8NWE4P). The list then carries "partial":true and stderr names the terminal;
+// the exit stays 0, or reap.sh would read one mute terminal as Herdr down. A
+// terminal hc reports not_found was removed since hc ls and is simply closed.
 func TestHerdrHcTabListSaysWhichTerminalDidNotAnswer(t *testing.T) {
 	bash, err := exec.LookPath("bash")
 	if err != nil {
@@ -1014,24 +1015,26 @@ func TestHerdrHcTabListSaysWhichTerminalDidNotAnswer(t *testing.T) {
 	}
 	script := filepath.Join(dir, "jaira-dispatcher", "scripts", "herdr-hc.sh")
 	for _, c := range []struct {
-		name, live, mute string
-		listed           []string // tab ids on stdout, in order
-		code             int
+		name, live, mute, gone string
+		listed                 []string // tab ids on stdout, in order
 	}{
-		{"all answer", "t1 t2", "", []string{"t1", "t2"}, 0},
-		{"none live", "", "", nil, 0},
-		{"one mute", "t1 t2 t3", "t2", []string{"t1", "t3"}, 3},
-		{"first mute", "t1 t2", "t1", []string{"t2"}, 3},
-		{"all mute", "t1 t2", "t1 t2", nil, 3},
+		{"all answer", "t1 t2", "", "", []string{"t1", "t2"}},
+		{"none live", "", "", "", nil},
+		{"one mute", "t1 t2 t3", "t2", "", []string{"t1", "t3"}},
+		{"first mute", "t1 t2", "t1", "", []string{"t2"}},
+		{"all mute", "t1 t2", "t1 t2", "", nil},
+		{"removed since ls", "t1 t2", "", "t2", []string{"t1"}},
+		{"removed and mute", "t1 t2 t3", "t3", "t1", []string{"t2"}},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			bin := t.TempDir()
 			hc := `#!/usr/bin/env bash
-live='` + c.live + `'; mute='` + c.mute + `'
+live='` + c.live + `'; mute='` + c.mute + `'; gone='` + c.gone + `'
 if [ "$1" = ls ]; then
   sep=""; printf '['; for a in $live; do printf '%s{"address":"%s"}' "$sep" "$a"; sep=","; done; printf ']\n'
 elif [ "$1" = get ]; then
   if [[ " $mute " == *" $2 "* ]]; then echo '{"error":{"kind":"timeout"}}' >&2; exit 1; fi
+  if [[ " $gone " == *" $2 "* ]]; then echo '{"error":{"kind":"not_found"}}' >&2; exit 3; fi
   printf '{"address":"%s","labels":{"jaira.tab":"AB12CD/worker"},"status":{"state":"idle"}}\n' "$2"
 fi
 `
@@ -1043,18 +1046,13 @@ fi
 			var stderr strings.Builder
 			cmd.Stderr = &stderr
 			out, err := cmd.Output()
-			code := 0
-			if ee, ok := err.(*exec.ExitError); ok {
-				code = ee.ExitCode()
-			} else if err != nil {
-				t.Fatal(err)
-			}
-			if code != c.code {
-				t.Fatalf("exit %d, want %d\nstdout %s\nstderr %s", code, c.code, out, stderr.String())
+			if err != nil {
+				t.Fatalf("tab list: %v\nstdout %s\nstderr %s", err, out, stderr.String())
 			}
 			var got struct {
 				Result struct {
-					Tabs []struct {
+					Partial bool `json:"partial"`
+					Tabs    []struct {
 						TabID string `json:"tab_id"`
 						Label string `json:"label"`
 					} `json:"tabs"`
@@ -1072,6 +1070,9 @@ fi
 			}
 			if !slices.Equal(ids, c.listed) {
 				t.Errorf("listed %q, want %q", ids, c.listed)
+			}
+			if got.Result.Partial != (c.mute != "") {
+				t.Errorf("partial %v with mute %q: %s", got.Result.Partial, c.mute, out)
 			}
 			for _, m := range strings.Fields(c.mute) {
 				if !strings.Contains(stderr.String(), " "+m) {

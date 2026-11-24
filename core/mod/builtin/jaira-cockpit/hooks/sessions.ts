@@ -102,6 +102,16 @@ export function tabsOf(tabListJson: string): Tab[] {
   }
 }
 
+// Herdr App's tab list (herdr-hc.sh) marks itself "partial" when a terminal
+// gave no answer: that terminal's tab may be the one a caller looks for.
+export function tabsPartial(tabListJson: string): boolean {
+  try {
+    return (JSON.parse(tabListJson) as { result?: { partial?: boolean } }).result?.partial === true
+  } catch {
+    return false
+  }
+}
+
 export function carrierTab(tabs: readonly Tab[], ticket: string): Tab | undefined {
   return tabs.find(t => t.label === `${ticket}/worker` || t.label === `${ticket}/dispatch`)
 }

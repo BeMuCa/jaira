@@ -82,21 +82,29 @@ case "$cmd" in
   "tab list")
     # As herdr lists tabs: the cockpit finds a ticket's worker by its label,
     # which hc ls leaves out, so each live terminal is asked for its own.
-    # A terminal that does not answer may be a worker's: left out with exit 0,
-    # its tab reads as closed and Give back starts a second worker beside it.
-    # The list is still printed, but the exit is 3 and stderr names each one.
+    # One hc names not_found was removed since hc ls and is left out. Any other
+    # failure (a timeout) may hide a live worker's tab: the list gets
+    # "partial":true and stderr names the terminal. The exit stays 0, so a
+    # caller that only asks whether Herdr answers (reap.sh) still gets yes;
+    # Give back, which needs every tab, reads the field.
     ls="$("$hc" ls --json)"
+    err="$(mktemp)"
+    trap 'rm -f "$err"' EXIT
     sep=""; mute=""; printf '{"result":{"tabs":['
     for t in $(grep -o '"address":"[^"]*"' <<<"$ls" | sed 's/^"address":"//; s/"$//'); do
-      j="$("$hc" get "$t" --json 2>/dev/null)" || { mute="$mute $t"; continue; }
+      if ! j="$("$hc" get "$t" --json 2>"$err")"; then
+        grep -q '"not_found"' "$err" || mute="$mute $t"
+        continue
+      fi
       printf '%s{"tab_id":"%s","label":"%s","agent_status":"%s"}' "$sep" "$(js "$t")" \
         "$(js "$(labelof "$j" jaira.tab)")" "$(js "$(jaira json get status.state --default - <<<"$j")")"
       sep=","
     done
-    printf ']}}\n'
     if [ -n "$mute" ]; then
-      echo "herdr-hc.sh: tab list incomplete: hc get gave no answer for$mute" >&2
-      exit 3
+      printf '],"partial":true}}\n'
+      echo "herdr-hc.sh: hc get gave no answer for$mute" >&2
+    else
+      printf ']}}\n'
     fi
     ;;
   "tab get")
