@@ -1,6 +1,7 @@
 package role
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"os/exec"
@@ -991,6 +992,94 @@ fi
 			got := strings.Split(strings.TrimSuffix(string(b), "\n"), "\n")
 			if !slices.Equal(got, c.want) {
 				t.Errorf("hc run --name: got %q, want %q", got, c.want)
+			}
+		})
+	}
+}
+
+// herdr-hc.sh asks every terminal hc ls names for its label. One that does not
+// answer 'hc get' may be a live worker's: left out of a list that exits 0, its
+// tab reads as closed, and Give back starts a second worker beside it (8NWE4P).
+// The list then still comes out, but with exit 3 and the mute terminals on
+// stderr, which every caller already reads as a failed list.
+func TestHerdrHcTabListSaysWhichTerminalDidNotAnswer(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	path := jairaPath(t)
+	dir := t.TempDir()
+	if _, err := install(dir, false, true, false); err != nil {
+		t.Fatal(err)
+	}
+	script := filepath.Join(dir, "jaira-dispatcher", "scripts", "herdr-hc.sh")
+	for _, c := range []struct {
+		name, live, mute string
+		listed           []string // tab ids on stdout, in order
+		code             int
+	}{
+		{"all answer", "t1 t2", "", []string{"t1", "t2"}, 0},
+		{"none live", "", "", nil, 0},
+		{"one mute", "t1 t2 t3", "t2", []string{"t1", "t3"}, 3},
+		{"first mute", "t1 t2", "t1", []string{"t2"}, 3},
+		{"all mute", "t1 t2", "t1 t2", nil, 3},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			bin := t.TempDir()
+			hc := `#!/usr/bin/env bash
+live='` + c.live + `'; mute='` + c.mute + `'
+if [ "$1" = ls ]; then
+  sep=""; printf '['; for a in $live; do printf '%s{"address":"%s"}' "$sep" "$a"; sep=","; done; printf ']\n'
+elif [ "$1" = get ]; then
+  if [[ " $mute " == *" $2 "* ]]; then echo '{"error":{"kind":"timeout"}}' >&2; exit 1; fi
+  printf '{"address":"%s","labels":{"jaira.tab":"AB12CD/worker"},"status":{"state":"idle"}}\n' "$2"
+fi
+`
+			if err := os.WriteFile(filepath.Join(bin, "hc"), []byte(hc), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			cmd := exec.Command(bash, script, "tab", "list")
+			cmd.Env = append(os.Environ(), "HC_TERMINAL_ID=", "HC_BIN=", "PATH="+bin+string(os.PathListSeparator)+path)
+			var stderr strings.Builder
+			cmd.Stderr = &stderr
+			out, err := cmd.Output()
+			code := 0
+			if ee, ok := err.(*exec.ExitError); ok {
+				code = ee.ExitCode()
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			if code != c.code {
+				t.Fatalf("exit %d, want %d\nstdout %s\nstderr %s", code, c.code, out, stderr.String())
+			}
+			var got struct {
+				Result struct {
+					Tabs []struct {
+						TabID string `json:"tab_id"`
+						Label string `json:"label"`
+					} `json:"tabs"`
+				} `json:"result"`
+			}
+			if err := json.Unmarshal(out, &got); err != nil {
+				t.Fatalf("stdout is not the tab list: %v\n%s", err, out)
+			}
+			var ids []string
+			for _, tab := range got.Result.Tabs {
+				ids = append(ids, tab.TabID)
+				if tab.Label != "AB12CD/worker" {
+					t.Errorf("tab %s: label %q", tab.TabID, tab.Label)
+				}
+			}
+			if !slices.Equal(ids, c.listed) {
+				t.Errorf("listed %q, want %q", ids, c.listed)
+			}
+			for _, m := range strings.Fields(c.mute) {
+				if !strings.Contains(stderr.String(), " "+m) {
+					t.Errorf("stderr does not name %s: %q", m, stderr.String())
+				}
+			}
+			if c.mute == "" && stderr.Len() > 0 {
+				t.Errorf("stderr on a complete list: %q", stderr.String())
 			}
 		})
 	}

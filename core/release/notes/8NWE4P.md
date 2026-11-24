@@ -1,0 +1,1 @@
+- When a Herdr App terminal does not answer, `herdr-hc.sh tab list` now exits 3 and names it on stderr instead of leaving it out silently, so the cockpit's Give back starts no second worker beside one it could not see: check that terminal, then give back again.

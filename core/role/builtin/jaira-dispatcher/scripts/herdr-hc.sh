@@ -82,15 +82,22 @@ case "$cmd" in
   "tab list")
     # As herdr lists tabs: the cockpit finds a ticket's worker by its label,
     # which hc ls leaves out, so each live terminal is asked for its own.
+    # A terminal that does not answer may be a worker's: left out with exit 0,
+    # its tab reads as closed and Give back starts a second worker beside it.
+    # The list is still printed, but the exit is 3 and stderr names each one.
     ls="$("$hc" ls --json)"
-    sep=""; printf '{"result":{"tabs":['
+    sep=""; mute=""; printf '{"result":{"tabs":['
     for t in $(grep -o '"address":"[^"]*"' <<<"$ls" | sed 's/^"address":"//; s/"$//'); do
-      j="$("$hc" get "$t" --json 2>/dev/null)" || continue
+      j="$("$hc" get "$t" --json 2>/dev/null)" || { mute="$mute $t"; continue; }
       printf '%s{"tab_id":"%s","label":"%s","agent_status":"%s"}' "$sep" "$(js "$t")" \
         "$(js "$(labelof "$j" jaira.tab)")" "$(js "$(jaira json get status.state --default - <<<"$j")")"
       sep=","
     done
     printf ']}}\n'
+    if [ -n "$mute" ]; then
+      echo "herdr-hc.sh: tab list incomplete: hc get gave no answer for$mute" >&2
+      exit 3
+    fi
     ;;
   "tab get")
     j="$("$hc" get "$1" --json)"
