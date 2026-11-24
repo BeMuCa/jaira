@@ -135,6 +135,9 @@ type World = {
   heldTabs?: (() => void)[]
   // Every `herdr tab list` fails with this on stderr (W80HNH).
   tabsFail?: string
+  // Every `herdr tab list` prints the tabs but exits 3 with this on stderr,
+  // as herdr-hc.sh does when a terminal gave no answer (8NWE4P).
+  tabsIncomplete?: string
   // spawn.sh calls wait here until released, as one waiting for claude does.
   heldSpawn?: (() => void)[]
   // `git worktree list --porcelain`, WORKTREES unless set.
@@ -460,6 +463,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'next' && w.nextFails) return failed('jaira: board unreadable')
     if (cmd === 'jaira' && args[0] === 'next') return ok(JSON.stringify({ count: w.next.length, tickets: w.next.map(handle => ({ handle })) }))
     if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list' && w.tabsFail !== undefined) return failed(w.tabsFail)
+    if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list' && w.tabsIncomplete !== undefined) return { value: { exitCode: 3, stdout: JSON.stringify({ result: { tabs: w.tabs } }), stderr: w.tabsIncomplete, isStdoutTruncated: false, isStderrTruncated: false } }
     if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list') return ok(JSON.stringify({ result: { tabs: w.tabs } }))
     if (cmd === 'herdr' && args[0] === 'pane' && args[1] === 'get' && !w.paneGone) return ok(JSON.stringify({ result: { pane: { agent: 'claude', agent_status: w.paneStates.shift() ?? 'idle' } } }))
     if (cmd === 'herdr' && args[0] === 'pane' && w.paneGone) return { value: { exitCode: 1, stdout: '', stderr: 'no such pane', isStdoutTruncated: false, isStderrTruncated: false } }
@@ -533,6 +537,12 @@ async function pressChat($: Test$, band: Pressable, kind: string, id: string, w?
 const opening = (r: string[]) =>
   r[0] === 'gh' || r[0] === 'glab' || (r[0] === 'jaira' && r[1] === 'show' && r[3] === '--json') ||
   (r[0] === 'git' && (['worktree', 'config', 'remote', 'fetch', 'rev-parse'].includes(r[1]!) || (r[1] === 'log' && r[2] === '--format=%h')))
+// N5ZZP6: what Execute reads, and whether it is drawn dim.
+const executeLabel = async (pane: { find: (q: { key: string }) => Promise<{ props: { label?: string }; children: unknown[] } | undefined> }) => {
+  const button = await pane.find({ key: 'execute-MG677R' })
+  const text = button?.children[0] as { props: { dimColor?: boolean }; children: string[] }
+  return { label: button?.props.label, text: text.children[0], dim: text.props.dimColor }
+}
 async function quietly($: Test$, band: Pressable, id: string, w?: World) {
   const ran = w?.ran.length ?? 0
   const opened = w?.opened.length ?? 0
@@ -860,6 +870,71 @@ describe('waiting for you', () => {
     await w.clock.advance(20_000)
   })
 
+  test('Execute reads running… and takes no press and no Enter until its step is done', async ($, on) => {
+    const w = world(on)
+    w.held = []
+    w.stay = true
+    await startSession($)
+    const pane = await quietly($, await $.ui.mount(BAND), 'MG677R', w)
+    expect(await executeLabel(pane)).toEqual({ label: 'Execute', text: 'Execute', dim: false })
+    void pane.press({ key: 'execute-MG677R' })
+    await w.clock.settle()
+    expect(await executeLabel(pane)).toEqual({ label: 'running…', text: 'running…', dim: true })
+    expect((await pane.find({ key: 'typed-MG677R' }))?.props.submitLabel).toBe('running…')
+    const toasts = w.toasts.length
+    // A second press and Enter with words typed: nothing runs, nothing is said.
+    await pane.press({ key: 'execute-MG677R' })
+    void pane.input({ key: 'typed-MG677R', text: 'the header' })
+    // Enter on an empty field: no nothing-to-fix notice either.
+    void pane.input({ key: 'typed-MG677R', text: '' })
+    await w.clock.settle()
+    expect(w.toasts.length).toBe(toasts)
+    await release(w)
+    await release(w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(2)
+    // The accepted note of the one press, no give-back with what was typed;
+    // the pane closes behind the accepted ticket.
+    expect(ran(w, 'jaira', 'note').map(r => r[3])).toEqual(['cockpit: accepted by the person, signoff -> done'])
+    expect(w.closed).toContain('cockpit-acceptance')
+  })
+
+  test('a step refused reads Execute again at once, the refusal beside it', async ($, on) => {
+    const w = world(on)
+    w.held = []
+    w.stay = true
+    await startSession($)
+    const pane = await quietly($, await $.ui.mount(BAND), 'MG677R', w)
+    w.refusals = [...w.refusals, { code: 'needs_commits', message: 'no commit names MG677R' }]
+    void pane.press({ key: 'execute-MG677R' })
+    await w.clock.settle()
+    expect((await executeLabel(pane)).text).toBe('running…')
+    // The dry run refuses: nothing moves, and Execute takes a press again.
+    await release(w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
+    expect(await executeLabel(pane)).toEqual({ label: 'Execute', text: 'Execute', dim: false })
+    expect((await pane.findAll({ type: 'Text' })).some(x => x.text.includes('no commit names MG677R'))).toBe(true)
+  })
+
+  test('a step that has not ended after 20 seconds frees Execute and says so once', async ($, on) => {
+    const w = world(on)
+    w.held = []
+    w.stay = true
+    await startSession($)
+    const pane = await quietly($, await $.ui.mount(BAND), 'MG677R', w)
+    void pane.press({ key: 'execute-MG677R' })
+    await w.clock.advance(19_999)
+    expect((await executeLabel(pane)).text).toBe('running…')
+    expect(w.toasts.filter(x => x.includes('still at work'))).toEqual([])
+    await w.clock.advance(1)
+    await w.clock.settle()
+    expect(await executeLabel(pane)).toEqual({ label: 'Execute', text: 'Execute', dim: false })
+    expect(w.toasts.filter(x => x.includes('still at work'))).toEqual(['MG677R: Execute still at work after 20 s - it takes a press again; look at the ticket before you press once more'])
+    // The late end says nothing more.
+    await release(w)
+    await release(w)
+    expect(w.toasts.filter(x => x.includes('still at work'))).toHaveLength(1)
+  })
+
   test('Acceptance is offered on every waiting ticket; where the next lane does not end the board, Execute accepts nothing and says so', async ($, on) => {
     const w = world(on)
     await startSession($)
@@ -1068,8 +1143,11 @@ describe('waiting for you', () => {
     await w.clock.advance(300)
     await pressExplain($, ui, 'MG677R', w)
     expect(w.submitted).toHaveLength(2)
-    // Pressed again after the lock, it is asked again.
+    // Pressed again after the lock, it is asked again; a held request's lock
+    // running out is no step still at work (N5ZZP6): nothing is said.
     await w.clock.advance(20_000)
+    await w.clock.settle()
+    expect(w.toasts.filter(x => x.includes('still at work'))).toEqual([])
     await pressExplain($, ui, 'MG677R', w)
     expect(w.submitted).toHaveLength(3)
   })
@@ -2545,6 +2623,24 @@ describe('give back', () => {
     expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
     expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to nobody (no worker started) - herdr tab list failed: herdr: timed out; the tab state could not be read, so no worker started and nothing typed')
+    expect(w.toasts.at(-1)).toBe("MG677R back in in-progress; Herdr's tab list could not be read, so it is unknown whether its worker still runs - no worker started. Check its tab, and start one only if none runs.")
+  })
+  // 8NWE4P: under Herdr App a terminal that does not answer `hc get` is left
+  // out of the list, and herdr-hc.sh says so with exit 3. The worker's tab may
+  // be the one missing: the tabs that did come back prove nothing about it.
+  test('a tab list missing a terminal that gave no answer starts no worker either', async ($, on) => {
+    const w = world(on, { herdr: true, store: { 'session:old': {
+      session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
+      lastAnswerAt: 1_000_000 - 70 * 60_000, tokens: 80_000, ttl: 3_600_000, updatedAt: 1_000_000 - 70 * 60_000,
+    } } })
+    w.tabs = [{ tab_id: 't1', label: 'AB12CD/worker', agent_status: 'idle' }]
+    w.tabsIncomplete = 'herdr-hc.sh: tab list incomplete: hc get gave no answer for t7'
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to nobody (no worker started) - herdr tab list failed: herdr-hc.sh: tab list incomplete: hc get gave no answer for t7; the tab state could not be read, so no worker started and nothing typed')
     expect(w.toasts.at(-1)).toBe("MG677R back in in-progress; Herdr's tab list could not be read, so it is unknown whether its worker still runs - no worker started. Check its tab, and start one only if none runs.")
   })
 })
@@ -6154,7 +6250,7 @@ describe('the Acceptance pane', () => {
     expect(await texts(again)).toContain('  Не хватает только теста.')
   })
 
-  test('Execute while an Explain chat still opens is said, not dropped, and writes nothing', async ($, on) => {
+  test('Execute while an Explain chat still opens reads running… and writes nothing', async ($, on) => {
     const w = world(on, { herdr: true })
     w.heldSpawn = []
     await startSession($)
@@ -6162,9 +6258,14 @@ describe('the Acceptance pane', () => {
     void pane.press({ key: 'explain-all-MG677R' })
     await w.clock.settle()
     expect(w.heldSpawn).toHaveLength(1)
+    expect(await executeLabel(pane)).toEqual({ label: 'running…', text: 'running…', dim: true })
     await pane.press({ key: 'execute-MG677R' })
     expect(ran(w, 'jaira', 'move')).toEqual([])
-    expect(w.toasts.at(-1)).toBe('MG677R: an earlier press or an Explain chat is still at work on it - press Execute again once it is done')
+    // Explain's lock running out with its chat still opening says nothing:
+    // only Execute's does (N5ZZP6), and the release row's never.
+    await w.clock.advance(20_000)
+    await w.clock.settle()
+    expect(w.toasts.filter(x => x.includes('still at work'))).toEqual([])
     w.heldSpawn.shift()!()
     await w.clock.settle()
     await pane.press({ key: 'execute-MG677R' })

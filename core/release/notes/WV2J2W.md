@@ -1,0 +1,1 @@
+- When a second jaira session queues a ticket, milestone or epic write while another session is sending the same one, that write is now kept and sent on the next command instead of being dropped; nothing to do.
