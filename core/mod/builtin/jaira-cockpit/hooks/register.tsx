@@ -23,7 +23,7 @@ import {
   workerLines, type Role, type SessionRecord, type Tab,
 } from './sessions.ts'
 import { overviewWords, t } from './texts.ts'
-import { answer as answerThread, answerLine, asksOf, classifyPrompt, file, listThreads, parseFiling, tally, titled, untitled, type Ask, type Thread } from './threads.ts'
+import { answer as answerThread, answerLine, askTexts, asksOf, asksTranslatePrompt, classifyPrompt, file, listThreads, moved, parseFiling, recent, settled, tally, titled, untitled, watched, whenOf, type Ask, type Thread } from './threads.ts'
 
 // The engine follows `$` only into functions declared in this same file, and
 // a module hooks each event once: so every call on `$` is here, one hook per
@@ -47,6 +47,8 @@ const boardAtom = atom({ plugin: 'jaira-cockpit', key: 'board' } as const, null)
 const cacheAtom = atom({ plugin: 'jaira-cockpit', key: 'cache' } as const, { tokens: 0, lastAnswerAt: null, ttl: 0 })
 const threadsAtom = atom({ plugin: 'jaira-cockpit', key: 'threads' } as const, { questions: 0, stale: 0 })
 const asksAtom = atom({ plugin: 'jaira-cockpit', key: 'asks' } as const, [])
+const askedAtom = atom({ plugin: 'jaira-cockpit', key: 'asked' } as const, [])
+const asksShownAtom = atom({ plugin: 'jaira-cockpit', key: 'asksShown' } as const, { on: false, busy: false, texts: {} })
 const givingAtom = atom({ plugin: 'jaira-cockpit', key: 'giving' } as const, null)
 const choosingAtom = atom({ plugin: 'jaira-cockpit', key: 'choosing' } as const, null)
 const seenAtom = atom({ plugin: 'jaira-cockpit', key: 'seen' } as const, null)
@@ -144,6 +146,8 @@ let turn = 0
 // The person's message of the turn running, for the threads.
 let personSaid: string | undefined
 let threads: Thread[] = []
+// The questions settled in the last 24 hours, kept with the threads.
+let done: Ask[] = []
 // The Explain and Discuss chats this session opened, by their tab's label
 // (`<id>/explain`), with when: the tab goes once the chat has done its part.
 // copy is the ticket file pulled into the main checkout for the chat
@@ -377,6 +381,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     me = who?.exitCode === 0 ? whoOf(who.stdout) : undefined
   }
   const view: BoardView = snapshotOf(lanes.stdout, list.stdout, tabs, agents, me)
+  const lists = [list.stdout]
   // Every other board of the repository, each by its own lanes: a ticket
   // there waits in a lane today's board may not have. A board whose read
   // fails — a jaira whose lanes take no --board — is left out, not the band.
@@ -387,6 +392,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
       run($, ['jaira', 'list', '--board', name, '--json'], b.dir),
     ])
     if (l?.exitCode !== 0 || li?.exitCode !== 0) continue
+    lists.push(li.stdout)
     const other = snapshotOf(l.stdout, li.stdout, tabs, agents, me)
     view.waiting.push(...other.waiting)
     view.theirs.push(...other.theirs)
@@ -395,6 +401,7 @@ async function refreshBoard($: EngineInterface): Promise<void> {
     view.counts.person += other.counts.person
   }
   await update($, boardAtom, () => view)
+  await settleMoved($, b.dir, lists)
   // What an Explain chat wrote back onto the tickets the band shows, Explain
   // or not: an explanation stays readable after a later round, only asking
   // for a new one waits for that round's verdict.
@@ -1054,30 +1061,44 @@ async function settingsJson($: EngineInterface): Promise<string | undefined> {
   }
 }
 
+// Each press's own mark in the lock: two presses in the same millisecond -
+// the band's Acceptance, then Execute in its pane - must not free each
+// other's lock when the first one's BUSY_MS runs out.
+let presses = 0
+
 // A press on Accept, Give back, Explain or Discuss: the row's buttons lock, drawn dim,
 // until the action has done its part or BUSY_MS has passed; a press on a
 // locked row does nothing, so a slow answer is not asked for twice. An action
 // that answers 'hold' is done at once but keeps the row locked to BUSY_MS: a
 // request sent to this session has no end to wait for, and a double click
-// would send it twice.
-async function once($: EngineInterface, id: string, action: () => Promise<void | 'hold'>): Promise<void> {
-  const at = await $.clock.now()
+// would send it twice. late: what to say when BUSY_MS frees the row while the
+// action is still at work - Execute's, so the person sees why it wakes
+// (N5ZZP6); other rows, the release row among them, stay silent.
+async function once($: EngineInterface, id: string, action: () => Promise<void | 'hold'>, late?: string): Promise<void> {
+  const at = `${await $.clock.now()}:${++presses}`
   let took = false
   await update($, busyAtom, busy => {
     took = busy[id] === undefined
     return took ? { ...busy, [id]: at } : busy
   })
   if (!took) return
+  // Whether this press's lock was still there to free: a reload may have
+  // cleared it, and a later press holds its own.
+  let freed = false
   const free = () => update($, busyAtom, busy => {
     if (busy[id] !== at) return busy
+    freed = true
     const { [id]: _, ...rest } = busy
     return rest
   })
-  $.clock.after(BUSY_MS, () => void free())
+  let ended = false
+  $.clock.after(BUSY_MS, () => void free().then(() => (freed && !ended && late !== undefined ? say($, late) : undefined)))
   let held = false
   try {
     held = (await action()) === 'hold'
   } finally {
+    // A held action is done; only its lock waits for BUSY_MS.
+    ended = true
     if (!held) await free()
   }
 }
@@ -1993,8 +2014,7 @@ async function fileTurn($: EngineInterface, human: string, answer: string): Prom
   if (!result.isAnswered) return
   const filing = parseFiling(result.text)
   if (filing === undefined) return
-  threads = file(threads, board ? filing : { ...filing, ticket: null, about: null }, turn)
-  await keepThreads($)
+  await change($, (ts, now) => file(ts, board ? filing : { ...filing, ticket: null, about: null }, turn, now))
   // The title of a ticket a question names, read once: the pane shows it
   // beside the id. A ticket jaira does not know keeps the thread's title,
   // and is not asked about again.
@@ -2005,9 +2025,10 @@ async function fileTurn($: EngineInterface, human: string, answer: string): Prom
     const shown = await run($, ['jaira', 'show', id, '--json'], b.dir)
     const title = shown?.exitCode === 0 ? titleOf(shown.stdout) : undefined
     // No answer at all - a timeout - is tried again after the next turn;
-    // an answer without a title is not.
+    // an answer without a title is not. The lane read with it is the one
+    // the question waits on.
     if (shown === undefined) continue
-    threads = titled(threads, id, title ?? '')
+    threads = titled(threads, id, title ?? '', shown.exitCode === 0 ? standOf(shown.stdout).status : undefined)
   }
   await keepThreads($)
 }
@@ -2019,8 +2040,21 @@ async function keepThreads($: EngineInterface): Promise<void> {
   // Delete first so the key moves to the end of the store's insertion order,
   // as keep() does: session.start then drops the sessions heard from longest ago.
   await $.store.delete(key)
-  await $.store.set(key, { turn, threads })
+  await $.store.set(key, { turn, threads, done })
   await showThreads($)
+}
+
+// The threads after a change, and every question it settled moved to the
+// pane's 'Answered' (CSQXKR): a pick, a filing, x, or its ticket moving on.
+// The change is worked out from the threads as they are after the clock is
+// read, with no await between, so two changes never overwrite each other.
+async function change($: EngineInterface, f: (ts: Thread[], now: number) => Thread[]): Promise<void> {
+  const now = await $.clock.now()
+  const next = f(threads, now)
+  if (next.length === threads.length && next.every((x, i) => x === threads[i])) return
+  done = recent([...settled(threads, next, now), ...done], now)
+  threads = next
+  await keepThreads($)
 }
 
 async function showThreads($: EngineInterface): Promise<void> {
@@ -2028,11 +2062,89 @@ async function showThreads($: EngineInterface): Promise<void> {
   await update($, threadsAtom, () => counts)
   const asks: Ask[] = asksOf(threads)
   await update($, asksAtom, () => asks)
+  done = recent(done, await $.clock.now())
+  await update($, askedAtom, () => done)
+  // Shown translated: a question that came since is translated too.
+  const shown = await read($, asksShownAtom)
+  if (shown.on && !shown.busy && askTexts([...asks, ...done]).some(x => shown.texts[x] === undefined)) void translateAsks($)
+}
+
+// Every question waiting on a ticket's lane, settled once the ticket left it.
+// lists: 'jaira list --json' of every board read; a ticket in none of them
+// - filed away, or on a board not read - is asked of jaira alone, and one
+// jaira no longer knows has left its lane too. So is one whose listed lane
+// differs from the lane it was asked in: the list was read before this
+// refresh's awaits, and a question filed since may name a newer lane.
+async function settleMoved($: EngineInterface, dir: string, lists: readonly string[]): Promise<void> {
+  const ids = watched(threads)
+  if (ids.length === 0) return
+  const listed = new Map(lists.flatMap(l => [...lanesOf(l)]))
+  const lanes = new Map<string, string | null>()
+  for (const id of ids) {
+    const lane = listed.get(id)
+    if (lane !== undefined && threads.every(t => t.about !== id || t.aboutLane === undefined || t.aboutLane === lane)) {
+      lanes.set(id, lane)
+      continue
+    }
+    // Exit 5 is jaira's 'no such ticket' - a filed-away one still shows,
+    // as done. Any other failure, a timeout, or an answer without a lane
+    // that can be read says nothing and is asked again next round.
+    const shown = await run($, ['jaira', 'show', id, '--json'], dir)
+    const status = shown?.exitCode === 0 ? standOf(shown.stdout).status : undefined
+    if (shown?.exitCode === 5) lanes.set(id, null)
+    else if (status !== undefined) lanes.set(id, status)
+  }
+  await change($, ts => moved(ts, lanes, turn))
 }
 
 async function openAsks($: EngineInterface): Promise<void> {
+  // Every opening starts on the original; Translate asks for the person's
+  // language, as the Acceptance pane does (FMWBA8).
+  const language = languageOf(await settingsJson($))
+  // A Translate call still out keeps busy, so the reopened pane starts no
+  // second call beside it.
+  await update($, asksShownAtom, s => ({ ...(language !== undefined ? { language } : {}), on: false, busy: s.busy, texts: {} }))
   const opened = await $.ui.open({ id: ASKS, title: t.asksTitle, focus: true, closeOnEscape: true })
   if (!opened.isPlaced) await say($, listThreads(threads, turn, t.threadsTitle, t.threadsNone))
+}
+
+// t / Translate: every question and option shown, in one call of the cheap
+// model; pressed again, the originals. A failed call leaves the originals.
+async function toggleTranslation($: EngineInterface): Promise<void> {
+  const shown = await read($, asksShownAtom)
+  // Back to the original; a call still out keeps busy until it returns, so
+  // pressing t again starts no second call beside it.
+  if (shown.on) {
+    await update($, asksShownAtom, s => ({ ...s, on: false }))
+    return
+  }
+  await update($, asksShownAtom, s => ({ ...s, on: true }))
+  await translateAsks($)
+}
+
+async function translateAsks($: EngineInterface): Promise<void> {
+  const shown = await read($, asksShownAtom)
+  if (shown.language === undefined || shown.busy) return
+  const language = shown.language
+  const texts = askTexts([...(await read($, asksAtom)), ...(await read($, askedAtom))])
+  if (texts.length === 0) return
+  await update($, asksShownAtom, s => ({ ...s, busy: true }))
+  // A call that throws frees Translate too, and leaves the originals.
+  let said: string[] | undefined
+  try {
+    said = await rephrased($, `${REPHRASED_PREFIX}asks`, language, texts, asksTranslatePrompt(language, texts))
+  } catch {
+    said = undefined
+  }
+  await update($, asksShownAtom, s => (!s.on || s.language !== language
+    ? { ...s, busy: false }
+    : { ...s, busy: false, on: said !== undefined, texts: said === undefined ? s.texts : Object.fromEntries(texts.map((x, i) => [x, said[i]!])) }))
+  // A question filed while the call was out was skipped by showThreads,
+  // which does not start a second call beside a running one: translate it now.
+  if (said === undefined) return
+  const after = await read($, asksShownAtom)
+  const current = askTexts([...(await read($, asksAtom)), ...(await read($, askedAtom))])
+  if (after.on && after.language === language && current.some(x => after.texts[x] === undefined)) await translateAsks($)
 }
 
 // A pick is the person's answer: sent into the session as their message -
@@ -2043,9 +2155,13 @@ async function openAsks($: EngineInterface): Promise<void> {
 // tells that turn apart from an agent's (1M3X77, a known limit).
 async function answerAsk($: EngineInterface, a: Ask, choice: string): Promise<void> {
   void $.prompt.submit({ text: answerLine(a, choice) })
-  threads = answerThread(threads, a.thread, turn)
-  await keepThreads($)
-  if (asksOf(threads).length === 0) await $.ui.close({ id: ASKS })
+  await change($, ts => answerThread(ts, a.thread, turn))
+}
+
+// x: settled without a word into the session - decided elsewhere, in the
+// Acceptance pane or by hand.
+async function dismissAsk($: EngineInterface, a: Ask): Promise<void> {
+  await change($, ts => answerThread(ts, a.thread, turn))
 }
 
 // An answer the options did not offer is typed in the prompt, which starts
@@ -2141,10 +2257,11 @@ export const register: Register = (on, options) => {
     const threadKeys = (await $.store.keys()).filter(k => k.startsWith(THREADS_PREFIX))
     for (const old of threadKeys.slice(0, Math.max(0, threadKeys.length - THREAD_SESSIONS))) await $.store.delete(old)
     await readRecords($)
-    const kept = (await $.store.get(await threadsKey($))) as { turn: number; threads: Thread[] } | undefined
+    const kept = (await $.store.get(await threadsKey($))) as { turn: number; threads: Thread[]; done?: Ask[] } | undefined
     if (kept !== undefined) {
       turn = kept.turn
       threads = kept.threads
+      done = kept.done ?? []
       await showThreads($)
     }
     await $.command.register({
@@ -2475,9 +2592,12 @@ export const register: Register = (on, options) => {
       void update($, choosingAtom, c => (c === null || c.id !== w.id ? c : { ...c, items: c.items.map((x, i) => (i === n ? { ...x, choice } : x)) }))
     // One lock for the row and its pane: a chat Explain all opened, or a
     // press still running, holds it - one ticket is never written by two
-    // presses at once. A press on Execute meanwhile is said, not dropped.
+    // presses at once. Execute then reads 'running…', dim, and a press on it
+    // or Enter in the field does nothing (N5ZZP6): the label is the answer.
     const busy = (await read($, busyAtom))[w.id] !== undefined
-    const go = () => (busy ? void say($, t.busyRow(w.id)) : void once($, w.id, async () => execute($, w, await read($, typedAtom), share, Input !== undefined)))
+    const executeLabel = busy ? t.running : t.execute
+    const late = t.stillRunning(w.id, BUSY_MS / 1000)
+    const go = () => void once($, w.id, async () => execute($, w, await read($, typedAtom), share, Input !== undefined), late)
     // A choice's button: the chosen one bold in its colour, the others dim.
     const CHOICES: [GapItem['choice'], string, 'success' | 'error' | 'suggestion'][] = [['accept', t.choiceOk, 'success'], ['now', t.choiceFix, 'error'], ['later', t.choiceTicket, 'suggestion']]
     const story_ = s?.story
@@ -2557,7 +2677,7 @@ export const register: Register = (on, options) => {
               key={`typed-${w.id}`}
               label={exec.asksWhy ? t.whyLabel : items.length > 0 ? t.moreLabel : t.reasonLabel}
               placeholder={exec.asksWhy ? t.whyPlaceholder : items.length > 0 ? t.morePlaceholder : t.reasonPlaceholder}
-              submitLabel={t.execute}
+              submitLabel={executeLabel}
               {...(items.length === 0 && seen.length === 0 ? { autoFocus: true as const } : {})}
               onInput={(text: string) => void update($, typedAtom, () => text)}
               onSubmit={(text: string) => {
@@ -2565,15 +2685,18 @@ export const register: Register = (on, options) => {
                 // Enter in the field never accepts by itself - one Enter too
                 // many would take the ticket to done: that is Execute's.
                 // Words typed, or a note to fix, it carries out.
+                // While Execute reads running…, Enter does nothing at all -
+                // not even the nothing-to-fix notice.
+                if (busy) return
                 const plan = executionOf(items, text, w.acceptTo, unseen)
                 if ((plan.step === 'accept' || plan.step === 'needSeen') && !plan.asksWhy) return void say($, t.nothingToFix(w.id))
-                void once($, w.id, () => execute($, w, text, share))
+                void once($, w.id, () => execute($, w, text, share), late)
               }}
             />
           )
           : null}
         <Box flexDirection="row">
-          <Button key={`execute-${w.id}`} label={t.execute} onPress={go}><Text bold dimColor={busy}>{t.execute}</Text></Button>
+          <Button key={`execute-${w.id}`} label={executeLabel} onPress={go}><Text bold dimColor={busy}>{executeLabel}</Text></Button>
           <Button key={`explain-all-${w.id}`} label={t.explainAll} onPress={() => void once($, w.id, () => openChat($, w.id, 'explain'))} />
           {s?.language !== undefined
             ? <Button key={`translate-${w.id}`} hotkey="t" label={said !== undefined ? t.original : translating ? t.translating : t.translate} onPress={() => void translate($, w)} />
@@ -2693,12 +2816,32 @@ export const register: Register = (on, options) => {
   // down the whole pane, so the first nine are a key away.
   on('ui.render', { component: 'Pane', requestId: ASKS }, async ($, e) => {
     const asks = await read($, asksAtom)
+    const now = await $.clock.now()
+    // Pruned as it is drawn too: a pane left open over a day drops what aged.
+    const asked = recent(await read($, askedAtom), now)
+    const shown = await read($, asksShownAtom)
     const { Box, Button, Text } = $.ui.resolve(e)
     const close = { key: 'asks-close', label: t.close, onPress: () => void $.ui.close({ id: ASKS }) }
-    if (asks.length === 0) {
+    // In the original until Translate is pressed; again, back to it (CSQXKR).
+    const inShown = (x: string) => (shown.on ? shown.texts[x] ?? x : x)
+    const translate = shown.language !== undefined && asks.length + asked.length > 0
+      ? [<Button key="asks-translate" hotkey="t" label={shown.busy ? t.translating : shown.on ? t.original : t.translate} onPress={() => void toggleTranslation($)} />]
+      : []
+    const head = headRow({ Box, Button }, 'asks-head', close, translate)
+    const when = (a: Ask) => [
+      ...(a.askedAt !== undefined ? [t.askedAt(whenOf(a.askedAt, now))] : []),
+      ...(a.answeredAt !== undefined ? [t.answeredAt(whenOf(a.answeredAt, now))] : []),
+    ].join(' · ')
+    const top = (a: Ask) => (
+      <Text wrap="truncate-end">
+        <Text bold color="claude">{a.ticket ?? t.asksNoTicket}</Text>{SEP}<Text bold>{a.title}</Text>
+        {when(a) !== '' ? <Text dimColor>{SEP}{when(a)}</Text> : null}
+      </Text>
+    )
+    if (asks.length === 0 && asked.length === 0) {
       return (
         <Box flexDirection="column">
-          {headRow({ Box, Button }, 'asks-head', close)}
+          {head}
           <Text dimColor>{t.asksNone}</Text>
         </Box>
       )
@@ -2706,31 +2849,47 @@ export const register: Register = (on, options) => {
     let n = 0
     return (
       <Box flexDirection="column">
-        {headRow({ Box, Button }, 'asks-head', close)}
+        {head}
+        {asks.length === 0 ? <Text dimColor>{t.asksNone}</Text> : null}
         {asks.map((a, i) => (
           <Box key={`ask-${a.thread}`} flexDirection="column" marginTop={i > 0 ? 1 : 0}>
-            <Text wrap="truncate-end">
-              <Text bold color="claude">{a.ticket ?? t.asksNoTicket}</Text>{SEP}<Text bold>{a.title}</Text>
-            </Text>
-            <Text wrap="wrap">? {a.question}</Text>
+            {top(a)}
+            <Text wrap="wrap">? {inShown(a.question)}</Text>
             {a.options.map((o, j) => {
               n++
               return (
                 <Button
                   key={`ask-${a.thread}-${j}`}
                   plain
-                  label={o}
+                  label={inShown(o)}
                   {...(n <= 9 ? { hotkey: String(n) } : {})}
                   {...(i === 0 && j === 0 ? { autoFocus: true as const } : {})}
                   onPress={() => void answerAsk($, a, o)}
                 >
-                  <Text wrap="wrap">{o}</Text>
+                  <Text wrap="wrap">{inShown(o)}</Text>
                 </Button>
               )
             })}
-            <Button key={`ask-${a.thread}-chat`} label={t.answerInChat} {...(a.options.length === 0 && i === 0 ? { autoFocus: true as const } : {})} onPress={() => void answerInChat($, a)} />
+            <Box flexDirection="row" columnGap={1}>
+              <Button key={`ask-${a.thread}-chat`} label={t.answerInChat} {...(a.options.length === 0 && i === 0 ? { autoFocus: true as const } : {})} onPress={() => void answerInChat($, a)} />
+              <Button key={`ask-${a.thread}-done`} label={t.asksDone} {...(i === 0 ? { hotkey: 'x' } : {})} onPress={() => void dismissAsk($, a)} />
+            </Box>
           </Box>
         ))}
+        {asked.length > 0
+          ? (
+            <Box key="asks-answered" flexDirection="column" marginTop={1}>
+              <Text dimColor>{'─'.repeat(Math.max(10, Math.min(60, e.props.bodyColumns)))}</Text>
+              <Text dimColor bold>{t.asksAnswered}</Text>
+              {asked.map((a, i) => (
+                <Box key={`asked-${a.thread}-${a.answeredAt}-${i}`} flexDirection="column" marginTop={i > 0 ? 1 : 0}>
+                  <Text dimColor wrap="truncate-end">{a.ticket ?? t.asksNoTicket}{SEP}{a.title}{when(a) !== '' ? `${SEP}${when(a)}` : ''}</Text>
+                  <Text dimColor wrap="wrap">? {inShown(a.question)}</Text>
+                </Box>
+              ))}
+            </Box>
+          )
+          : null}
       </Box>
     )
   })

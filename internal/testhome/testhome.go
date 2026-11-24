@@ -43,7 +43,27 @@ func Run(m *testing.M) int {
 	for _, k := range []string{"JAIRA_DEFAULT_BOARD", "JAIRA_LANES_DIR"} {
 		os.Unsetenv(k)
 	}
+	isolateGit()
 	return m.Run()
+}
+
+// gitRepoVars make git pick a repository regardless of the directory it is
+// run in: exported by a git hook or a wrapper, they turn 'git -C <temp dir>'
+// into a read of — or a write to — the developer's own checkout, its people
+// ref and its .git/config included.
+var gitRepoVars = []string{
+	"GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_INDEX_FILE",
+	"GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_NAMESPACE",
+}
+
+// isolateGit clears gitRepoVars and stops git's upward search at the temp
+// directory, so a test's temporary directory is never taken for part of a
+// repository that happens to contain TMPDIR.
+func isolateGit() {
+	for _, k := range gitRepoVars {
+		os.Unsetenv(k)
+	}
+	os.Setenv("GIT_CEILING_DIRECTORIES", os.TempDir())
 }
 
 // pinGoVars sets each of goVars that is not set already to the value go

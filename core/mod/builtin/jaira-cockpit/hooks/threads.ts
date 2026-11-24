@@ -17,6 +17,11 @@ export type Thread = {
   about?: string
   aboutTitle?: string
   options?: string[]
+  // When the question was asked (ms), and the lane the ticket it is about
+  // stood in then, read with its title; a ticket that leaves that lane
+  // settles the question (CSQXKR).
+  askedAt?: number
+  aboutLane?: string
   lastTurn: number
 }
 
@@ -64,7 +69,7 @@ export function classifyPrompt(threads: readonly Thread[], human: string, answer
     withTickets
       ? ' "ticket": "<the 6-character jaira ticket id the assistant created or linked for this thread in this turn, or null>",'
       : ' "ticket": null,',
-    ' "question": "<a question the assistant asked the person in this turn that the person must answer, one line, or null>",',
+    ' "question": "<a question the assistant asked the person in this turn that the person must answer, one line, quoted in the assistant\'s own words and language, never translated, or null>",',
     withTickets
       ? ' "about": "<the 6-character jaira ticket id that question is about, or null>",'
       : ' "about": null,',
@@ -125,12 +130,13 @@ export function parseFiling(text: string): Filing | undefined {
 // A thread whose question is answered: the question goes, and with it what
 // belonged to it.
 export function answered(t: Thread, turn: number): Thread {
-  const { question: _q, about: _a, aboutTitle: _t, options: _o, ...rest } = t
+  const { question: _q, about: _a, aboutTitle: _t, options: _o, askedAt: _at, aboutLane: _l, ...rest } = t
   return { ...rest, lastTurn: turn }
 }
 
-// The threads after this turn's filing.
-export function file(threads: readonly Thread[], f: Filing, turn: number): Thread[] {
+// The threads after this turn's filing; now: when it was asked, for a new
+// question.
+export function file(threads: readonly Thread[], f: Filing, turn: number, now?: number): Thread[] {
   const next = threads.map(t => (f.answered.includes(t.id) ? answered(t, turn) : t))
   const at = f.thread === null ? -1 : next.findIndex(t => t.id === f.thread)
   const base: Thread = at >= 0
@@ -139,11 +145,15 @@ export function file(threads: readonly Thread[], f: Filing, turn: number): Threa
   // A new question brings its own ticket and choices; none keeps the open one
   // as it was, unless this very turn answered it.
   const kept = f.answered.includes(base.id) ? answered(base, turn) : base
+  // The same question asked again on its thread keeps the moment it was
+  // first asked.
+  const askedAt = base.question === f.question && base.askedAt !== undefined ? base.askedAt : now
   const asked: Thread = f.question === null
     ? kept
     : {
       ...answered(base, turn),
       question: f.question,
+      ...(askedAt !== undefined ? { askedAt } : {}),
       ...(f.about !== null ? { about: f.about } : {}),
       ...(f.options.length > 0 ? { options: f.options } : {}),
     }
@@ -155,7 +165,19 @@ export function file(threads: readonly Thread[], f: Filing, turn: number): Threa
   }
   if (at >= 0) next[at] = updated
   else next.push(updated)
-  return next.slice(-THREADS)
+  return capped(next, updated.id)
+}
+
+// At most THREADS threads: the ones touched longest ago go first. Neither
+// the thread this turn touched nor one whose question still waits is ever
+// dropped (CSQXKR), however many of them there are; nor is the newest, whose
+// id the next new thread counts on from.
+function capped(threads: Thread[], touched: number): Thread[] {
+  const over = threads.length - THREADS
+  if (over <= 0) return threads
+  const newest = Math.max(...threads.map(t => t.id))
+  const drop = new Set(threads.filter(t => t.question === undefined && t.id !== touched && t.id !== newest).sort((a, b) => a.lastTurn - b.lastTurn || a.id - b.id).slice(0, over).map(t => t.id))
+  return threads.filter(t => !drop.has(t.id))
 }
 
 export function listThreads(threads: readonly Thread[], turn: number, title: string, none: string): string {
@@ -178,7 +200,13 @@ export type Ask = {
   title: string
   question: string
   options: string[]
+  askedAt?: number
+  // Set once it is settled: answered, dismissed, or its ticket moved on.
+  answeredAt?: number
 }
+
+// How long a settled question stays in the pane, dimmed.
+export const ANSWERED_MS = 24 * 60 * 60 * 1000
 
 // Every open question, the one asked last first.
 export function asksOf(threads: readonly Thread[]): Ask[] {
@@ -194,6 +222,7 @@ export function asksOf(threads: readonly Thread[]): Ask[] {
         title: (t.about !== undefined ? t.aboutTitle : undefined) || t.title,
         question: t.question!,
         options: t.options ?? [],
+        ...(t.askedAt !== undefined ? { askedAt: t.askedAt } : {}),
       }
     })
 }
@@ -210,9 +239,74 @@ export function untitled(threads: readonly Thread[]): string[] {
 }
 
 // The threads with a ticket's title written onto every question about it;
-// '' where jaira had none, so it is not looked up again.
-export function titled(threads: readonly Thread[], ticket: string, title: string): Thread[] {
-  return threads.map(t => (t.question !== undefined && t.about === ticket && t.aboutTitle === undefined ? { ...t, aboutTitle: clip(title, 120) } : t))
+// '' where jaira had none, so it is not looked up again. lane: the lane the
+// ticket stands in now, which the question waits on.
+export function titled(threads: readonly Thread[], ticket: string, title: string, lane?: string): Thread[] {
+  return threads.map(t => (t.question !== undefined && t.about === ticket && t.aboutTitle === undefined
+    ? { ...t, aboutTitle: clip(title, 120), ...(lane !== undefined && lane !== '' ? { aboutLane: lane } : {}) }
+    : t))
+}
+
+// The tickets whose lane open questions wait on.
+export function watched(threads: readonly Thread[]): string[] {
+  return [...new Set(threads.filter(t => t.question !== undefined && t.about !== undefined && t.aboutLane !== undefined).map(t => t.about!))]
+}
+
+// The threads with every question settled whose ticket left the lane it was
+// asked in. lanes: each watched ticket's lane now; null where jaira no
+// longer knows it; a ticket missing from it is not known yet and stays.
+export function moved(threads: readonly Thread[], lanes: ReadonlyMap<string, string | null>, turn: number): Thread[] {
+  return threads.map(t => {
+    if (t.question === undefined || t.about === undefined || t.aboutLane === undefined || !lanes.has(t.about)) return t
+    return lanes.get(t.about) === t.aboutLane ? t : answered(t, turn)
+  })
+}
+
+// The questions open before a change and gone after it, settled at now:
+// answered, dismissed, moved on, or replaced by a new one on their thread.
+// A thread missing from after was dropped to keep the list short, not
+// answered: its question settles nothing. Their options go: the pane no
+// longer offers them.
+export function settled(before: readonly Thread[], after: readonly Thread[], now: number): Ask[] {
+  const kept = new Set(after.map(t => t.id))
+  const still = new Set(after.filter(t => t.question !== undefined).map(t => `${t.id}\n${t.question}`))
+  return asksOf(before)
+    .filter(a => kept.has(a.thread) && !still.has(`${a.thread}\n${a.question}`))
+    .map(a => ({ ...a, options: [], answeredAt: now }))
+}
+
+// The settled questions still shown: the last 24 hours, settled last first.
+export function recent(done: readonly Ask[], now: number): Ask[] {
+  return done.filter(a => a.answeredAt !== undefined && now - a.answeredAt < ANSWERED_MS).sort((a, b) => b.answeredAt! - a.answeredAt!)
+}
+
+const two = (n: number) => String(n).padStart(2, '0')
+
+// A moment as the pane says it: 'today 07:12', another day '23.11. 21:40',
+// in local time.
+export function whenOf(at: number, now: number): string {
+  const d = new Date(at)
+  const n = new Date(now)
+  const time = `${two(d.getHours())}:${two(d.getMinutes())}`
+  return d.toDateString() === n.toDateString() ? `today ${time}` : `${two(d.getDate())}.${two(d.getMonth() + 1)}. ${time}`
+}
+
+// Every text the pane shows of these questions that a translation changes:
+// each question and each option, once.
+export function askTexts(asks: readonly Ask[]): string[] {
+  return [...new Set(asks.flatMap(a => [a.question, ...a.options]))]
+}
+
+// The cheap model's prompt for the pane's Translate: every text in one call,
+// back as one JSON array of as many strings in the same order.
+export function asksTranslatePrompt(language: string, texts: readonly string[]): string {
+  return [
+    `Translate each text below into ${language}, plainly. Each is a question an AI assistant put to a person, or one of the answers it offered.`,
+    'Keep code identifiers, file paths, commands and ticket handles exactly as written. Add nothing a text does not say.',
+    `Answer with a JSON array of exactly ${texts.length} strings, in the same order, and nothing else.`,
+    '',
+    JSON.stringify(texts),
+  ].join('\n')
 }
 
 // The threads with this thread's question taken as answered, at this turn.

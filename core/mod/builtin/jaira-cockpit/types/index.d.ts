@@ -10,7 +10,7 @@ export type BoardView = { waiting: Waiting[]; theirs: Waiting[]; counts: Counts 
 export type CacheState = { tokens: number; lastAnswerAt: number | null; ttl: number }
 export type ThreadTally = { questions: number; stale: number }
 // One open question of the session's threads: this mirrors hooks/threads.ts Ask.
-export type Ask = { thread: number; ticket?: string; title: string; question: string; options: string[] }
+export type Ask = { thread: number; ticket?: string; title: string; question: string; options: string[]; askedAt?: number; answeredAt?: number }
 // What the Overview pane draws: these mirror hooks/overview.ts.
 export type OverviewRow = { id: string; lane: string; title: string; who: string; reason: string }
 export type OverviewEvent = OverviewRow & { kind: 'created' | 'parked'; at: string }
@@ -30,6 +30,12 @@ declare module 'claude-code' {
       threads: ThreadTally
       // The open questions the 'Waiting for you' pane lists, asked last first.
       asks: Ask[]
+      // The questions settled in the last 24 hours, settled last first (CSQXKR).
+      asked: Ask[]
+      // The pane's Translate: the person's language, read when the pane
+      // opened (none: no button); whether the translation is shown, a call is
+      // out, and each text's translation.
+      asksShown: { language?: string; on: boolean; busy: boolean; texts: Record<string, string> }
       // The ticket the Acceptance pane shows.
       giving: string | null
       // The review notes that pane lists, each with what the person chose
