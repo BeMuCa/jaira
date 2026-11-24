@@ -82,11 +82,13 @@ case "$cmd" in
   "tab list")
     # As herdr lists tabs: the cockpit finds a ticket's worker by its label,
     # which hc ls leaves out, so each live terminal is asked for its own.
-    # A terminal hc get calls not_found went since hc ls and is left out. Any other
-    # failure (a timeout) may hide a live worker's tab: the list gets
-    # "partial":true and stderr names the terminal. The exit stays 0, so a
-    # caller that only asks whether Herdr answers (reap.sh) still gets yes;
-    # Give back, which needs every tab, reads the field.
+    # A terminal hc get calls not_found went since hc ls and is left out. Any
+    # other failure (a timeout) may hide a live worker's tab: the list is still
+    # printed, but stderr names the terminal and the exit is 3. Every caller
+    # already reads a failed list as "tabs unknown" - Give back starts no
+    # worker, reap.sh removes nothing. A flag in the JSON instead would have to
+    # be checked by each of them, and reap.sh would go on to read the mute
+    # terminal's 'pane get' failure as a closed tab.
     ls="$("$hc" ls --json)"
     err="$(mktemp)"
     trap 'rm -f "$err"' EXIT
@@ -100,11 +102,10 @@ case "$cmd" in
         "$(js "$(labelof "$j" jaira.tab)")" "$(js "$(jaira json get status.state --default - <<<"$j")")"
       sep=","
     done
+    printf ']}}\n'
     if [ -n "$mute" ]; then
-      printf '],"partial":true}}\n'
-      echo "herdr-hc.sh: hc get gave no answer for$mute" >&2
-    else
-      printf ']}}\n'
+      echo "herdr-hc.sh: tab list incomplete: hc get gave no answer for$mute" >&2
+      exit 3
     fi
     ;;
   "tab get")

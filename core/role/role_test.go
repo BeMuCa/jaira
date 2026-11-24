@@ -998,11 +998,11 @@ fi
 }
 
 // herdr-hc.sh asks every terminal hc ls names for its label. One that does not
-// answer 'hc get' may be a live worker's: left out of a list that says nothing,
-// its tab reads as closed, and Give back starts a second worker beside it
-// (8NWE4P). The list then carries "partial":true and stderr names the terminal;
-// the exit stays 0, or reap.sh would read one mute terminal as Herdr down. A
-// terminal hc reports not_found was removed since hc ls and is simply closed.
+// answer 'hc get' may be a live worker's: left out of a list that exits 0, its
+// tab reads as closed, and Give back starts a second worker beside it (8NWE4P).
+// The list then still comes out, but with exit 3 and the mute terminal on
+// stderr, which every caller already reads as a failed list. A terminal hc
+// reports not_found was removed since hc ls: closed, left out, exit 0.
 func TestHerdrHcTabListSaysWhichTerminalDidNotAnswer(t *testing.T) {
 	bash, err := exec.LookPath("bash")
 	if err != nil {
@@ -1046,13 +1046,18 @@ fi
 			var stderr strings.Builder
 			cmd.Stderr = &stderr
 			out, err := cmd.Output()
-			if err != nil {
-				t.Fatalf("tab list: %v\nstdout %s\nstderr %s", err, out, stderr.String())
+			code := 0
+			if ee, ok := err.(*exec.ExitError); ok {
+				code = ee.ExitCode()
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			if want := map[bool]int{false: 0, true: 3}[c.mute != ""]; code != want {
+				t.Fatalf("exit %d, want %d\nstdout %s\nstderr %s", code, want, out, stderr.String())
 			}
 			var got struct {
 				Result struct {
-					Partial bool `json:"partial"`
-					Tabs    []struct {
+					Tabs []struct {
 						TabID string `json:"tab_id"`
 						Label string `json:"label"`
 					} `json:"tabs"`
@@ -1070,9 +1075,6 @@ fi
 			}
 			if !slices.Equal(ids, c.listed) {
 				t.Errorf("listed %q, want %q", ids, c.listed)
-			}
-			if got.Result.Partial != (c.mute != "") {
-				t.Errorf("partial %v with mute %q: %s", got.Result.Partial, c.mute, out)
 			}
 			for _, m := range strings.Fields(c.mute) {
 				if !strings.Contains(stderr.String(), " "+m) {

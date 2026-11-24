@@ -131,9 +131,9 @@ type World = {
   heldTabs?: (() => void)[]
   // Every `herdr tab list` fails with this on stderr (W80HNH).
   tabsFail?: string
-  // Every `herdr tab list` prints the tabs marked partial, with this on
-  // stderr, as herdr-hc.sh does when a terminal gave no answer (8NWE4P).
-  tabsPartial?: string
+  // Every `herdr tab list` prints the tabs but exits 3 with this on stderr,
+  // as herdr-hc.sh does when a terminal gave no answer (8NWE4P).
+  tabsIncomplete?: string
   // spawn.sh calls wait here until released, as one waiting for claude does.
   heldSpawn?: (() => void)[]
   // `git worktree list --porcelain`, WORKTREES unless set.
@@ -455,7 +455,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'next' && w.nextFails) return failed('jaira: board unreadable')
     if (cmd === 'jaira' && args[0] === 'next') return ok(JSON.stringify({ count: w.next.length, tickets: w.next.map(handle => ({ handle })) }))
     if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list' && w.tabsFail !== undefined) return failed(w.tabsFail)
-    if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list' && w.tabsPartial !== undefined) return { value: { exitCode: 0, stdout: JSON.stringify({ result: { tabs: w.tabs, partial: true } }), stderr: w.tabsPartial, isStdoutTruncated: false, isStderrTruncated: false } }
+    if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list' && w.tabsIncomplete !== undefined) return { value: { exitCode: 3, stdout: JSON.stringify({ result: { tabs: w.tabs } }), stderr: w.tabsIncomplete, isStdoutTruncated: false, isStderrTruncated: false } }
     if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list') return ok(JSON.stringify({ result: { tabs: w.tabs } }))
     if (cmd === 'herdr' && args[0] === 'pane' && args[1] === 'get' && !w.paneGone) return ok(JSON.stringify({ result: { pane: { agent: 'claude', agent_status: w.paneStates.shift() ?? 'idle' } } }))
     if (cmd === 'herdr' && args[0] === 'pane' && w.paneGone) return { value: { exitCode: 1, stdout: '', stderr: 'no such pane', isStdoutTruncated: false, isStderrTruncated: false } }
@@ -2544,21 +2544,21 @@ describe('give back', () => {
     expect(w.toasts.at(-1)).toBe("MG677R back in in-progress; Herdr's tab list could not be read, so it is unknown whether its worker still runs - no worker started. Check its tab, and start one only if none runs.")
   })
   // 8NWE4P: under Herdr App a terminal that does not answer `hc get` is left
-  // out of the list, and herdr-hc.sh marks the list partial. The worker's tab
-  // may be the one missing: the tabs that did come back prove nothing about it.
+  // out of the list, and herdr-hc.sh says so with exit 3. The worker's tab may
+  // be the one missing: the tabs that did come back prove nothing about it.
   test('a tab list missing a terminal that gave no answer starts no worker either', async ($, on) => {
     const w = world(on, { herdr: true, store: { 'session:old': {
       session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
       lastAnswerAt: 1_000_000 - 70 * 60_000, tokens: 80_000, ttl: 3_600_000, updatedAt: 1_000_000 - 70 * 60_000,
     } } })
     w.tabs = [{ tab_id: 't1', label: 'AB12CD/worker', agent_status: 'idle' }]
-    w.tabsPartial = 'herdr-hc.sh: hc get gave no answer for t7'
+    w.tabsIncomplete = 'herdr-hc.sh: tab list incomplete: hc get gave no answer for t7'
     await startSession($)
     await giveBack($, w)
     expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
     expect(ran(w, 'bash', SPAWN)).toEqual([])
     expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
-    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to nobody (no worker started) - herdr tab list incomplete: herdr-hc.sh: hc get gave no answer for t7; the tab state could not be read, so no worker started and nothing typed')
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to nobody (no worker started) - herdr tab list failed: herdr-hc.sh: tab list incomplete: hc get gave no answer for t7; the tab state could not be read, so no worker started and nothing typed')
     expect(w.toasts.at(-1)).toBe("MG677R back in in-progress; Herdr's tab list could not be read, so it is unknown whether its worker still runs - no worker started. Check its tab, and start one only if none runs.")
   })
 })

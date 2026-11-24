@@ -19,7 +19,7 @@ import { add, appended, emptyTotals, row, rowsOf, type Totals } from './metrics.
 import { COLORS, cycled, HATS, NO_FILTER, overviewOf, pickOf, stoneOf, workerKey, workersOf } from './overview.ts'
 import { drawOverview, headRow, type OverviewTab } from './overview-pane.tsx'
 import {
-  backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf, tabsPartial,
+  backMessage, carrierOf, carrierTab, chooseWorker, DEFAULT_CONTEXT_SHARE, isExpired, RECORD_PREFIX, selfLine, startOf, tabsOf,
   workerLines, type Role, type SessionRecord, type Tab,
 } from './sessions.ts'
 import { overviewWords, t } from './texts.ts'
@@ -1786,12 +1786,9 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   // A tab list Herdr did not give (timeout, refusal) says nothing about the
   // old worker: read as "no tab", it would start a second worker beside one
   // that still runs. Nothing is started and no keys are sent; the person
-  // hears that the tabs could not be read. A list marked partial is the same
-  // case: the terminal that gave no answer may be the worker's (8NWE4P).
-  if (tabs?.exitCode !== 0 || tabsPartial(tabs.stdout)) {
-    const why = tabs === undefined ? 'herdr tab list gave no answer'
-      : tabs.exitCode === 0 ? `herdr tab list incomplete: ${tabs.stderr.trim().slice(-160) || 'a terminal gave no answer'}`
-      : `herdr tab list failed: ${(tabs.stderr || tabs.stdout).trim().slice(-160) || `exit ${tabs.exitCode}`}`
+  // hears that the tabs could not be read.
+  if (tabs?.exitCode !== 0) {
+    const why = tabs === undefined ? 'herdr tab list gave no answer' : `herdr tab list failed: ${(tabs.stderr || tabs.stdout).trim().slice(-160) || `exit ${tabs.exitCode}`}`
     await handedTo('none', `${why}; the tab state could not be read, so no worker started and nothing typed`, `none: tab state unreadable (${why}) - check the ticket's worker tab, then start one if none runs`)
     return say($, t.tabsUnreadable(id))
   }
