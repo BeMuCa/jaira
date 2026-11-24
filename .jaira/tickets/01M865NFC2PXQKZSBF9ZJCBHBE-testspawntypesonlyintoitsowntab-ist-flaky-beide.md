@@ -1,7 +1,7 @@
 ---
 id: 01M865NFC2PXQKZSBF9ZJCBHBE
 title: "TestSpawnTypesOnlyIntoItsOwnTab ist flaky: beide Starts melden 'pane gehoert jetzt zu t2'"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -18,13 +18,15 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-24T07:00:03Z
-updated-at: 2026-11-24T07:08:38Z
+updated-at: 2026-11-24T07:09:29Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91083
 claimed-at: 2026-11-24T07:00:45Z
 outcome-what: "Herdr-Stub in TestSpawnTypesOnlyIntoItsOwnTab vergibt den Tab nach Label statt per mkdir-Zaehler mit 10s-Grenze; Verlierer (critique) steht fest. role_test 'second while the first still runs': Stub-Grenze 10s -> 120s."
 outcome-why: "Release-Lauf 0.6.6 rot: beide Starts bekamen vom Stub tab t1, Ergebnis hing am Timing des Stubs, nicht an spawn.sh."
 outcome-resolves: "Race-Test deterministisch; 200x gruen, auch mit 12s Verzoegerung je Seite. Geprueft: Nebenlaeufigkeit (beide Starts parallel, Verzoegerung beider Seiten), Fehlerpfade (Timeout beeinflusst Ergebnis nicht mehr), Eingabe/Rechte: n/a (nur Test-Stub)."
+review-summary: none
+review-gaps: "spawnpane_test.go: Variable won (fester Wert optimize, zweimal genutzt) eingesetzt; sonst nichts entfernt - Stub hat keine Duplikate, role_test-Stub bleibt eigenstaendig (anderer Zweck: Gate statt Tab-Vergabe)"
 ---
 
 # TestSpawnTypesOnlyIntoItsOwnTab ist flaky: beide Starts melden 'pane gehoert jetzt zu t2'

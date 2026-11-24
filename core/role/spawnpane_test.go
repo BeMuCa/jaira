@@ -55,7 +55,6 @@ esac
 	if !strings.Contains(outs[0], "pane p2 is not in tab t1 (AB12CD/critique)") || !strings.Contains(outs[0], "nothing was typed") {
 		t.Errorf("the refused spawn names neither the pane nor its tab:\n%s", outs[0])
 	}
-	won := "optimize"
 	read := func(name string) string {
 		b, _ := os.ReadFile(filepath.Join(state, name))
 		return strings.TrimSpace(string(b))
@@ -75,8 +74,8 @@ esac
 	if len(recs) != 1 || filepath.Base(recs[0]) != "p2" {
 		t.Fatalf("pane records %v, want only p2", recs)
 	}
-	if rec, _ := os.ReadFile(recs[0]); !strings.Contains(string(rec), "lane="+won+"\n") {
-		t.Errorf("the record of p2 names another lane than %s:\n%s", won, rec)
+	if rec, _ := os.ReadFile(recs[0]); !strings.Contains(string(rec), "lane=optimize\n") {
+		t.Errorf("the record of p2 names another lane than optimize:\n%s", rec)
 	}
 }
 
