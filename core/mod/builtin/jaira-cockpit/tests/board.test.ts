@@ -939,15 +939,28 @@ describe('waiting for you', () => {
   // pane says where, so nobody reads the press as done.
   test('Acceptance is offered on every waiting ticket; where the next lane does not end the board, Execute moves it one lane on and says where', async ($, on) => {
     const w = world(on)
+    // Its question answered: cleared, as the Discuss chat clears it.
+    w.tickets = [SIGNOFF, { ...HUMAN, question: '' }]
     await startSession($)
     const ui = await $.ui.mount(BAND)
     expect(await ui.find({ key: 'acceptance-MG677R' })).toBeDefined()
-    expect(await ui.find({ key: 'discuss-K7P2QX' })).toBeDefined()
     const pane = await quietly($, ui, 'K7P2QX', w)
     expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Execute: accept → review')
     await pane.press({ key: 'execute-K7P2QX' })
     expect(ran(w, 'jaira', 'move', 'K7P2QX').map(r => r.slice(3, 6))).toEqual([['--to', 'review', '--dry-run'], ['--to', 'review', '--force']])
     expect(ran(w, 'jaira', 'note', 'K7P2QX').map(r => r[3])).toContain('cockpit: accepted by the person, human -> review')
+  })
+
+  test('a question still open in a lane that does not end the work: Execute moves nothing and asks for the answer', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    expect(await ui.find({ key: 'discuss-K7P2QX' })).toBeDefined()
+    const pane = await quietly($, ui, 'K7P2QX', w)
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Execute: answer the question first - or mark a note fix, or type what is missing')
+    await pane.press({ key: 'execute-K7P2QX' })
+    expect(ran(w, 'jaira', 'move')).toEqual([])
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('K7P2QX waits in human for the answer to its question: answer it first, then Execute moves it on to review. Mark a note fix, or type what is missing, to give it back.')
   })
 
   test('where jaira names no lane after it, Execute accepts nothing and says so', async ($, on) => {
@@ -6088,6 +6101,13 @@ describe('the Acceptance pane, read alone', () => {
     ['blocker kept, words typed, with no next lane', [item('blocker', 'accept')], 'fehlt', null, 'giveBack', 0, 0],
     ['blocker kept, nothing typed, with no next lane', [item('blocker', 'later')], '', null, 'noNext', 0, 1],
   ]
+  test('an open question in a lane that does not end the work waits for its answer; words typed still give back', () => {
+    expect(executionOf([item('edge', 'accept')], '', 'review', 0, true).step).toBe('needAnswer')
+    expect(executionOf([item('blocker', 'accept')], '', 'review', 0, true)).toEqual({ step: 'needAnswer', fix: 0, followUps: 0, asksWhy: false })
+    expect(executionOf([], 'fehlt', 'review', 0, true).step).toBe('giveBack')
+    expect(executionOf([item('edge', 'now')], '', 'review', 0, true).step).toBe('giveBack')
+  })
+
   for (const [name, items, typed, to, step, fix, followUps] of TABLE) {
     test(`Execute: ${name} -> ${step}`, () => {
       const e = executionOf(items, typed, to)

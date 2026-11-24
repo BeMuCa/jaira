@@ -5,7 +5,7 @@ import {
   acceptTreeFor, branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, ghRepoOf, hasPullRequest, onHost, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, parse, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
-  clipLines, commitsOf, titleOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenItemsOf, seenProof, seenToTick, type SeenItem, standOf, storyOf, translatePrompt,
+  clipLines, commitsOf, titleOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, waitsForAnswer, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenItemsOf, seenProof, seenToTick, type SeenItem, standOf, storyOf, translatePrompt,
   IN_TURN, type Action, type Agent, type GapItem, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
@@ -1520,10 +1520,11 @@ async function execute($: EngineInterface, w: Waiting, typed: string, share: num
   const items = c?.id === w.id ? c.items : []
   const seen = await seenOf($, w.id)
   const unticked = seen.filter(x => !x.checked)
-  const e = executionOf(items, typed, w.acceptTo, unticked.length)
+  const e = executionOf(items, typed, w.acceptTo, unticked.length, waitsForAnswer(w))
   const refuse = async (text: string) => void await update($, refusalAtom, () => ({ id: w.id, text }))
   await update($, refusalAtom, () => null)
   if (e.step === 'noNext') return refuse(t.noNext(w.id, w.lane))
+  if (e.step === 'needAnswer') return refuse(t.needAnswer(w.id, w.lane, w.acceptTo ?? ''))
   if (e.step === 'needWhy') return refuse(canType ? t.blockerNeedsWhy(w.id) : t.blockerNeedsTyping(w.id))
   if (e.step === 'needSeen') return refuse(t.seenMissing(w.id, unticked.map(x => x.text)))
   // The pane closes once the ticket moved, as for Accept: a refusal before
@@ -2587,7 +2588,7 @@ export const register: Register = (on, options) => {
     const hunt = (await read($, huntsAtom))[w.id]
     const light = lightOf(w, hunt, items.map(x => x.cls))
     const first = light.reasons[0]
-    const exec = executionOf(items, typed, w.acceptTo, unseen)
+    const exec = executionOf(items, typed, w.acceptTo, unseen, waitsForAnswer(w))
     const now = await $.clock.now()
     const choose = (n: number, choice: GapItem['choice']) =>
       void update($, choosingAtom, c => (c === null || c.id !== w.id ? c : { ...c, items: c.items.map((x, i) => (i === n ? { ...x, choice } : x)) }))
@@ -2689,7 +2690,7 @@ export const register: Register = (on, options) => {
                 // While Execute reads running…, Enter does nothing at all -
                 // not even the nothing-to-fix notice.
                 if (busy) return
-                const plan = executionOf(items, text, w.acceptTo, unseen)
+                const plan = executionOf(items, text, w.acceptTo, unseen, waitsForAnswer(w))
                 if ((plan.step === 'accept' || plan.step === 'needSeen') && !plan.asksWhy) return void say($, t.nothingToFix(w.id))
                 void once($, w.id, () => execute($, w, text, share), late)
               }}

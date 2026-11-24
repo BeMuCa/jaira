@@ -1,7 +1,7 @@
 ---
 id: 01M87688Q9YP5GMGMSVKM5JSE9
 title: "Cockpit: Accept in einer Halte-Lane mitten im Ablauf schiebt das Ticket in die nächste Lane"
-status: critique
+status: in-progress
 ready: true
 creator: Sascha
 assignee: Sascha
@@ -22,13 +22,20 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-24T16:29:33Z
-updated-at: 2026-11-24T16:34:40Z
+updated-at: 2026-11-24T16:39:03Z
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-51795
 claimed-at: 2026-11-24T16:30:00Z
 outcome-what: "Cockpit Accept moves a ticket from any person's lane one lane on (script-approval -> build, human -> review), not only signoff -> done; the Execute line names the target mid-board"
 outcome-why: "Sascha could not release a script in the video board's script-approval lane from the cockpit; only a hand-typed jaira move went"
 outcome-resolves: M5JSE9
+review-summary: |-
+  core/mod/builtin/jaira-cockpit/hooks/board.ts executionOf: an open question in a lane that does not end the work (human) is now accepted past - jaira move keeps the question (core/gate/gate.go:325 only checks entering), so review gets a ticket whose question nobody answered; the ticket's context says human only 'wenn die Frage beantwortet ist'. Add a step needAnswer (question open, lane does not end) that refuses with 'answer it first', words typed still give back
+  core/mod/builtin/jaira-cockpit/hooks/texts.ts summary: the default ends = true has one caller that always passes it; make it required
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Cockpit: Accept in einer Halte-Lane mitten im Ablauf schiebt das Ticket in die nächste Lane
@@ -45,6 +52,8 @@ outcome-resolves: M5JSE9
   proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts: 'Execute moves it one lane on', 'names no lane after it', executionOf table rows 'in a lane that does not end' / 'with no next lane'; claude plugin test 525 pass
 - [x] Release-Note core/release/notes/<ID>.md
   proof: core/release/notes/M5JSE9.md
+- [x] Eine offene Frage in einer Lane, die die Arbeit nicht beendet (human), hält Accept an: Execute verschiebt nichts und verlangt die Antwort; getippter Text gibt weiterhin zurück
+  proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:1191 waitsForAnswer + step needAnswer; test 'a question still open in a lane that does not end the work: Execute moves nothing and asks for the answer'
 
 ## Options
 
@@ -58,3 +67,4 @@ outcome-resolves: M5JSE9
 ## Progress
 - **2026-11-24 16:30 · Sascha** — parent session: uds:/run/user/1000/cc-socks/3417.sock
 - **2026-11-24 16:30 · Sascha** — no open decisions: --force question settled from code - accepting() (register.tsx) dry-runs jaira move, otherRefusal drops only needs_human, then --force; the same path serves a mid-flow person lane. Plan: Waiting gets acceptEnds; acceptTo = next_lane whenever it exists; afterAccept (PR/land) and heldInSignoff only when it ends; summary 'Execute: accept -> <lane>' mid-flow, 'Execute: done' unchanged
+- **2026-11-24 16:36 · Sascha** — critique: (1) an open question in a mid-board lane must stop Accept - jaira does not clear the question on leaving human, so review would get it unanswered; new step needAnswer. (2) summary's ends default is speculative, make it required
