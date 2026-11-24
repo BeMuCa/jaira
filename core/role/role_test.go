@@ -1374,7 +1374,10 @@ func TestSpawnTakesUpTheBranchTheWorkRidesOn(t *testing.T) {
 	t.Run("second while the first still runs", func(t *testing.T) {
 		root, wt, bin := repo(t, "feat/ab12cd", "")
 		gate := filepath.Join(bin, "go")
-		herdr := "#!/usr/bin/env bash\ncase \"$1 $2\" in\n  \"tab create\") echo tab >> \"" + filepath.Join(bin, "tabs") + "\"; for _ in $(seq 200); do [ -e \"" + gate + "\" ] && break; sleep 0.05; done; echo '{\"result\":{\"root_pane\":{\"pane_id\":\"p1\"}}}' ;;\n  \"pane get\") echo '{\"result\":{\"pane\":{\"agent\":\"claude\",\"agent_status\":\"idle\",\"tab_id\":\"t1\"}}}' ;;\nesac\n"
+		// The first spawn's tab create holds until the test opens the gate.
+		// The bound is two minutes, not ten seconds: run out early, it lets
+		// the first finish and the second through on a slow runner (JCBHBE).
+		herdr := "#!/usr/bin/env bash\ncase \"$1 $2\" in\n  \"tab create\") echo tab >> \"" + filepath.Join(bin, "tabs") + "\"; for _ in $(seq 2400); do [ -e \"" + gate + "\" ] && break; sleep 0.05; done; echo '{\"result\":{\"root_pane\":{\"pane_id\":\"p1\"}}}' ;;\n  \"pane get\") echo '{\"result\":{\"pane\":{\"agent\":\"claude\",\"agent_status\":\"idle\",\"tab_id\":\"t1\"}}}' ;;\nesac\n"
 		if err := os.WriteFile(filepath.Join(bin, "herdr"), []byte(herdr), 0o755); err != nil {
 			t.Fatal(err)
 		}
