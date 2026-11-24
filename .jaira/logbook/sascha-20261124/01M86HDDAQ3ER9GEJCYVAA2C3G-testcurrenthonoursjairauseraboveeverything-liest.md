@@ -1,7 +1,7 @@
 ---
 id: 01M86HDDAQ3ER9GEJCYVAA2C3G
 title: TestCurrentHonoursJairaUserAboveEverything liest den echten people-Ref und ist in jedem Klon mit Aliassen rot
-status: in-progress
+status: done
 ready: true
 creator: Sascha
 assignee: Sascha
@@ -16,24 +16,37 @@ tags:
 blocked-by: []
 related: []
 commits:
+  - 7f6c4f59b6f6eece70b056576b27694940543f09
+  - d8c662e2cf7e71aaa69bdc44735ce8c973413076
+  - f59f8fd88ddbd39a6e5a6c7072c64f81d36e185c
+  - 9c1d73830f8946af543f4a30b54a941b73b14394
   - 7f6c4f59b
   - 7f6c4f59b d8c662e2c
+  - 7f6c4f59b d8c662e2c f59f8fd88
 created-at: 2026-11-24T10:25:21Z
-updated-at: 2026-11-24T10:44:52Z
+updated-at: 2026-11-24T11:28:46Z
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-74925
 claimed-at: 2026-11-24T10:25:54Z
-outcome-what: "identity test runs in t.TempDir(); testhome.Run unsets git's repository variables (GIT_DIR, GIT_WORK_TREE, ...) and sets GIT_CEILING_DIRECTORIES=os.TempDir(), with a test over both cases"
-outcome-why: "the checkout's refs/jaira/people turned go test ./... red in every clone with aliases; under an exported GIT_DIR the same tests even overwrote that ref and .git/config"
-outcome-resolves: "DoD 1-3: identity tests green in a clone with 'Berk: BeMuCa, berkc', no test reads or writes the developer's repo, also under GIT_DIR/TMPDIR"
-review-summary: none
-review-gaps: none
-test-verdict: "pass: go build + go test -count=1 ./... green (RC=0) after d8c662e2c; DoD 1-3 verified: identity tests green in this worktree with 'Berk: BeMuCa, berkc'; GIT_DIR=<scratch clone> 4 FAIL before/ok after, TMPDIR inside the clone 1 FAIL before/ok after, clone's people ref unchanged; TestIsolateGit red with isolateGit disabled; change writes nothing outside tests, no concurrent writer to check"
-hunt-verdict: "fail: bughunt done at d8c662e, 0 change, 1 pre-existing same subject (packages without testhome.Run: board, gitref, release, shipped, snapshot, scripts) folded into this ticket"
+outcome-what: "identity test runs in t.TempDir(); testhome.Run unsets git's repository variables and sets GIT_CEILING_DIRECTORIES=os.TempDir(); the six packages that ran git in tests without it now call it from TestMain, and a guard test fails for any package that forgets"
+outcome-why: "the checkout's refs/jaira/people turned go test ./... red in every clone with aliases; under an exported GIT_DIR tests even rewrote the developer's people ref, branches, tags and .git/config"
+outcome-resolves: "DoD 1-4: identity tests green with 'Berk: BeMuCa, berkc' in the ref, no test reads or writes the developer's repo, also under GIT_DIR/TMPDIR, guarded for new packages"
+review-summary: "Three test-only commits. (1) core/identity TestCurrentHonoursJairaUserAboveEverything calls Current(t.TempDir()) instead of Current(\".\"), so it no longer reads the checkout's refs/jaira/people. (2) internal/testhome.Run now also unsets GIT_DIR, GIT_WORK_TREE, GIT_COMMON_DIR, GIT_INDEX_FILE, the object-dir vars and GIT_NAMESPACE, and sets GIT_CEILING_DIRECTORIES to os.TempDir(), so a hook-exported GIT_DIR or a TMPDIR inside a repo cannot steer a test's git calls into the developer's repository. (3) core/board, gitref, release, shipped, snapshot and scripts get a main_test.go calling testhome.Run, and a guard test in internal/testhome fails for any package whose tests contain \"git\" but no testhome.Run(. No production code changed, so no release note."
+review-gaps: |-
+  note: limit: the guard in internal/testhome/testhome_test.go matches the literal "git" in test sources; a package that drives git only through production code (e.g. gitref) with no such literal would slip past it - today none does (checked core/people, pr, hook, bgrun, notify, plugin, web, session, wintrap: fakes or no git)
+  note: limit: GIT_CEILING_DIRECTORIES=os.TempDir() was only checked on Linux; macOS /var->/private/var and Windows 8.3 temp paths are left to the CI matrix (ubuntu, macos, windows)
+test-verdict: "pass: go build, go vet ./..., go test -count=1 ./... green (RC=0) at f59f8fd; shipped-history --check ok; DoD 1-4 verified: identity green with the aliased people ref; GIT_DIR=<scratch repo> over all git-running packages leaves it unchanged; TMPDIR-in-repo case covered by TestIsolateGit; guard red when core/board/main_test.go is removed; change writes only test state, no concurrent writer"
+hunt-verdict: "pass: bughunt done at f59f8fd, 0 findings in 7 modules"
 round: 3
 back-from: testing
 back-by: lane
 back-count: 2
+review-verdict: "accept: all four DoD items hold; re-checked GIT_DIR=<scratch repo> and TMPDIR inside a repo - tests green, scratch repo's refs and .git/config unchanged; no defect found"
+review-round: 3
+review-verdict-gaps: |-
+  note: limit: the guard in internal/testhome/testhome_test.go matches the literal "git" in test sources; a package that drives git only through production code (e.g. gitref) with no such literal would slip past it - today none does (checked core/people, pr, hook, bgrun, notify, plugin, web, session, wintrap: fakes or no git)
+  note: limit: GIT_CEILING_DIRECTORIES=os.TempDir() was only checked on Linux; macOS /var->/private/var and Windows 8.3 temp paths are left to the CI matrix (ubuntu, macos, windows)
+review-check: "1. cd into this worktree  2. git init -q /tmp/scr && git -C /tmp/scr commit -q --allow-empty -m x  3. git -C /tmp/scr for-each-ref; note the one ref  4. GIT_DIR=/tmp/scr/.git go test -count=1 ./core/identity ./core/gitref ./core/board  5. expect three 'ok' lines  6. git -C /tmp/scr for-each-ref again: still only that one ref, and git -C /tmp/scr config user.name prints nothing new  7. rm core/board/main_test.go && go test ./internal/testhome -run TestEveryPackage: it fails naming core/board; git checkout core/board/main_test.go"
 ---
 
 # TestCurrentHonoursJairaUserAboveEverything liest den echten people-Ref und ist in jedem Klon mit Aliassen rot
@@ -76,3 +89,14 @@ back-count: 2
 - **2026-11-24 10:40 · Sascha** — hunt report: 1 Befund (0 change, 1 pre-existing), als Note auf AA2C3G | ganz gelesen: internal/testhome/testhome.go, internal/testhome/testhome_test.go (neu in der Liste); als Diff: core/identity/identity_test.go (kein Diff seit 7f6c4f59b) | nicht geprueft: Windows/macOS-Pfade von GIT_CEILING_DIRECTORIES (nur Linux; Slash am Ende von TMPDIR geprueft, harmlos)
 - **2026-11-24 10:40 · Sascha** — bughunt: done at d8c662e2c - 1 finding (0 change, 1 pre-existing) in 2 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: core/identity/identity_test.go internal/testhome/testhome.go internal/testhome/testhome_test.go
 - **2026-11-24 10:42 · Sascha** — testing round 2: class: test packages that run git but have no TestMain with testhome.Run miss isolateGit; example: GIT_DIR=<scratch> go test ./core/gitref ./core/snapshot ./core/shipped rewrote that repo's master, .git/config, tags; fix: main_test.go with testhome.Run in all six, plus a guard test in internal/testhome that fails for any package running git in tests without it. Folded here, not a follow-up ticket: same subject as the goal
+- **2026-11-24 10:45 · Sascha** — critique round 3 (only f59f8fd answering testing round 2): main_test.go is the same file 21 packages already carry; guard's '"git"' match can over-include a package, which only costs it a TestMain - accepted; no finding
+- **2026-11-24 10:45 · Sascha** — waiting: bughunt round 3 (subagent) since 11:45
+- **2026-11-24 10:46 · Sascha** — hunt report: 0 findings, nothing written beyond this report | read whole (new since last round): core/board/main_test.go core/gitref/main_test.go core/release/main_test.go core/shipped/main_test.go core/snapshot/main_test.go scripts/main_test.go; read as diff since d8c662e2c: internal/testhome/testhome_test.go (identity_test.go and testhome.go unchanged); ran: go vet + go test on all 8 packages (ok), the same 6 packages under GIT_DIR pointing at a scratch repo (refs and .git/config untouched), and a sweep of every test dir without testhome.Run (none runs git; people/session/wintrap hits are fakes) | not checked: Windows and macOS runs of the new TestMains — no such machine here
+- **2026-11-24 10:46 · Sascha** — bughunt: done at f59f8fd88 - 0 findings in 7 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: core/board/main_test.go core/gitref/main_test.go core/identity/identity_test.go core/release/main_test.go core/shipped/main_test.go core/snapshot/main_test.go internal/testhome/testhome.go internal/testhome/testhome_test.go scripts/main_test.go
+- **2026-11-24 10:47 · Sascha** — waiting: review (fresh agent, herdr tab via run-lane.sh) since 11:47
+- **2026-11-24 10:48 · Sascha** — review: done at f59f8fd88
+- **2026-11-24 10:49 · Sascha** — report: identity test in t.TempDir; testhome.Run isolates git (GIT_DIR vars unset, ceiling at TempDir); 6 more packages via testhome.Run + guard test | signoff, context unknown | 2 review notes (limits: guard matches literal "git"; ceiling checked on Linux only, CI matrix covers mac/win); branch pushed, PR is Alex's
+- **2026-11-24 11:23 · Sascha** — Accepted from signoff: angenommen:
+- note: limit: the guard in internal/testhome/testhome_test.go matches the literal "git" in test sources; a package that drives git only through production code (e.g. gitref) with no such literal would slip past it - today none does (checked core/people, pr, hook, bgrun, notify, plugin, web, session, wintrap: fakes or no git)
+- note: limit: GIT_CEILING_DIRECTORIES=os.TempDir() was only checked on Linux; macOS /var->/private/var and Windows 8.3 temp paths are left to the CI matrix (ubuntu, macos, windows)
+- **2026-11-24 11:24 · Sascha** — cockpit: accepted by the person, signoff -> done
