@@ -22,21 +22,33 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-24T16:29:33Z
-updated-at: 2026-11-24T16:49:10Z
+updated-at: 2026-11-24T17:00:27Z
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-51795
 claimed-at: 2026-11-24T16:30:00Z
 outcome-what: "Cockpit Accept moves a ticket from any person's lane one lane on (script-approval -> build, human -> review), not only signoff -> done; the Execute line names the target mid-board"
 outcome-why: "Sascha could not release a script in the video board's script-approval lane from the cockpit; only a hand-typed jaira move went"
 outcome-resolves: M5JSE9
-review-summary: none
-round: 3
-back-from: testing
+review-summary: "Full review at 67b11995a (first review). Cockpit Accept/Execute now moves a ticket from any person's lane one lane on (snapshot acceptTo = next_lane, new acceptEnds = whether that lane is terminal); a PR/landing and the signoff hold run only where it ends the work; the pane line says 'Execute: accept -> <lane>' mid-board and 'noNext' replaces notTerminal where jaira names no next lane. A question still open in a lane that does not end the work (human) stops Execute (needAnswer) until answered; an Explain option marked [accept] re-checks the ticket's lane (stillIn) and clears the question before moving. Cockpit suite 581 pass."
+round: 4
+back-from: review
 back-by: lane
 back-count: 1
-review-gaps: "none - checked: waitsForAnswer is the one rule lightOf and executionOf share (no second copy); notTerminal and its text removed with no caller left; heldInSignoff keeps acceptTo === null beside !acceptEnds only for the string narrowing lanesBetween needs"
-test-verdict: "pass: claude plugin test (cockpit) 579 pass 0 fail RC=0 at 1b49fe6; go test ./core/release/... ok; manifest check ok; DoD 1-6 verified against the tree by their tests: human->review moves via dry-run then --force and notes 'accepted by the person, human -> review', summary reads 'Execute: accept → review'; failure paths: no next lane refuses with no move, an open question refuses with no move, a gate refusal keeps the pane (existing signoff tests); signoff->done text and PR path unchanged. Concurrent presses: existing busy-row tests ('Execute reads running…') green; the change adds no new writer"
-hunt-verdict: "fail: bughunt done at 1b49fe6, 2 change - the Explain [accept] decision path (register.tsx deciding) moves a mid-board ticket with its question still set and without checking it is still in its lane"
+review-gaps: |-
+  blocker: failed gate - go test ./core/role fails TestEveryInstalledFileIsAShippedVersion: core/shipped/shipped.sha256 lacks the new hashes of hooks/board.ts, hooks/register.tsx, hooks/texts.ts (CI runs go test ./...); fix: scripts/shipped-history.sh --write (or append the 3 lines the test prints) and commit with M5JSE9
+  note: edge: an Explain option with no action writes decision: but leaves the question set, so Execute keeps answering needAnswer although a decision was noted; either clear the question there too or name that case in t.needAnswer
+  note: limit: a gate that refuses the accept after deciding cleared the question leaves the ticket in human with its decision note and no question (decided in the critique note, no rollback)
+  note: elsewhere: jaira move never clears question when a ticket leaves human (internal/cli/flow.go:139) - a ticket moved on by CLI carries a stale question into a later person lane, where Execute then says needAnswer; new ticket
+test-verdict: "pass: round 2 over 1b49fe6..67b1199 (register.tsx deciding, texts.ts, board.test.ts): claude plugin test 581 pass 0 fail RC=0; DoD 7 verified by its two tests (question= set then move --to review --force; a ticket moved on meanwhile: no move); DoD 1-6 tests still green"
+hunt-verdict: "pass: bughunt done at 67b11995a, 0 change, 0 pre-existing (round 2 over the fix)"
+review-verdict: "send-back: failed gate - core/shipped/shipped.sha256 misses the three changed cockpit files, go test ./core/role is red"
+review-round: 3
+review-verdict-gaps: |-
+  blocker: failed gate - go test ./core/role fails TestEveryInstalledFileIsAShippedVersion: core/shipped/shipped.sha256 lacks the new hashes of hooks/board.ts, hooks/register.tsx, hooks/texts.ts (CI runs go test ./...); fix: scripts/shipped-history.sh --write (or append the 3 lines the test prints) and commit with M5JSE9
+  note: edge: an Explain option with no action writes decision: but leaves the question set, so Execute keeps answering needAnswer although a decision was noted; either clear the question there too or name that case in t.needAnswer
+  note: limit: a gate that refuses the accept after deciding cleared the question leaves the ticket in human with its decision note and no question (decided in the critique note, no rollback)
+  note: elsewhere: jaira move never clears question when a ticket leaves human (internal/cli/flow.go:139) - a ticket moved on by CLI carries a stale question into a later person lane, where Execute then says needAnswer; new ticket
+review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> 581 pass  2. go test ./core/role/  -> ok (today FAIL: shipped.sha256 lacks 3 files)  3. on a scratch board put a ticket in a person's lane whose next lane is not done (human with question cleared: jaira set <id> question=)  4. open the cockpit band, Acceptance on that ticket  -> last line reads 'Execute: accept → review'  5. press Execute  -> ticket is in review, note 'cockpit: accepted by the person, human -> review', no pull request started  6. same with the question still set  -> Execute moves nothing and says 'answer it first'  7. a signoff ticket still says 'Execute: done' and goes to done"
 ---
 
 # Cockpit: Accept in einer Halte-Lane mitten im Ablauf schiebt das Ticket in die nächste Lane
@@ -56,7 +68,7 @@ hunt-verdict: "fail: bughunt done at 1b49fe6, 2 change - the Explain [accept] de
 - [x] Eine offene Frage in einer Lane, die die Arbeit nicht beendet (human), hält Accept an: Execute verschiebt nichts und verlangt die Antwort; getippter Text gibt weiterhin zurück
   proof: core/mod/builtin/jaira-cockpit/hooks/board.ts:1191 waitsForAnswer + step needAnswer; test 'a question still open in a lane that does not end the work: Execute moves nothing and asks for the answer'
 - [x] Der Entscheidungsweg (Explain-Option [accept]) bewegt nur ein Ticket, das noch in seiner Lane steht, und löscht vor dem Weiterschieben aus einer nicht-terminalen Lane die beantwortete Frage
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx: deciding; tests 'an option marked [accept] on a ticket waiting on a question clears the question…', '…that moved on meanwhile moves nothing'
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:1376 deciding; tests 'an option marked [accept] on a ticket waiting on a question clears the question and moves it one lane on', 'an option marked [accept] on a ticket that moved on meanwhile moves nothing'
 
 ## Options
 
@@ -78,3 +90,11 @@ hunt-verdict: "fail: bughunt done at 1b49fe6, 2 change - the Explain [accept] de
 - **2026-11-24 16:42 · Sascha** — hunt report: 2 findings, both change (1 blocker: human-lane Execute never accepts because question is never cleared; 1 edge: stale snapshot turns Accept into a silent send-back), notes on M5JSE9 | read whole: the accept/Execute/decide paths of hooks/register.tsx (accept, accepting, heldInSignoff, ticketHere, deciding, execute, Acceptance pane), hooks/board.ts (snapshotOf, isPersons, lightOf, otherRefusal, executionOf, waitsForAnswer, explanation parsing), hooks/texts.ts, tests/board.test.ts around executionOf, core/release/notes/M5JSE9.md, plus jaira's gate.go/flow.go question handling; first hunt | could not run the cockpit test suite (bun not installed in this shell); the rest of register.tsx (3005 lines) unrelated to acceptTo was not read line by line
 - **2026-11-24 16:42 · Sascha** — bughunt: done at 1b49fe6f3 - 2 findings (2 change, 0 pre-existing) in 5 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/M5JSE9.md
 - **2026-11-24 16:43 · Sascha** — testing: class: the decide path (deciding -> accept, register.tsx) skips the guards Execute has; example 1: an Explain option marked [accept] on a human ticket writes 'decision:' and moves it to review with the question still set (Execute's needAnswer is bypassed; Discuss is fine, its prompt clears the question - texts.ts discussInThisChat); example 2: a stale band press sends a ticket that already moved on (signoff) back to review, jaira allows it. fix: in deciding's accept branch run stillIn first (as acceptWith does) and, where waitsForAnswer(w), clear the question (the decision note is its answer) before accept; needAnswer's refusal names Discuss as the way to answer
+- **2026-11-24 16:49 · Sascha** — critique+optimize round 2 (one pass, fix 34 lines, no lock/parser): stillIn guard reused from acceptWith, waitsForAnswer reused; let stand: a gate that refuses the accept after the question was cleared leaves the ticket in human with its decision note and no question - the decision is the answer, so Execute then works, no rollback needed
+- **2026-11-24 16:50 · Sascha** — waiting: bughunt round 2 (background subagent) since 17:50
+- **2026-11-24 16:52 · Sascha** — hunt report: 0 findings, nothing written beyond this report | read as a diff since 1b49fe6f3: core/mod/builtin/jaira-cockpit/hooks/register.tsx (deciding with ticketHere, accept, accepting, stillIn), hooks/texts.ts, tests/board.test.ts; board.ts and core/release/notes/M5JSE9.md unchanged since then | checked in a scratch board: jaira set <id> question= clears the question (exit 0) and human -> review --dry-run is then allowed; claude plugin test . 581 pass 0 fail; the nested pull inside accept (ticketHere with carriedTo) was followed by reading only, not run
+- **2026-11-24 16:52 · Sascha** — bughunt: done at 67b11995a - 0 findings (0 change, 0 pre-existing) in 5 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/M5JSE9.md
+- **2026-11-24 16:52 · Sascha** — waiting: review (fresh agent, Herdr tab via run-lane.sh) since 17:52
+- **2026-11-24 16:56 · Sascha** — review: done at 67b11995a
+- **2026-11-24 16:56 · Sascha** — review: blocker: go test ./core/role fails TestEveryInstalledFileIsAShippedVersion - core/shipped/shipped.sha256 lacks the new hashes of jaira-cockpit hooks/board.ts, register.tsx, texts.ts; run scripts/shipped-history.sh --write (or append the 3 printed lines), commit with M5JSE9, then back through the lanes
+- **2026-11-24 17:00 · Sascha** — review round 1 blocker fixed: shipped.sha256 gets the 3 hashes go test ./core/role asked for (appended by hand like CSQXKR, not --write, which also added 8 intermediate branch versions). Full go test ./... green. My miss: 'Before you push' gate list did not include go test ./core/role for a cockpit-only change
