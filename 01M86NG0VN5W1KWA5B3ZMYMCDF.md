@@ -20,7 +20,7 @@ related: []
 follows: 01M86NFX4NQF351XWAXZ7YQ1JC
 commits: []
 created-at: 2026-11-24T11:36:41Z
-updated-at: 2026-11-24T11:37:56Z
+updated-at: 2026-11-24T11:37:59Z
 updated-by: Sascha
 ---
 
@@ -44,4 +44,4 @@ updated-by: Sascha
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-24 11:37 · Sascha** — decision: Sascha 24.11.2026: Entscheidungen im Chat/Ticket, die ein Requirement aendern, fliessen im selben PR in die globale Spec zurueck (DoD-Punkt + Spec-Diff); das Gate erzwingt es.
