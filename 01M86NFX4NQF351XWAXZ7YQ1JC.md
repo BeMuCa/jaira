@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-24T11:36:37Z
-updated-at: 2026-11-24T11:40:54Z
+updated-at: 2026-11-24T11:40:58Z
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-39249
 claimed-at: 2026-11-24T11:36:58Z
@@ -43,4 +43,4 @@ claimed-at: 2026-11-24T11:36:58Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-24 11:40 · Sascha** — teamlead 24.11.2026: Claude-Workflow sdd-basis laeuft (Run wf_866c34b7-830): 8 Bereichs-Agenten (storage, lanes, sync, people-plan, cli-release, cockpit, tui-web, roles) schreiben docs/specs + ADR-Entwuerfe in diesem Worktree, danach Synthese (Nummerierung, README, Limits). Bericht Doppelte/Widersprueche: ../sdd-findings-7YQ1JC.md.
