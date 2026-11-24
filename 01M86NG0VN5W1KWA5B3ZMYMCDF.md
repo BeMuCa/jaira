@@ -20,7 +20,7 @@ related: []
 follows: 01M86NFX4NQF351XWAXZ7YQ1JC
 commits: []
 created-at: 2026-11-24T11:36:41Z
-updated-at: 2026-11-24T11:37:53Z
+updated-at: 2026-11-24T11:37:56Z
 updated-by: Sascha
 ---
 
@@ -32,6 +32,7 @@ updated-by: Sascha
 - [ ] jaira create zeigt bis zu 3 aehnliche Requirements/Tickets als Hinweis (nicht blockierend); Test
 - [ ] jaira validate prueft die Spec- und ADR-Regeln (Zeilenlimits, EARS-Form, ID eindeutig, Tickets existieren, alte Proposed als Warnung); Test
 - [ ] Release-Note in core/release/notes/<ID>.md
+- [ ] Nennt eine 'decision:'-Notiz eines Tickets eine Requirement-ID (z.B. COCK-03), prueft jaira validate (bzw. das signoff-Gate), dass diese ID im Diff der Ticket-Branch in docs/specs/ geaendert wurde; sonst Fehler mit ID und Datei; Test
 
 ## Options
 
