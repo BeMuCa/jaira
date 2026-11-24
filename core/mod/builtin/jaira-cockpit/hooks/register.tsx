@@ -1783,7 +1783,16 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   // No Herdr: nobody to hand it to from here; the board says where it is.
   if (bin === undefined) return handedTo('none', 'no Herdr in this session')
   const tabs = await run($, [bin, 'tab', 'list'], dir)
-  const tab = tabs?.exitCode === 0 ? carrierTab(tabsOf(tabs.stdout), id) : undefined
+  // A tab list Herdr did not give (timeout, refusal) says nothing about the
+  // old worker: read as "no tab", it would start a second worker beside one
+  // that still runs. Nothing is started and no keys are sent; the person
+  // hears that the tabs could not be read.
+  if (tabs?.exitCode !== 0) {
+    const why = tabs === undefined ? 'herdr tab list gave no answer' : `herdr tab list failed: ${(tabs.stderr || tabs.stdout).trim().slice(-160) || `exit ${tabs.exitCode}`}`
+    await handedTo('none', `${why}; the tab state could not be read, so no worker started and nothing typed`, `none: tab state unreadable (${why}) - check the ticket's worker tab, then start one if none runs`)
+    return say($, t.tabsUnreadable(id))
+  }
+  const tab = carrierTab(tabsOf(tabs.stdout), id)
   const record = carrierOf(await readRecords($), id)
   // A worker at an approval dialog is never typed into: the text would land
   // in the dialog and the Enter would answer it for the person, unseen.
