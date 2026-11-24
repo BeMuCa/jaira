@@ -11,7 +11,9 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T10:20:34Z
-updated-at: 2026-11-24T10:20:34Z
+updated-at: 2026-11-24T11:39:31Z
+assignee: Sascha
+updated-by: Sascha
 ---
 
 # core/identity TestCurrentHonoursJairaUserAboveEverything liest den echt…
