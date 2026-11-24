@@ -3,7 +3,7 @@ import { describe, expect, mock, test } from 'claude-code/testing'
 import { acceptTreeFor, carrierFor, ghRepoOf, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenToTick, snapshotOf, storyOf, translatePrompt, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
-import { answer as answerThread, answerLine, asksOf, file, parseFiling, titled, untitled, type Filing } from '../hooks/threads.ts'
+import { ANSWERED_MS, answer as answerThread, answerLine, asksOf, asksTranslatePrompt, classifyPrompt, file, moved, parseFiling, recent, settled, titled, untitled, watched, whenOf, type Filing } from '../hooks/threads.ts'
 
 // A world beneath the plugin: a repository at /repo with a board, jaira, git
 // and Herdr answering from memory, and every command the plugin runs
@@ -3695,10 +3695,13 @@ describe('open questions with their ticket and options (1M3X77)', () => {
     await pane.press({ key: 'ask-1-1' })
     await w.clock.settle()
     expect(w.submitted).toContain('VTSF24: nein, spaeter')
-    expect(w.closed).toContain('cockpit-asks')
+    // The pane stays: the question stands under 'Answered' now (CSQXKR).
+    expect(w.closed).not.toContain('cockpit-asks')
     expect(await (await $.ui.mount(BAND)).find({ key: 'asks' })).toBeUndefined()
     await pane.unmount()
-    expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('No question is waiting for you.')
+    const after = (await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text
+    expect(after).toContain('No question is waiting for you.')
+    expect(after).toContain('Answered')
   })
 
   test('a ticket jaira has no title for is asked about once, and the thread\'s title stands in', async ($, on) => {
@@ -3745,6 +3748,180 @@ describe('open questions with their ticket and options (1M3X77)', () => {
     await pane.press({ key: 'ask-1-chat' })
     expect(w.filled).toEqual(['ABCDEF: '])
     expect(w.submitted).toEqual([])
+  })
+})
+
+describe('settling questions, their times and Translate (CSQXKR)', () => {
+  const f = (o: Partial<Filing>): Filing => ({ thread: null, title: 'Release', line: '', ticket: null, question: null, about: null, options: [], answered: [], ...o })
+  const NOW = new Date(2026, 10, 24, 9, 30).getTime()
+
+  test('a question remembers when it was asked; the lane is read with the title', () => {
+    let ts = file([], f({ question: 'Annehmen?', about: 'MG677R' }), 1, NOW)
+    expect(ts[0]!.askedAt).toBe(NOW)
+    ts = titled(ts, 'MG677R', 'cache key', 'signoff')
+    expect(ts[0]!.aboutLane).toBe('signoff')
+    expect(watched(ts)).toEqual(['MG677R'])
+    expect(asksOf(ts)[0]!.askedAt).toBe(NOW)
+  })
+
+  for (const [name, lane, settles] of [
+    ['same lane', 'signoff', false],
+    ['moved on to done', 'done', true],
+    ['given back', 'in-progress', true],
+    ['jaira no longer knows it', null, true],
+  ] as const) {
+    test(`lane after: ${name}`, () => {
+      const ts = titled(file([], f({ question: 'Annehmen?', about: 'MG677R' }), 1, NOW), 'MG677R', 'cache key', 'signoff')
+      expect(asksOf(moved(ts, new Map([['MG677R', lane]]), 2)).length).toBe(settles ? 0 : 1)
+    })
+  }
+
+  test('a ticket not read this round, or one whose lane was never read, keeps its question', () => {
+    const ts = titled(file([], f({ question: 'Annehmen?', about: 'MG677R' }), 1, NOW), 'MG677R', 'cache key', 'signoff')
+    expect(asksOf(moved(ts, new Map(), 2)).length).toBe(1)
+    const unread = file([], f({ question: 'Annehmen?', about: 'MG677R' }), 1, NOW)
+    expect(watched(unread)).toEqual([])
+    expect(asksOf(moved(unread, new Map([['MG677R', 'done']]), 2)).length).toBe(1)
+  })
+
+  test('what a change settled carries both times; a day later it is gone', () => {
+    const before = file([], f({ question: 'a?', options: ['x'] }), 1, NOW - 60_000)
+    const done = settled(before, answerThread(before, 1, 2), NOW)
+    expect(done).toEqual([{ thread: 1, title: 'Release', question: 'a?', options: ['x'], askedAt: NOW - 60_000, answeredAt: NOW }])
+    // A new question on the same thread settles the one it replaces.
+    expect(settled(before, file(before, f({ thread: 1, question: 'b?' }), 2, NOW), NOW).map(a => a.question)).toEqual(['a?'])
+    expect(settled(before, before, NOW)).toEqual([])
+    expect(recent(done, NOW + ANSWERED_MS - 1)).toHaveLength(1)
+    expect(recent(done, NOW + ANSWERED_MS)).toEqual([])
+  })
+
+  test('times: today by the clock, another day with its date', () => {
+    expect(whenOf(new Date(2026, 10, 24, 7, 12).getTime(), NOW)).toBe('today 07:12')
+    expect(whenOf(new Date(2026, 10, 23, 21, 40).getTime(), NOW)).toBe('23.11. 21:40')
+    expect(whenOf(new Date(2026, 0, 5, 0, 5).getTime(), NOW)).toBe('05.01. 00:05')
+  })
+
+  test('the classifier keeps the question in its own words; Translate asks for every text at once', () => {
+    expect(classifyPrompt([], 'h', 'a', true)).toContain("quoted in the assistant's own words and language, never translated")
+    const p = asksTranslatePrompt('Русский', ['Annehmen?', 'ja'])
+    expect(p).toContain('into Русский')
+    expect(p.split('\n').at(-1)).toBe('["Annehmen?","ja"]')
+  })
+
+  const ask = async ($: Test$, w: World, model: string, text = 'q') => {
+    w.model = model
+    await $.prompt.submit({ text, origin: { kind: 'composer' }, wait: false })
+    await answer($, 'Frage')
+    await w.clock.settle()
+  }
+
+  test('a question on a ticket goes to Answered once the ticket leaves the lane it was asked in', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Cache", "line": "Frage", "ticket": null, "question": "MG677R annehmen?", "about": "MG677R", "options": ["ja", "nein"], "answered": []}')
+    // Still in signoff a minute later: it stays open.
+    await w.clock.advance(60_000)
+    await w.clock.settle()
+    const pane = await $.ui.mount(ASKS_PANE)
+    let text = (await pane.find({ type: 'Box' }))!.text
+    expect(text).toContain('? MG677R annehmen?')
+    expect(text).not.toContain('Answered')
+    await pane.unmount()
+    // Accepted in the Acceptance pane: the board says done.
+    w.tickets = [{ ...SIGNOFF, status: 'done' }, HUMAN, WORKING]
+    await w.clock.advance(60_000)
+    await w.clock.settle()
+    text = (await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text
+    expect(text).toContain('No question is waiting for you.')
+    expect(text).toMatch(/Answered[\s\S]*MG677R annehmen\?/)
+    expect(text).toMatch(/asked today \d\d:\d\d · answered today \d\d:\d\d/)
+    expect(w.submitted).toEqual([])
+  })
+
+  test('a filed-away ticket jaira lists nowhere is asked of jaira once and settles the question', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Cache", "line": "Frage", "ticket": null, "question": "MG677R annehmen?", "about": "MG677R", "answered": []}')
+    w.tickets = [HUMAN, WORKING]
+    const shows = ran(w, 'jaira', 'show', 'MG677R').length
+    await w.clock.advance(60_000)
+    await w.clock.settle()
+    expect(ran(w, 'jaira', 'show', 'MG677R').length).toBeGreaterThan(shows)
+    expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('No question is waiting for you.')
+  })
+
+  test('x settles a question without a word into the session; it stands dimmed under Answered with both times', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Logo", "line": "Frage", "ticket": null, "question": "Wie gross?", "options": ["gross"], "answered": []}')
+    let pane = await $.ui.mount(ASKS_PANE)
+    expect((await pane.find({ type: 'Box' }))!.text).toMatch(/Logo \| asked today \d\d:\d\d/)
+    const x = await pane.find({ key: 'ask-1-done' })
+    expect(x?.props.hotkey).toBe('x')
+    await pane.press({ key: 'ask-1-done' })
+    await w.clock.settle()
+    expect(w.submitted).toEqual([])
+    expect(w.filled).toEqual([])
+    await pane.unmount()
+    pane = await $.ui.mount(ASKS_PANE)
+    const answered = (await pane.findAll({ type: 'Text' })).filter(x => /Wie gross\?|Answered|answered today/.test(x.text))
+    expect(answered.length).toBeGreaterThan(0)
+    for (const x of answered) expect(x.props.dimColor).toBe(true)
+    // No option of a settled question can be picked any more.
+    expect(await pane.find({ key: 'ask-1-0' })).toBeUndefined()
+  })
+
+  test('settled questions are kept across a restart, and one settled a day ago is no longer shown', async ($, on) => {
+    const settledAt = (ms: number) => ({ thread: 1, title: 'Logo', question: `vor ${ms}?`, options: [], answeredAt: 1_000_000 - ms })
+    world(on, { store: { 'threads:abcdef12': { turn: 1, threads: [], done: [settledAt(ANSWERED_MS - 60_000), settledAt(ANSWERED_MS)] } } })
+    await startSession($)
+    const text = (await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text
+    expect(text).toContain(`vor ${ANSWERED_MS - 60_000}?`)
+    expect(text).not.toContain(`vor ${ANSWERED_MS}?`)
+  })
+
+  test('the pane opens on the original; t translates every question at once, t again shows the original', async ($, on) => {
+    const w = world(on)
+    w.files.set('/home/a/.jaira/settings.json', JSON.stringify({ language: 'Русский' }))
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Logo", "line": "Frage", "ticket": null, "question": "Wie gross?", "options": ["gross", "klein"], "answered": []}')
+    await ask($, w, '{"thread": null, "title": "Farbe", "line": "Frage", "ticket": null, "question": "Welche Farbe?", "answered": []}', 'r')
+    const calls = w.modelCalls
+    await (await $.ui.mount(BAND)).press({ key: 'asks' })
+    let pane = await $.ui.mount(ASKS_PANE)
+    expect((await pane.find({ type: 'Box' }))!.text).toContain('Wie gross?')
+    expect(w.modelCalls).toBe(calls)
+    const button = await pane.find({ key: 'asks-translate' })
+    expect(button?.props.hotkey).toBe('t')
+    expect(button?.props.label).toBe('Translate')
+    w.translations = { 'Wie gross?': 'Какой размер?', gross: 'большой', klein: 'маленький', 'Welche Farbe?': 'Какой цвет?' }
+    await pane.press({ key: 'asks-translate' })
+    await w.clock.settle()
+    expect(w.modelCalls).toBe(calls + 1)
+    await pane.unmount()
+    pane = await $.ui.mount(ASKS_PANE)
+    const shown = (await pane.find({ type: 'Box' }))!.text
+    expect(shown).toContain('Какой размер?')
+    expect(shown).toContain('Какой цвет?')
+    expect(shown).toContain('маленький')
+    expect((await pane.find({ key: 'asks-translate' }))?.props.label).toBe('Original')
+    // A pick sends the option as the assistant worded it.
+    await pane.press({ key: 'ask-1-1' })
+    await w.clock.settle()
+    expect(w.submitted).toContain('Logo: klein')
+    await pane.press({ key: 'asks-translate' })
+    await pane.unmount()
+    const back = (await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text
+    expect(back).toContain('Welche Farbe?')
+    expect(back).not.toContain('Какой цвет?')
+  })
+
+  test('without a language set there is no Translate', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Logo", "line": "Frage", "ticket": null, "question": "Wie gross?", "answered": []}')
+    await (await $.ui.mount(BAND)).press({ key: 'asks' })
+    expect(await (await $.ui.mount(ASKS_PANE)).find({ key: 'asks-translate' })).toBeUndefined()
   })
 })
 
