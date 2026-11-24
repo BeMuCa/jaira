@@ -1054,30 +1054,44 @@ async function settingsJson($: EngineInterface): Promise<string | undefined> {
   }
 }
 
+// Each press's own mark in the lock: two presses in the same millisecond -
+// the band's Acceptance, then Execute in its pane - must not free each
+// other's lock when the first one's BUSY_MS runs out.
+let presses = 0
+
 // A press on Accept, Give back, Explain or Discuss: the row's buttons lock, drawn dim,
 // until the action has done its part or BUSY_MS has passed; a press on a
 // locked row does nothing, so a slow answer is not asked for twice. An action
 // that answers 'hold' is done at once but keeps the row locked to BUSY_MS: a
 // request sent to this session has no end to wait for, and a double click
-// would send it twice.
-async function once($: EngineInterface, id: string, action: () => Promise<void | 'hold'>): Promise<void> {
-  const at = await $.clock.now()
+// would send it twice. late: what to say when BUSY_MS frees the row while the
+// action is still at work - Execute's, so the person sees why it wakes
+// (N5ZZP6); other rows, the release row among them, stay silent.
+async function once($: EngineInterface, id: string, action: () => Promise<void | 'hold'>, late?: string): Promise<void> {
+  const at = `${await $.clock.now()}:${++presses}`
   let took = false
   await update($, busyAtom, busy => {
     took = busy[id] === undefined
     return took ? { ...busy, [id]: at } : busy
   })
   if (!took) return
+  // Whether this press's lock was still there to free: a reload may have
+  // cleared it, and a later press holds its own.
+  let freed = false
   const free = () => update($, busyAtom, busy => {
     if (busy[id] !== at) return busy
+    freed = true
     const { [id]: _, ...rest } = busy
     return rest
   })
-  $.clock.after(BUSY_MS, () => void free())
+  let ended = false
+  $.clock.after(BUSY_MS, () => void free().then(() => (freed && !ended && late !== undefined ? say($, late) : undefined)))
   let held = false
   try {
     held = (await action()) === 'hold'
   } finally {
+    // A held action is done; only its lock waits for BUSY_MS.
+    ended = true
     if (!held) await free()
   }
 }
@@ -2475,9 +2489,12 @@ export const register: Register = (on, options) => {
       void update($, choosingAtom, c => (c === null || c.id !== w.id ? c : { ...c, items: c.items.map((x, i) => (i === n ? { ...x, choice } : x)) }))
     // One lock for the row and its pane: a chat Explain all opened, or a
     // press still running, holds it - one ticket is never written by two
-    // presses at once. A press on Execute meanwhile is said, not dropped.
+    // presses at once. Execute then reads 'running…', dim, and a press on it
+    // or Enter in the field does nothing (N5ZZP6): the label is the answer.
     const busy = (await read($, busyAtom))[w.id] !== undefined
-    const go = () => (busy ? void say($, t.busyRow(w.id)) : void once($, w.id, async () => execute($, w, await read($, typedAtom), share, Input !== undefined)))
+    const executeLabel = busy ? t.running : t.execute
+    const late = t.stillRunning(w.id, BUSY_MS / 1000)
+    const go = () => void once($, w.id, async () => execute($, w, await read($, typedAtom), share, Input !== undefined), late)
     // A choice's button: the chosen one bold in its colour, the others dim.
     const CHOICES: [GapItem['choice'], string, 'success' | 'error' | 'suggestion'][] = [['accept', t.choiceOk, 'success'], ['now', t.choiceFix, 'error'], ['later', t.choiceTicket, 'suggestion']]
     const story_ = s?.story
@@ -2557,7 +2574,7 @@ export const register: Register = (on, options) => {
               key={`typed-${w.id}`}
               label={exec.asksWhy ? t.whyLabel : items.length > 0 ? t.moreLabel : t.reasonLabel}
               placeholder={exec.asksWhy ? t.whyPlaceholder : items.length > 0 ? t.morePlaceholder : t.reasonPlaceholder}
-              submitLabel={t.execute}
+              submitLabel={executeLabel}
               {...(items.length === 0 && seen.length === 0 ? { autoFocus: true as const } : {})}
               onInput={(text: string) => void update($, typedAtom, () => text)}
               onSubmit={(text: string) => {
@@ -2565,15 +2582,18 @@ export const register: Register = (on, options) => {
                 // Enter in the field never accepts by itself - one Enter too
                 // many would take the ticket to done: that is Execute's.
                 // Words typed, or a note to fix, it carries out.
+                // While Execute reads running…, Enter does nothing at all -
+                // not even the nothing-to-fix notice.
+                if (busy) return
                 const plan = executionOf(items, text, w.acceptTo, unseen)
                 if ((plan.step === 'accept' || plan.step === 'needSeen') && !plan.asksWhy) return void say($, t.nothingToFix(w.id))
-                void once($, w.id, () => execute($, w, text, share))
+                void once($, w.id, () => execute($, w, text, share), late)
               }}
             />
           )
           : null}
         <Box flexDirection="row">
-          <Button key={`execute-${w.id}`} label={t.execute} onPress={go}><Text bold dimColor={busy}>{t.execute}</Text></Button>
+          <Button key={`execute-${w.id}`} label={executeLabel} onPress={go}><Text bold dimColor={busy}>{executeLabel}</Text></Button>
           <Button key={`explain-all-${w.id}`} label={t.explainAll} onPress={() => void once($, w.id, () => openChat($, w.id, 'explain'))} />
           {s?.language !== undefined
             ? <Button key={`translate-${w.id}`} hotkey="t" label={said !== undefined ? t.original : translating ? t.translating : t.translate} onPress={() => void translate($, w)} />
