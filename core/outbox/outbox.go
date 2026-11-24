@@ -368,9 +368,6 @@ func (b *Box) Drop(id string) error { return b.dropLocked(KindTicket, id) }
 // DropMilestone removes a queued write of a milestone.
 func (b *Box) DropMilestone(key string) error { return b.dropLocked(KindMilestone, key) }
 
-// DropEpic removes a queued write of an epic.
-func (b *Box) DropEpic(name string) error { return b.dropLocked(KindEpic, name) }
-
 func (b *Box) dropLocked(kind Kind, key string) error {
 	unlock, err := b.lock()
 	if err != nil {

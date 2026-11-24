@@ -1,7 +1,7 @@
 ---
 id: 01M865XBRDFR99ENKNMKWV2J2W
 title: "outbox: eine Schreibung, die waehrend eines Pushs fuer denselben Schluessel eingereiht wird, wird geloescht"
-status: critique
+status: testing
 ready: true
 creator: Alexander Sacharov
 goal: "Ein Outbox-Eintrag wird nach dem Senden nur geloescht, wenn er noch derselbe ist, der gelesen wurde; eine inzwischen neu eingereihte Schreibung bleibt erhalten."
@@ -20,14 +20,16 @@ related: []
 follows: 01M8543DKBZA0P1CHFGKMMKENA
 commits: []
 created-at: 2026-11-24T07:04:21Z
-updated-at: 2026-11-24T07:20:30Z
+updated-at: 2026-11-24T07:22:26Z
 assignee: Alexander Sacharov
-updated-by: Alexander Sacharov
+updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-1216759
 claimed-at: 2026-11-24T07:14:03Z
 outcome-what: "outbox.Box nimmt ein Lock-File um jedes Lesen-dann-Schreiben (queueKind, RekeyMilestone, Drop*); neu Settle(seen, lease) und Replace(seen, ...) wirken nur auf den gelesenen Eintrag. Box.Flush (Sent/Rejected), rebaseEpic (Erfolg + Requeue), tidyMilestoneEntries und mergeRefused nutzen sie. Nach Sent wird ein zwischendurch eingereihter Eintrag auf die gepushte SHA umgeleast."
 outcome-why: "Ein Eintrag wurde nach Push oder git-Lesen per Schluessel geloescht; eine in diesem Fenster von einer zweiten Session eingereihte Schreibung war weg (Epic: einzige Kopie)."
 outcome-resolves: "DoD 1: race_test.go (alle drei Arten, gesendet + abgelehnt) und epic_race_test.go (pre-receive-Hook, direkt + Merge), rot ohne Fix. DoD 2: Release-Note. Geprueft: Nebenlaeufigkeit (Lock nie ueber Push gehalten), Fehlerpfade (Replace atomar, alter Eintrag bleibt bei Fehler), Altpfade (Settle entfernt legacy/old-milestone wie dropKind), Rechte unveraendert."
+review-summary: none
+review-gaps: "DropEpic entfernt (letzter Aufrufer rebaseEpic nutzt jetzt Settle/Replace); writeEntry fasst das Schreiben aus queueKind und RekeyMilestone zusammen (war doppelt). Gelassen: Box.Drop (Ticket) hatte schon vorher keinen Aufrufer ausserhalb von Tests - vorbestehend; der Race-Zweig im Hook von epic_race_test.go aehnelt raceHook in epic_test.go, macht aber zusaetzlich das Einreihen - getrennt gelassen."
 ---
 
 # outbox: eine Schreibung, die waehrend eines Pushs fuer denselben Schluessel eingereiht wird, wird geloescht
@@ -54,3 +56,4 @@ outcome-resolves: "DoD 1: race_test.go (alle drei Arten, gesendet + abgelehnt) u
 - **2026-11-24 07:15 · Alexander Sacharov** — decision: Box bekommt ein Lock-File (<outbox>/.lock, ticket.LockFile) um jedes Lesen-Vergleichen-Schreiben: queueKind, RekeyMilestone und ein neues bedingtes Drop. Gleich heisst: Op, Content, File, Lease, Migration gleich - UpdatedAt nicht, denn derselbe Inhalt neu eingereiht ist nach dem Senden schon auf dem Remote. Nach erfolgreichem Senden und geaendertem Eintrag wird der neue Eintrag auf die gesendete SHA umgeleast (nicht geloescht): er enthaelt die gesendete Datei schon (ganze Datei, ersetzt auf derselben Basis); mit der alten Lease wuerde ihn der naechste Flush als Rejected verwerfen (Ticket). Ausnahme rebaseEpic: gesendet wurde ein Merge, den der neue Eintrag nicht kennt - dort bleibt seine alte Lease, der naechste Flush merged ihn 3-Wege.
 - **2026-11-24 07:18 · Alexander Sacharov** — Gefunden: Box.Flush loeschte nach Sent per Schluessel - auch die Ticket-Unsent-Markierung. Ein neuer Eintrag mit alter Lease waere beim naechsten Flush als Rejected verworfen worden (Ticket) - darum Settle(seen, sha) mit Umleasen statt nur Stehenlassen. mergeRefused-Drop (Zeile ~956) laeuft unter dem Milestone-Lock, ist trotzdem auf Settle umgestellt (billig). mergeRefused Drop+RecordMilestone (~971) unveraendert: unter Milestone-Lock, und Box-Lock reicht dort nicht ueber zwei Aufrufe. Kein Nebenlaeufigkeits-Stresstest mit Goroutinen: Lock ist ticket.LockFile, dort schon getestet.
 - **2026-11-24 07:19 · Alexander Sacharov** — waiting: go test ./... (Hintergrund, eigene Session) since 08:19
+- **2026-11-24 07:21 · Alexander Sacharov** — critique: nichts. Gelassen: refsync.go mergeRefused Drop+RecordMilestone (laeuft unter dem Milestone-Lock, RecordMilestone holt die Lease vom Repo - Replace passt dort nicht ohne zweite Lease-Quelle). Replace schreibt auch, wenn der Eintrag inzwischen fehlt: wie vorher DropEpic+QueueEpic; im schlimmsten Fall verliert der Merge den naechsten Push und wird erneut gemerged, nichts geht verloren.
