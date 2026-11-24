@@ -82,7 +82,7 @@ case "$cmd" in
   "tab list")
     # As herdr lists tabs: the cockpit finds a ticket's worker by its label,
     # which hc ls leaves out, so each live terminal is asked for its own.
-    # One hc names not_found was removed since hc ls and is left out. Any other
+    # A terminal hc get calls not_found went since hc ls and is left out. Any other
     # failure (a timeout) may hide a live worker's tab: the list gets
     # "partial":true and stderr names the terminal. The exit stays 0, so a
     # caller that only asks whether Herdr answers (reap.sh) still gets yes;

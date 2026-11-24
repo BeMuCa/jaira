@@ -1,7 +1,7 @@
 ---
 id: 01M866HXTHQS29K2ZMNQ8NWE4P
 title: "herdr-hc.sh 'tab list' laesst ein Terminal, das auf 'hc get' nicht antwortet, still weg und endet mit Exit 0"
-status: in-progress
+status: testing
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -19,15 +19,15 @@ related: []
 follows: 01M8543JH7M7VXA9THHZW80HNH
 commits: []
 created-at: 2026-11-24T07:15:35Z
-updated-at: 2026-11-24T07:25:41Z
+updated-at: 2026-11-24T07:26:23Z
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-1283952
 claimed-at: 2026-11-24T07:16:12Z
-outcome-what: "herdr-hc.sh 'tab list' gibt die Liste weiter aus, endet aber mit Exit 3 und nennt auf stderr jedes Terminal, das auf 'hc get' nicht antwortete; Go-Test ueber 5 Faelle, Cockpit-Test fuer Give back mit Teil-Liste, Release-Note, shipped.sha256."
-outcome-why: "Ein stummes Terminal fiel per '|| continue' still aus der Liste; das Cockpit las den Worker-Tab als geschlossen und startete einen zweiten Worker."
-outcome-resolves: "Alle Aufrufer (Give back, agentsOf, workers, reap.sh) lesen Exit!=0 schon als gescheiterte Liste; Give back startet daher keinen Worker und meldet das stumme Terminal. Geprueft: Rennen ls/get, hc ls scheitert, leere Liste."
+outcome-what: "herdr-hc.sh 'tab list': Terminal ohne Antwort -> Liste mit \"partial\":true, stderr nennt es, Exit 0; not_found -> weggelassen. Give back (register.tsx:1791) liest partial wie eine gescheiterte Liste. Tests Go (7 Faelle) und Cockpit."
+outcome-why: "Ein stummes Terminal fiel still aus der Liste und Give back startete einen zweiten Worker; Exit 3 (Runde 1) haette reap.sh und die Tab-Anzeigen fuer jedes fremde stumme Terminal lahmgelegt."
+outcome-resolves: "Nur der Aufrufer, der Vollstaendigkeit braucht, reagiert; reap.sh/agentsOf/workers wie vorher. Geprueft: Rennen ls/get (not_found), hc ls scheitert (Exit 1), leere Liste."
 review-summary: none
-review-gaps: "none - betrachtet: Go-Test wiederholt das Setup (bash, install, script) von TestHerdrHcNamesTheTabAfterItsLabel wie die anderen role_test.go-Tests auch, kein Helfer vorhanden, gelassen; tabsPartial neben tabsFail in board.test.ts bleibt getrennt, weil es stdout und Exit 3 traegt; kein toter Code, kein Schleifen-Mehraufwand (mute ist ein String)."
+review-gaps: "Kommentar herdr-hc.sh:85 umformuliert (unklarer Satz); sonst none - tabsPartial dupliziert das try/catch von tabsOf bewusst (eigener Rueckgabetyp, ein Aufrufer); kein toter Code (Exit-3-Zweig ganz entfernt)."
 test-verdict: "pass: go build/vet + go test -count=1 ./... green (rc=0), -race on role green, claude plugin test 544/544; DoD 1-3 in the tree verified (Proof-Zeilen herdr-hc.sh:85-101, register.tsx:1790, notes/8NWE4P.md); herdr-hc.sh mit hc-Stub: alle antworten -> Exit 0 + 2 Tabs; t7 stumm -> Exit 3, Liste ohne t7, stderr nennt t7; hc ls scheitert -> Exit 1, nur stderr. Schreibt nichts (keine Datei, kein Ticket) - Zwei-Schreiber-Test entfaellt."
 hunt-verdict: "fail: bughunt done at eb0a645dc, 2 change: Exit 3 sperrt reap.sh/agentsOf/workers bei einem fremden stummen Terminal; not_found (Terminal zwischen ls und get entfernt) zaehlt als stumm"
 round: 2
@@ -69,3 +69,4 @@ back-count: 1
 - **2026-11-24 07:22 · Sascha** — bughunt: done at eb0a645dc - 2 findings (2 change, 0 pre-existing) in 5 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/8NWE4P.md core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh core/role/role_test.go core/shipped/shipped.sha256
 - **2026-11-24 07:23 · Sascha** — testing: class: ein Teil-Ergebnis von 'tab list' als Exit!=0 meldet allen Aufrufern 'Herdr down', obwohl nur Give back Vollstaendigkeit braucht; example: reap.sh:133 herdr_up leer -> nichts wird mehr abgeraeumt, solange irgendein Terminal stumm ist (Bughunt-Note); fix: Exit 0 lassen, Feld partial:true in der Liste, nur Give back (register.tsx:1790) liest es als gescheitert; dazu not_found aus 'hc get' als geschlossen weglassen, nicht als stumm. Test ueber Klassen: antwortet / not_found / Timeout.
 - **2026-11-24 07:25 · Sascha** — Runde 2: Exit 3 verworfen (Bughunt: reap.sh, agentsOf, workers lasen ein fremdes stummes Terminal als 'Herdr down'). Jetzt Exit 0 + "partial":true + stderr; nur Give back liest das Feld (sessions.ts tabsPartial). workers/agentsOf zeigen eine Teil-Liste weiter an - eine Anzeige, kein Start, bewusst gelassen. not_found aus 'hc get' (stderr, Exit 3, real geprueft mit hc get t99999) = geschlossen, weggelassen.
+- **2026-11-24 07:26 · Sascha** — critique Runde 2: nichts. partial-Feld im Aufgerufenen, ein Leser (tabsPartial neben tabsOf in sessions.ts, gleiches try/catch-Muster); Exit-Code-Zweig von W80HNH unveraendert mitbenutzt.
