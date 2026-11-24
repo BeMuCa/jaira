@@ -914,7 +914,7 @@ describe('waiting for you', () => {
     await w.clock.advance(1)
     await w.clock.settle()
     expect(await executeLabel(pane)).toEqual({ label: 'Execute', text: 'Execute', dim: false })
-    expect(w.toasts.filter(x => x.includes('still at work'))).toEqual(['MG677R: still at work after 20 s - its buttons take a press again; look at the ticket before you press once more'])
+    expect(w.toasts.filter(x => x.includes('still at work'))).toEqual(['MG677R: Execute still at work after 20 s - it takes a press again; look at the ticket before you press once more'])
     // The late end says nothing more.
     await release(w)
     await release(w)
@@ -5888,6 +5888,11 @@ describe('the Acceptance pane', () => {
     expect(await executeLabel(pane)).toEqual({ label: 'running…', text: 'running…', dim: true })
     await pane.press({ key: 'execute-MG677R' })
     expect(ran(w, 'jaira', 'move')).toEqual([])
+    // Explain's lock running out with its chat still opening says nothing:
+    // only Execute's does (N5ZZP6), and the release row's never.
+    await w.clock.advance(20_000)
+    await w.clock.settle()
+    expect(w.toasts.filter(x => x.includes('still at work'))).toEqual([])
     w.heldSpawn.shift()!()
     await w.clock.settle()
     await pane.press({ key: 'execute-MG677R' })

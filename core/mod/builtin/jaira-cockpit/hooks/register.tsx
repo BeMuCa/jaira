@@ -1064,9 +1064,10 @@ let presses = 0
 // locked row does nothing, so a slow answer is not asked for twice. An action
 // that answers 'hold' is done at once but keeps the row locked to BUSY_MS: a
 // request sent to this session has no end to wait for, and a double click
-// would send it twice. One still at work when BUSY_MS frees the row says so
-// (N5ZZP6): the person sees the buttons wake and knows why.
-async function once($: EngineInterface, id: string, action: () => Promise<void | 'hold'>): Promise<void> {
+// would send it twice. late: what to say when BUSY_MS frees the row while the
+// action is still at work - Execute's, so the person sees why it wakes
+// (N5ZZP6); other rows, the release row among them, stay silent.
+async function once($: EngineInterface, id: string, action: () => Promise<void | 'hold'>, late?: string): Promise<void> {
   const at = `${await $.clock.now()}:${++presses}`
   let took = false
   await update($, busyAtom, busy => {
@@ -1084,7 +1085,7 @@ async function once($: EngineInterface, id: string, action: () => Promise<void |
     return rest
   })
   let ended = false
-  $.clock.after(BUSY_MS, () => void free().then(() => (freed && !ended ? say($, t.stillRunning(id, BUSY_MS / 1000)) : undefined)))
+  $.clock.after(BUSY_MS, () => void free().then(() => (freed && !ended && late !== undefined ? say($, late) : undefined)))
   let held = false
   try {
     held = (await action()) === 'hold'
@@ -2492,7 +2493,8 @@ export const register: Register = (on, options) => {
     // or Enter in the field does nothing (N5ZZP6): the label is the answer.
     const busy = (await read($, busyAtom))[w.id] !== undefined
     const executeLabel = busy ? t.running : t.execute
-    const go = () => void once($, w.id, async () => execute($, w, await read($, typedAtom), share, Input !== undefined))
+    const late = t.stillRunning(w.id, BUSY_MS / 1000)
+    const go = () => void once($, w.id, async () => execute($, w, await read($, typedAtom), share, Input !== undefined), late)
     // A choice's button: the chosen one bold in its colour, the others dim.
     const CHOICES: [GapItem['choice'], string, 'success' | 'error' | 'suggestion'][] = [['accept', t.choiceOk, 'success'], ['now', t.choiceFix, 'error'], ['later', t.choiceTicket, 'suggestion']]
     const story_ = s?.story
@@ -2582,7 +2584,7 @@ export const register: Register = (on, options) => {
                 // Words typed, or a note to fix, it carries out.
                 const plan = executionOf(items, text, w.acceptTo, unseen)
                 if ((plan.step === 'accept' || plan.step === 'needSeen') && !plan.asksWhy) return void say($, t.nothingToFix(w.id))
-                void once($, w.id, () => execute($, w, text, share))
+                void once($, w.id, () => execute($, w, text, share), late)
               }}
             />
           )

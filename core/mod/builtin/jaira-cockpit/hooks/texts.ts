@@ -64,9 +64,9 @@ export const t = {
   // N5ZZP6: Execute while its row is locked - by its own press or an
   // Explain chat - drawn dim; a press on it does nothing.
   running: 'running…',
-  // The lock ran out while the press is still at work: the buttons take a
+  // Execute's lock ran out while its step is still at work: it takes a
   // press again, and a second one may write beside the first.
-  stillRunning: (id: string, seconds: number) => `${id}: still at work after ${seconds} s - its buttons take a press again; look at the ticket before you press once more`,
+  stillRunning: (id: string, seconds: number) => `${id}: Execute still at work after ${seconds} s - it takes a press again; look at the ticket before you press once more`,
   // What Execute will do, in the pane's last line before the button.
   summary: (step: 'giveBack' | 'accept' | 'needWhy' | 'notTerminal' | 'needSeen', fix: number, followUps: number, to: string) => {
     const tickets = followUps > 0 ? ` + ${followUps} follow-up ticket${followUps === 1 ? '' : 's'}` : ''
