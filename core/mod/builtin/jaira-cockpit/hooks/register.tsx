@@ -2110,6 +2110,12 @@ async function translateAsks($: EngineInterface): Promise<void> {
   await update($, asksShownAtom, s => (!s.on || s.language !== language
     ? { ...s, busy: false }
     : { ...s, busy: false, on: said !== undefined, texts: said === undefined ? s.texts : Object.fromEntries(texts.map((x, i) => [x, said[i]!])) }))
+  // A question filed while the call was out was skipped by showThreads,
+  // which does not start a second call beside a running one: translate it now.
+  if (said === undefined) return
+  const after = await read($, asksShownAtom)
+  const now = askTexts([...(await read($, asksAtom)), ...(await read($, askedAtom))])
+  if (after.on && after.language === language && now.some(x => after.texts[x] === undefined)) await translateAsks($)
 }
 
 // A pick is the person's answer: sent into the session as their message -

@@ -20,45 +20,40 @@ related: []
 follows: 01M8537VMKP5N8TJ2YC91M3X77
 commits: []
 created-at: 2026-11-24T10:24:44Z
-updated-at: 2026-11-24T10:57:39Z
+updated-at: 2026-11-24T11:28:47Z
 updated-by: Sascha
-claimed-by: DESKTOP-RFTCH11-69066
-claimed-at: 2026-11-24T10:25:16Z
-outcome-what: "Cockpit 'Waiting for you': x settles a question; a question settles itself once its ticket leaves the lane it was asked in; settled ones stay 24h dimmed under 'Answered'; asked/answered times; questions kept in the original, t translates all at once"
-outcome-why: "Questions decided in the Acceptance pane stayed forever, had no time, and were always shown rephrased (Sascha 24.11.2026)"
-outcome-resolves: CSQXKR
-review-summary: "Cockpit 'Waiting for you': each question now records askedAt when filed and the lane its ticket stood in (read with the title via 'jaira show'). Every 60s board refresh (settleMoved) compares that lane with 'jaira list' of all boards, or 'jaira show' for tickets in none, and settles questions whose ticket moved on. A new 'x done' button (hotkey x on the first) settles without sending anything to the session. All settlements go through change(), which diffs old/new threads (settled()) into a 'done' list kept with the threads in the store, shown dimmed under a rule and 'Answered' for 24h (recent()), each with 'asked/answered today HH:MM' or 'DD.MM. HH:MM'. The pane stays open after the last pick so Answered stays visible. The classifier is told to quote questions untranslated; t/Translate sends all question and option texts to the cheap model in one call (asksTranslatePrompt), t again restores the original; no button without a language in settings. Release note and shipped.sha256 updated. Full review at 8a7401450, no earlier review."
-round: 3
-back-from: review
-back-by: lane
+claimed-by: DESKTOP-RFTCH11-67597
+claimed-at: 2026-11-24T11:23:53Z
+outcome-what: "Give-back edges closed: settled() ignores threads dropped by the 30-thread cap; file() keeps askedAt when the same question is repeated; translateAsks re-runs after a successful call when texts arrived meanwhile"
+outcome-why: "Signoff give-back: three edges of this change would show wrong state in the Waiting-for-you pane"
+outcome-resolves: "DoD 7-9; checked: concurrency (translate re-run reads state after the call), error paths (failed call stops, no loop), input (30-thread cap, repeated question)"
+review-summary: "Delta review from 8a7401450 to f1a48e9d4: change() now reads the clock, then computes the new threads from the current ones in the same step, so pane answers, x, a filed turn and the lane check can no longer overwrite each other; the lane check settles a question for a vanished ticket only on 'jaira show' exit 5 and asks again on any other failure. The rest of the change (x to settle, settling on lane change, asked/answered times, Answered section kept 24h, Translate on t) stands as read in the full review."
+round: 4
+back-from: signoff
+back-by: person
 back-count: 1
 review-gaps: |-
-  note: edge: fix-now: lost update - register.tsx change() takes next computed before its own await $.clock.now(); settleMoved/dismissAsk/answerAsk/fileTurn can interleave there, and the later writer drops the earlier change (a new filing can vanish and be listed under Answered). Fix: change($, f: (ts) => Thread[]) reading the clock first, then next = f(threads) and assign without an await between
-  note: edge: fix-now: register.tsx settleMoved reads any non-zero exit of jaira show as unknown ticket and settles the question for good; only exit 5 means not found (checked: jaira show ZZZZZZ -> 5). Fix: exit 5 -> null, any other non-zero -> skip this round like a timeout
-  note: edge: threads.ts file() slice(-THREADS) drops the oldest of 30 threads with its open question, and settled() now labels it Answered; dropping is older, the label is this change - exclude threads absent from after by id in settled()
-  note: edge: a question filed while a Translate call is out stays untranslated under an Original button until the next thread change (showThreads skips while busy, translateAsks writes only its own texts); rerun translateAsks after busy clears if texts are missing
-  note: edge: file() resets askedAt to now when the assistant repeats the same question on the same thread, so asked time drifts to the last repetition; keep askedAt when the question text is unchanged
+  note: edge: threads.ts file() slice(-THREADS) drops the oldest of 30 threads with its open question, and settled() labels it Answered; exclude threads absent from after by id in settled()
+  note: edge: a question filed while a Translate call is out stays untranslated under an Original button until the next thread change; rerun translateAsks after busy clears if texts are missing
+  note: edge: file() resets askedAt to now when the assistant repeats the same question on the same thread; keep askedAt when the question text is unchanged
   note: limit: hotkey x only on the first open question; the others have the click target, as DoD 2 allows
-test-verdict: "pass: cockpit suite 558/558 green (claude plugin test, exit 0), go test ./core/role ./core/mod green after shipped.sha256 regenerated; DoD 1-6 verified by their named tests at 8a7401450; failure path: Translate with the model down keeps the originals and the button on 'Translate' (scratch test, removed); two writers: a pick pressed while the 60s board tick settles another question by lane - both land under Answered, one submit (scratch test, removed); the store write is one key per session, no file write"
-hunt-verdict: "pass: bughunt done at 8a7401450, 3 change (none a blocker: 31st thread's dropped question shown as answered; any jaira show exit != 0 read as 'ticket gone' where only exit 5 is; a question filed during a Translate call stays untranslated until the next change), 0 pre-existing - notes on the ticket for review and the person"
-review-verdict: "accept: DoD 1-6 met by code and tests; two fix-now edges (lost update in change(), any show failure settles a question) go back once"
-review-round: 2
+test-verdict: "pass: round 3, only the delta f1a48e9d4: cockpit suite 560/560 green (exit 0), incl. new 'a ticket in no list whose jaira show exits 1|5'; go test ./core/role green after shipped.sha256 regenerated; lost update closed by construction (next computed from threads after the clock await, no await between read and write)"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 3"
+review-verdict: "accept: both fix-now edges closed (change() takes a function, only exit 5 settles); DoD 1-6 met; claude plugin test 560 pass, go test ./core/shipped ok"
+review-round: 3
 review-verdict-gaps: |-
-  note: edge: fix-now: lost update - register.tsx change() takes next computed before its own await $.clock.now(); settleMoved/dismissAsk/answerAsk/fileTurn can interleave there, and the later writer drops the earlier change (a new filing can vanish and be listed under Answered). Fix: change($, f: (ts) => Thread[]) reading the clock first, then next = f(threads) and assign without an await between
-  note: edge: fix-now: register.tsx settleMoved reads any non-zero exit of jaira show as unknown ticket and settles the question for good; only exit 5 means not found (checked: jaira show ZZZZZZ -> 5). Fix: exit 5 -> null, any other non-zero -> skip this round like a timeout
-  note: edge: threads.ts file() slice(-THREADS) drops the oldest of 30 threads with its open question, and settled() now labels it Answered; dropping is older, the label is this change - exclude threads absent from after by id in settled()
-  note: edge: a question filed while a Translate call is out stays untranslated under an Original button until the next thread change (showThreads skips while busy, translateAsks writes only its own texts); rerun translateAsks after busy clears if texts are missing
-  note: edge: file() resets askedAt to now when the assistant repeats the same question on the same thread, so asked time drifts to the last repetition; keep askedAt when the question text is unchanged
+  note: edge: threads.ts file() slice(-THREADS) drops the oldest of 30 threads with its open question, and settled() labels it Answered; exclude threads absent from after by id in settled()
+  note: edge: a question filed while a Translate call is out stays untranslated under an Original button until the next thread change; rerun translateAsks after busy clears if texts are missing
+  note: edge: file() resets askedAt to now when the assistant repeats the same question on the same thread; keep askedAt when the question text is unchanged
   note: limit: hotkey x only on the first open question; the others have the click target, as DoD 2 allows
 review-check: |-
-  1. Build and start a Claude session in this worktree with the cockpit: claude --plugin-dir core/mod/builtin/jaira-cockpit
-  2. Ask the assistant something that ends in a question to you about a ticket, e.g. a ticket in signoff
-  3. Open the Waiting-for-you pane from the band: the question shows 'asked today HH:MM' in its original language
-  4. Press t: the question and options appear in your settings language; press t again: original
-  5. Press x: the question moves below the rule under 'Answered', dimmed, with 'answered today HH:MM'; nothing was sent into the chat
-  6. Ask another question about a ticket, then in a shell run jaira move <id> --to <other lane>; within 60 s it moves to Answered by itself
-  7. Tests: core/mod/builtin/jaira-cockpit/tests/board.test.ts 'settling questions, their times and Translate (CSQXKR)'
-stop-after-fix: "true"
+  1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  - expect 0 fail
+  2. claude --plugin-dir core/mod/builtin/jaira-cockpit, ask the assistant something that ends in a question to you about a ticket
+  3. Open Waiting for you from the band: question shows asked today HH:MM, in its original language
+  4. Press t: translated; t again: original
+  5. Press x: question moves below the rule under Answered, dimmed, answered today HH:MM; nothing sent into the chat
+  6. Ask another question about a ticket, run jaira move <id> --to <other lane> in a shell: within 60 s it moves to Answered
+stop-after-fix: ""
 ---
 
 # Cockpit 'Wartet auf dich': Frage schliesst sich selbst oder per x, zeigt ihre Zeit und uebersetzt nur auf Knopfdruck
@@ -77,6 +72,12 @@ stop-after-fix: "true"
   proof: core/release/notes/CSQXKR.md
 - [x] Erledigte Fragen (Antwort im Pane, im Chat, per x oder automatisch) verschwinden nicht sofort: sie stehen unter einer Trennlinie in einem eigenen Abschnitt 'Beantwortet' unter den offenen, gedimmt, und fallen nach 24 Stunden heraus; offene stehen oben; Test
   proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts 'settling questions, their times and Translate (CSQXKR) > what a change settled carries both times; a day later it is gone' + 'settled questions are kept across a restart, and one settled a day ago is no longer shown' + 1M3X77 'the band opens the pane...' (Answered after a pick)
+- [x] Ein Thread, der beim Kuerzen auf 30 wegfaellt, setzt seine offene Frage nicht auf Answered
+  proof: core/mod/builtin/jaira-cockpit/hooks/threads.ts:259; test 'a thread dropped to keep thirty is not answered; its open question settles nothing'
+- [x] Eine Frage, die waehrend eines laufenden Translate-Aufrufs ankommt, wird danach uebersetzt
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:2118; test 'a question filed while Translate is out is translated once that call is back'
+- [x] Dieselbe Frage erneut auf demselben Thread behaelt askedAt
+  proof: core/mod/builtin/jaira-cockpit/hooks/threads.ts:150; test 'the same question asked again keeps when it was first asked; another question is asked now'
 
 ## Options
 
@@ -106,3 +107,16 @@ stop-after-fix: "true"
 - **2026-11-24 10:54 · Sascha** — review: done at 8a7401450
 - **2026-11-24 10:54 · Sascha** — review: fix-now: (1) register.tsx change(): compute next after await $.clock.now() via a function argument, so concurrent settleMoved/dismissAsk/answerAsk/fileTurn do not overwrite each other; (2) settleMoved: only jaira show exit 5 settles a question, any other non-zero exit skips the round
 - **2026-11-24 10:54 · Sascha** — fix round: closing the review's two fix-now (change() lost update; only jaira show exit 5 means ticket gone). Set stop-after-fix=true: under 50 lines, no lock, no parser. Other review notes left for the person.
+- **2026-11-24 10:58 · Sascha** — review: fix round on f1a48e9d4; waiting: fresh review agent (run-lane.sh, Herdr tab) since 11:58
+- **2026-11-24 11:01 · Sascha** — review: done at f1a48e9d4
+- **2026-11-24 11:02 · Sascha** — report: Waiting-for-you pane: x and lane-left settle questions into a dimmed 'Answered' section (24h), asked/answered times, original text with t=Translate; 4 commits 906415bdf..f1a48e9d4 | signoff, context unknown | open: person tries it in the cockpit (review-check); 3 edge notes + 1 limit from review for the person; branch not pushed
+- **2026-11-24 11:23 · Sascha** — Given back from signoff: beheben:
+- note: edge: threads.ts file() slice(-THREADS) drops the oldest of 30 threads with its open question, and settled() labels it Answered; exclude threads absent from after by id in settled()
+- note: edge: a question filed while a Translate call is out stays untranslated under an Original button until the next thread change; rerun translateAsks after busy clears if texts are missing
+- note: edge: file() resets askedAt to now when the assistant repeats the same question on the same thread; keep askedAt when the question text is unchanged
+angenommen:
+- note: limit: hotkey x only on the first open question; the others have the click target, as DoD 2 allows
+- **2026-11-24 11:23 · Sascha** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown); branch feat/csqxkr is the ticket's worktree's, worktree /home/alex/projects/.worktrees/jaira-csqxkr; reports to uds:/run/user/1000/cc-socks/3417.sock, the ticket's parent session
+- **2026-11-24 11:24 · Sascha** — parent session: uds:/run/user/1000/cc-socks/3417.sock; new worker on the give-back: fixing the 3 edges (thread drop, translate while busy, askedAt reset); no open decisions, the give-back names each fix
+- **2026-11-24 11:27 · Sascha** — waiting: claude plugin test run (background) since 12:27
+- **2026-11-24 11:28 · Sascha** — give-back fixes: test mock model.complete now returns translations only for 'Translate each text' prompts, so a filing during a held Translate call gets w.model; translateAsks re-runs itself after a successful call when texts are missing (not on failure: on=false then, no loop)

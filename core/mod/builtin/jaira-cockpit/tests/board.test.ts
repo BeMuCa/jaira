@@ -479,7 +479,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     w.modelCalls++
     w.prompts.push(prompt)
     if (w.modelDown) return { value: { isAnswered: false } } as never
-    const text = w.translations === undefined ? w.model : JSON.stringify((JSON.parse(prompt.slice(prompt.lastIndexOf('\n') + 1)) as string[]).map(x => w.translations![x] ?? x))
+    const text = w.translations === undefined || !prompt.startsWith('Translate each text') ? w.model : JSON.stringify((JSON.parse(prompt.slice(prompt.lastIndexOf('\n') + 1)) as string[]).map(x => w.translations![x] ?? x))
     if (w.modelHeld) await new Promise<void>(go => w.modelHeld!.push(go))
     return { value: { isAnswered: true, text, usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }
   })
@@ -3800,6 +3800,21 @@ describe('settling questions, their times and Translate (CSQXKR)', () => {
     expect(recent(done, NOW + ANSWERED_MS)).toEqual([])
   })
 
+  test('a thread dropped to keep thirty is not answered; its open question settles nothing', () => {
+    let ts: ReturnType<typeof file> = []
+    for (let i = 1; i <= 30; i++) ts = file(ts, f({ title: `T${i}`, question: `q${i}?` }), i, NOW)
+    const after = file(ts, f({ title: 'T31' }), 31, NOW)
+    expect(after.map(t => t.id)).not.toContain(1)
+    expect(settled(ts, after, NOW)).toEqual([])
+  })
+
+  test('the same question asked again keeps when it was first asked; another question is asked now', () => {
+    const before = file([], f({ question: 'a?' }), 1, NOW - 60_000)
+    expect(file(before, f({ thread: 1, question: 'a?' }), 2, NOW)[0]!.askedAt).toBe(NOW - 60_000)
+    expect(file(before, f({ thread: 1, question: 'b?' }), 2, NOW)[0]!.askedAt).toBe(NOW)
+    expect(settled(before, file(before, f({ thread: 1, question: 'a?' }), 2, NOW), NOW)).toEqual([])
+  })
+
   test('times: today by the clock, another day with its date', () => {
     expect(whenOf(new Date(2026, 10, 24, 7, 12).getTime(), NOW)).toBe('today 07:12')
     expect(whenOf(new Date(2026, 10, 23, 21, 40).getTime(), NOW)).toBe('23.11. 21:40')
@@ -3934,6 +3949,29 @@ describe('settling questions, their times and Translate (CSQXKR)', () => {
     const back = (await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text
     expect(back).toContain('Welche Farbe?')
     expect(back).not.toContain('Какой цвет?')
+  })
+
+  test('a question filed while Translate is out is translated once that call is back', async ($, on) => {
+    const w = world(on)
+    w.files.set('/home/a/.jaira/settings.json', JSON.stringify({ language: 'Русский' }))
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Logo", "line": "Frage", "ticket": null, "question": "Wie gross?", "answered": []}')
+    await (await $.ui.mount(BAND)).press({ key: 'asks' })
+    const pane = await $.ui.mount(ASKS_PANE)
+    w.translations = { 'Wie gross?': 'Какой размер?', 'Welche Farbe?': 'Какой цвет?' }
+    const held: (() => void)[] = []
+    w.modelHeld = held
+    await pane.press({ key: 'asks-translate' })
+    await w.clock.settle()
+    expect(held).toHaveLength(1)
+    w.modelHeld = undefined
+    await ask($, w, '{"thread": null, "title": "Farbe", "line": "Frage", "ticket": null, "question": "Welche Farbe?", "answered": []}', 'r')
+    held.shift()!()
+    await w.clock.settle()
+    await pane.unmount()
+    const shown = (await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text
+    expect(shown).toContain('Какой размер?')
+    expect(shown).toContain('Какой цвет?')
   })
 
   test('without a language set there is no Translate', async ($, on) => {

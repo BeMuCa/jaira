@@ -145,12 +145,15 @@ export function file(threads: readonly Thread[], f: Filing, turn: number, now?: 
   // A new question brings its own ticket and choices; none keeps the open one
   // as it was, unless this very turn answered it.
   const kept = f.answered.includes(base.id) ? answered(base, turn) : base
+  // The same question asked again on its thread keeps the moment it was
+  // first asked.
+  const askedAt = base.question === f.question && base.askedAt !== undefined ? base.askedAt : now
   const asked: Thread = f.question === null
     ? kept
     : {
       ...answered(base, turn),
       question: f.question,
-      ...(now !== undefined ? { askedAt: now } : {}),
+      ...(askedAt !== undefined ? { askedAt } : {}),
       ...(f.about !== null ? { about: f.about } : {}),
       ...(f.options.length > 0 ? { options: f.options } : {}),
     }
@@ -249,10 +252,15 @@ export function moved(threads: readonly Thread[], lanes: ReadonlyMap<string, str
 
 // The questions open before a change and gone after it, settled at now:
 // answered, dismissed, moved on, or replaced by a new one on their thread.
-// Their options go: the pane no longer offers them.
+// A thread missing from after was dropped to keep the list short, not
+// answered: its question settles nothing. Their options go: the pane no
+// longer offers them.
 export function settled(before: readonly Thread[], after: readonly Thread[], now: number): Ask[] {
+  const kept = new Set(after.map(t => t.id))
   const still = new Set(after.filter(t => t.question !== undefined).map(t => `${t.id}\n${t.question}`))
-  return asksOf(before).filter(a => !still.has(`${a.thread}\n${a.question}`)).map(a => ({ ...a, options: [], answeredAt: now }))
+  return asksOf(before)
+    .filter(a => kept.has(a.thread) && !still.has(`${a.thread}\n${a.question}`))
+    .map(a => ({ ...a, options: [], answeredAt: now }))
 }
 
 // The settled questions still shown: the last 24 hours, settled last first.
