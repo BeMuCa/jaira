@@ -814,6 +814,10 @@ type Report struct {
 	Conflicts []milestone.Conflict `json:"conflicts,omitempty"`
 }
 
+// listBox reads the outbox. It is a variable only so a test can make one
+// listing fail in Flush while the others succeed (see export_test.go).
+var listBox = (*outbox.Box).List
+
 // Flush sends what the outbox holds and reports each entry, naming who was
 // quicker for every write the remote refused.
 //
@@ -826,7 +830,7 @@ func (y *Syncer) Flush() ([]Report, error) {
 	if y == nil || y.Usable() != nil {
 		return nil, nil
 	}
-	entries, err := y.Box.List()
+	entries, err := listBox(y.Box)
 	if err != nil {
 		return nil, err
 	}
@@ -850,7 +854,13 @@ func (y *Syncer) Flush() ([]Report, error) {
 		return nil, err
 	}
 	queued := map[string]outbox.Entry{}
-	entries, _ = y.Box.List() // again: tidyMilestoneEntries may have rekeyed some
+	// Again: tidyMilestoneEntries may have rekeyed some. A failed listing is
+	// an error, not an empty queue: an empty one would skip the merge of a
+	// refused milestone write below, and the next fetch would overwrite it.
+	entries, err = listBox(y.Box)
+	if err != nil {
+		return nil, err
+	}
 	for _, e := range entries {
 		if e.Kind == outbox.KindMilestone {
 			queued[e.ID] = e
@@ -1002,7 +1012,7 @@ func mergedFile(base, local, winner string) (file, clash string) {
 // the same old file to the same ID, and the second one to push must not be told
 // that the remote wins over a write that said the same thing.
 func (y *Syncer) tidyMilestoneEntries() error {
-	entries, err := y.Box.List()
+	entries, err := listBox(y.Box)
 	if err != nil {
 		return err
 	}
