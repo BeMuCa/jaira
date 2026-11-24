@@ -18,7 +18,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-24T11:36:37Z
-updated-at: 2026-11-24T11:36:37Z
+updated-at: 2026-11-24T11:36:56Z
+updated-by: Sascha
 ---
 
 # SDD-Basis: Specs in EARS (max. 100 Zeilen je Datei) und ADRs aus allen Tickets erzeugen
