@@ -1,7 +1,7 @@
 ---
 id: 01M86HC8QKQYKNWGHCQ7CSQXKR
 title: "Cockpit 'Wartet auf dich': Frage schliesst sich selbst oder per x, zeigt ihre Zeit und uebersetzt nur auf Knopfdruck"
-status: testing
+status: critique
 ready: true
 creator: Sascha
 assignee: Sascha
@@ -20,36 +20,36 @@ related: []
 follows: 01M8537VMKP5N8TJ2YC91M3X77
 commits: []
 created-at: 2026-11-24T10:24:44Z
-updated-at: 2026-11-24T11:31:09Z
+updated-at: 2026-11-24T11:58:33Z
 updated-by: Sascha
-claimed-by: DESKTOP-RFTCH11-67597
-claimed-at: 2026-11-24T11:23:53Z
+claimed-by: DESKTOP-RFTCH11-52645
+claimed-at: 2026-11-24T11:37:05Z
 outcome-what: "Give-back edges closed: settled() ignores threads dropped by the 30-thread cap; file() keeps askedAt when the same question is repeated; translateAsks re-runs after a successful call when texts arrived meanwhile"
 outcome-why: "Signoff give-back: three edges of this change would show wrong state in the Waiting-for-you pane"
 outcome-resolves: "DoD 7-9; checked: concurrency (translate re-run reads state after the call), error paths (failed call stops, no loop), input (30-thread cap, repeated question)"
 review-summary: "none"
-round: 4
-back-from: signoff
-back-by: person
+round: 6
+back-from: testing
+back-by: lane
 back-count: 1
-review-gaps: "renamed a non-time 'now' to 'current' in translateAsks; left the two askTexts(asks+done) reads in translateAsks as they are (before and after the call, two moments, not a duplicate); no dead code, no repeated work on a hot path"
-test-verdict: "pass: round 3, only the delta f1a48e9d4: cockpit suite 560/560 green (exit 0), incl. new 'a ticket in no list whose jaira show exits 1|5'; go test ./core/role green after shipped.sha256 regenerated; lost update closed by construction (next computed from threads after the clock await, no await between read and write)"
-hunt-verdict: "pass: stop-after-fix, no hunt in round 3"
-review-verdict: "accept: both fix-now edges closed (change() takes a function, only exit 5 settles); DoD 1-6 met; claude plugin test 560 pass, go test ./core/shipped ok"
-review-round: 3
+review-gaps: "none: capped() has no twin (threads.ts:213 sorts by lastTurn for the listing, a different order and purpose); no helper or branch orphaned by the delta"
+test-verdict: "pass: claude plugin test 567/567 (exit 0) on the final tree, go test ./core/role ok after shipped-history.sh --write; DoD 1-10 proofs re-pointed and their tests seen passing; failure path: jaira show exit 1 keeps the question, exit 5 settles it, a list lane that disagrees with the asked lane is re-read (show says signoff -> stays); t pressed three times during a held call -> one model call, translation lands; two writers: change() computes after its await (earlier round), not re-run"
+hunt-verdict: "fail: 3 change findings (thread id reuse after the cap drops the newest thread; an unparsed jaira show settles a question; reopening the pane resets busy)"
+review-verdict: "accept: DoD 1-9 met with tests; the three give-back edges are closed; claude plugin test 563 pass, go test ./core/shipped ok; two small edges left for the person"
+review-round: 4
 review-verdict-gaps: |-
-  note: edge: threads.ts file() slice(-THREADS) drops the oldest of 30 threads with its open question, and settled() labels it Answered; exclude threads absent from after by id in settled()
-  note: edge: a question filed while a Translate call is out stays untranslated under an Original button until the next thread change; rerun translateAsks after busy clears if texts are missing
-  note: edge: file() resets askedAt to now when the assistant repeats the same question on the same thread; keep askedAt when the question text is unchanged
+  note: edge: settleMoved compares lanes from the jaira list read at the start of refreshBoard; a question filed and titled (fileTurn) with a newer lane while that refresh runs is settled at once. Re-read the ticket with jaira show before settling when its listed lane differs from aboutLane
+  note: edge: pressing t while a Translate call is out sets busy=false, so a third press starts a second model call beside the first; keep busy until the running call returns
   note: limit: hotkey x only on the first open question; the others have the click target, as DoD 2 allows
 review-check: |-
-  1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  - expect 0 fail
-  2. claude --plugin-dir core/mod/builtin/jaira-cockpit, ask the assistant something that ends in a question to you about a ticket
-  3. Open Waiting for you from the band: question shows asked today HH:MM, in its original language
-  4. Press t: translated; t again: original
-  5. Press x: question moves below the rule under Answered, dimmed, answered today HH:MM; nothing sent into the chat
-  6. Ask another question about a ticket, run jaira move <id> --to <other lane> in a shell: within 60 s it moves to Answered
-stop-after-fix: "true"
+  1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  - expect 563 pass, 0 fail
+  2. claude --plugin-dir core/mod/builtin/jaira-cockpit, let the assistant ask you a question about a ticket
+  3. Open 'Waiting for you' from the band: the question shows 'asked today HH:MM', in its original language
+  4. Press t: question and options translated; t again: original
+  5. Ask the same question once more: 'asked' time stays the old one
+  6. Press x: question moves below the rule under 'Answered', dimmed, with 'answered today HH:MM'; nothing is sent into the chat
+  7. Ask another question about a ticket, run jaira move <id> --to <other lane> in a shell: within one board refresh it moves to 'Answered'
+stop-after-fix: ""
 ---
 
 # Cockpit 'Wartet auf dich': Frage schliesst sich selbst oder per x, zeigt ihre Zeit und uebersetzt nur auf Knopfdruck
@@ -69,11 +69,13 @@ stop-after-fix: "true"
 - [x] Erledigte Fragen (Antwort im Pane, im Chat, per x oder automatisch) verschwinden nicht sofort: sie stehen unter einer Trennlinie in einem eigenen Abschnitt 'Beantwortet' unter den offenen, gedimmt, und fallen nach 24 Stunden heraus; offene stehen oben; Test
   proof: core/mod/builtin/jaira-cockpit/tests/board.test.ts 'settling questions, their times and Translate (CSQXKR) > what a change settled carries both times; a day later it is gone' + 'settled questions are kept across a restart, and one settled a day ago is no longer shown' + 1M3X77 'the band opens the pane...' (Answered after a pick)
 - [x] Ein Thread, der beim Kuerzen auf 30 wegfaellt, setzt seine offene Frage nicht auf Answered
-  proof: core/mod/builtin/jaira-cockpit/hooks/threads.ts:259; test 'a thread dropped to keep thirty is not answered; its open question settles nothing'
+  proof: core/mod/builtin/jaira-cockpit/hooks/threads.ts:270 (settled skips threads absent from after); test 'a thread dropped to keep thirty is not answered by settled()'
 - [x] Eine Frage, die waehrend eines laufenden Translate-Aufrufs ankommt, wird danach uebersetzt
-  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:2118; test 'a question filed while Translate is out is translated once that call is back'
+  proof: core/mod/builtin/jaira-cockpit/hooks/register.tsx:2127; test 'a question filed while Translate is out is translated once that call is back'
 - [x] Dieselbe Frage erneut auf demselben Thread behaelt askedAt
   proof: core/mod/builtin/jaira-cockpit/hooks/threads.ts:150; test 'the same question asked again keeps when it was first asked; another question is asked now'
+- [x] Der 30-Thread-Deckel wirft zuerst die am laengsten nicht beruehrten Threads (lastTurn) und nie einen mit offener Frage (threads.ts:168); Test
+  proof: core/mod/builtin/jaira-cockpit/hooks/threads.ts:175 (capped); tests 'thirty threads at most: the one touched longest ago goes, never one whose question waits' + 'thirty threads all waiting on a question: none is dropped' + 'over thirty, the newest thread is kept, so no id is handed out twice'
 
 ## Options
 
@@ -118,3 +120,28 @@ angenommen:
 - **2026-11-24 11:28 · Sascha** — give-back fixes: test mock model.complete now returns translations only for 'Translate each text' prompts, so a filing during a held Translate call gets w.model; translateAsks re-runs itself after a successful call when texts are missing (not on failure: on=false then, no loop)
 - **2026-11-24 11:29 · Sascha** — set stop-after-fix=true: give-back fix is ~20 changed code lines, no lock, no parser
 - **2026-11-24 11:29 · Sascha** — waiting: claude plugin test after optimize rename (background) since 12:29
+- **2026-11-24 11:31 · Sascha** — waiting: fresh review agent (run-lane.sh --no-worktree, Herdr tab) since 12:31
+- **2026-11-24 11:33 · Sascha** — bughunt: pre-existing: core/mod/builtin/jaira-cockpit/hooks/threads.ts:168 - class: the 30-thread cap (next.slice(-THREADS)) drops threads by creation order, not by lastTurn, so a thread with a question still waiting is dropped however recently it was touched, and its question vanishes from 'Waiting for you' without reaching 'Answered' (settled() now skips dropped threads by design); example: thread 1 asks 'still waiting?', 29 more threads open, thread 1 gets a line at turn 31, the 31st new thread is filed at turn 32 -> asksOf(after) is [] and settled() is []; blame: 86da7c4354 (NZZDRH) for the cap, 65446e9473 (1M3X77) for the questions, both before this ticket; ran: node --experimental-strip-types scratch cap.ts against threads.ts at ea5a79df2
+- **2026-11-24 11:33 · Sascha** — hunt report: 1 finding, 0 change, 1 pre-existing (note on CSQXKR) | read as a diff since 8a7401450: hooks/threads.ts (file, settled), hooks/register.tsx (change, fileTurn, settleMoved, translateAsks, answerAsk, dismissAsk), tests/board.test.ts; no new file | not run: claude plugin test (the cockpit runner needs Claude Code; left to the testing lane); jaira show exit 5 for an unknown id and exit 0 for a filed-away ticket checked by hand
+- **2026-11-24 11:33 · Sascha** — bughunt: done at ea5a79df2 - 1 finding (0 change, 1 pre-existing) in 3 modules, follow-up hunt since 8a7401450; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/threads.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/shipped/shipped.sha256
+- **2026-11-24 11:34 · Sascha** — review: done at ea5a79df2
+- **2026-11-24 11:35 · Sascha** — report: give-back closed: dropped thread settles nothing, repeated question keeps askedAt, question filed during Translate gets translated; 6 commits 906415bdf..ea5a79df2 | signoff, context unknown | open: person tries it in cockpit (review-check); 2 edge notes + 1 limit from review; branch not pushed
+- **2026-11-24 11:36 · Sascha** — Given back from signoff: beheben:
+- note: edge: settleMoved compares lanes from the jaira list read at the start of refreshBoard; a question filed and titled (fileTurn) with a newer lane while that refresh runs is settled at once. Re-read the ticket with jaira show before settling when its listed lane differs from aboutLane
+- note: edge: pressing t while a Translate call is out sets busy=false, so a third press starts a second model call beside the first; keep busy until the running call returns
+angenommen:
+- note: limit: hotkey x only on the first open question; the others have the click target, as DoD 2 allows
+- **2026-11-24 11:36 · Sascha** — cockpit: given back to a new worker - nothing recorded about the old worker session (cache and context unknown); branch feat/csqxkr is the ticket's worktree's, worktree /home/alex/projects/.worktrees/jaira-csqxkr; reports to this session (uds:/run/user/1000/cc-socks/3417.sock; does not listen)
+- **2026-11-24 11:37 · Sascha** — parent session: uds:/run/user/1000/cc-socks/3417.sock; new worker on give-back 2: settleMoved re-reads with jaira show before settling; t while Translate is out keeps busy. No open decisions.
+- **2026-11-24 11:38 · Sascha** — teamlead 24.11.2026: Bughunt-Befund (pre-existing, threads.ts:168) in diese Runde gefaltet: ein offener Fragen-Thread darf nicht still aus 'Wartet auf dich' fallen - DoD-Punkt ergaenzt.
+- **2026-11-24 11:43 · Sascha** — give-back 2 fixes: settleMoved trusts the list only where it agrees with every aboutLane of the ticket, otherwise asks jaira show (test 'a listed lane other than the one asked in is read again...'); t back to Original no longer clears busy, so a third press starts no second call (test 't pressed again while Translate is out...'); cap: capped() drops threads without an open question, least recent lastTurn first, never the one this turn touched, so with 30 waiting questions the list grows past 30 (teamlead DoD 10). claude plugin test 567 pass; go test ./core/role ok after shipped-history.sh --write
+- **2026-11-24 11:43 · Sascha** — set stop-after-fix=true: ~30 code lines, no lock, no parser
+- **2026-11-24 11:44 · Sascha** — cleared stop-after-fix: delta since ea5a79df2 is 92+/10- with tests and checksums, over 50
+- **2026-11-24 11:44 · Sascha** — critique (give-back 2 delta since ea5a79df2): none. settleMoved's agreement check stays in the caller - moved() keeps taking plain lanes; capped() is local to file(), its only caller; keeping busy across t-off wastes a returned translation when t is off by then, accepted (next press asks again)
+- **2026-11-24 11:45 · Sascha** — waiting: bughunt agent (background subagent) since 12:45
+- **2026-11-24 11:55 · Sascha** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/threads.ts:174 (capped) with threads.ts:144 (new id = max+1) - class: thread ids are reused once the least-recently-touched rule drops the thread with the highest id; before, slice(-30) always kept the newest-created thread, so max+1 was never handed out twice; a filing that names the old number (thread: N) then writes its line/question onto an unrelated thread; precondition: 30 or more questions waiting, so the cap goes over 30 and drops on a filing that touches another thread; example: threads 1-30 each with a question, plain thread #31 'Plain' added, a filing on #1 drops #31, the next new thread is #31 'Other', a filing {thread:31, line:'meant Plain'} lands on 'Other'; ran: scratch script with file() from hooks/threads.ts (prints 'agent addresses #31 -> Other'); fix direction: derive the next id from a counter kept with the threads (or max over the threads seen so far), not from the threads still kept
+- **2026-11-24 11:55 · Sascha** — bughunt: change: blocker: core/mod/builtin/jaira-cockpit/hooks/register.tsx:2079 (settleMoved) - class: jaira show exiting 0 with output standOf cannot parse (truncated stdout - the engine's run result carries isStdoutTruncated - or any non-JSON text) becomes lane null, and moved() settles the question as 'ticket left its lane', against the comment two lines up that only exit 5 settles; the uncommitted change now sends every listed ticket whose listed lane differs from the asked lane down this path, so it is reached on every refresh where the list is stale; example: question about MG677R asked in signoff, list says in-progress, jaira show prints '{"handle":"MG677R","body":"long notes ...' with exit 0 -> the pane says 'No question is waiting for you.' and the question sits under Answered; ran: scratch test in a copy of the mod (claude plugin test, world() jaira show stubbed to the truncated text); unclear: the engine's stdout cap was not found, so how long a ticket must be to hit it in practice is unchecked; fix direction: only a parsed status settles, an unparsed one says nothing (like a timeout)
+- **2026-11-24 11:55 · Sascha** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:2088 (openAsks) - class: busy is reset to false on every pane opening while a Translate call may still be out, so the guard in toggleTranslation/translateAsks ('pressing t again starts no second call beside it') is bypassed by closing and reopening the pane; example: press t (call held), Esc, reopen with q, press t -> two model calls out at once, the later one overwrites the earlier one's texts; ran: scratch test in a copy of the mod (claude plugin test): held=2 calls=2; cost and a flicker only, not a wrong result - edge
+- **2026-11-24 11:55 · Sascha** — hunt report: 3 findings, all change (2 blocker: thread id reuse threads.ts:174/144, unparsed jaira show settles register.tsx:2079; 1 edge: busy reset on reopen register.tsx:2088), notes on CSQXKR | read as a diff since ea5a79df2: register.tsx, threads.ts, board.test.ts, release notes, shipped.sha256; board.ts (net zero change by CSQXKR), texts.ts and types/index.d.ts are not on the last line's list and were read through their CSQXKR hunks plus lanesOf/standOf, not end to end | not checked: the engine's stdout truncation limit for process.run (type definitions not found locally), so how often finding 2 is hit in practice is open; shipped.sha256 hashes were not recomputed against the files
+- **2026-11-24 11:55 · Sascha** — bughunt: done at ea5a79df2 - 3 findings (3 change, 0 pre-existing) in 7 modules, follow-up hunt since ea5a79df2 (uncommitted diff); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/hooks/threads.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/CSQXKR.md core/shipped/shipped.sha256
+- **2026-11-24 11:58 · Sascha** — hunt fixes (round 3): capped() also keeps the newest thread, so max+1 never reuses an id; settleMoved settles only on exit 5 or a parsed status (a filed-away ticket still shows, status done - checked with jaira show P1AE82); openAsks keeps busy so a reopened pane starts no second Translate call. claude plugin test 569/569

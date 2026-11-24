@@ -165,7 +165,19 @@ export function file(threads: readonly Thread[], f: Filing, turn: number, now?: 
   }
   if (at >= 0) next[at] = updated
   else next.push(updated)
-  return next.slice(-THREADS)
+  return capped(next, updated.id)
+}
+
+// At most THREADS threads: the ones touched longest ago go first. Neither
+// the thread this turn touched nor one whose question still waits is ever
+// dropped (CSQXKR), however many of them there are; nor is the newest, whose
+// id the next new thread counts on from.
+function capped(threads: Thread[], touched: number): Thread[] {
+  const over = threads.length - THREADS
+  if (over <= 0) return threads
+  const newest = Math.max(...threads.map(t => t.id))
+  const drop = new Set(threads.filter(t => t.question === undefined && t.id !== touched && t.id !== newest).sort((a, b) => a.lastTurn - b.lastTurn || a.id - b.id).slice(0, over).map(t => t.id))
+  return threads.filter(t => !drop.has(t.id))
 }
 
 export function listThreads(threads: readonly Thread[], turn: number, title: string, none: string): string {

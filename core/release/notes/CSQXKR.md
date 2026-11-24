@@ -1,3 +1,4 @@
 - In the cockpit's 'Waiting for you' pane, press x to set aside a question you settled elsewhere; a question about a ticket settles by itself once that ticket leaves the lane it was asked in.
 - Settled questions stay 24 hours under 'Answered' in the 'Waiting for you' pane, dimmed, each with when it was asked and when it was answered; open questions show when they were asked.
 - The 'Waiting for you' pane shows each question in the words it was asked in; press t (Translate) to read them all in the language of your ~/.jaira/settings.json, and t again for the original.
+- The cockpit now keeps every thread whose question still waits for you; past thirty threads it drops the ones touched longest ago instead of the oldest ones.

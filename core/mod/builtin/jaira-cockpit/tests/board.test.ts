@@ -397,7 +397,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
       const status = (w.tickets.find(x => (x as { handle: string }).handle === args[1]) as { status?: string } | undefined)?.status
       const disk = args[1] === (w.diskId ?? 'MG677R') ? w.disk[here] : undefined
       const file = disk === 'ref-only' ? {} : { path: `${e.init?.cwd ?? ''}/.jaira/tickets/01${args[1]}-cache-key.md` }
-      return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ ...w.shows[args[1]!], handle: args[1], body: w.bodies[args[1]!] ?? '', ...(status !== undefined ? { status, board: '' } : {}), 'on-ref-only': disk === 'ref-only', 'behind-ref': disk === 'behind', ...file }))
+      return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '', ...(status !== undefined ? { status, board: '' } : {}), ...w.shows[args[1]!], 'on-ref-only': disk === 'ref-only', 'behind-ref': disk === 'behind', ...file }))
     }
     if (cmd === 'git' && args[0] === 'rev-parse' && args[1] === '--abbrev-ref') return w.originHead === undefined ? { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } } : ok(`${w.originHead}\n`)
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
@@ -3800,12 +3800,41 @@ describe('settling questions, their times and Translate (CSQXKR)', () => {
     expect(recent(done, NOW + ANSWERED_MS)).toEqual([])
   })
 
-  test('a thread dropped to keep thirty is not answered; its open question settles nothing', () => {
+  test('thirty threads at most: the one touched longest ago goes, never one whose question waits', () => {
+    let ts: ReturnType<typeof file> = []
+    ts = file(ts, f({ title: 'T1', question: 'still waiting?' }), 1, NOW)
+    for (let i = 2; i <= 30; i++) ts = file(ts, f({ title: `T${i}` }), i, NOW)
+    // Thread 2 is touched again: thread 3 is now the one touched longest ago.
+    ts = file(ts, f({ thread: 2, line: 'again' }), 31, NOW)
+    const after = file(ts, f({ title: 'T31' }), 32, NOW)
+    expect(after).toHaveLength(30)
+    expect(after.map(t => t.id)).toContain(1)
+    expect(after.map(t => t.id)).toContain(2)
+    expect(after.map(t => t.id)).not.toContain(3)
+    expect(asksOf(after).map(a => a.question)).toEqual(['still waiting?'])
+    expect(settled(ts, after, NOW)).toEqual([])
+  })
+
+  test('over thirty, the newest thread is kept, so no id is handed out twice', () => {
     let ts: ReturnType<typeof file> = []
     for (let i = 1; i <= 30; i++) ts = file(ts, f({ title: `T${i}`, question: `q${i}?` }), i, NOW)
-    const after = file(ts, f({ title: 'T31' }), 31, NOW)
-    expect(after.map(t => t.id)).not.toContain(1)
-    expect(settled(ts, after, NOW)).toEqual([])
+    ts = file(ts, f({ title: 'Plain' }), 31, NOW)
+    ts = file(ts, f({ thread: 1, line: 'again' }), 32, NOW)
+    expect(ts.find(t => t.id === 31)?.title).toBe('Plain')
+    ts = file(ts, f({ title: 'Other' }), 33, NOW)
+    expect(new Set(ts.map(t => t.id)).size).toBe(ts.length)
+    expect(ts.find(t => t.title === 'Other')!.id).toBe(32)
+  })
+
+  test('thirty threads all waiting on a question: none is dropped', () => {
+    let ts: ReturnType<typeof file> = []
+    for (let i = 1; i <= 30; i++) ts = file(ts, f({ title: `T${i}`, question: `q${i}?` }), i, NOW)
+    expect(file(ts, f({ title: 'T31' }), 31, NOW)).toHaveLength(31)
+  })
+
+  test('a thread dropped to keep thirty is not answered by settled()', () => {
+    const before = file([], f({ question: 'q?' }), 1, NOW)
+    expect(settled(before, [], NOW)).toEqual([])
   })
 
   test('the same question asked again keeps when it was first asked; another question is asked now', () => {
@@ -3863,11 +3892,45 @@ describe('settling questions, their times and Translate (CSQXKR)', () => {
     await startSession($)
     await ask($, w, '{"thread": null, "title": "Cache", "line": "Frage", "ticket": null, "question": "MG677R annehmen?", "about": "MG677R", "answered": []}')
     w.tickets = [HUMAN, WORKING]
+    // jaira show still finds a ticket in the logbook, as done.
+    w.shows.MG677R = { status: 'done' }
     const shows = ran(w, 'jaira', 'show', 'MG677R').length
     await w.clock.advance(60_000)
     await w.clock.settle()
     expect(ran(w, 'jaira', 'show', 'MG677R').length).toBeGreaterThan(shows)
     expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('No question is waiting for you.')
+  })
+
+  test('a listed lane other than the one asked in is read again with jaira show before it settles anything', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Cache", "line": "Frage", "ticket": null, "question": "MG677R annehmen?", "about": "MG677R", "answered": []}')
+    // The list read at the start of a refresh is older than the question:
+    // jaira show, read now, still says signoff.
+    w.tickets = [{ ...SIGNOFF, status: 'in-progress' }, HUMAN, WORKING]
+    w.shows.MG677R = { status: 'signoff' }
+    const shows = ran(w, 'jaira', 'show', 'MG677R').length
+    await w.clock.advance(60_000)
+    await w.clock.settle()
+    expect(ran(w, 'jaira', 'show', 'MG677R').length).toBeGreaterThan(shows)
+    const pane = await $.ui.mount(ASKS_PANE)
+    expect((await pane.find({ type: 'Box' }))!.text).toContain('? MG677R annehmen?')
+    await pane.unmount()
+    // jaira show agrees with the list: now it settles.
+    w.shows.MG677R = {}
+    await w.clock.advance(60_000)
+    await w.clock.settle()
+    expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('No question is waiting for you.')
+  })
+
+  test('a jaira show that exits 0 without a lane that can be read settles nothing', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Cache", "line": "Frage", "ticket": null, "question": "MG677R annehmen?", "about": "MG677R", "answered": []}')
+    w.tickets = [HUMAN, WORKING]
+    await w.clock.advance(60_000)
+    await w.clock.settle()
+    expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('? MG677R annehmen?')
   })
 
   for (const [exit, settles] of [[1, false], [5, true]] as const) {
@@ -3972,6 +4035,36 @@ describe('settling questions, their times and Translate (CSQXKR)', () => {
     const shown = (await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text
     expect(shown).toContain('Какой размер?')
     expect(shown).toContain('Какой цвет?')
+  })
+
+  test('t pressed again while Translate is out starts no second call; the one out still lands', async ($, on) => {
+    const w = world(on)
+    w.files.set('/home/a/.jaira/settings.json', JSON.stringify({ language: 'Русский' }))
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Logo", "line": "Frage", "ticket": null, "question": "Wie gross?", "answered": []}')
+    await (await $.ui.mount(BAND)).press({ key: 'asks' })
+    const pane = await $.ui.mount(ASKS_PANE)
+    w.translations = { 'Wie gross?': 'Какой размер?' }
+    const held: (() => void)[] = []
+    w.modelHeld = held
+    const calls = w.modelCalls
+    for (let i = 0; i < 3; i++) {
+      await pane.press({ key: 'asks-translate' })
+      await w.clock.settle()
+    }
+    // Closed and opened again, t still starts no second call.
+    await pane.unmount()
+    await (await $.ui.mount(BAND)).press({ key: 'asks' })
+    const again = await $.ui.mount(ASKS_PANE)
+    await again.press({ key: 'asks-translate' })
+    await w.clock.settle()
+    expect(held).toHaveLength(1)
+    expect(w.modelCalls).toBe(calls + 1)
+    w.modelHeld = undefined
+    held.shift()!()
+    await w.clock.settle()
+    await again.unmount()
+    expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('Какой размер?')
   })
 
   test('without a language set there is no Translate', async ($, on) => {

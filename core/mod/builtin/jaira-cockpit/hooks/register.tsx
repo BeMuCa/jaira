@@ -2058,22 +2058,27 @@ async function showThreads($: EngineInterface): Promise<void> {
 // Every question waiting on a ticket's lane, settled once the ticket left it.
 // lists: 'jaira list --json' of every board read; a ticket in none of them
 // - filed away, or on a board not read - is asked of jaira alone, and one
-// jaira no longer knows has left its lane too.
+// jaira no longer knows has left its lane too. So is one whose listed lane
+// differs from the lane it was asked in: the list was read before this
+// refresh's awaits, and a question filed since may name a newer lane.
 async function settleMoved($: EngineInterface, dir: string, lists: readonly string[]): Promise<void> {
   const ids = watched(threads)
   if (ids.length === 0) return
   const listed = new Map(lists.flatMap(l => [...lanesOf(l)]))
   const lanes = new Map<string, string | null>()
   for (const id of ids) {
-    if (listed.has(id)) {
-      lanes.set(id, listed.get(id)!)
+    const lane = listed.get(id)
+    if (lane !== undefined && threads.every(t => t.about !== id || t.aboutLane === undefined || t.aboutLane === lane)) {
+      lanes.set(id, lane)
       continue
     }
-    // Exit 5 is jaira's 'no such ticket'; any other failure, like a
-    // timeout, says nothing and is asked again next round.
+    // Exit 5 is jaira's 'no such ticket' - a filed-away one still shows,
+    // as done. Any other failure, a timeout, or an answer without a lane
+    // that can be read says nothing and is asked again next round.
     const shown = await run($, ['jaira', 'show', id, '--json'], dir)
+    const status = shown?.exitCode === 0 ? standOf(shown.stdout).status : undefined
     if (shown?.exitCode === 5) lanes.set(id, null)
-    else if (shown?.exitCode === 0) lanes.set(id, standOf(shown.stdout).status ?? null)
+    else if (status !== undefined) lanes.set(id, status)
   }
   await change($, ts => moved(ts, lanes, turn))
 }
@@ -2082,7 +2087,9 @@ async function openAsks($: EngineInterface): Promise<void> {
   // Every opening starts on the original; Translate asks for the person's
   // language, as the Acceptance pane does (FMWBA8).
   const language = languageOf(await settingsJson($))
-  await update($, asksShownAtom, () => ({ ...(language !== undefined ? { language } : {}), on: false, busy: false, texts: {} }))
+  // A Translate call still out keeps busy, so the reopened pane starts no
+  // second call beside it.
+  await update($, asksShownAtom, s => ({ ...(language !== undefined ? { language } : {}), on: false, busy: s.busy, texts: {} }))
   const opened = await $.ui.open({ id: ASKS, title: t.asksTitle, focus: true, closeOnEscape: true })
   if (!opened.isPlaced) await say($, listThreads(threads, turn, t.threadsTitle, t.threadsNone))
 }
@@ -2091,8 +2098,10 @@ async function openAsks($: EngineInterface): Promise<void> {
 // model; pressed again, the originals. A failed call leaves the originals.
 async function toggleTranslation($: EngineInterface): Promise<void> {
   const shown = await read($, asksShownAtom)
+  // Back to the original; a call still out keeps busy until it returns, so
+  // pressing t again starts no second call beside it.
   if (shown.on) {
-    await update($, asksShownAtom, s => ({ ...s, on: false, busy: false }))
+    await update($, asksShownAtom, s => ({ ...s, on: false }))
     return
   }
   await update($, asksShownAtom, s => ({ ...s, on: true }))
