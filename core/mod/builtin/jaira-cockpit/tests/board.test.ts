@@ -43,6 +43,8 @@ type World = {
   // Translate answers each text it is handed from this, a text not in it as
   // it is; undefined: it answers model.
   translations?: Record<string, string>
+  // The exit code 'jaira show <id>' fails with, by id; unset: it answers.
+  showExit?: Record<string, number>
   // The Explain-on-one-note calls, and what each answers; undefined: no
   // answer.
   reasonPrompts: string[]
@@ -387,6 +389,9 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'jaira' && args[0] === 'show' && args.includes('--brief')) {
       const id = args[1]!
       return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ id, ...(id in w.hunts ? { bughunt: w.hunts[id] } : {}) }))
+    }
+    if (cmd === 'jaira' && args[0] === 'show' && w.showExit?.[args[1]!] !== undefined) {
+      return { value: { exitCode: w.showExit[args[1]!]!, stdout: '', stderr: 'jaira: show failed', isStdoutTruncated: false, isStderrTruncated: false } }
     }
     if (cmd === 'jaira' && args[0] === 'show') {
       const status = (w.tickets.find(x => (x as { handle: string }).handle === args[1]) as { status?: string } | undefined)?.status
@@ -3849,6 +3854,21 @@ describe('settling questions, their times and Translate (CSQXKR)', () => {
     expect(ran(w, 'jaira', 'show', 'MG677R').length).toBeGreaterThan(shows)
     expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('No question is waiting for you.')
   })
+
+  for (const [exit, settles] of [[1, false], [5, true]] as const) {
+    test(`a ticket in no list whose jaira show exits ${exit}: ${settles ? 'gone, the question settles' : 'not known, the question stays'}`, async ($, on) => {
+      const w = world(on)
+      await startSession($)
+      await ask($, w, '{"thread": null, "title": "Cache", "line": "Frage", "ticket": null, "question": "MG677R annehmen?", "about": "MG677R", "answered": []}')
+      w.tickets = [HUMAN, WORKING]
+      w.showExit = { MG677R: exit }
+      await w.clock.advance(60_000)
+      await w.clock.settle()
+      const text = (await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text
+      if (settles) expect(text).toContain('No question is waiting for you.')
+      else expect(text).toContain('? MG677R annehmen?')
+    })
+  }
 
   test('x settles a question without a word into the session; it stands dimmed under Answered with both times', async ($, on) => {
     const w = world(on)

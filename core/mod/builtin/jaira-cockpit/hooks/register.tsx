@@ -2000,7 +2000,7 @@ async function fileTurn($: EngineInterface, human: string, answer: string): Prom
   if (!result.isAnswered) return
   const filing = parseFiling(result.text)
   if (filing === undefined) return
-  await change($, file(threads, board ? filing : { ...filing, ticket: null, about: null }, turn, await $.clock.now()))
+  await change($, (ts, now) => file(ts, board ? filing : { ...filing, ticket: null, about: null }, turn, now))
   // The title of a ticket a question names, read once: the pane shows it
   // beside the id. A ticket jaira does not know keeps the thread's title,
   // and is not asked about again.
@@ -2032,8 +2032,12 @@ async function keepThreads($: EngineInterface): Promise<void> {
 
 // The threads after a change, and every question it settled moved to the
 // pane's 'Answered' (CSQXKR): a pick, a filing, x, or its ticket moving on.
-async function change($: EngineInterface, next: Thread[]): Promise<void> {
+// The change is worked out from the threads as they are after the clock is
+// read, with no await between, so two changes never overwrite each other.
+async function change($: EngineInterface, f: (ts: Thread[], now: number) => Thread[]): Promise<void> {
   const now = await $.clock.now()
+  const next = f(threads, now)
+  if (next.length === threads.length && next.every((x, i) => x === threads[i])) return
   done = recent([...settled(threads, next, now), ...done], now)
   threads = next
   await keepThreads($)
@@ -2065,12 +2069,13 @@ async function settleMoved($: EngineInterface, dir: string, lists: readonly stri
       lanes.set(id, listed.get(id)!)
       continue
     }
+    // Exit 5 is jaira's 'no such ticket'; any other failure, like a
+    // timeout, says nothing and is asked again next round.
     const shown = await run($, ['jaira', 'show', id, '--json'], dir)
-    if (shown === undefined) continue
-    lanes.set(id, shown.exitCode === 0 ? standOf(shown.stdout).status ?? null : null)
+    if (shown?.exitCode === 5) lanes.set(id, null)
+    else if (shown?.exitCode === 0) lanes.set(id, standOf(shown.stdout).status ?? null)
   }
-  const next = moved(threads, lanes, turn)
-  if (next.some((x, i) => x !== threads[i])) await change($, next)
+  await change($, ts => moved(ts, lanes, turn))
 }
 
 async function openAsks($: EngineInterface): Promise<void> {
@@ -2115,13 +2120,13 @@ async function translateAsks($: EngineInterface): Promise<void> {
 // tells that turn apart from an agent's (1M3X77, a known limit).
 async function answerAsk($: EngineInterface, a: Ask, choice: string): Promise<void> {
   void $.prompt.submit({ text: answerLine(a, choice) })
-  await change($, answerThread(threads, a.thread, turn))
+  await change($, ts => answerThread(ts, a.thread, turn))
 }
 
 // x: settled without a word into the session - decided elsewhere, in the
 // Acceptance pane or by hand.
 async function dismissAsk($: EngineInterface, a: Ask): Promise<void> {
-  await change($, answerThread(threads, a.thread, turn))
+  await change($, ts => answerThread(ts, a.thread, turn))
 }
 
 // An answer the options did not offer is typed in the prompt, which starts
