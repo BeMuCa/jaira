@@ -20,13 +20,18 @@ related: []
 follows: 01M8537VMKP5N8TJ2YC91M3X77
 commits: []
 created-at: 2026-11-24T10:24:44Z
-updated-at: 2026-11-24T10:40:28Z
+updated-at: 2026-11-24T10:44:08Z
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69066
 claimed-at: 2026-11-24T10:25:16Z
 outcome-what: "Cockpit 'Waiting for you': x settles a question; a question settles itself once its ticket leaves the lane it was asked in; settled ones stay 24h dimmed under 'Answered'; asked/answered times; questions kept in the original, t translates all at once"
 outcome-why: "Questions decided in the Acceptance pane stayed forever, had no time, and were always shown rephrased (Sascha 24.11.2026)"
 outcome-resolves: CSQXKR
+review-summary: "core/mod/builtin/jaira-cockpit/hooks/threads.ts settled() keeps the options of a settled question, which the Answered section never shows, so Translate sends them to the model and they bust its cache - drop them there (options: []) | core/mod/builtin/jaira-cockpit/hooks/register.tsx ASKS pane casts e.props for bodyColumns; the Overview pane in the same file reads e.props.bodyColumns directly - do the same"
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Cockpit 'Wartet auf dich': Frage schliesst sich selbst oder per x, zeigt ihre Zeit und uebersetzt nur auf Knopfdruck
@@ -61,3 +66,4 @@ outcome-resolves: CSQXKR
 - **2026-11-24 10:26 · Sascha** — decisions (worker, no open question): 1) lane at asking time = status from the same 'jaira show' that looks up the title, only for the ticket the question names (about); the thread's own ticket is not looked up (as today). Every board refresh (60s) compares with 'jaira list' of all boards; a ticket in none of them is asked once with 'jaira show'; unknown or other lane -> done. 2) closed = any open question that is gone after a change (pick, chat filing, x, lane left, a new question on the same thread replacing it) - goes to 'Answered' with answeredAt, dropped after 24h. 3) times in English, cockpit is English only (NZZDRH): 'asked today 07:12 · answered today 07:40', other day '23.11. 21:40'. 4) question is now kept in the assistant's own wording (classifier prompt), Translate = one haiku call for every question+option shown, into settings language; no language set = no button (as FMWBA8); a pick sends the original option text.
 - **2026-11-24 10:34 · Sascha** — waiting: cockpit test run (background b0ym9m1cy) since 11:34; code for DoD 1-4,6 written, release note written, shipped.sha256 still to regenerate (go test ./core/role fails until then)
 - **2026-11-24 10:40 · Sascha** — in-progress: the pane no longer closes after the last pick (it would hide 'Answered'; the band button only appears while a question is open, so a closed pane could not show it). shipped.sha256 must be regenerated (scripts/shipped-history.sh --write) after every change to the cockpit files, or go test ./core/role fails. Known limit: a question whose ticket is only the thread's own (no 'about') does not settle by lane - its lane is never read (as its title is not).
+- **2026-11-24 10:41 · Sascha** — critique: settled() drops options (never shown under Answered, only cost Translate tokens); ASKS pane reads e.props.bodyColumns without the cast, as the Overview pane does. Rest stands: separate asksShown atom (questions are no ticket, the rephrased/translating atoms are keyed by ticket), settling by replacement (decision note above).

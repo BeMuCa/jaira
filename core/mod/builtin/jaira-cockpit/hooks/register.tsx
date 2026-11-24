@@ -2833,7 +2833,7 @@ export const register: Register = (on, options) => {
         {asked.length > 0
           ? (
             <Box key="asks-answered" flexDirection="column" marginTop={1}>
-              <Text dimColor>{'─'.repeat(Math.max(10, Math.min(60, (e.props as { bodyColumns?: number }).bodyColumns ?? 40)))}</Text>
+              <Text dimColor>{'─'.repeat(Math.max(10, Math.min(60, e.props.bodyColumns)))}</Text>
               <Text dimColor bold>{t.asksAnswered}</Text>
               {asked.map((a, i) => (
                 <Box key={`asked-${a.thread}-${a.answeredAt}-${i}`} flexDirection="column" marginTop={i > 0 ? 1 : 0}>

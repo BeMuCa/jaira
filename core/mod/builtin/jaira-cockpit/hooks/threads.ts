@@ -249,9 +249,10 @@ export function moved(threads: readonly Thread[], lanes: ReadonlyMap<string, str
 
 // The questions open before a change and gone after it, settled at now:
 // answered, dismissed, moved on, or replaced by a new one on their thread.
+// Their options go: the pane no longer offers them.
 export function settled(before: readonly Thread[], after: readonly Thread[], now: number): Ask[] {
   const still = new Set(after.filter(t => t.question !== undefined).map(t => `${t.id}\n${t.question}`))
-  return asksOf(before).filter(a => !still.has(`${a.thread}\n${a.question}`)).map(a => ({ ...a, answeredAt: now }))
+  return asksOf(before).filter(a => !still.has(`${a.thread}\n${a.question}`)).map(a => ({ ...a, options: [], answeredAt: now }))
 }
 
 // The settled questions still shown: the last 24 hours, settled last first.

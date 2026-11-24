@@ -3787,7 +3787,7 @@ describe('settling questions, their times and Translate (CSQXKR)', () => {
   test('what a change settled carries both times; a day later it is gone', () => {
     const before = file([], f({ question: 'a?', options: ['x'] }), 1, NOW - 60_000)
     const done = settled(before, answerThread(before, 1, 2), NOW)
-    expect(done).toEqual([{ thread: 1, title: 'Release', question: 'a?', options: ['x'], askedAt: NOW - 60_000, answeredAt: NOW }])
+    expect(done).toEqual([{ thread: 1, title: 'Release', question: 'a?', options: [], askedAt: NOW - 60_000, answeredAt: NOW }])
     // A new question on the same thread settles the one it replaces.
     expect(settled(before, file(before, f({ thread: 1, question: 'b?' }), 2, NOW), NOW).map(a => a.question)).toEqual(['a?'])
     expect(settled(before, before, NOW)).toEqual([])
