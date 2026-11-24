@@ -20,7 +20,8 @@ related: []
 follows: 01M86NFX4NQF351XWAXZ7YQ1JC
 commits: []
 created-at: 2026-11-24T11:36:41Z
-updated-at: 2026-11-24T11:36:41Z
+updated-at: 2026-11-24T11:37:53Z
+updated-by: Sascha
 ---
 
 # jaira spec find und Spec-Gates in jaira validate
