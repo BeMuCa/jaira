@@ -1,7 +1,7 @@
 ---
 id: 01M86NFX4NQF351XWAXZ7YQ1JC
 title: "SDD-Basis: Specs in EARS (max. 100 Zeilen je Datei) und ADRs aus allen Tickets erzeugen"
-status: todo
+status: in-progress
 ready: true
 creator: Sascha
 assignee: Sascha
@@ -18,7 +18,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-24T11:36:37Z
-updated-at: 2026-11-24T11:40:50Z
+updated-at: 2026-11-24T11:40:54Z
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-39249
 claimed-at: 2026-11-24T11:36:58Z
