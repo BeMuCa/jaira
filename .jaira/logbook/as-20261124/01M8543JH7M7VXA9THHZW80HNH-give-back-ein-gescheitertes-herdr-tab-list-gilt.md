@@ -1,7 +1,7 @@
 ---
 id: 01M8543JH7M7VXA9THHZW80HNH
 title: "Give back: ein gescheitertes 'herdr tab list' gilt als 'kein Tab offen' und startet einen zweiten Worker neben dem lebenden"
-status: critique
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -16,27 +16,30 @@ tags:
 blocked-by: []
 related: []
 follows: 01M851Y62KHD9DVD2GDAM31BYV
-commits: []
+commits:
+  - b48f82c95a49cd300e5866967a98b7dd8865b6f0
+  - b4bf467aab969c96b1fc8bf36d3ddb85e1edb27e
+  - 8257c82962ed4f3675a220b55619ca1faa0beea3
 created-at: 2026-11-23T21:13:33Z
-updated-at: 2026-11-24T07:08:56Z
+updated-at: 2026-11-24T07:15:45Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-46440
 claimed-at: 2026-11-24T06:58:04Z
 outcome-what: "Give back stops when 'herdr tab list' fails: no new worker, no keys into the old pane, a note and a toast saying the tab state was unreadable"
 outcome-why: "A failed tab list read as 'no tab open', so Give back started a second worker beside a live one on the same ticket and worktree"
 outcome-resolves: Two workers on one ticket after a Herdr timeout during Give back
-review-summary: "givingBack (register.tsx:1790) now stops when 'herdr tab list' exits non-zero or gives no answer: no tab is closed, no text is typed into the recorded pane, spawn.sh is not run; the ticket stays in in-progress, a note 'given back to nobody' carries the Herdr error (last 160 chars), the teamlead session gets a 'none: tab state unreadable' line and a toast (texts.ts tabsUnreadable) tells the person to check the worker tab. One cockpit test covers the timeout case; release note added. Before, a failed list read as 'no tab' and started a second worker."
+review-summary: "Delta review from b48f82c95: the only change since is core/shipped/shipped.sha256, which now records the new hashes of register.tsx and texts.ts (plus spawn.sh history lines the script regenerated); go test ./core/role ./core/shipped passes, so the previous blocker is closed. The change itself: givingBack in register.tsx no longer reads a failed or unanswered 'herdr tab list' as 'no tab open' - it starts no worker, sends no keys, writes a 'given back to nobody' note with the reason and toasts tabsUnreadable."
 review-gaps: |-
-  blocker: go test ./core/role fails (shipped_test.go:74) - register.tsx and texts.ts changed but core/shipped/shipped.sha256 lacks their new hashes; on master it passes. Fix: scripts/shipped-history.sh --write and commit the sha256 file
-  note: elsewhere: herdr-hc.sh:88 / sessions.ts:97-102 - a tab list that exits 0 but is incomplete or unparsable still reads as no tab and starts a second worker; pre-existing (bughunt note), new ticket
-test-verdict: "pass: claude plugin test (cockpit) 543/543 RC=0, go test ./core/release/... RC=0; DoD 1 checked at register.tsx:1790 and test 'a failed herdr tab list starts no worker...' (board.test.ts:2527) - herdr tab list exit 1 gives no spawn.sh, no tab close, no send-text, a 'given back to nobody' note and the unreadable toast; DoD 2 core/release/notes/W80HNH.md one line; the cockpit runs only inside Claude Code, so the failure path is exercised through the engine mock, not a live Herdr; new code writes only through the existing jaira note path, no new writer"
-hunt-verdict: "pass: bughunt done at b48f82c95, 0 change, 1 pre-existing (same subject: a partial tab list with exit 0 via herdr-hc.sh:88 '|| continue' and tabsOf's [] on bad JSON - note left for the person)"
-review-verdict: "send-back: go test ./core/role fails - shipped.sha256 lacks the new hashes of register.tsx and texts.ts; the code change itself meets both DoD items"
-review-round: 1
+  note: elsewhere: herdr-hc.sh:88 and sessions.ts:97-102 - a tab list that exits 0 but is incomplete or not JSON still reads as no tab (bughunt finding, before this ticket; new ticket)
+  note: limit: garbage stdout with exit 0 still counts as no tab, decided on purpose in the 07:01 note
+test-verdict: "pass: round 2 (stop-after-fix): go test ./... RC=0 incl. core/role shipped_test; cockpit code unchanged since round 1 (543/543)"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 2"
+review-verdict: "accept: the previous blocker (shipped.sha256) is closed and the DoD is met with a test; no new defects in the delta"
+review-round: 2
 review-verdict-gaps: |-
-  blocker: go test ./core/role fails (shipped_test.go:74) - register.tsx and texts.ts changed but core/shipped/shipped.sha256 lacks their new hashes; on master it passes. Fix: scripts/shipped-history.sh --write and commit the sha256 file
-  note: elsewhere: herdr-hc.sh:88 / sessions.ts:97-102 - a tab list that exits 0 but is incomplete or unparsable still reads as no tab and starts a second worker; pre-existing (bughunt note), new ticket
-review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  2. see 543 pass, among them 'give back > a failed herdr tab list starts no worker, types nothing and says the tab state was unreadable'  3. cd ../../../.. && go test ./core/role  4. see ok (today it fails: shipped.sha256 lacks 2 files)  5. live: in a Herdr session make 'herdr tab list' fail (e.g. a herdr wrapper that exits 1), press Give back on a signoff ticket - no new tab opens, the toast says Herdr's tab list could not be read"
+  note: elsewhere: herdr-hc.sh:88 and sessions.ts:97-102 - a tab list that exits 0 but is incomplete or not JSON still reads as no tab (bughunt finding, before this ticket; new ticket)
+  note: limit: garbage stdout with exit 0 still counts as no tab, decided on purpose in the 07:01 note
+review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test  2. the test 'give back > a failed herdr tab list starts no worker, types nothing and says the tab state was unreadable' passes  3. go test ./core/role ./core/shipped prints ok  (no safe hand path: it needs Herdr to fail its tab list)"
 round: 2
 back-from: review
 back-by: lane
@@ -75,3 +78,11 @@ stop-after-fix: "true"
 - **2026-11-24 07:06 · Alexander Sacharov** — review: done at b48f82c95
 - **2026-11-24 07:06 · Alexander Sacharov** — review: blocker: go test ./core/role fails at shipped_test.go:74 - core/shipped/shipped.sha256 lacks the new hashes of core/mod/builtin/jaira-cockpit/hooks/register.tsx and hooks/texts.ts. Run scripts/shipped-history.sh --write and commit core/shipped/shipped.sha256 with the ticket id.
 - **2026-11-24 07:08 · Alexander Sacharov** — review blocker closed: scripts/shipped-history.sh --write recorded register.tsx/texts.ts in core/shipped/shipped.sha256; go test ./... RC=0. stop-after-fix=true set by me (sha file only, no lock, no parser). Lesson: the shipped.sha256 gate belongs in the pre-push run for every cockpit change.
+- **2026-11-24 07:09 · Alexander Sacharov** — critique+optimize round 2 (lean): the delta is the generated sha256 list only - nothing to judge or remove.
+- **2026-11-24 07:09 · Alexander Sacharov** — waiting: review round 2 (fresh agent via run-lane.sh) since 08:09
+- **2026-11-24 07:10 · Alexander Sacharov** — review: done at b4bf467aa
+- **2026-11-24 07:11 · Alexander Sacharov** — report: Give back stops when herdr tab list fails - no worker, no keys, note + toast; shipped.sha256 updated | signoff, context unknown | accept or give back; review note: partial tab list with exit 0 (herdr-hc.sh:88, sessions.ts:97) is a separate pre-existing ticket for the person to file
+- **2026-11-24 07:12 · Alexander Sacharov** — Accepted from signoff: angenommen:
+- note: limit: garbage stdout with exit 0 still counts as no tab, decided on purpose in the 07:01 note
+- note: elsewhere: herdr-hc.sh:88 and sessions.ts:97-102 - a tab list that exits 0 but is incomplete or not JSON still reads as no tab (bughunt finding, before this ticket; new ticket)
+- **2026-11-24 07:13 · Alexander Sacharov** — cockpit: accepted by the person, signoff -> done
