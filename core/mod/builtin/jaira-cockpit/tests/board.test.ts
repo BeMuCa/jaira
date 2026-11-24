@@ -960,7 +960,7 @@ describe('waiting for you', () => {
     expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Execute: answer the question first - or mark a note fix, or type what is missing')
     await pane.press({ key: 'execute-K7P2QX' })
     expect(ran(w, 'jaira', 'move')).toEqual([])
-    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('K7P2QX waits in human for the answer to its question: answer it first, then Execute moves it on to review. Mark a note fix, or type what is missing, to give it back.')
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('K7P2QX waits in human for the answer to its question: answer it first - Discuss, or an option marked [accept] under Explain - and Execute then moves it on to review. Mark a note fix, or type what is missing, to give it back.')
   })
 
   test('where jaira names no lane after it, Execute accepts nothing and says so', async ($, on) => {
@@ -1433,6 +1433,29 @@ describe('waiting for you', () => {
     expect(ran(w, 'jaira', 'note').map(r => r[3])).toEqual(['decision: 2) accept it as it is', 'cockpit: accepted by the person, signoff -> done'])
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
     expect(w.submitted).toEqual(['jaira-cockpit: MG677R: accepted, signoff -> done (Person, Cockpit)'])
+  })
+
+  // M5JSE9: mid-board the decision answers the question: it is cleared before
+  // the move, so review does not inherit it.
+  test('an option marked [accept] on a ticket waiting on a question clears the question and moves it one lane on', async ($, on) => {
+    const w = world(on)
+    w.bodies.K7P2QX = MARKED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-K7P2QX' })
+    await (await $.ui.mount(EXPLANATION('Explanation of K7P2QX'))).press({ key: 'pick-K7P2QX-2' })
+    expect(ran(w, 'jaira', 'set', 'K7P2QX', 'question=')).toHaveLength(1)
+    expect(ran(w, 'jaira', 'move', 'K7P2QX', '--to', 'review', '--force')).toHaveLength(1)
+  })
+
+  test('an option marked [accept] on a ticket that moved on meanwhile moves nothing', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = MARKED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    w.tickets = [{ ...SIGNOFF, status: 'review' }, HUMAN]
+    await pane.press({ key: 'pick-MG677R-2' })
+    expect(ran(w, 'jaira', 'move')).toEqual([])
   })
 
   test('after a restart an answered explanation is read with its decision, not offered again; a newer one is open', async ($, on) => {

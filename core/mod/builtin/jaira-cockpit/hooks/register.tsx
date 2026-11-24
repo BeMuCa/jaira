@@ -1371,6 +1371,15 @@ async function deciding($: EngineInterface, id: string, text: string, action: Ac
   const w = (await read($, boardAtom))?.waiting.find(x => x.id === id)
   if (action === 'giveBack' && w !== undefined) return giveBack($, id, w.lane, text, share)
   if (action === 'accept' && w !== undefined && w.acceptTo !== null) {
+    // As Execute: a press read off an older band moves nothing - mid-board
+    // it would send a ticket that went on back a lane (M5JSE9).
+    if (await stillIn($, w, t.accept) === undefined) return
+    // The decision is the answer to the question the ticket waits on: it
+    // goes off the ticket before the move, or the next lane inherits it.
+    if (waitsForAnswer(w)) {
+      const cleared = await jaira($, dir, ['set', id, 'question='])
+      if (!cleared.ok) return fail($, `${t.accept} ${id}`, cleared.why)
+    }
     await accept($, w)
     return
   }
