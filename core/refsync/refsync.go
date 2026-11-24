@@ -953,7 +953,7 @@ func (y *Syncer) mergeRefused(e outbox.Entry) (bool, []milestone.Conflict) {
 	}
 	if bytes.Equal(merged, cur) && chosen == file {
 		// Nothing of the edit is left to send: the winner already says it.
-		_ = y.Box.DropMilestone(e.ID)
+		_ = y.Box.Settle(e)
 		return false, nil
 	}
 	dir := milestone.Dir(y.Store.Root)
@@ -1022,7 +1022,7 @@ func (y *Syncer) tidyMilestoneEntries() error {
 		}
 		if !milestone.IsID(e.ID) {
 			if milestone.RenamedTo([]byte(e.Content)) != "" {
-				if err := y.Box.DropMilestone(e.ID); err != nil {
+				if err := y.Box.Settle(e); err != nil {
 					return err
 				}
 				continue
@@ -1037,8 +1037,10 @@ func (y *Syncer) tidyMilestoneEntries() error {
 			continue
 		}
 		file, content, _, err := y.Repo.ReadMilestone(e.ID)
+		// Only the entry compared goes: this runs outside the milestone lock,
+		// and a write queued during the read above is a newer edit.
 		if err == nil && file == e.File && string(content) == e.Content {
-			if err := y.Box.DropMilestone(e.ID); err != nil {
+			if err := y.Box.Settle(e); err != nil {
 				return err
 			}
 		}

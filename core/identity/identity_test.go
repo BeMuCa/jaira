@@ -10,7 +10,9 @@ import (
 
 func TestCurrentHonoursJairaUserAboveEverything(t *testing.T) {
 	t.Setenv("JAIRA_USER", "berk")
-	if got := Current("."); got != "berk" {
+	// A directory of its own, not ".": "." is the checkout the tests run in,
+	// and its refs/jaira/people may map "berk" to another jaira name.
+	if got := Current(t.TempDir()); got != "berk" {
 		t.Errorf("Current() = %q, want %q", got, "berk")
 	}
 }
