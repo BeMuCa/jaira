@@ -20,11 +20,16 @@ tags:
   - cli
 blocked-by: []
 related: []
-commits: []
+commits:
+  - e03f8f08e71752da054ea672fefa3d96a0d8a4ec
 created-at: 2026-09-13T20:43:39Z
-updated-at: 2026-09-13T20:47:02Z
+updated-at: 2026-11-23T13:16:34Z
 updated-by: Alexander Sacharov
 parent: 01M2E248SM9X1JRZBNTHC9V7ZV
+rejected-kind: obsolete
+rejected-why: "done: roles install, hook example, cockpit"
+rejected-by: Alexander Sacharov
+rejected-at: "2026-11-23T13:16:34Z"
 ---
 
 # Was die Tafel treibt, reist mit dem Binary
