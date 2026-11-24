@@ -109,6 +109,29 @@ func TestAWriteQueuedDuringThePushOfItsKeySurvivesTheFlush(t *testing.T) {
 	}
 }
 
+// A write queued for a ticket while its delete is in flight survives the
+// flush leased on no ref: the remote has none after the delete, and the
+// deleted ref's SHA would make the next flush lose its push to nothing.
+func TestAWriteQueuedDuringItsDeleteIsLeasedOnNoRef(t *testing.T) {
+	b := box(t)
+	const key = "01AAA"
+	if err := b.Queue(key, outbox.OpDelete, nil, "lease-remote", "ada"); err != nil {
+		t.Fatal(err)
+	}
+	s := &interleaving{fakeSender: newFake(), during: func() {
+		if err := b.Queue(key, outbox.OpWrite, []byte("reborn"), "lease-remote", "ada"); err != nil {
+			t.Errorf("queue during the delete: %v", err)
+		}
+	}}
+	if res, err := b.Flush(s); err != nil || len(res) != 1 || res[0].Outcome != outbox.Sent {
+		t.Fatalf("want the delete sent, got %+v, %v", res, err)
+	}
+	e, ok := b.Pending(key)
+	if !ok || e.Op != outbox.OpWrite || e.Content != "reborn" || e.Lease != "" {
+		t.Fatalf("want the write queued on no ref, got %+v, %v", e, ok)
+	}
+}
+
 // A ticket write the remote refused is dropped, but only that one: a write
 // queued during the refused push is a newer edit and stays queued.
 func TestALostRaceDropsOnlyTheRefusedWrite(t *testing.T) {

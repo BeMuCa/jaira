@@ -391,6 +391,13 @@ func (b *Box) dropLocked(kind Kind, key string) error {
 // the newer entry never saw — a merge — passes empty, and the newer entry
 // keeps its lease and loses that race, to be merged in turn.
 func (b *Box) Settle(seen Entry, lease string) error {
+	return b.settle(seen, lease, lease != "")
+}
+
+// settle is Settle with the lease taken as given when releasing: after a sent
+// delete the remote holds no ref, and empty is the lease that says so — a
+// newer write keeping the deleted ref's SHA would lose its push to nothing.
+func (b *Box) settle(seen Entry, lease string, release bool) error {
 	unlock, err := b.lock()
 	if err != nil {
 		return err
@@ -404,7 +411,7 @@ func (b *Box) Settle(seen Entry, lease string) error {
 	if sameWrite(now, seen) {
 		return b.dropKind(kind, seen.ID)
 	}
-	if lease == "" {
+	if !release {
 		return nil
 	}
 	// The migration rode on the write just sent; leased, it is not sent again.
@@ -564,7 +571,7 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 
 		switch {
 		case sendErr == nil:
-			if err := b.Settle(e, sha); err != nil {
+			if err := b.settle(e, sha, true); err != nil {
 				return results, err
 			}
 			results = append(results, Result{ID: e.ID, File: e.File, Kind: kind, Op: e.Op, Outcome: Sent})
