@@ -1,7 +1,7 @@
 ---
 id: 01M866HXTHQS29K2ZMNQ8NWE4P
 title: "herdr-hc.sh 'tab list' laesst ein Terminal, das auf 'hc get' nicht antwortet, still weg und endet mit Exit 0"
-status: testing
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -17,23 +17,45 @@ tags:
 blocked-by: []
 related: []
 follows: 01M8543JH7M7VXA9THHZW80HNH
-commits: []
+commits:
+  - eb0a645dc985132f9e18f85bc5f3538e926e5455
+  - 34dc412bf80873814bc644770c4d2f2cd8334a64
+  - fd7a26ff17a7e166da2a22dc2a4c3b62b2d40506
+  - 2863ef749e7d3f81b9d3294f4a666a4747908226
+  - db0853e1de4b898dfa7a9aefd7c913c117ab6d00
+  - 77102f751ea5537680ed26c4b9efc3e78aca8d63
 created-at: 2026-11-24T07:15:35Z
-updated-at: 2026-11-24T07:33:11Z
+updated-at: 2026-11-24T10:25:23Z
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-1283952
 claimed-at: 2026-11-24T07:16:12Z
 outcome-what: "herdr-hc.sh 'tab list': Terminal ohne Antwort -> Liste auf stdout, stderr nennt es, Exit 3; not_found aus 'hc get' (seit hc ls entfernt) -> weggelassen, Exit 0. Cockpit-Code unveraendert (W80HNH-Zweig); Tests Go 7 Faelle, Cockpit Give back."
 outcome-why: "Ein stummes Terminal fiel still aus der Liste, Give back startete einen zweiten Worker. partial:true (Runde 2) sahen nur Give back, nicht workers/agentsOf/reap.sh."
 outcome-resolves: "Alle Leser von 'tab list' lesen Exit!=0 schon als 'Tabs unbekannt': Give back startet keinen Worker, reap.sh raeumt nichts ab. Das Ende-zwischen-ls-und-get-Rennen sperrt nichts mehr (not_found)."
-review-summary: none
-review-gaps: "none - Runde 3 entfernt tabsPartial (sessions.ts) und den partial-Zweig in register.tsx wieder ganz; shipped.sha256 behaelt deren Zeilen aus 34dc412bf (append-only, nie ausgeliefert, --check ok); err-mktemp in 'tab list' wie in 'tab create', kein gemeinsamer Helfer (zwei Zeilen)."
+review-summary: "Full review of eb0a645dc..db0853e1d (net vs W80HNH: herdr-hc.sh, two tests, release note, shipped hashes). herdr-hc.sh 'tab list' no longer drops a terminal silently when 'hc get' fails: a not_found answer (terminal removed since 'hc ls', format checked against the real hc: exit 3, kind not_found) is left out as closed; any other failure (timeout) leaves the terminal out of the printed list but adds its address to a stderr line and ends with exit 3. No cockpit code changed: Give back already refuses on any non-zero exit since W80HNH (register.tsx:1790) and names stderr, so it starts no second worker beside a tab it could not see; reap.sh:133 reads exit 3 as 'herdr not reachable' and removes nothing. Tests: TestHerdrHcTabListSaysWhichTerminalDidNotAnswer (7 cases with a stub hc: all answer, none, one/first/all mute, removed, removed+mute) and board.test.ts 'a tab list missing a terminal that gave no answer starts no worker either'."
+review-gaps: |-
+  note: limit: while any Herdr App terminal, even a foreign one, gives no answer to 'hc get', tab list exits 3: reap.sh keeps everything, Give back starts nothing, band/Overview/workers show no tab list for that refresh (register.tsx:353, :1949) - accepted by teamlead 2026-11-24 and named in core/release/notes/8NWE4P.md
+  note: limit: register.tsx:1182 removes a chat's ticket copy when spawn.sh fails late and tab list exits 3 in the same moment - needs two failures at once, left as is (worker note 07:33)
+  note: elsewhere: reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only an unknown pane - before this ticket (5c5207ba67); exit 3 now keeps reap off it for hc timeouts only
+  note: elsewhere: herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangs tab list and every caller; before this ticket
 test-verdict: "pass: Runde 3: go test ./role green (rc=0), claude plugin test 544/544, shipped-history --check ok; DoD 1-3 im Baum (herdr-hc.sh:96-109, register.tsx:1790, notes/8NWE4P.md); hc-Stub: alle antworten -> Exit 0; t7 Timeout -> Exit 3, Liste ohne t7, stderr nennt t7, reap.sh-Zeile 133 -> herdr_up leer (raeumt nichts ab); t9 not_found -> weggelassen, Exit 0; hc ls scheitert -> Exit 1. Schreibt nur eine per trap entfernte mktemp-Datei."
 hunt-verdict: "pass: bughunt done at 2863ef749, 1 change ohne Blocker = die von teamlead angenommene Exit-3-Grenze (Band/Overview leer, Chat-Kopie nur bei gleichzeitigem spawn.sh-Fehler), als note: limit: auf dem Ticket"
 round: 3
 back-from: testing
 back-by: lane
 back-count: 2
+review-verdict: "accept: DoD 1-3 met in the diff; not_found vs timeout split matches the real hc; go test ./role ./shipped and claude plugin test (544) pass; remaining points are accepted limits or older faults"
+review-round: 3
+review-verdict-gaps: |-
+  note: limit: while any Herdr App terminal, even a foreign one, gives no answer to 'hc get', tab list exits 3: reap.sh keeps everything, Give back starts nothing, band/Overview/workers show no tab list for that refresh (register.tsx:353, :1949) - accepted by teamlead 2026-11-24 and named in core/release/notes/8NWE4P.md
+  note: limit: register.tsx:1182 removes a chat's ticket copy when spawn.sh fails late and tab list exits 3 in the same moment - needs two failures at once, left as is (worker note 07:33)
+  note: elsewhere: reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only an unknown pane - before this ticket (5c5207ba67); exit 3 now keeps reap off it for hc timeouts only
+  note: elsewhere: herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangs tab list and every caller; before this ticket
+review-check: |-
+  1. cd core && go test ./role -run TestHerdrHcTabListSaysWhichTerminalDidNotAnswer -v  -> 7 subtests PASS ('one mute' expects exit 3 and t2 named on stderr)
+  2. cd core/mod/builtin/jaira-cockpit && claude plugin test .  -> 544 pass, incl. 'a tab list missing a terminal that gave no answer starts no worker either'
+  3. Real Herdr App, optional: hc get t99999 --json  -> {"error":{..."kind":"not_found"...}} exit 3, the case tab list leaves out without failing
+  4. Real Herdr App, optional: bash core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh tab list; echo $?  -> JSON list of your terminals and 0 while all answer
 ---
 
 # herdr-hc.sh 'tab list' laesst ein Terminal, das auf 'hc get' nicht antwortet, still weg und endet mit Exit 0
@@ -85,3 +107,16 @@ back-count: 2
 - **2026-11-24 07:32 · Sascha** — hunt report: 1 finding, 1 change (no blocker), noted on 8NWE4P | read as a diff since fd7a26ff1: herdr-hc.sh, register.tsx, sessions.ts, board.test.ts, role_test.go, 8NWE4P.md, shipped.sha256; followed every 'tab list' caller (register.tsx:348/1785/1949, reap.sh:133) | not run: the band/Overview effect of exit 3 was traced by reading, no scratch test written for it
 - **2026-11-24 07:32 · Sascha** — bughunt: done at 2863ef749 - 1 finding (1 change, 0 pre-existing) in 7 modules, follow-up hunt since fd7a26ff1; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/sessions.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/8NWE4P.md core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh core/role/role_test.go core/shipped/shipped.sha256
 - **2026-11-24 07:33 · Sascha** — note: limit: (Bughunt Runde 3, gleiche Grenze wie decision teamlead) bei Exit 3 zeigen Band und Overview-Workers fuer diesen Refresh keinen Agenten (register.tsx:353 agentsOf). Kante: scheitert spawn.sh einer Explain/Discuss-Taste im selben Moment, entfernt register.tsx:1182 die Ticket-Kopie unter einem laufenden Chat - braucht zwei Fehler gleichzeitig, nicht behoben.
+- **2026-11-24 07:33 · Sascha** — waiting: review (frischer Agent, Herdr-Tab via run-lane.sh) since 08:33
+- **2026-11-24 07:35 · Sascha** — review: done at db0853e1d
+- **2026-11-24 07:36 · Sascha** — hunt report: 0 findings | read as a diff since 2863ef749: core/release/notes/8NWE4P.md (one line reworded, still one '- ' line; quoted 'kept <id>: herdr not reachable' matches reap.sh:368); no other file changed | nothing left unchecked
+- **2026-11-24 07:36 · Sascha** — bughunt: done at db0853e1d - 0 findings in 1 module, follow-up hunt since 2863ef749 (only the release note changed); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/sessions.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/8NWE4P.md core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-24 07:37 · Sascha** — report: herdr-hc.sh 'tab list' -> Exit 3 + stderr bei stummem Terminal, not_found weggelassen; Cockpit unveraendert (W80HNH-Zweig); Tests Go+Cockpit, Release-Note | signoff, context 170k of 1000k, cache warm 60 min | offen: Annahme durch Alex; 2 note: limit (angenommen), 2 note: elsewhere; Branch nicht gepusht, vor dem PR upstream/master einmergen (upstream ist voraus)
+- **2026-11-24 10:21 · Sascha** — Accepted from signoff: Folge-Ticket:
+- 0TREV1: note: elsewhere: reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only an unknown pane - before this ticket (5c5207ba67); exit 3 now keeps reap off it for hc timeouts only
+- QNB5S4: note: elsewhere: herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangs tab list and every caller; before this ticket
+angenommen:
+- note: limit: while any Herdr App terminal, even a foreign one, gives no answer to 'hc get', tab list exits 3: reap.sh keeps everything, Give back starts nothing, band/Overview/workers show no tab list for that refresh (register.tsx:353, :1949) - accepted by teamlead 2026-11-24 and named in core/release/notes/8NWE4P.md
+- note: limit: register.tsx:1182 removes a chat's ticket copy when spawn.sh fails late and tab list exits 3 in the same moment - needs two failures at once, left as is (worker note 07:33)
+- **2026-11-24 10:21 · Sascha** — cockpit: accepted by the person, signoff -> done
+- **2026-11-24 10:24 · Sascha** — pr-Rolle gestoppt vor dem Push: go test ./... -race scheitert in core/identity TestCurrentHonoursJairaUserAboveEverything (Current()="Berk", want "berk"). Scheitert genauso auf upstream/master, CI auf master grün. Ursache: identity.People liest die People-Ref dieses Klons (gitref.PeopleRef), die CI-Klone nicht haben — Test ist nicht von der Ref isoliert. Nicht von diesem Branch. Optionen: 1) trotzdem pushen und PR öffnen, Test-Leck separat (empfohlen) 2) erst Test isolieren auf diesem Branch 3) abbrechen
