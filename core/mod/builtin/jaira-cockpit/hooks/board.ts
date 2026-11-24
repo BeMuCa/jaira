@@ -563,18 +563,6 @@ export function titleOf(showJson: string): string | undefined {
   return typeof title === 'string' && title.trim() !== '' ? title.trim() : undefined
 }
 
-// The lane a 'jaira show --json' names; undefined where it names none.
-export function statusOf(showJson: string): string | undefined {
-  const status = parse<{ status?: unknown }>(withoutWarnings(showJson))?.status
-  return typeof status === 'string' && status !== '' ? status : undefined
-}
-
-// Every ticket a 'jaira list --json' lists, by handle, with its lane.
-export function ticketLanes(listJson: string): Map<string, string> {
-  const tickets = parse<{ tickets?: { handle?: unknown; status?: unknown }[] }>(withoutWarnings(listJson))?.tickets ?? []
-  return new Map(tickets.flatMap(t => (typeof t.handle === 'string' && typeof t.status === 'string' ? [[t.handle, t.status] as const] : [])))
-}
-
 function ticketsTree(trees: Worktree[], id: string): Worktree | undefined {
   const parts = (w: Worktree) => (w.branch === '' ? 2.5 : w.branch.split('/').length)
   return trees.filter(w => isTicketsTree(w, id)).sort((a, b) => parts(a) - parts(b))[0]

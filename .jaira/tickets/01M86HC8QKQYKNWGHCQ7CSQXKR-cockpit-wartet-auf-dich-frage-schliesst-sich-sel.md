@@ -1,7 +1,7 @@
 ---
 id: 01M86HC8QKQYKNWGHCQ7CSQXKR
 title: "Cockpit 'Wartet auf dich': Frage schliesst sich selbst oder per x, zeigt ihre Zeit und uebersetzt nur auf Knopfdruck"
-status: critique
+status: testing
 ready: true
 creator: Sascha
 assignee: Sascha
@@ -20,18 +20,19 @@ related: []
 follows: 01M8537VMKP5N8TJ2YC91M3X77
 commits: []
 created-at: 2026-11-24T10:24:44Z
-updated-at: 2026-11-24T10:44:08Z
+updated-at: 2026-11-24T10:46:48Z
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69066
 claimed-at: 2026-11-24T10:25:16Z
 outcome-what: "Cockpit 'Waiting for you': x settles a question; a question settles itself once its ticket leaves the lane it was asked in; settled ones stay 24h dimmed under 'Answered'; asked/answered times; questions kept in the original, t translates all at once"
 outcome-why: "Questions decided in the Acceptance pane stayed forever, had no time, and were always shown rephrased (Sascha 24.11.2026)"
 outcome-resolves: CSQXKR
-review-summary: "core/mod/builtin/jaira-cockpit/hooks/threads.ts settled() keeps the options of a settled question, which the Answered section never shows, so Translate sends them to the model and they bust its cache - drop them there (options: []) | core/mod/builtin/jaira-cockpit/hooks/register.tsx ASKS pane casts e.props for bodyColumns; the Overview pane in the same file reads e.props.bodyColumns directly - do the same"
+review-summary: "none"
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "removed board.ts statusOf and ticketLanes: the same as standOf(...).status and lanesOf in the same file; left threads.ts whenOf's own two() beside overview.ts clockOf (that one takes an ISO string, threads.ts stays free of overview imports); when(a) computed twice per row in the ASKS pane left - one pane, a handful of rows"
 ---
 
 # Cockpit 'Wartet auf dich': Frage schliesst sich selbst oder per x, zeigt ihre Zeit und uebersetzt nur auf Knopfdruck
@@ -67,3 +68,4 @@ back-count: 1
 - **2026-11-24 10:34 · Sascha** — waiting: cockpit test run (background b0ym9m1cy) since 11:34; code for DoD 1-4,6 written, release note written, shipped.sha256 still to regenerate (go test ./core/role fails until then)
 - **2026-11-24 10:40 · Sascha** — in-progress: the pane no longer closes after the last pick (it would hide 'Answered'; the band button only appears while a question is open, so a closed pane could not show it). shipped.sha256 must be regenerated (scripts/shipped-history.sh --write) after every change to the cockpit files, or go test ./core/role fails. Known limit: a question whose ticket is only the thread's own (no 'about') does not settle by lane - its lane is never read (as its title is not).
 - **2026-11-24 10:41 · Sascha** — critique: settled() drops options (never shown under Answered, only cost Translate tokens); ASKS pane reads e.props.bodyColumns without the cast, as the Overview pane does. Rest stands: separate asksShown atom (questions are no ticket, the rephrased/translating atoms are keyed by ticket), settling by replacement (decision note above).
+- **2026-11-24 10:44 · Sascha** — critique pass 2: both findings of pass 1 answered in 204c40977; nothing else read, nothing left.

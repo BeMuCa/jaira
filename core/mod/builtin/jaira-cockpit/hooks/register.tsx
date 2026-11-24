@@ -3,7 +3,7 @@ import type { ElementTable, EngineInterface, Register } from 'claude-code'
 import type { BoardView, CacheState, ThreadTally } from '../types'
 import {
   acceptTreeFor, branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, ghRepoOf, hasPullRequest, onHost, repoViewCommand, targetRepoOf,
-  explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, statusOf, ticketLanes, versionOf, withoutWarnings, upwards, worktreeFor,
+  explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, parse, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
   clipLines, commitsOf, titleOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenItemsOf, seenProof, seenToTick, type SeenItem, standOf, storyOf, translatePrompt,
   IN_TURN, type Action, type Agent, type GapItem, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
@@ -2014,7 +2014,7 @@ async function fileTurn($: EngineInterface, human: string, answer: string): Prom
     // an answer without a title is not. The lane read with it is the one
     // the question waits on.
     if (shown === undefined) continue
-    threads = titled(threads, id, title ?? '', shown.exitCode === 0 ? statusOf(shown.stdout) : undefined)
+    threads = titled(threads, id, title ?? '', shown.exitCode === 0 ? standOf(shown.stdout).status : undefined)
   }
   await keepThreads($)
 }
@@ -2058,7 +2058,7 @@ async function showThreads($: EngineInterface): Promise<void> {
 async function settleMoved($: EngineInterface, dir: string, lists: readonly string[]): Promise<void> {
   const ids = watched(threads)
   if (ids.length === 0) return
-  const listed = new Map(lists.flatMap(l => [...ticketLanes(l)]))
+  const listed = new Map(lists.flatMap(l => [...lanesOf(l)]))
   const lanes = new Map<string, string | null>()
   for (const id of ids) {
     if (listed.has(id)) {
@@ -2067,7 +2067,7 @@ async function settleMoved($: EngineInterface, dir: string, lists: readonly stri
     }
     const shown = await run($, ['jaira', 'show', id, '--json'], dir)
     if (shown === undefined) continue
-    lanes.set(id, shown.exitCode === 0 ? statusOf(shown.stdout) ?? null : null)
+    lanes.set(id, shown.exitCode === 0 ? standOf(shown.stdout).status ?? null : null)
   }
   const next = moved(threads, lanes, turn)
   if (next.some((x, i) => x !== threads[i])) await change($, next)
