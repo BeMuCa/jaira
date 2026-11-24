@@ -2114,8 +2114,8 @@ async function translateAsks($: EngineInterface): Promise<void> {
   // which does not start a second call beside a running one: translate it now.
   if (said === undefined) return
   const after = await read($, asksShownAtom)
-  const now = askTexts([...(await read($, asksAtom)), ...(await read($, askedAtom))])
-  if (after.on && after.language === language && now.some(x => after.texts[x] === undefined)) await translateAsks($)
+  const current = askTexts([...(await read($, asksAtom)), ...(await read($, askedAtom))])
+  if (after.on && after.language === language && current.some(x => after.texts[x] === undefined)) await translateAsks($)
 }
 
 // A pick is the person's answer: sent into the session as their message -

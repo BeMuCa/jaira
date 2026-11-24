@@ -1,7 +1,7 @@
 ---
 id: 01M86HC8QKQYKNWGHCQ7CSQXKR
 title: "Cockpit 'Wartet auf dich': Frage schliesst sich selbst oder per x, zeigt ihre Zeit und uebersetzt nur auf Knopfdruck"
-status: critique
+status: testing
 ready: true
 creator: Sascha
 assignee: Sascha
@@ -20,23 +20,19 @@ related: []
 follows: 01M8537VMKP5N8TJ2YC91M3X77
 commits: []
 created-at: 2026-11-24T10:24:44Z
-updated-at: 2026-11-24T11:28:47Z
+updated-at: 2026-11-24T11:31:09Z
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-67597
 claimed-at: 2026-11-24T11:23:53Z
 outcome-what: "Give-back edges closed: settled() ignores threads dropped by the 30-thread cap; file() keeps askedAt when the same question is repeated; translateAsks re-runs after a successful call when texts arrived meanwhile"
 outcome-why: "Signoff give-back: three edges of this change would show wrong state in the Waiting-for-you pane"
 outcome-resolves: "DoD 7-9; checked: concurrency (translate re-run reads state after the call), error paths (failed call stops, no loop), input (30-thread cap, repeated question)"
-review-summary: "Delta review from 8a7401450 to f1a48e9d4: change() now reads the clock, then computes the new threads from the current ones in the same step, so pane answers, x, a filed turn and the lane check can no longer overwrite each other; the lane check settles a question for a vanished ticket only on 'jaira show' exit 5 and asks again on any other failure. The rest of the change (x to settle, settling on lane change, asked/answered times, Answered section kept 24h, Translate on t) stands as read in the full review."
+review-summary: "none"
 round: 4
 back-from: signoff
 back-by: person
 back-count: 1
-review-gaps: |-
-  note: edge: threads.ts file() slice(-THREADS) drops the oldest of 30 threads with its open question, and settled() labels it Answered; exclude threads absent from after by id in settled()
-  note: edge: a question filed while a Translate call is out stays untranslated under an Original button until the next thread change; rerun translateAsks after busy clears if texts are missing
-  note: edge: file() resets askedAt to now when the assistant repeats the same question on the same thread; keep askedAt when the question text is unchanged
-  note: limit: hotkey x only on the first open question; the others have the click target, as DoD 2 allows
+review-gaps: "renamed a non-time 'now' to 'current' in translateAsks; left the two askTexts(asks+done) reads in translateAsks as they are (before and after the call, two moments, not a duplicate); no dead code, no repeated work on a hot path"
 test-verdict: "pass: round 3, only the delta f1a48e9d4: cockpit suite 560/560 green (exit 0), incl. new 'a ticket in no list whose jaira show exits 1|5'; go test ./core/role green after shipped.sha256 regenerated; lost update closed by construction (next computed from threads after the clock await, no await between read and write)"
 hunt-verdict: "pass: stop-after-fix, no hunt in round 3"
 review-verdict: "accept: both fix-now edges closed (change() takes a function, only exit 5 settles); DoD 1-6 met; claude plugin test 560 pass, go test ./core/shipped ok"
@@ -53,7 +49,7 @@ review-check: |-
   4. Press t: translated; t again: original
   5. Press x: question moves below the rule under Answered, dimmed, answered today HH:MM; nothing sent into the chat
   6. Ask another question about a ticket, run jaira move <id> --to <other lane> in a shell: within 60 s it moves to Answered
-stop-after-fix: ""
+stop-after-fix: "true"
 ---
 
 # Cockpit 'Wartet auf dich': Frage schliesst sich selbst oder per x, zeigt ihre Zeit und uebersetzt nur auf Knopfdruck
@@ -120,3 +116,5 @@ angenommen:
 - **2026-11-24 11:24 · Sascha** — parent session: uds:/run/user/1000/cc-socks/3417.sock; new worker on the give-back: fixing the 3 edges (thread drop, translate while busy, askedAt reset); no open decisions, the give-back names each fix
 - **2026-11-24 11:27 · Sascha** — waiting: claude plugin test run (background) since 12:27
 - **2026-11-24 11:28 · Sascha** — give-back fixes: test mock model.complete now returns translations only for 'Translate each text' prompts, so a filing during a held Translate call gets w.model; translateAsks re-runs itself after a successful call when texts are missing (not on failure: on=false then, no loop)
+- **2026-11-24 11:29 · Sascha** — set stop-after-fix=true: give-back fix is ~20 changed code lines, no lock, no parser
+- **2026-11-24 11:29 · Sascha** — waiting: claude plugin test after optimize rename (background) since 12:29
