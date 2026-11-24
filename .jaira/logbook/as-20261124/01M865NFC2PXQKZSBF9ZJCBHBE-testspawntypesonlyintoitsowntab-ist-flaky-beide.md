@@ -1,7 +1,7 @@
 ---
 id: 01M865NFC2PXQKZSBF9ZJCBHBE
 title: "TestSpawnTypesOnlyIntoItsOwnTab ist flaky: beide Starts melden 'pane gehoert jetzt zu t2'"
-status: in-progress
+status: done
 ready: true
 creator: Alexander Sacharov
 assignee: Alexander Sacharov
@@ -16,29 +16,31 @@ tags:
   - ci
 blocked-by: []
 related: []
-commits: []
+commits:
+  - a3396d44eff10051410343b8813043cba9fe451e
+  - 76e949aa4ba358875239f0d9fc46b22aa0c869aa
+  - c36da95f3de1aad926cfababed6be96d8ed51763
+  - 05d337c1a92fb0c4f7f4cc09a4424b98caf7445f
 created-at: 2026-11-24T07:00:03Z
-updated-at: 2026-11-24T07:14:20Z
+updated-at: 2026-11-24T07:21:07Z
 updated-by: Alexander Sacharov
 claimed-by: DESKTOP-RFTCH11-91083
 claimed-at: 2026-11-24T07:00:45Z
 outcome-what: "Herdr-Stub in TestSpawnTypesOnlyIntoItsOwnTab vergibt den Tab nach Label statt per mkdir-Zaehler mit 10s-Grenze; Verlierer (critique) steht fest. role_test 'second while the first still runs': Stub-Grenze 10s -> 120s."
 outcome-why: "Release-Lauf 0.6.6 rot: beide Starts bekamen vom Stub tab t1, Ergebnis hing am Timing des Stubs, nicht an spawn.sh."
 outcome-resolves: "Race-Test deterministisch; 200x gruen, auch mit 12s Verzoegerung je Seite. Geprueft: Nebenlaeufigkeit (beide Starts parallel, Verzoegerung beider Seiten), Fehlerpfade (Timeout beeinflusst Ergebnis nicht mehr), Eingabe/Rechte: n/a (nur Test-Stub)."
-review-summary: "Nur Tests geaendert, spawn.sh unveraendert. spawnpane_test.go: der Herdr-Stub vergibt den Tab nicht mehr per mkdir-Zaehler mit 10s-Warten, sondern nach dem --label: AB12CD/critique bekommt t1, optimize t2, beide bekommen Pane p2 (liegt in t2). Damit verliert immer die critique - unabhaengig davon, wer den Stub zuerst erreicht oder ob das Warten auf t2 ablaeuft -, und der Test prueft genau diese Richtung (critique abgelehnt mit 'pane p2 is not in tab t1 (AB12CD/critique)', t1 geschlossen, nur p2 gestartet und mit lane=optimize vermerkt). role_test.go 'second while the first still runs': die Warte-Grenze im tab-create-Stub von 10s auf 120s, damit ein langsamer Runner den ersten Start nicht vorzeitig durchlaesst. Lokal: beide Tests 30x gruen, go vet sauber."
+review-summary: "Delta review from 76e949aa4 (one commit, c36da95f3, 3 lines). The previous review's fix-now is closed: in role_test.go 'second while the first still runs' a t.Cleanup now writes the gate file right after the first spawn.sh starts, so a t.Fatal before the gate (worktree missing, tab never reached) no longer leaves the first spawn's Herdr stub waiting out its new 120s bound. Earlier rounds, already judged: the race stub in spawnpane_test.go fixes the losing tab by label (critique=t1, optimize=t2, both handed p2) instead of an mkdir counter plus a 10s wait, so exactly the critique is refused and the optimize starts, whatever the timing."
 review-gaps: |-
-  note: edge: fix-now: role_test.go:1401/1406 - bricht der Test vor os.WriteFile(gate) mit t.Fatal ab, haengt der erste spawn.sh jetzt 120s statt 10s im Stub; Fix: das Gate per t.Cleanup(func(){ os.WriteFile(gate, nil, 0o644) }) direkt nach dem Start der Goroutine schreiben
-  note: limit: spawnpane_test.go:30 - startet optimize nie seinen Tab, wartet die critique bis 120s, bevor der Test mit klarer Meldung rot wird; nur auf einem ohnehin roten Pfad
-  note: elsewhere: role_test.go:1394 und :1677 - testseitige 10s-Fristen derselben Klasse, vom Hunt schon notiert, nicht Gegenstand dieses Tickets
-test-verdict: "pass: go vet ./... RC=0, go test ./... RC=0, go test -race ./core/role RC=0, check-ticket-commits RC=0; DoD 1-3 im Baum geprueft; Test 200x gruen, auch mit 12s Verzoegerung je Seite; Mutation (pane_is_ours ohne Pruefung) macht den Test rot (RC=1, beide Starts durch); schreibt nur Test-Stubs, kein Produktionscode"
-hunt-verdict: "pass: bughunt done at 76e949aa4, 0 change, 0 pre-existing"
-review-verdict: "accept: DoD 1-3 erfuellt; der Ausgang des Race-Tests haengt nur noch am Label, nicht an Zeit; ein kleiner fix-now in role_test.go"
-review-round: 1
+  note: edge: role_test.go:1395 the cleanup opens the gate but does not wait for the first spawn.sh (<-first); on an already failing run t.TempDir removal can race the still-running stub and add a second error - drain first in the same cleanup
+  note: elsewhere: role_test.go:1394 and :1677 keep fixed 10s test-side deadlines, the same wall-clock class (bughunt left them unconfirmed; QTQW15/5ba3fa8)
+test-verdict: "pass: round 2 delta only - go test -race -count=3 TestSpawnTakesUpTheBranchTheWorkRidesOn+TestSpawnTypesOnlyIntoItsOwnTab RC=0, go vet ./core/role RC=0; fix-now (t.Cleanup oeffnet Gate) in role_test.go vorhanden; schreibt nur Test-Code"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 2"
+review-verdict: "accept: the fix-now finding is answered; DoD 1-3 hold; no blocker in the delta"
+review-round: 2
 review-verdict-gaps: |-
-  note: edge: fix-now: role_test.go:1401/1406 - bricht der Test vor os.WriteFile(gate) mit t.Fatal ab, haengt der erste spawn.sh jetzt 120s statt 10s im Stub; Fix: das Gate per t.Cleanup(func(){ os.WriteFile(gate, nil, 0o644) }) direkt nach dem Start der Goroutine schreiben
-  note: limit: spawnpane_test.go:30 - startet optimize nie seinen Tab, wartet die critique bis 120s, bevor der Test mit klarer Meldung rot wird; nur auf einem ohnehin roten Pfad
-  note: elsewhere: role_test.go:1394 und :1677 - testseitige 10s-Fristen derselben Klasse, vom Hunt schon notiert, nicht Gegenstand dieses Tickets
-review-check: "1. cd core  2. go test ./role -run TestSpawnTypesOnlyIntoItsOwnTab -count=200  3. erwartet: ok nach ca. 15s  4. go test ./role -run TestSpawnTakesUpTheBranchTheWorkRidesOn -count=20  5. erwartet: ok  6. git diff master...feat/jcbhbe -- core/role/builtin  7. erwartet: leer (spawn.sh unveraendert, daher keine Release-Note)"
+  note: edge: role_test.go:1395 the cleanup opens the gate but does not wait for the first spawn.sh (<-first); on an already failing run t.TempDir removal can race the still-running stub and add a second error - drain first in the same cleanup
+  note: elsewhere: role_test.go:1394 and :1677 keep fixed 10s test-side deadlines, the same wall-clock class (bughunt left them unconfirmed; QTQW15/5ba3fa8)
+review-check: "1. cd into the jcbhbe worktree  2. go test ./core/role -run TestSpawnTypesOnlyIntoItsOwnTab -count=200  3. you see 'ok github.com/BeMuCa/jaira/core/role' (about 15s)  4. go test ./core/role -run TestSpawnTakesUpTheBranchTheWorkRidesOn -count=5  5. you see 'ok' again  6. git diff master -- core/role/builtin prints nothing: spawn.sh is unchanged, so no release note is due"
 round: 2
 back-from: review
 back-by: lane
@@ -77,3 +79,11 @@ stop-after-fix: "true"
 - **2026-11-24 07:13 · Alexander Sacharov** — review: done at 76e949aa4
 - **2026-11-24 07:13 · Alexander Sacharov** — review: fix-now: role_test.go 'second while the first still runs' - Gate per t.Cleanup schreiben, damit ein frueher t.Fatal den ersten spawn.sh nicht 120s im Stub haengen laesst
 - **2026-11-24 07:14 · Alexander Sacharov** — fix-now aus review geschlossen: role_test.go Gate per t.Cleanup geoeffnet. stop-after-fix=true gesetzt (Fix 3 Zeilen, kein Lock/Parser).
+- **2026-11-24 07:15 · Alexander Sacharov** — waiting: review round 2 (new fresh agent via run-lane.sh) since 08:15
+- **2026-11-24 07:16 · Alexander Sacharov** — review: done at c36da95f3
+- **2026-11-24 07:16 · Alexander Sacharov** — report: Race-Stub vergibt Tab nach Label (critique verliert fest), role_test-Gate 120s + t.Cleanup; spawn.sh unveraendert | signoff, context unknown | 2 notes fuer die Person (edge: Cleanup wartet nicht auf <-first; elsewhere: 10s-Fristen role_test.go:1394/1677), Branch gepusht, PR offen
+- **2026-11-24 07:18 · Alexander Sacharov** — Accepted from signoff: Folge-Ticket:
+- HTSWK6: note: elsewhere: role_test.go:1394 and :1677 keep fixed 10s test-side deadlines, the same wall-clock class (bughunt left them unconfirmed; QTQW15/5ba3fa8)
+angenommen:
+- note: edge: role_test.go:1395 the cleanup opens the gate but does not wait for the first spawn.sh (<-first); on an already failing run t.TempDir removal can race the still-running stub and add a second error - drain first in the same cleanup
+- **2026-11-24 07:18 · Alexander Sacharov** — cockpit: accepted by the person, signoff -> done
