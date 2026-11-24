@@ -5,7 +5,7 @@ import {
   acceptTreeFor, branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, ghRepoOf, hasPullRequest, onHost, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, parse, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
-  clipLines, commitsOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenItemsOf, seenProof, seenToTick, type SeenItem, standOf, storyOf, translatePrompt,
+  clipLines, commitsOf, titleOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenItemsOf, seenProof, seenToTick, type SeenItem, standOf, storyOf, translatePrompt,
   IN_TURN, type Action, type Agent, type GapItem, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
@@ -23,7 +23,7 @@ import {
   workerLines, type Role, type SessionRecord, type Tab,
 } from './sessions.ts'
 import { overviewWords, t } from './texts.ts'
-import { classifyPrompt, file, listThreads, parseFiling, tally, type Thread } from './threads.ts'
+import { answer as answerThread, answerLine, asksOf, classifyPrompt, file, listThreads, parseFiling, tally, titled, untitled, type Ask, type Thread } from './threads.ts'
 
 // The engine follows `$` only into functions declared in this same file, and
 // a module hooks each event once: so every call on `$` is here, one hook per
@@ -46,6 +46,7 @@ import { classifyPrompt, file, listThreads, parseFiling, tally, type Thread } fr
 const boardAtom = atom({ plugin: 'jaira-cockpit', key: 'board' } as const, null)
 const cacheAtom = atom({ plugin: 'jaira-cockpit', key: 'cache' } as const, { tokens: 0, lastAnswerAt: null, ttl: 0 })
 const threadsAtom = atom({ plugin: 'jaira-cockpit', key: 'threads' } as const, { questions: 0, stale: 0 })
+const asksAtom = atom({ plugin: 'jaira-cockpit', key: 'asks' } as const, [])
 const givingAtom = atom({ plugin: 'jaira-cockpit', key: 'giving' } as const, null)
 const choosingAtom = atom({ plugin: 'jaira-cockpit', key: 'choosing' } as const, null)
 const seenAtom = atom({ plugin: 'jaira-cockpit', key: 'seen' } as const, null)
@@ -91,6 +92,7 @@ const EXPLANATION = 'cockpit-explanation'
 const LIGHT_COLOUR = { green: 'success', yellow: 'warning', red: 'error' } as const
 const ANSWER = 'cockpit-answer'
 const OVERVIEW = 'cockpit-overview'
+const ASKS = 'cockpit-asks'
 const UPGRADE = 'cockpit-upgrade'
 // The store key of the release the person dismissed: kept across sessions,
 // so that release is never offered again, and a newer one is.
@@ -1982,14 +1984,66 @@ async function fileTurn($: EngineInterface, human: string, answer: string): Prom
   if (!result.isAnswered) return
   const filing = parseFiling(result.text)
   if (filing === undefined) return
-  threads = file(threads, board ? filing : { ...filing, ticket: null }, turn)
+  threads = file(threads, board ? filing : { ...filing, ticket: null, about: null }, turn)
+  await keepThreads($)
+  // The title of a ticket a question names, read once: the pane shows it
+  // beside the id. A ticket jaira does not know keeps the thread's title,
+  // and is not asked about again.
+  const b = board
+  const ids = untitled(threads)
+  if (!b || ids.length === 0) return
+  for (const id of ids) {
+    const shown = await run($, ['jaira', 'show', id, '--json'], b.dir)
+    const title = shown?.exitCode === 0 ? titleOf(shown.stdout) : undefined
+    // No answer at all - a timeout - is tried again after the next turn;
+    // an answer without a title is not.
+    if (shown === undefined) continue
+    threads = titled(threads, id, title ?? '')
+  }
+  await keepThreads($)
+}
+
+// The threads stored for this session, and what the band and the 'Waiting
+// for you' pane draw from them.
+async function keepThreads($: EngineInterface): Promise<void> {
   const key = await threadsKey($)
   // Delete first so the key moves to the end of the store's insertion order,
   // as keep() does: session.start then drops the sessions heard from longest ago.
   await $.store.delete(key)
   await $.store.set(key, { turn, threads })
+  await showThreads($)
+}
+
+async function showThreads($: EngineInterface): Promise<void> {
   const counts: ThreadTally = tally(threads, turn)
   await update($, threadsAtom, () => counts)
+  const asks: Ask[] = asksOf(threads)
+  await update($, asksAtom, () => asks)
+}
+
+async function openAsks($: EngineInterface): Promise<void> {
+  const opened = await $.ui.open({ id: ASKS, title: t.asksTitle, focus: true, closeOnEscape: true })
+  if (!opened.isPlaced) await say($, listThreads(threads, turn, t.threadsTitle, t.threadsNone))
+}
+
+// A pick is the person's answer: sent into the session as their message -
+// queued behind a turn still running, never waiting for it - and the
+// question leaves the list at once rather than after the next filing.
+// The turn it starts is not filed: the engine runs no hook of this mod on
+// what the mod submits itself, and hands back no answer for it, so nothing
+// tells that turn apart from an agent's (1M3X77, a known limit).
+async function answerAsk($: EngineInterface, a: Ask, choice: string): Promise<void> {
+  void $.prompt.submit({ text: answerLine(a, choice) })
+  threads = answerThread(threads, a.thread, turn)
+  await keepThreads($)
+  if (asksOf(threads).length === 0) await $.ui.close({ id: ASKS })
+}
+
+// An answer the options did not offer is typed in the prompt, which starts
+// with what it answers.
+async function answerInChat($: EngineInterface, a: Ask): Promise<void> {
+  await $.ui.close({ id: ASKS })
+  await $.prompt.fill({ text: answerLine(a, '') })
 }
 
 // ── metrics ──────────────────────────────────────────────────────────────
@@ -2082,8 +2136,7 @@ export const register: Register = (on, options) => {
     if (kept !== undefined) {
       turn = kept.turn
       threads = kept.threads
-      const counts: ThreadTally = tally(threads, turn)
-      await update($, threadsAtom, () => counts)
+      await showThreads($)
     }
     await $.command.register({
       name: USAGE_COMMAND,
@@ -2249,7 +2302,6 @@ export const register: Register = (on, options) => {
       { text: t.context(c.k) },
       ...(c.minutesLeft !== undefined ? [{ text: t.cacheLeft(c.minutesLeft) }] : cache.lastAnswerAt !== null ? [{ text: t.cacheCold, color: 'warning' as const }] : []),
       ...(c.hint === 'new' ? [{ text: t.hintNew, color: 'error' as const }] : c.hint === 'compact' ? [{ text: t.hintCompact, color: 'warning' as const }] : []),
-      ...(hasThreads ? [{ text: t.threadsOpen(counts.questions, counts.stale), color: 'warning' as const }] : []),
     ]
     const shown = expanded ? waiting : waiting.slice(0, BAND_TICKETS)
     // A ticket's marks, in the theme's colours: a green tick or a red cross
@@ -2367,6 +2419,13 @@ export const register: Register = (on, options) => {
                   ? <Text key={`part-${i}`} color={part.color}>{part.text}</Text>
                   : <Text key={`part-${i}`} dimColor>{part.text}</Text>,
               ])}
+              {hasThreads ? <Text key="threads-sep" dimColor>{SEP}</Text> : null}
+              {/* The open questions are a press - or q - away: the 'Waiting
+                  for you' pane lists them and answers them. Left lying alone
+                  is only said. */}
+              {counts.questions > 0
+                ? <Button key="asks" hotkey="q" label={t.threadsOpen(counts.questions, counts.stale)} plain={plain} onPress={() => void openAsks($)}><Text color="warning">{bracketed(t.threadsOpen(counts.questions, counts.stale))}</Text></Button>
+                : hasThreads ? <Text key="threads" color="warning">{t.threadsOpen(counts.questions, counts.stale)}</Text> : null}
             </Box>
           )
           : null}
@@ -2615,6 +2674,54 @@ export const register: Register = (on, options) => {
             void decide($, id, answer.trim(), 'giveBack', share)
           }}
         />
+      </Box>
+    )
+  })
+
+  // The 'Waiting for you' pane (1M3X77): every question the session put to
+  // the person and nobody answered, asked last first - its ticket and title,
+  // the question, its options one row each. A digit picks an option, counted
+  // down the whole pane, so the first nine are a key away.
+  on('ui.render', { component: 'Pane', requestId: ASKS }, async ($, e) => {
+    const asks = await read($, asksAtom)
+    const { Box, Button, Text } = $.ui.resolve(e)
+    const close = { key: 'asks-close', label: t.close, onPress: () => void $.ui.close({ id: ASKS }) }
+    if (asks.length === 0) {
+      return (
+        <Box flexDirection="column">
+          {headRow({ Box, Button }, 'asks-head', close)}
+          <Text dimColor>{t.asksNone}</Text>
+        </Box>
+      )
+    }
+    let n = 0
+    return (
+      <Box flexDirection="column">
+        {headRow({ Box, Button }, 'asks-head', close)}
+        {asks.map((a, i) => (
+          <Box key={`ask-${a.thread}`} flexDirection="column" marginTop={i > 0 ? 1 : 0}>
+            <Text wrap="truncate-end">
+              <Text bold color="claude">{a.ticket ?? t.asksNoTicket}</Text>{SEP}<Text bold>{a.title}</Text>
+            </Text>
+            <Text wrap="wrap">? {a.question}</Text>
+            {a.options.map((o, j) => {
+              n++
+              return (
+                <Button
+                  key={`ask-${a.thread}-${j}`}
+                  plain
+                  label={o}
+                  {...(n <= 9 ? { hotkey: String(n) } : {})}
+                  {...(i === 0 && j === 0 ? { autoFocus: true as const } : {})}
+                  onPress={() => void answerAsk($, a, o)}
+                >
+                  <Text wrap="wrap">{o}</Text>
+                </Button>
+              )
+            })}
+            <Button key={`ask-${a.thread}-chat`} label={t.answerInChat} {...(a.options.length === 0 && i === 0 ? { autoFocus: true as const } : {})} onPress={() => void answerInChat($, a)} />
+          </Box>
+        ))}
       </Box>
     )
   })
