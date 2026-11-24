@@ -20,7 +20,7 @@ related: []
 follows: 01M8537VMKP5N8TJ2YC91M3X77
 commits: []
 created-at: 2026-11-24T10:24:44Z
-updated-at: 2026-11-24T11:58:33Z
+updated-at: 2026-11-24T12:12:55Z
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-52645
 claimed-at: 2026-11-24T11:37:05Z
@@ -28,13 +28,13 @@ outcome-what: "Give-back edges closed: settled() ignores threads dropped by the 
 outcome-why: "Signoff give-back: three edges of this change would show wrong state in the Waiting-for-you pane"
 outcome-resolves: "DoD 7-9; checked: concurrency (translate re-run reads state after the call), error paths (failed call stops, no loop), input (30-thread cap, repeated question)"
 review-summary: "none"
-round: 6
+round: 7
 back-from: testing
 back-by: lane
-back-count: 1
-review-gaps: "none: capped() has no twin (threads.ts:213 sorts by lastTurn for the listing, a different order and purpose); no helper or branch orphaned by the delta"
-test-verdict: "pass: claude plugin test 567/567 (exit 0) on the final tree, go test ./core/role ok after shipped-history.sh --write; DoD 1-10 proofs re-pointed and their tests seen passing; failure path: jaira show exit 1 keeps the question, exit 5 settles it, a list lane that disagrees with the asked lane is re-read (show says signoff -> stays); t pressed three times during a held call -> one model call, translation lands; two writers: change() computes after its await (earlier round), not re-run"
-hunt-verdict: "fail: 3 change findings (thread id reuse after the cap drops the newest thread; an unparsed jaira show settles a question; reopening the pane resets busy)"
+back-count: 2
+review-gaps: "none: the three hunt fixes add one condition each and no helper; nothing orphaned"
+test-verdict: "pass: claude plugin test 569/569 (exit 0) at e65c788c5, go test ./core/role ok; DoD 1-10 proofs re-pointed, their tests passing; failure paths: jaira show exit 1 or exit 0 without a status keeps the question, exit 5 settles; stale list re-read via show; t x3 and a reopened pane -> one model call; writes: threads store via change() (earlier round), not re-run"
+hunt-verdict: "fail: 1 change finding (translateAsks leaves busy set when rephrased throws)"
 review-verdict: "accept: DoD 1-9 met with tests; the three give-back edges are closed; claude plugin test 563 pass, go test ./core/shipped ok; two small edges left for the person"
 review-round: 4
 review-verdict-gaps: |-
@@ -49,7 +49,7 @@ review-check: |-
   5. Ask the same question once more: 'asked' time stays the old one
   6. Press x: question moves below the rule under 'Answered', dimmed, with 'answered today HH:MM'; nothing is sent into the chat
   7. Ask another question about a ticket, run jaira move <id> --to <other lane> in a shell: within one board refresh it moves to 'Answered'
-stop-after-fix: ""
+stop-after-fix: "true"
 ---
 
 # Cockpit 'Wartet auf dich': Frage schliesst sich selbst oder per x, zeigt ihre Zeit und uebersetzt nur auf Knopfdruck
@@ -145,3 +145,10 @@ angenommen:
 - **2026-11-24 11:55 · Sascha** — hunt report: 3 findings, all change (2 blocker: thread id reuse threads.ts:174/144, unparsed jaira show settles register.tsx:2079; 1 edge: busy reset on reopen register.tsx:2088), notes on CSQXKR | read as a diff since ea5a79df2: register.tsx, threads.ts, board.test.ts, release notes, shipped.sha256; board.ts (net zero change by CSQXKR), texts.ts and types/index.d.ts are not on the last line's list and were read through their CSQXKR hunks plus lanesOf/standOf, not end to end | not checked: the engine's stdout truncation limit for process.run (type definitions not found locally), so how often finding 2 is hit in practice is open; shipped.sha256 hashes were not recomputed against the files
 - **2026-11-24 11:55 · Sascha** — bughunt: done at ea5a79df2 - 3 findings (3 change, 0 pre-existing) in 7 modules, follow-up hunt since ea5a79df2 (uncommitted diff); concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/hooks/threads.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/CSQXKR.md core/shipped/shipped.sha256
 - **2026-11-24 11:58 · Sascha** — hunt fixes (round 3): capped() also keeps the newest thread, so max+1 never reuses an id; settleMoved settles only on exit 5 or a parsed status (a filed-away ticket still shows, status done - checked with jaira show P1AE82); openAsks keeps busy so a reopened pane starts no second Translate call. claude plugin test 569/569
+- **2026-11-24 11:58 · Sascha** — critique pass 2: read only the three hunt fixes in e65c788c5; each closes its finding in its callee/caller as before; nothing left
+- **2026-11-24 11:59 · Sascha** — waiting: bughunt round 3 (background subagent) since 12:59
+- **2026-11-24 12:07 · Sascha** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/register.tsx:2117 - class: the Translate busy flag is set without try/finally and is now cleared only by the call's own return, since openAsks (register.tsx:2092) and toggleTranslation (2104) no longer reset it - any throw or hang between busy:true and the final update (store.get/storeNewest in rephrased sit outside its try, register.tsx:1596/1606; a model.complete that never resolves) leaves Translate dead for the rest of the session; example: a store.set of 'rephrased:asks' that throws - the pane reopens with the label 'translating…', and t starts no call (0 model calls) and shows only the originals; before e65c788c5 reopening the pane freed it; ran: scratch copy of the mod with store.set throwing for rephrased: keys, claude plugin test . (label 'translating…' after reopen, 0 calls after the second t); not a blocker: needs a store failure or a hung model call
+- **2026-11-24 12:08 · Sascha** — hunt report: 1 finding, 1 change (edge, not blocker), as a note on CSQXKR | read as a diff since ea5a79df2: hooks/register.tsx (settleMoved, openAsks, toggleTranslation, translateAsks with their callers), hooks/threads.ts (file/capped and every consumer of thread ids), tests/board.test.ts, release/notes/CSQXKR.md; no file new to the change | checked and dropped: two Translate calls at once (t pressed during a filing, both orders, scratch test: never more than one in flight) and settleMoved applying a lane read before its jaira show awaits to a question filed meanwhile (scratch test: the engine runs the turn hook only after the refresh handler returns, nothing settled wrongly); whether the real engine serializes handlers the way the test engine does was not checked
+- **2026-11-24 12:08 · Sascha** — bughunt: done at e65c788c5 - 1 finding (1 change, 0 pre-existing) in 6 modules, follow-up hunt since ea5a79df2; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/hooks/threads.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/mod/builtin/jaira-cockpit/types/index.d.ts core/release/notes/CSQXKR.md core/shipped/shipped.sha256
+- **2026-11-24 12:12 · Sascha** — hunt fix (round 4): translateAsks catches a throwing rephrased (store.get/storeNewest sit outside its own try), so busy is always freed; test 'a Translate call that throws frees t' with w.storeRefuses. Known limit, left: a model.complete that never returns keeps busy until the session ends - the engine gives no timeout to hang on, and the old code had the same pane stuck on 'translating'. 570/570
+- **2026-11-24 12:12 · Sascha** — set stop-after-fix=true: round-4 fix is a try/catch plus one test, under 50 lines, no lock, no parser

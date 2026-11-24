@@ -2115,7 +2115,13 @@ async function translateAsks($: EngineInterface): Promise<void> {
   const texts = askTexts([...(await read($, asksAtom)), ...(await read($, askedAtom))])
   if (texts.length === 0) return
   await update($, asksShownAtom, s => ({ ...s, busy: true }))
-  const said = await rephrased($, `${REPHRASED_PREFIX}asks`, language, texts, asksTranslatePrompt(language, texts))
+  // A call that throws frees Translate too, and leaves the originals.
+  let said: string[] | undefined
+  try {
+    said = await rephrased($, `${REPHRASED_PREFIX}asks`, language, texts, asksTranslatePrompt(language, texts))
+  } catch {
+    said = undefined
+  }
   await update($, asksShownAtom, s => (!s.on || s.language !== language
     ? { ...s, busy: false }
     : { ...s, busy: false, on: said !== undefined, texts: said === undefined ? s.texts : Object.fromEntries(texts.map((x, i) => [x, said[i]!])) }))

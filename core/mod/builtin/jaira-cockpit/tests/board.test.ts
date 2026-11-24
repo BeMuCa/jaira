@@ -61,6 +61,8 @@ type World = {
   modelHeld?: (() => void)[]
   filled: string[]
   store: Map<string, unknown>
+  // A key prefix whose writes the store refuses with an error.
+  storeRefuses?: string
   status: (string | undefined)[]
   // What a dry run of a move refuses, by code: a person's lane always refuses
   // needs_human, the exit Accept stands for.
@@ -258,6 +260,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   // The store, readable by the test; insertion order kept as the engine's is.
   on('store.get', ($, e) => ({ value: w.store.get(e.key) }))
   on('store.set', ($, e) => {
+    if (w.storeRefuses !== undefined && e.key.startsWith(w.storeRefuses)) throw new Error('store full')
     w.store.set(e.key, e.value)
     return { value: undefined } as never
   })
@@ -4065,6 +4068,24 @@ describe('settling questions, their times and Translate (CSQXKR)', () => {
     await w.clock.settle()
     await again.unmount()
     expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('Какой размер?')
+  })
+
+  test('a Translate call that throws frees t: the next press asks again', async ($, on) => {
+    const w = world(on)
+    w.files.set('/home/a/.jaira/settings.json', JSON.stringify({ language: 'Русский' }))
+    w.storeRefuses = 'rephrased:'
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Logo", "line": "Frage", "ticket": null, "question": "Wie gross?", "answered": []}')
+    await (await $.ui.mount(BAND)).press({ key: 'asks' })
+    const pane = await $.ui.mount(ASKS_PANE)
+    w.translations = { 'Wie gross?': 'Какой размер?' }
+    const calls = w.modelCalls
+    await pane.press({ key: 'asks-translate' })
+    await w.clock.settle()
+    expect((await pane.find({ key: 'asks-translate' }))?.props.label).toBe('Translate')
+    await pane.press({ key: 'asks-translate' })
+    await w.clock.settle()
+    expect(w.modelCalls).toBe(calls + 2)
   })
 
   test('without a language set there is no Translate', async ($, on) => {
