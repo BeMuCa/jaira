@@ -2491,6 +2491,7 @@ export const register: Register = (on, options) => {
     // presses at once. Execute then reads 'running…', dim, and a press on it
     // or Enter in the field does nothing (N5ZZP6): the label is the answer.
     const busy = (await read($, busyAtom))[w.id] !== undefined
+    const executeLabel = busy ? t.running : t.execute
     const go = () => void once($, w.id, async () => execute($, w, await read($, typedAtom), share, Input !== undefined))
     // A choice's button: the chosen one bold in its colour, the others dim.
     const CHOICES: [GapItem['choice'], string, 'success' | 'error' | 'suggestion'][] = [['accept', t.choiceOk, 'success'], ['now', t.choiceFix, 'error'], ['later', t.choiceTicket, 'suggestion']]
@@ -2571,7 +2572,7 @@ export const register: Register = (on, options) => {
               key={`typed-${w.id}`}
               label={exec.asksWhy ? t.whyLabel : items.length > 0 ? t.moreLabel : t.reasonLabel}
               placeholder={exec.asksWhy ? t.whyPlaceholder : items.length > 0 ? t.morePlaceholder : t.reasonPlaceholder}
-              submitLabel={busy ? t.running : t.execute}
+              submitLabel={executeLabel}
               {...(items.length === 0 && seen.length === 0 ? { autoFocus: true as const } : {})}
               onInput={(text: string) => void update($, typedAtom, () => text)}
               onSubmit={(text: string) => {
@@ -2587,7 +2588,7 @@ export const register: Register = (on, options) => {
           )
           : null}
         <Box flexDirection="row">
-          <Button key={`execute-${w.id}`} label={busy ? t.running : t.execute} onPress={go}><Text bold dimColor={busy}>{busy ? t.running : t.execute}</Text></Button>
+          <Button key={`execute-${w.id}`} label={executeLabel} onPress={go}><Text bold dimColor={busy}>{executeLabel}</Text></Button>
           <Button key={`explain-all-${w.id}`} label={t.explainAll} onPress={() => void once($, w.id, () => openChat($, w.id, 'explain'))} />
           {s?.language !== undefined
             ? <Button key={`translate-${w.id}`} hotkey="t" label={said !== undefined ? t.original : translating ? t.translating : t.translate} onPress={() => void translate($, w)} />

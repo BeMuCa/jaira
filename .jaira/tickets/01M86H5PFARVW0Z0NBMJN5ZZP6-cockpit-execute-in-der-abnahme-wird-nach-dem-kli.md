@@ -1,7 +1,7 @@
 ---
 id: 01M86H5PFARVW0Z0NBMJN5ZZP6
 title: "Cockpit: Execute in der Abnahme wird nach dem Klick grau und nimmt keinen zweiten Klick, bis der Schritt fertig ist"
-status: critique
+status: testing
 ready: true
 creator: Sascha
 assignee: Sascha
@@ -18,18 +18,19 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-24T10:21:08Z
-updated-at: 2026-11-24T10:37:02Z
+updated-at: 2026-11-24T10:39:04Z
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-2605896
 claimed-at: 2026-11-24T10:21:37Z
 outcome-what: "Execute in the Acceptance pane reads 'running…' and is drawn dim while its row's lock is held; a press on it or Enter in the field does nothing then (the busyRow toast is gone). When BUSY_MS (20 s) frees a row whose step is still at work, once() says so in one toast; a held request stays silent. The lock is keyed per press, not per millisecond."
 outcome-why: "A press gave no visible answer, so the person pressed again (Alex 24.11.2026)."
 outcome-resolves: "DoD 1-3; checked: concurrency (two presses same ms - fixed key collision), error paths (refused step frees at once, tested), unusual input (Enter with text while locked), permissions (n/a, no outside input)"
-review-summary: "core/mod/builtin/jaira-cockpit/hooks/register.tsx:1063 the new 'let presses' and its comment sit between once()'s doc comment and once() itself - move them above the doc comment so the comment stays on its function"
+review-summary: "none"
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "folded the three 'busy ? t.running : t.execute' into one executeLabel in the Acceptance pane render; busyRow left no caller and is gone with the change; once() kept as one function - its freed/ended flags are each read once and say what they mean; no cost on a hot path"
 ---
 
 # Cockpit: Execute in der Abnahme wird nach dem Klick grau und nimmt keinen zweiten Klick, bis der Schritt fertig ist
