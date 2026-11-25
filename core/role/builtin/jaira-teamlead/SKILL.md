@@ -87,7 +87,11 @@ seven days: say so in one line.
    dispatcher that could not ask itself hands you its options as a numbered
    list, and a dispatcher you started with `--parent` sends them to you with
    `SendMessage` — its own questions and its workers' alike, because nobody
-   below you asks the person. Put exactly those options to the person, do not
+   below you asks the person. A background subagent you started sends its
+   question to you with `SendMessage` the same way, and it is handled like a
+   dispatcher's question: `AskUserQuestion` with its options unchanged,
+   `jaira note <id>` the answer, then `SendMessage` the answer back to that
+   agent, by its name or id. Put exactly those options to the person, do not
    rewrite them into prose. Each answer goes onto the ticket with
    `jaira note <id>`, and then back down: to a dispatcher that is still
    running, as a `SendMessage` to it; otherwise before you start a fresh

@@ -196,9 +196,16 @@ has to go looking for.
   parent was unreachable, then ask in your own tab as if you had none.
 - **No parent, and `AskUserQuestion` in your session** — the person started
   you directly. Ask with `AskUserQuestion`.
-- **No `AskUserQuestion` at all** — started as a subagent, or headless. The
-  options go into your report as a numbered list, recommendation first, and
-  you stop; the teamlead puts them to the person.
+- **No `AskUserQuestion` and no parent** — started as a subagent, or headless.
+  A background subagent tries `SendMessage` with `to="main"` first: if it is
+  accepted, the question reaches the main session at once. Write the question
+  and its numbered options onto the ticket (`jaira note`, and the `question`
+  field), send the same text to `main`, and keep working on whatever does not
+  depend on the answer. When nothing is left, write a `waiting:` note and end
+  your turn with the options on top of the status line. Only a refused
+  `SendMessage`, or no such tool at all (a foreground subagent, or headless),
+  means the old way: the options go into your report as a numbered list,
+  recommendation first, and you stop; the teamlead puts them to the person.
 
 In the two cases that do not ask the person yourself, you never pick an
 option because nobody answered. Several open decisions go up together, one

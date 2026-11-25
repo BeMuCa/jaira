@@ -1,0 +1,1 @@
+- A jaira worker or dispatcher started as a background subagent now sends its question to the main session with SendMessage and keeps working on what does not depend on the answer; run `jaira update --roles` to get it.

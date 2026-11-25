@@ -51,6 +51,8 @@ before you end a turn to wait, say on what:
 
 - `jaira note <id> "waiting: <what> (<agent or session>) since <HH:MM>"`
 - started with `--parent`, send the same line to the parent with `SendMessage`
+- started as a background subagent with no `--parent`, send it to `main` with
+  `SendMessage`
 
 What comes back is the hand-back, whatever shape it arrives in: a
 task-notification, an agent's message, or one line that only says
@@ -358,7 +360,15 @@ yes-or-no is a choice too.
   tab, as the next case says.
 - **No parent, and `AskUserQuestion` in your session** — the person started
   you directly. Ask with it.
-- **No `AskUserQuestion` at all** — started as a subagent or headless. The
+- **No `AskUserQuestion` and no `--parent`** — started as a subagent or
+  headless. A background subagent tries `SendMessage` with `to="main"` first:
+  if it is accepted, the question reaches the main session at once. Write the
+  question and its numbered options onto the ticket with `jaira note`, set the
+  `question` field (`jaira set <id> question="<the question>"`), send the same
+  text to `main`, and keep working on whatever does not depend on the answer.
+  When nothing is left, write a `waiting:` note and end your turn with the
+  options on top of the status line. Only a refused `SendMessage`, or no such
+  tool at all (a foreground subagent, or headless), means the old way: the
   options go into your report as a numbered list, recommendation first, on top
   of the status line, and you stop.
 
@@ -367,6 +377,9 @@ asks the person either: it writes its question onto the ticket (a note with
 numbered options and the `question` field) and stops in its lane. Carry it
 like your own, then clear the field with `jaira set <id> question=` and start a
 new agent on the lane.
+
+An answer from `main` comes back as a message. Note it on the ticket, clear
+the field with `jaira set <id> question=`, and go on.
 
 The person may type into your tab, and that is allowed — answer them there,
 and `jaira note` what was decided before acting on it. When you have a parent,
