@@ -1,7 +1,7 @@
 ---
 id: 01M87RTTZFTY9RV9R3XPPGXJG0
 title: "Cockpit Give back: Ziel-Lane nicht fest in-progress"
-status: critique
+status: done
 ready: true
 creator: Sascha
 goal: "Give back im Cockpit schickt ein Ticket in die Arbeits-Lane seines eigenen Boards zurück, auch wenn das Board keine Lane in-progress hat."
@@ -12,9 +12,11 @@ tags:
   - lanes
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 876a1f3e0135451b3a8067529ab8abf5a35222aa
+  - 62df7c16fd1bdbe2f09301fe1786273ea10ea0c1
 created-at: 2026-11-24T21:54:16Z
-updated-at: 2026-11-25T10:47:19Z
+updated-at: 2026-11-25T11:29:17Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-439134
@@ -22,20 +24,14 @@ claimed-at: 2026-11-25T10:32:16Z
 outcome-what: "Give back im Cockpit zielt auf Waiting.backTo (backLaneOf in board.ts): rückwärts von der Personen-Lane die erste agentische, nicht-fresh Lane, Loop-Lanes folgen ihrem rejects_to. jaira lanes --json liefert dafür rejects_to. Texte nennen die Ziel-Lane."
 outcome-why: "Auf Boards ohne in-progress (Video-Board) scheiterte Give back mit 'no lane in-progress is installed'."
 outcome-resolves: "Video-Board: draft-approval -> build, acceptance -> final (Tests); Default-Board weiter in-progress; alle 585 Cockpit-Tests grün; Release-Note geschrieben."
-review-summary: "Das Cockpit rechnet pro Board ein backTo für jedes wartende Ticket (backLaneOf in hooks/board.ts): von der Personen-Lane rückwärts die erste agentische, nicht-fresh, nicht-Personen-Lane, bei einer Loop-Lane deren rejects_to. Give back, alle Texte (texts.ts, sessions.ts backMessage) und die Zeile an die Teamlead-Session nutzen dieses Ziel statt fest in-progress. jaira lanes --json liefert dafür neu rejects_to; ohne das Feld (älteres jaira) bleibt in-progress. Default-Board bleibt in-progress, Video-Board landet in build/final. 585 Cockpit-Tests und go test ./internal/cli grün."
-review-gaps: |-
-  note: edge: fix-now: backLaneOf nimmt rejects_to[0] ungeprüft (hooks/board.ts:121) - ein Ziel, das nicht auf dem Board steht oder eine Personen-Lane ist (rejects_to [human, in-progress]), lässt den Move scheitern bzw. landet bei der Person; fix: erstes rejects_to-Ziel nehmen, das im lanes-Array steht, agentisch, nicht fresh und nicht isPersons ist, sonst l.id; plus ein Test dafür
-  note: elsewhere: discussInThisChat (hooks/texts.ts) und die Discuss-Lane in spawn.sh sagen weiter move --to in-progress - auf einem Board ohne in-progress scheitert dieser Schritt nach einer beantworteten Frage; neues Ticket
-  note: limit: backTo wird aus dem Board-Snapshot gelesen; ändert jemand zwischen Anzeige und Druck die Lanes, geht der Move an die alte Ziel-Lane oder wird von jaira abgelehnt
-test-verdict: "pass: claude plugin test . 585 pass RC=0; go test internal/cli core/shipped core/lane RC=0; DoD 1-4 checked in the tree (named tests, texts.ts/sessions.ts, release note); jaira lanes --json lists rejects_to on the repo board and a fresh init board (fresh board without loop lanes still resolves to in-progress); unknown board exits 2; writes only via jaira move, path unchanged"
-hunt-verdict: "pass: bughunt done at 876a1f3e0, 1 change (edge, not a blocker: rejects_to[0] unchecked), noted for review and person, 0 pre-existing"
-review-verdict: "accept: alle vier DoD-Punkte erfüllt, Tests grün; ein fix-now-Rand bei rejects_to[0]"
-review-round: 1
-review-verdict-gaps: |-
-  note: edge: fix-now: backLaneOf nimmt rejects_to[0] ungeprüft (hooks/board.ts:121) - ein Ziel, das nicht auf dem Board steht oder eine Personen-Lane ist (rejects_to [human, in-progress]), lässt den Move scheitern bzw. landet bei der Person; fix: erstes rejects_to-Ziel nehmen, das im lanes-Array steht, agentisch, nicht fresh und nicht isPersons ist, sonst l.id; plus ein Test dafür
-  note: elsewhere: discussInThisChat (hooks/texts.ts) und die Discuss-Lane in spawn.sh sagen weiter move --to in-progress - auf einem Board ohne in-progress scheitert dieser Schritt nach einer beantworteten Frage; neues Ticket
-  note: limit: backTo wird aus dem Board-Snapshot gelesen; ändert jemand zwischen Anzeige und Druck die Lanes, geht der Move an die alte Ziel-Lane oder wird von jaira abgelehnt
-review-check: "1. cd core/mod/builtin/jaira-cockpit && claude plugin test .  2. du siehst 585 pass, 0 fail, darunter 'Give back on a video board moves the ticket into its build lane and says so'  3. jaira lanes --json | jq '.[] | {id, rejects_to}'  4. du siehst critique/optimize/testing mit [\"in-progress\"], alle anderen mit null  5. Live (optional): im Cockpit ein Ticket in signoff per Give back zurückgeben - es landet in in-progress, die Meldung nennt in-progress"
+review-summary: "Delta review from 876a1f3e0 (commit 62df7c16f, 15+/3-): backLaneOf in hooks/board.ts now picks the first rejects_to entry that is on the board, agent-worked, not fresh and not a person's lane, and falls back to the loop lane itself when none qualifies. This closes the round-1 fix-now: a rejects_to naming a missing lane (video board without in-progress) or a person's lane (human first) no longer becomes the Give back target. A new test covers both cases; shipped.sha256 carries the new board.ts hash (verified with sha256sum). claude plugin test: 586 pass, 0 fail."
+review-gaps: "none"
+test-verdict: "pass: round 2 fix only - claude plugin test . 586 pass RC=0 incl. 'a rejects_to naming a lane not on the board, or a person's lane, is passed by'; go test core/shipped RC=0; DoD 1-4 proofs unchanged and still true"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 2"
+review-verdict: "accept: round-1 fix-now closed in 62df7c16f, DoD 1-4 met, 586 cockpit tests green"
+review-round: 2
+review-verdict-gaps: none
+review-check: "1. cd core/mod/builtin/jaira-cockpit  2. claude plugin test .  3. expect 586 pass, 0 fail, including 'a rejects_to naming a lane not on the board, or a person's lane, is passed by' and 'Give back on a video board moves the ticket into its build lane and says so'  4. in the cockpit on the default board, press Give back on a ticket in signoff: it lands in in-progress and the toast names in-progress  5. on a board without in-progress (e.g. a video board), Give back from draft-approval lands in build and the toast names build"
 round: 2
 back-from: review
 back-by: lane
@@ -78,3 +74,8 @@ stop-after-fix: "true"
 - **2026-11-25 10:45 · Sascha** — review: done at 876a1f3e0
 - **2026-11-25 10:45 · Sascha** — review: fix-now: backLaneOf (hooks/board.ts:121) soll das erste rejects_to-Ziel nehmen, das auf dem Board steht, agentisch, nicht fresh und nicht isPersons ist, sonst l.id; Test mit rejects_to [human, in-progress] und mit einem Ziel, das auf dem Board fehlt
 - **2026-11-25 10:46 · Sascha** — stop-after-fix=true gesetzt (worker): fix-now unter 50 Zeilen, kein Lock, kein Parser
+- **2026-11-25 10:47 · Sascha** — critique+optimize (ein Pass, stop-after-fix): Fix 62df7c16f, 15+/3- - works() bündelt die drei Bedingungen, die die Schleife schon prüfte, und prüft damit auch das rejects_to-Ziel; nichts doppelt, nichts zu entfernen.
+- **2026-11-25 10:48 · Sascha** — waiting: review lane round 2 (new fresh agent via run-lane.sh) since 11:48
+- **2026-11-25 10:49 · Sascha** — review: done at 62df7c16f
+- **2026-11-25 10:50 · Sascha** — report: Give back zielt auf backLaneOf (Agenten-Lane vor der Personen-Lane, Loop-Lanes über geprüftes rejects_to), jaira lanes --json liefert rejects_to, Texte nennen die Ziel-Lane | signoff, context unknown | offen: Discuss-Pfad (discussInThisChat, spawn.sh discuss) sagt weiter in-progress - eigenes Ticket, falls gewünscht; Ticket-Datei uncommitted bis Logbook
+- **2026-11-25 11:26 · Sascha** — cockpit: accepted by the person, signoff -> done
