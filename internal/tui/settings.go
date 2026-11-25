@@ -262,25 +262,26 @@ func nextModelChoice(now settings.AgentModel, set bool) (next settings.AgentMode
 }
 
 // stepModel moves one agent's model on to the next of its choices and saves at
-// once, reading the file again first for the same reason editKey does. The
-// last step removes the agent's entry, so the default applies again.
+// once, through settings.Update like every write of this screen. The last step
+// removes the agent's entry, so the default applies again.
 func (s *settingsScreen) stepModel(key string) string {
-	cur := settings.Load()
-	now, set := cur.Models[key]
-	next, keep := nextModelChoice(now, set)
-	if keep {
-		if cur.Models == nil {
-			cur.Models = map[string]settings.AgentModel{}
+	now, err := settings.Update(func(cur *settings.Settings) {
+		m, set := cur.Models[key]
+		next, keep := nextModelChoice(m, set)
+		if keep {
+			if cur.Models == nil {
+				cur.Models = map[string]settings.AgentModel{}
+			}
+			cur.Models[key] = next
+		} else {
+			delete(cur.Models, key)
 		}
-		cur.Models[key] = next
-	} else {
-		delete(cur.Models, key)
-	}
-	if err := settings.Save(cur); err != nil {
+	})
+	if err != nil {
 		s.modelErr, s.modelErrKey = err.Error(), key
 		return settingsActionNone
 	}
-	s.models, s.modelErr, s.modelErrKey = cur, "", ""
+	s.models, s.modelErr, s.modelErrKey = now, "", ""
 	return settingsActionNone
 }
 
