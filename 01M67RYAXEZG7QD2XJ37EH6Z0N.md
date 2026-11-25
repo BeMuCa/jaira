@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: signoff
+status: in-progress
 ready: true
 creator: berkc
 assignee: Berk
@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-25T23:02:37Z
+updated-at: 2026-11-25T23:02:38Z
 updated-by: Berk
 claimed-by: berk-ca-2068644
 claimed-at: 2026-11-05T09:41:19Z
@@ -28,7 +28,7 @@ outcome-what: "The TUI diff pane (ticket view, sign-off/human lanes) shows each 
 outcome-why: "Review sent back two blockers: a header line taken from the second hunk when the first starts at line 1 makes 'o' open the wrong line; an unshowable commit list reported as 'No changes' hides a git problem (rule 8 of the spec)."
 outcome-resolves: "review 2026-11-05 09:31: diffpane.go:96 header line (blocker 1) and diffpane.go:271 fallback notice (blocker 2)"
 review-summary: "On a ticket in human or signoff, a wide TUI detail view shows the ticket's diff on the right: the feat/<handle> branch against the base's merge-base (.jaira excluded), or, when no branch exists, the commits that name the handle. Files get a header bar, hunk headers, an old/new number gutter, full-width +/- tint and word highlight; ] and [ jump between files, o opens the file at the row's line in VS Code and confirms in the title. 68dc5cf8 fixes the two blockers from the last review: parseDiff now sets a file header's line from its first @@ (seenHunk flag, reset at every diff --git), so a first hunk at +1 is no longer replaced by the second hunk's start. ticketDiff shows the red 'Diff unavailable' notice with the shas when git can show none of the fallback commits, not 'No changes'."
-round: 7
+round: 8
 review-gaps: |-
   note: if only some fallback commits cannot be shown, they are still dropped without a word (diffpane.go:273 only checks the all-unshowable case). Critique accepted this as out of scope; listed so the person sees it
   note: TestUnshowableCommitIsDiffUnavailableNotNoChanges covers one missing sha only; the mixed case has no test
@@ -36,6 +36,9 @@ test-verdict: "pass: scoped suites green (go test ./core/gitrepo ./internal/tui 
 review-verdict: "Pass. 68dc5cf8 fixes both blockers in the right place with minimal changes, and adds nothing new: seenHunk resets per file, and the all-unavailable check reuses Repo.Diff's second return value. Each fix has a test that fails without it. The rest of the branch is unchanged since the review that accepted it. go test ./core/gitrepo ./internal/tui -count=1 is green; gofmt and vet are clean."
 review-round: 7
 review-check: "1. cd /home/berkc/code/X_General/jaira-EH6Z0N && go test ./internal/tui -count=1 -run 'TestHeaderLineIsTheFirstHunkOfEachFile|TestUnshowableCommitIsDiffUnavailableNotNoChanges' -v  2. see both PASS  3. go build -o /tmp/jaira-eh ./cmd/jaira  4. make the terminal at least 140 columns wide and 20 rows tall  5. run /tmp/jaira-eh in this repo and open a ticket in signoff that has a feat/<handle> branch  6. see on the right: title 'Diff  feat/... → master' and 'file 1/N  +A −D' at its right end  7. see each file start with a grey bar (folder dim, name bold, '+a −d' on the right), an 'old new │' gutter, added rows on a green band and removed rows on a red band  8. press tab, then ]: the next file's bar moves to the top and the counter says file 2/N  9. press o on a file bar whose first hunk starts at line 1: VS Code opens that file at line 1, and the title says 'opened <path>:1'  10. open a ticket in signoff with no branch and no commits: the pane says 'No diff yet'"
+back-from: signoff
+back-by: person
+back-count: 1
 ---
 
 # In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code
