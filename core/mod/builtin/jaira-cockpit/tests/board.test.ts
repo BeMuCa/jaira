@@ -1042,7 +1042,7 @@ describe('waiting for you', () => {
     expect(await (await acceptancePane($, ui, 'K7P2QX')).find({ type: 'Text', text: '? Popup oder eigene Seite?' })).toBeDefined()
     await ui.press({ key: 'discuss-K7P2QX' })
     // The chat sends its decision to this session, by its messaging socket.
-    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 8)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'k7p2qx', 'K7P2QX', 'discuss'])
+    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 10)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', '--back', 'in-progress', 'k7p2qx', 'K7P2QX', 'discuss'])
   })
 
   test('a Discuss chat\'s decision comes back: its tab closes and the band offers it to read, once', async ($, on) => {
@@ -1153,6 +1153,7 @@ describe('waiting for you', () => {
     expect(asked).toContain('waits for a decision of mine')
     expect(asked).toContain("note K7P2QX \"decision: <decision>\"")
     expect(asked).toContain('set K7P2QX question=')
+    expect(asked).toContain('move K7P2QX --to in-progress (')
     expect(asked).not.toContain('subagent')
   })
 
@@ -3480,6 +3481,25 @@ describe('give back, the edges', () => {
     expect(await ui.find({ type: 'Text', text: "MG677R back in build; no worker started (the ticket's note says why)" })).toBeDefined()
     expect(w.submitted.at(-1)).toMatch(/\(Person, Cockpit; draft-approval -> build\)$/)
   })
+
+  // Discuss moves a decision that the work goes on back to the lane Give back
+  // would: a video board has no in-progress, and jaira refuses that move.
+  for (const herdr of [true, false]) {
+    test(`Discuss on a video board moves the work back to its build lane${herdr ? '' : ', without Herdr'}`, async ($, on) => {
+      const w = world(on, { herdr })
+      w.tickets = []
+      w.boards.video = { lanes: VIDEO, tickets: [{ handle: 'MG677R', title: 'intro', status: 'draft-approval', next_lane: 'voice-approval', question: 'kuerzer?', review: {} }] }
+      await startSession($)
+      const ui = await $.ui.mount(BAND)
+      await ui.press({ key: 'discuss-MG677R' })
+      if (herdr) {
+        expect(ran(w, 'bash', SPAWN)[0]?.slice(5, 7)).toEqual(['--back', 'build'])
+      } else {
+        expect(w.submitted.at(-1)).toContain('move MG677R --to build (')
+        expect(w.submitted.at(-1)).not.toContain('in-progress')
+      }
+    })
+  }
 
   test('a record a day old decides nothing and is dropped', async ($, on) => {
     const w = world(on, { herdr: true, store: { 'session:old': {

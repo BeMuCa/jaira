@@ -427,47 +427,55 @@ func TestSpawnDiscussReturnsItsDecision(t *testing.T) {
 	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
-	typed := filepath.Join(t.TempDir(), "typed")
-	stub := filepath.Join(t.TempDir(), "herdr")
-	script := `#!/usr/bin/env bash
+	// --back names the lane the work is done in on the ticket's board (a
+	// video board has no in-progress); without it the move goes to in-progress.
+	for _, c := range []struct {
+		flags []string
+		lane  string
+	}{{nil, "in-progress"}, {[]string{"--back", "script"}, "script"}} {
+		typed := filepath.Join(t.TempDir(), "typed")
+		stub := filepath.Join(t.TempDir(), "herdr")
+		script := `#!/usr/bin/env bash
 case "$1 $2" in
   "tab create") echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
   "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
   "pane send-text") printf '%s\n' "$4" >> "` + typed + `" ;;
 esac
 `
-	if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
-	sock := fakeSocket(t)
-	cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "uds:"+sock, "ab12cd", "AB12CD", "discuss")
-	cmd.Dir = t.TempDir()
-	cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+jairaPath(t))
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("spawn.sh discuss: %v\n%s", err, out)
-	}
-	got, err := os.ReadFile(typed)
-	if err != nil {
-		t.Fatal(err)
-	}
-	line := chatRequest(t, string(got))
-	for _, want := range []string{
-		`jaira note AB12CD "decision: `,
-		"jaira set AB12CD question=",
-		"jaira move AB12CD --to in-progress (",
-		"SendMessage an uds:" + sock,
-	} {
-		if !strings.Contains(line, want) {
-			t.Errorf("discuss prompt lacks %q:\n%s", want, line)
+		if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
+			t.Fatal(err)
 		}
-	}
-	at := strings.Index(line, "jaira move ")
-	if at < 0 {
-		t.Fatalf("discuss prompt has no move back:\n%s", line)
-	}
-	if move, _, _ := strings.Cut(line[at:], "("); strings.Contains(move, "--what") || strings.Contains(move, "--force") {
-		t.Errorf("the move back must be a bare move, jaira refuses outcome flags on a ticket with an outcome: %q", move)
+		spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+		sock := fakeSocket(t)
+		args := append([]string{spawn, "--no-worktree", "--parent", "uds:" + sock}, c.flags...)
+		cmd := exec.Command(bash, append(args, "ab12cd", "AB12CD", "discuss")...)
+		cmd.Dir = t.TempDir()
+		cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+jairaPath(t))
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("spawn.sh discuss: %v\n%s", err, out)
+		}
+		got, err := os.ReadFile(typed)
+		if err != nil {
+			t.Fatal(err)
+		}
+		line := chatRequest(t, string(got))
+		for _, want := range []string{
+			`jaira note AB12CD "decision: `,
+			"jaira set AB12CD question=",
+			"jaira move AB12CD --to " + c.lane + " (",
+			"SendMessage an uds:" + sock,
+		} {
+			if !strings.Contains(line, want) {
+				t.Errorf("discuss prompt lacks %q:\n%s", want, line)
+			}
+		}
+		at := strings.Index(line, "jaira move ")
+		if at < 0 {
+			t.Fatalf("discuss prompt has no move back:\n%s", line)
+		}
+		if move, _, _ := strings.Cut(line[at:], "("); strings.Contains(move, "--what") || strings.Contains(move, "--force") {
+			t.Errorf("the move back must be a bare move, jaira refuses outcome flags on a ticket with an outcome: %q", move)
+		}
 	}
 }
 
