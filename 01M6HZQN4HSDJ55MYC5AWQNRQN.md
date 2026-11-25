@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-25T23:10:42Z
+updated-at: 2026-11-25T23:11:03Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:05:52Z
@@ -58,6 +58,8 @@ question: ""
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] P1 core/ticket: FieldAssignedBy 'assigned-by', FieldHandoverBranch, FieldHandoverCommit (+canonicalOrder after assignee); Store.Mutate stamps assigned-by=s.Actor when assignee changed to non-empty; create sets it when --assignee != creator; unit tests
 
 ## Progress
 - **2026-11-04 21:27 · berkc** — BRAINSTORM (Code-Befund, dann Optionen, Empfehlung zuerst)
