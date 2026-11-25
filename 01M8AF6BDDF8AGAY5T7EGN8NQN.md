@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-25T23:06:19Z
+updated-at: 2026-11-25T23:06:22Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-25T23:04:48Z
@@ -43,6 +43,8 @@ claimed-at: 2026-11-25T23:04:48Z
 ## Plan
 
 <Steps, in order — filled in by the pre-process step, or by you.>
+
+- [ ] jaira-worker 'How you ask': new case between 'AskUserQuestion' and 'none at all' — no --parent, no AskUserQuestion, SendMessage to="main" accepted (background subagent): note the question with numbered options (recommendation first), set the question field, SendMessage to main, keep working on what does not depend on the answer; nothing left -> waiting note and end turn with the options on top of the status line; the answer arrives as a message, note it, clear the field
 
 ## Progress
 
