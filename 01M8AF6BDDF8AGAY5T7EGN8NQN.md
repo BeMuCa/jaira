@@ -20,10 +20,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-25T23:06:45Z
+updated-at: 2026-11-25T23:06:48Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-25T23:04:48Z
+stop-after-fix: "true"
 ---
 
 # Ein Worker ohne Herdr schickt seine Fragen per SendMessage an main und arbeitet weiter, statt mit der Frage im Bericht stehen zu bleiben
