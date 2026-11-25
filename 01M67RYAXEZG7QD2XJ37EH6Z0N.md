@@ -20,10 +20,10 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-25T23:38:10Z
+updated-at: 2026-11-25T23:39:47Z
 updated-by: Berk
 claimed-by: w-eh6z0n
-claimed-at: 2026-11-25T23:03:48Z
+claimed-at: 2026-11-25T23:39:47Z
 outcome-what: "The TUI diff pane (ticket view, sign-off/human lanes) shows each file's header at its first hunk's line, and a failed diff load shows 'Diff unavailable' instead of 'No changes'. Covered by new tests TestHeaderLineIsTheFirstHunkOfEachFile and TestUnshowableCommitIsDiffUnavailableNotNoChanges in internal/tui/diffpane_test.go; the rest of the ticket is unchanged from the earlier passes."
 outcome-why: "Review sent back two blockers: a header line taken from the second hunk when the first starts at line 1 makes 'o' open the wrong line; an unshowable commit list reported as 'No changes' hides a git problem (rule 8 of the spec)."
 outcome-resolves: "review 2026-11-05 09:31: diffpane.go:96 header line (blocker 1) and diffpane.go:271 fallback notice (blocker 2)"
@@ -57,7 +57,8 @@ back-count: 1
   proof: internal/tui/diffpane.go renderDiffPane, diffLine, spreadRow, markWordPairs; tests TestParseDiffNumbersBothSides, TestParseDiffTagsNewDeletedAndRenamedFiles, TestWordPairsMarkOnlyTheChangedMiddle, TestChangedRowsAreTintedAcrossThePane, TestGutterShowsOldAndNewNumbersOnTheirSides, TestDiffTitleCountsFilesAndTotals, TestBlankRowSeparatesFilesAndJumpsStillLandOnHeaders, TestLongCodeRowIsCutToThePane, TestEmptyStateIsNoticeBelowTheTitle, TestTicketDiffSaysWhyThereAreNoRows
 - [x] BranchFor picks the newest of several branches carrying the handle (rule 9); test
   proof: core/gitrepo/branchdiff.go BranchFor (for-each-ref --sort=-committerdate); test TestBranchForPicksTheNewestBranchCarryingTheHandle in core/gitrepo/branchdiff_test.go
-- [ ] Der Diff oeffnet als Dateiliste: jeder Pfad ab Repo-Root, mit +/- Zahlen; Pfeil hoch/runter waehlt eine Datei, Enter klappt ihren Diff auf, nochmal Enter klappt ihn zu und die Liste ist wieder waehlbar; ] und [ entfallen; Test
+- [x] Der Diff oeffnet als Dateiliste: jeder Pfad ab Repo-Root, mit +/- Zahlen; Pfeil hoch/runter waehlt eine Datei, Enter klappt ihren Diff auf, nochmal Enter klappt ihn zu und die Liste ist wieder waehlbar; ] und [ entfallen; Test
+  proof: internal/tui/diffpane.go:diffShown,toggleDiffFile; tests TestDiffOpensAsAListOfFiles, TestEnterOpensAndClosesTheSelectedFile, TestEnterWithoutDiffFocusStillClosesTheTicket
 - [ ] Im aufgeklappten Diff scrollen Pfeil hoch/runter die Zeilen und Pfeil links/rechts horizontal, so dass abgeschnittene Zeilen lesbar werden; Test
 - [ ] Die Zeilennummern-Spalte ist schmal: nur so breit wie die groesste Nummer der Datei verlangt, nicht fest alt+neu nebeneinander in voller Breite; Test
 - [ ] Der Spalt zwischen Ticket-Text und Diff laesst sich mit der Maus nach links/rechts ziehen, die Breite bleibt fuer die Sitzung; Test
