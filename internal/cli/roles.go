@@ -83,7 +83,14 @@ All three are read as the base holds them — the branch work arrives on —
 never off this checkout's disk, which may be a branch's own word for itself:
 --base <ref>, else origin's default branch (origin/HEAD, origin/main,
 origin/master). Where the checkout's .jaira/pr says something else, the
-source says so. Without any base the disk is read, and the source says that.`,
+source says so. Without any base the disk is read, and the source says that.
+
+And which model, at which effort, each agent starts on: the orchestrator (the
+teamlead), the worker (the session that carries a ticket through its lanes),
+and the strong and cheap lanes by their tier. These are the "models" entries in
+~/.jaira/settings.json; without them the teamlead and strong lanes run on opus,
+the worker and cheap lanes on haiku at high effort. Carried as
+orchestrator_model and orchestrator_effort, worker_model and worker_effort.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			roles, err := role.Builtins()
@@ -103,6 +110,10 @@ source says so. Without any base the disk is read, and the source says that.`,
 			if err != nil {
 				return err
 			}
+			orch, _ := cur.ModelFor("orchestrator")
+			work, _ := cur.ModelFor("worker")
+			strong, _ := cur.ModelFor("strong")
+			cheap, _ := cur.ModelFor("cheap")
 			if g.jsonOut {
 				arr := make([]map[string]any, 0, len(roles))
 				for _, r := range roles {
@@ -118,6 +129,8 @@ source says so. Without any base the disk is read, and the source says that.`,
 					"release": release, "release_source": releaseSource,
 					"pr": pr, "pr_source": prSource, "pr_reviewer": reviewer,
 					"pr_when": prWhen, "pr_when_source": prWhenSource,
+					"orchestrator_model": orch.Model, "orchestrator_effort": orch.Effort,
+					"worker_model": work.Model, "worker_effort": work.Effort,
 				})
 			}
 			fmt.Fprintf(w, "%-24s %s\n", "ID", "DESCRIPTION")
@@ -132,6 +145,8 @@ source says so. Without any base the disk is read, and the source says that.`,
 			fmt.Fprintf(w, "release: %s — who touches the version and the changelog (%s)\n", release, releaseSource)
 			fmt.Fprintf(w, "pr: %s — who opens a pull request (%s); reviewer: %s; opens in: %s (%s)\n",
 				pr, prSource, cmp.Or(reviewer, "none"), prWhen, prWhenSource)
+			fmt.Fprintf(w, "models: orchestrator %s, worker %s, strong %s, cheap %s (models in %s)\n",
+				orch, work, strong, cheap, settings.Path())
 			return nil
 		},
 	}

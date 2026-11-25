@@ -1355,3 +1355,8 @@ cd9b0e8b63f9a1fbee536ef9fc7c2adcf2c07dcbf84ffab53042e1d88dbb1ad2  core/role/buil
 fc07dbe247fb2b184d3f11d1bc1d53d899edb85e4bd5898d2b2a9ee16ce5e81d  core/role/builtin/jaira-teamlead/SKILL.md
 3b0af1d849845e659bff321f43000e50dc5859ef8fec1b45c6d527f41aae41d7  core/role/builtin/jaira-worker/SKILL.md
 5660d93dc973cdc24f409404344550e7130a36b38d86cfed1fe0427625ea0a4d  core/role/builtin/jaira-role-pr/SKILL.md
+bcb2ae17f2995c7b2d8b68986a24c68b2c8c6eb19343dbb277fe51a00f343747  core/role/builtin/jaira-dispatcher/SKILL.md
+18ee06c03ce054213c21f01c98bc6144c32123dd2875f0a8827a06dee6f05b31  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
+709b3d5bcff354f2659badd2de0d9288ed4cd78c031e65e589185e81a20d7662  core/role/builtin/jaira-teamlead/SKILL.md
+f4f2dd48537b8e87a49d0965b8cf4d35e6bfe13c82a5040765569031668a6272  core/role/builtin/jaira-worker/SKILL.md
+8edb6682d98aee0b22b3b84892e0981fe57d54ea961c6218c8dee462d720126a  core/role/builtin/jaira-dispatcher/scripts/spawn.sh
