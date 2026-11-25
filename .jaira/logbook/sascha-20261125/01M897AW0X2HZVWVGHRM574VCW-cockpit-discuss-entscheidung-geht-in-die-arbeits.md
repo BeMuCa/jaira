@@ -1,7 +1,7 @@
 ---
 id: 01M897AW0X2HZVWVGHRM574VCW
 title: "Cockpit Discuss: Entscheidung geht in die Arbeits-Lane des Boards, nicht fest in-progress"
-status: in-progress
+status: done
 ready: true
 creator: Sascha
 goal: "Nach einer Entscheidung im Cockpit (Discuss/Explain) landet das Ticket in der Lane, die Give back seit PGXJG0 berechnet, auf jedem Board."
@@ -17,9 +17,12 @@ tags:
 blocked-by: []
 related: []
 follows: 01M87RTTZFTY9RV9R3XPPGXJG0
-commits: []
+commits:
+  - fa4fe940100ab42857cf78acef57426d71a610ae
+  - 9d33bfc5141547527a8845c50a6da96b6415a11c
+  - 41685a7c3cdefbb0c104a3aa25b3004b210a5870
 created-at: 2026-11-25T11:26:56Z
-updated-at: 2026-11-25T11:46:07Z
+updated-at: 2026-11-25T12:01:35Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-905098
@@ -27,14 +30,22 @@ claimed-at: 2026-11-25T11:38:24Z
 outcome-what: "Cockpit Discuss moves a decided ticket back to backLaneOf (w.backTo), in this chat and via spawn.sh --back <lane> in the Herdr tab"
 outcome-why: boards without in-progress (video board) refused the hardcoded move; Give back already used backLaneOf since PGXJG0
 outcome-resolves: Discuss decision on a video board lands in its working lane (build/script/final)
-review-summary: none
-review-gaps: "none - no other hardcoded Discuss move left (grep 'to in-progress' in cockpit hooks and dispatcher scripts is empty); nothing added is uncalled; openChat's back default serves the Explain callers"
-test-verdict: "fail: gates green (go test ./core/... RC=0, claude plugin test 588/0), DoD 1-3 verified; bughunt change finding sends it back"
-hunt-verdict: "fail: 1 change finding - register.tsx passes --back to an older spawn.sh, which refuses it (unknown flag) even on the default board"
+review-summary: "Discuss in the cockpit now takes the ticket's backTo (the lane Give back already uses, from backLaneOf in board.ts) instead of a fixed in-progress. Without Herdr the chat text names that lane in its 'jaira move --to <lane>'; with Herdr the cockpit hands spawn.sh a new '--back <lane>' flag, only when the lane is not in-progress, and spawn.sh's discuss prompt uses it (default in-progress). So a video board's Discuss moves work back to build, and the default board behaves exactly as before, also with an older hand-edited spawn.sh."
+review-gaps: |-
+  note: limit: an older spawn.sh kept by jaira update --roles still refuses --back on a board without in-progress; the release note tells to run jaira update --roles
+  note: edge: Explain still calls openChat with the default back; harmless since Explain never moves, but the parameter only means something for discuss
+test-verdict: "pass: claude plugin test 588/0 (RC=0), go test core/role core/shipped core/lane RC=0; DoD 1-3 verified against tree; spawn.sh --back without value exits 1; change writes nothing concurrent (prompt text only)"
+hunt-verdict: "pass: follow-up hunt at 9d33bfc51, 0 findings"
 round: 2
 back-from: testing
 back-by: lane
 back-count: 1
+review-verdict: "accept: all three DoD items met in the diff (register.tsx openChat/backArg, texts.ts discussInThisChat, spawn.sh --back, tests in board.test.ts and role_test.go, release note); no defect found"
+review-round: 2
+review-verdict-gaps: |-
+  note: limit: an older spawn.sh kept by jaira update --roles still refuses --back on a board without in-progress; the release note tells to run jaira update --roles
+  note: edge: Explain still calls openChat with the default back; harmless since Explain never moves, but the parameter only means something for discuss
+review-check: "1. go test ./core/role -run TestSpawnDiscussReturnsItsDecision - passes (default in-progress and --back script)  2. in the cockpit on a board with a video board, open a ticket waiting in draft-approval with a question and press Discuss  3. the chat's instruction says 'jaira move <ID> --to build', not in-progress  4. on the default board, Discuss on a ticket in human still says '--to in-progress'"
 ---
 
 # Cockpit Discuss: Entscheidung geht in die Arbeits-Lane des Boards, nicht fest in-progress
@@ -66,3 +77,15 @@ back-count: 1
 - **2026-11-25 11:44 · Sascha** — hunt report: 1 finding (1 change, edge, no blocker; 0 pre-existing) as a note on 574VCW | read whole: spawn.sh flag parse and discuss prompt, board.ts backLaneOf/snapshotOf, register.tsx openChat/spawnScript/parentArgs/herdr and every openChat caller, texts.ts discussInThisChat; register.tsx (3018 lines) not read end to end, only the parts the change reaches | not run: the cockpit tests (claude plugin test), left to the testing lane; checked: lane ids are validID [a-z0-9-] so --to ${back} cannot inject into the agent's shell line, jaira move needs no --board for a ticket on another board
 - **2026-11-25 11:44 · Sascha** — bughunt: done at fa4fe9401 - 1 finding (1 change, 0 pre-existing) in 5 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/574VCW.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256
 - **2026-11-25 11:46 · Sascha** — fix round 2: --back only when the lane is not in-progress (bughunt: a hand-edited older spawn.sh kept by update --roles refuses the flag; default board must keep working)
+- **2026-11-25 11:46 · Sascha** — critique+optimize round 2 (fix 9d33bfc51, 8 lines): none - the condition sits where the flag is built; nothing duplicated or orphaned
+- **2026-11-25 11:46 · Sascha** — waiting: bughunt round 2 (background subagent) since 12:46
+- **2026-11-25 11:47 · Sascha** — hunt report: 0 findings, nothing written beyond this report | read as a diff since fa4fe9401: core/mod/builtin/jaira-cockpit/hooks/register.tsx (openChat), core/mod/builtin/jaira-cockpit/tests/board.test.ts; no file new to the change; the other five files are unchanged since fa4fe9401 | not checked: the cockpit test suite was not run (testing lane's job); omitting --back relies on spawn.sh defaulting back to in-progress (spawn.sh:103), checked by reading
+- **2026-11-25 11:47 · Sascha** — bughunt: done at 9d33bfc51 - 0 findings (0 change, 0 pre-existing) in 2 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/574VCW.md core/role/builtin/jaira-dispatcher/scripts/spawn.sh core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-25 11:47 · Sascha** — waiting: review (fresh agent, Herdr tab via run-lane.sh) since 12:47
+- **2026-11-25 11:48 · Sascha** — review: done at 9d33bfc51
+- **2026-11-25 11:49 · Sascha** — report: Discuss moves back to backLaneOf (texts.ts no-Herdr prompt, spawn.sh --back <lane> only when not in-progress) + tests + release note | signoff, context unknown | 2 review notes (limit: old hand-edited spawn.sh on non-default boards; edge: Explain passes default back) - person accepts; branch not pushed
+- **2026-11-25 11:55 · Sascha** — Accepted from signoff: angenommen:
+- note: edge: Explain still calls openChat with the default back; harmless since Explain never moves, but the parameter only means something for discuss
+- note: limit: an older spawn.sh kept by jaira update --roles still refuses --back on a board without in-progress; the release note tells to run jaira update --roles
+- **2026-11-25 11:56 · Sascha** — cockpit: accepted by the person, signoff -> done
+- **2026-11-25 11:58 · Sascha** — pr: push stopped at the full suite (go test ./... -race). TestEveryInstalledFileIsAShippedVersion (core/role/shipped_test.go:74): core/shipped/shipped.sha256 lacks the hash of core/mod/builtin/jaira-cockpit/hooks/register.tsx as 9d33bfc51 left it (28b66184...). Nothing pushed. Options: 1) (recommended) a worker appends that line in a fix(574VCW) commit, then pr runs again; 2) give the ticket back to in-progress; 3) push anyway and let CI show it red.
