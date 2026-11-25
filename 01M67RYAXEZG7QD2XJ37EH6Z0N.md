@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-25T23:07:59Z
+updated-at: 2026-11-25T23:38:10Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-25T23:03:48Z
@@ -82,7 +82,7 @@ back-count: 1
 - [x] renderDiffPane: title row, file header bar, hunk row, gutter, row tint dark/light, word-level spans, truncation before styling
 - [x] empty/error states and BranchFor --sort=-committerdate with tests
 - [x] release note line in core/release/notes/EH6Z0N.md; go test ./core/gitrepo ./internal/tui
-- [ ] DoD7 file list: Model gets diffSel (selected file index) and diffOpen (open file index, -1 = list only). Collapsed, renderDiffPane draws one header row per file (path from repo root, as diffRow.path already is; tag; +A -D); the selected file gets the accent marker and the selection fill. diffFocus+up/down moves diffSel (clamped). diffFocus+enter on a list sets diffOpen=diffSel; enter on an open file sets diffOpen=-1. enter without diffFocus keeps closing the ticket. Remove ] and [ (model.go cases) and jumpFile. Title counter 'file N/M' = diffSel+1. loadDiff resets diffSel=0, diffOpen=-1, diffHScroll=0 on a ticket change only; reload keeps them. Replace TestBracketJumpsBetweenFiles/TestBlankRowSeparates... with tests for select/open/close
+- [x] DoD7 file list: Model gets diffSel (selected file index) and diffOpen (open file index, -1 = list only). Collapsed, renderDiffPane draws one header row per file (path from repo root, as diffRow.path already is; tag; +A -D); the selected file gets the accent marker and the selection fill. diffFocus+up/down moves diffSel (clamped). diffFocus+enter on a list sets diffOpen=diffSel; enter on an open file sets diffOpen=-1. enter without diffFocus keeps closing the ticket. Remove ] and [ (model.go cases) and jumpFile. Title counter 'file N/M' = diffSel+1. loadDiff resets diffSel=0, diffOpen=-1, diffHScroll=0 on a ticket change only; reload keeps them. Replace TestBracketJumpsBetweenFiles/TestBlankRowSeparates... with tests for select/open/close
 - [ ] DoD8 scrolling inside an open file: rows of the open file follow its header (header pinned as first body row, then that file's rows from diffScroll, then the following file headers fill the rest). up/down/pgup/pgdn change diffScroll clamped to the file's rows; left/right change diffHScroll by 8 columns (clamped 0..longest row of the file); the code text after the sign is shifted by diffHScroll before fitSegs (gutter and sign stay); word spans shifted the same way. 'o' targets the row at the top of the open file (header line when on the list). Tests
 - [ ] DoD9 narrow gutter: one number column instead of old+new: '-' rows show the old line, '+' and context rows the new line; width = digits of the largest number in the open file (no minimum 3), then '│'. Hunk header indented by that width+1. Rewrite TestGutterShowsOldAndNewNumbersOnTheirSides; test a file with lines <10 has a 1-wide gutter
 - [ ] DoD10 drag the divider: Model.diffLeftW (0 = diffLeftWidth). withDiff uses it. View sets v.MouseMode=tea.MouseModeCellMotion only while modeDetail && diffPaneShown (so text selection works elsewhere). Update: tea.MouseClickMsg with X within 1 column of the gap (left box is leftW+2 wide, gap at X=leftW+2) starts a drag; tea.MouseMotionMsg while dragging sets leftW = clamp(X-2, 40, width-50); tea.MouseReleaseMsg ends it. Kept in the model for the session. Tests send the msgs and assert the width and the rendered split
