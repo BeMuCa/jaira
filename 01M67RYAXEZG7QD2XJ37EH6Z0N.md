@@ -4,7 +4,7 @@ title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge,
 status: signoff
 ready: true
 creator: berkc
-assignee: berkc
+assignee: Berk
 goal: "Steht ein Ticket in human oder signoff, zeigt die Ticketansicht seinen Diff gegen master Datei fuer Datei (wie die Merge-Ansicht von GitHub), und je Datei oeffnet ein Knopf die Datei in VS Code - so wird die Abnahme ein echter Code-Review."
 context: |-
   Was fehlt: wer abnimmt, liest Outcome und Review-Text, aber nicht den Code. Den Diff muss man selbst in git oder auf GitHub suchen.
@@ -20,8 +20,8 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-05T09:42:42Z
-updated-by: berkc
+updated-at: 2026-11-25T23:02:20Z
+updated-by: Berk
 claimed-by: berk-ca-2068644
 claimed-at: 2026-11-05T09:41:19Z
 outcome-what: "The TUI diff pane (ticket view, sign-off/human lanes) shows each file's header at its first hunk's line, and a failed diff load shows 'Diff unavailable' instead of 'No changes'. Covered by new tests TestHeaderLineIsTheFirstHunkOfEachFile and TestUnshowableCommitIsDiffUnavailableNotNoChanges in internal/tui/diffpane_test.go; the rest of the ticket is unchanged from the earlier passes."
