@@ -35,6 +35,7 @@ import (
 	"github.com/BeMuCa/jaira/core/pr"
 	"github.com/BeMuCa/jaira/core/project"
 	"github.com/BeMuCa/jaira/core/refsync"
+	"github.com/BeMuCa/jaira/core/road"
 	"github.com/BeMuCa/jaira/core/session"
 	"github.com/BeMuCa/jaira/core/tag"
 	"github.com/BeMuCa/jaira/core/ticket"
@@ -87,6 +88,9 @@ type Model struct {
 	// direction a card and the filter both need and the files do not give.
 	milestones []*milestone.Milestone
 	mstones    milestone.Index
+	// roads are the swimlane names of the roadmap, oldest first. They live on
+	// their refs; without refs there are none, and the lanes are named Road-n.
+	roads []*road.Road
 	// users is the user picker's list, built when the picker opens.
 	users []userRow
 	// pick is the cursor and the ticks of the open picker, u's or M's; see
@@ -494,6 +498,17 @@ func (m *Model) reload() error {
 	}
 	m.milestones = all
 	m.mstones = milestone.Build(all)
+	m.roads = nil
+	if m.refSync != nil {
+		roads, err := road.LoadAll(m.refSync)
+		switch {
+		case errors.Is(err, road.ErrNoRefs):
+		case err != nil:
+			m.flash("roads could not be read: " + err.Error())
+		default:
+			m.roads = roads
+		}
+	}
 	m.flashTwins()
 	// The relation index is built from the tickets this reload is about to
 	// read, so it goes with them rather than outliving them.
@@ -1349,7 +1364,7 @@ func (m *Model) insertText(text string) {
 		}
 
 	case modeLayer:
-		if l := m.layer; l != nil && l.stage == stageForm {
+		if l := m.layer; l != nil && (l.stage == stageForm || l.stage == stageRoadName) {
 			l.form.vals[l.form.field] += foldToOneLine(text)
 		}
 	}

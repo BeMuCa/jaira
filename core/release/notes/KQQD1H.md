@@ -1,0 +1,6 @@
+- Name the swimlanes of the Milestone Roadmap with `jaira road create <name> [milestone...] --title "<title>"`; a road lives on its own ref, like an epic, and lists its milestones by ID, name or `<name>-<ID>`.
+- Change a road with `jaira road add|rm <name> <milestone>...`, `jaira road set <name> --title ...` and read them with `jaira road ls` (`--json` gives `roads`, each with `milestones`).
+- ! Put a milestone in one road only: `jaira road add` and `create` refuse one another road already lists, with exit 3 naming that road; take it out of the other road first with `jaira road rm`.
+- ! Run `jaira validate` after a merge: a milestone listed in two roads is reported as `road_duplicate`; the older road draws it, so remove the listing you do not want with `jaira road rm`.
+- On the roadmap a swimlane shows its road's title over it, or `Road-1`, `Road-2`, ... for a lane nobody has named; `↑` from a swimlane's top reaches that header and `enter` names it, `esc` cancels.
+- Leave unfinished tickets in the milestone they were planned in: nothing moves them to the next one any more, and `jaira milestone` help and the template of a new milestone file say so.

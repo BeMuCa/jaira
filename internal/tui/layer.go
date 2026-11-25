@@ -33,25 +33,27 @@ const (
 	onRight            // [+] right of a bubble: a sibling, same first predecessor
 	onBelow            // [+] under a bubble: a successor
 	onFar              // [+] after the last swimlane: a swimlane of its own
+	onRoad             // the header over a swimlane: its road's name, enter names it
 )
 
 // layerTarget is one thing the cursor can rest on. A [+] is named after the
 // bubble it belongs to, so it survives a reload the way the bubble does.
 type layerTarget struct {
 	kind layerKind
-	id   string // the bubble's milestone ID, or the bubble a [+] belongs to; "" for onFar
+	id   string // the bubble's milestone ID, or the bubble a [+] belongs to; the swimlane's top for onRoad; "" for onFar
 }
 
 // layerStage is what the layer is doing on top of the picture.
 type layerStage int
 
 const (
-	stageLayer  layerStage = iota
-	stageChoose            // enter on a [+]: a new milestone or an existing one
-	stageForm              // name and goal, or name, goal and predecessors
-	stagePick              // the milestones that can be connected here
-	stageRemove            // x: asked before the bubble leaves the layer
-	stageDetail            // enter on a bubble: its goal and its tickets
+	stageLayer    layerStage = iota
+	stageChoose              // enter on a [+]: a new milestone or an existing one
+	stageForm                // name and goal, or name, goal and predecessors
+	stagePick                // the milestones that can be connected here
+	stageRemove              // x: asked before the bubble leaves the layer
+	stageDetail              // enter on a bubble: its goal and its tickets
+	stageRoadName            // enter on a swimlane's header: the name of its road
 )
 
 // layerView is the open layer.
@@ -198,6 +200,9 @@ func (m *Model) keyLayer(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case stageDetail:
 		m.keyMilestoneDetail(s)
 		return m, nil
+	case stageRoadName:
+		m.keyRoadName(s, k.Text)
+		return m, nil
 	}
 
 	switch s {
@@ -207,9 +212,12 @@ func (m *Model) keyLayer(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		l.sel = m.layerScene().step(l.sel, s)
 	case "enter":
 		l.err = ""
-		if l.sel.kind == onBubble {
+		switch l.sel.kind {
+		case onBubble:
 			m.openMilestoneDetail(l.sel.id)
-		} else {
+		case onRoad:
+			m.startRoadName()
+		default:
 			l.stage = stageChoose
 		}
 	case "e":

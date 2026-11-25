@@ -239,6 +239,7 @@ Exit codes:
 		newTagCmd(),
 		newMilestoneCmd(),
 		newEpicCmd(),
+		newRoadCmd(),
 		newDoDCmd(),
 		newValidateCmd(),
 		newArchiveCmd(),

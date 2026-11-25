@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -26,11 +27,14 @@ type Bubble struct {
 	Parent string // ID of the parent; "" for a lane top
 }
 
-// Lane is one swimlane: the tree under one top, as a span of columns.
+// Lane is one swimlane: the trees under its tops, as a span of columns. A lane
+// is a road when a road lists its milestones, and then Road is that road's
+// index in the roads Layout was given; -1 when none does.
 type Lane struct {
-	Top   string // ID of the lane's top
+	Top   string // ID of the lane's first (oldest) top
 	Col   int
 	Width int
+	Road  int
 }
 
 // Arrow runs from a predecessor to its successor. Extra is false for the
@@ -274,15 +278,22 @@ func ReattachSuccessors(all []*Milestone, id string) map[string][]string {
 
 // Layout arranges the placed milestones.
 //
-//  1. A milestone's parent is its first predecessor, when that is a placed
-//     milestone and the arrow closes no loop; otherwise it is a swimlane top.
-//  2. A top with everything under it is one swimlane; lanes run left to right
-//     by the top's age.
-//  3. Inside a lane the tree is tidy: row is depth, children are ordered by
+//  1. A milestone's lane is the first road that lists it; otherwise the lane of
+//     its first usable predecessor; otherwise a lane of its own.
+//  2. A milestone's parent is its first predecessor, when that is a placed
+//     milestone in the same lane and the arrow closes no loop; otherwise it is a
+//     top of its lane. A predecessor in another lane is drawn as an extra arrow.
+//  3. A lane is the tops with their trees, side by side, in the age of the
+//     first top; lanes run left to right in that order.
+//  4. Inside a tree the layout is tidy: row is depth, children are ordered by
 //     age, a subtree is as wide as its children together (at least one column),
 //     and a parent stands over its first child.
-//  4. Every further usable predecessor is an extra arrow.
-func Layout(all []*Milestone) Grid {
+//  5. Every further usable predecessor is an extra arrow.
+//
+// roads lists the milestone tokens of each road, the oldest road first; a token
+// is an ID or a unique name. A milestone listed in two roads is drawn in the
+// lower-indexed one. nil roads draw exactly the lanes the predecessors make.
+func Layout(all []*Milestone, roads [][]string) Grid {
 	var placed []*Milestone
 	for _, m := range all {
 		if m.Placed {
@@ -293,18 +304,74 @@ func Layout(all []*Milestone) Grid {
 	kept := usableEdges(placed)
 	r := newResolver(placed)
 
+	roadOf := map[string]int{}
+	for i, toks := range roads {
+		for _, tok := range toks {
+			if id := r.resolve(tok); id != "" {
+				if _, ok := roadOf[id]; !ok {
+					roadOf[id] = i
+				}
+			}
+		}
+	}
+	// candidate is the parent a milestone would have: its first usable
+	// predecessor, when that is a placed milestone.
+	candidate := map[string]string{}
+	for _, m := range placed {
+		if len(m.After) > 0 {
+			if first := r.resolve(m.After[0]); first != "" && len(kept[m.ID]) > 0 && kept[m.ID][0] == first {
+				candidate[m.ID] = first
+			}
+		}
+	}
+	// lane is memoized: a candidate is an earlier edge in an acyclic graph, so
+	// the recursion ends.
+	laneKey := map[string]string{}
+	var laneOf func(id string) string
+	laneOf = func(id string) string {
+		if k, ok := laneKey[id]; ok {
+			return k
+		}
+		var k string
+		switch ri, listed := roadOf[id]; {
+		case listed:
+			k = "road:" + strconv.Itoa(ri)
+		case candidate[id] != "":
+			k = laneOf(candidate[id])
+		default:
+			k = "top:" + id
+		}
+		laneKey[id] = k
+		return k
+	}
+	for _, m := range placed {
+		laneOf(m.ID)
+	}
+
 	parent := map[string]string{}
 	children := map[string][]string{}
 	var tops []string
 	for _, m := range placed { // oldest first, so children come out ordered
-		if len(m.After) > 0 {
-			if first := r.resolve(m.After[0]); first != "" && len(kept[m.ID]) > 0 && kept[m.ID][0] == first {
-				parent[m.ID] = first
-				children[first] = append(children[first], m.ID)
-				continue
-			}
+		if p := candidate[m.ID]; p != "" && laneKey[p] == laneKey[m.ID] {
+			parent[m.ID] = p
+			children[p] = append(children[p], m.ID)
+			continue
 		}
 		tops = append(tops, m.ID)
+	}
+
+	// Tops grouped into lanes, a lane taking its place where its first top does.
+	var laneTops [][]string
+	laneIndex := map[string]int{}
+	for _, top := range tops {
+		k := laneKey[top]
+		i, ok := laneIndex[k]
+		if !ok {
+			i = len(laneTops)
+			laneIndex[k] = i
+			laneTops = append(laneTops, nil)
+		}
+		laneTops[i] = append(laneTops[i], top)
 	}
 
 	width := map[string]int{}
@@ -335,11 +402,18 @@ func Layout(all []*Milestone) Grid {
 		g.Bubbles = append(g.Bubbles, Bubble{ID: n, Lane: lane, Col: bc, Row: row, Parent: parent[n]})
 	}
 	next := 0
-	for i, top := range tops {
-		w := measure(top)
-		g.Lanes = append(g.Lanes, Lane{Top: top, Col: next, Width: w})
-		place(top, i, next, 0)
-		next += w
+	for i, tops := range laneTops {
+		l := Lane{Top: tops[0], Col: next, Road: -1}
+		if ri, ok := roadOf[tops[0]]; ok {
+			l.Road = ri
+		}
+		for _, top := range tops {
+			measure(top)
+			place(top, i, next, 0)
+			next += width[top]
+		}
+		l.Width = next - l.Col
+		g.Lanes = append(g.Lanes, l)
 	}
 	sort.SliceStable(g.Bubbles, func(i, j int) bool {
 		a, b := g.Bubbles[i], g.Bubbles[j]

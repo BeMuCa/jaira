@@ -75,75 +75,14 @@ func (y *Syncer) RecordEpic(name string, content []byte) error {
 	return nil
 }
 
-// rebaseAttempts bounds how often one flush re-merges an epic that keeps
-// losing. Each loss means somebody else wrote it in the meantime, so a few
-// rounds are plenty; beyond that the write goes back in the queue.
-const rebaseAttempts = 3
-
-// rebaseEpic answers a lost race for an epic by merging instead of dropping the
-// edit. A ticket's loser keeps its local file and the board shows both sides;
-// an epic has no local file, so the queued entry is the only copy of the edit
-// and dropping it would lose a ticket somebody sorted in. Flush leaves it
-// queued; the merge keeps both sides' member changes (epic.Merge), is sent
-// again at once, and replaces the entry only once it is sent or requeued.
+// rebaseEpic answers a lost race for an epic by merging it (epic.Merge), since
+// an epic has no local file to fall back on.
 func (y *Syncer) rebaseEpic(r outbox.Result) outbox.Result {
-	e, ok := y.Box.PendingEpic(r.ID)
-	if !ok {
-		return r
-	}
-	// ours is always the text of a merge onto the ref at oursLease: that pair
-	// is what goes back in the queue when it is not sent. Leasing it on any
-	// newer state would let the next flush push it over a write it never saw.
-	name, ours, oursLease := r.ID, []byte(e.Content), e.Lease
-	var base []byte
-	if e.Lease != "" {
-		b, err := y.Repo.ReadEpicAt(name, e.Lease)
-		if err != nil {
-			// The common state is unreadable, so there is nothing to merge
-			// against; the edit stays queued rather than guessed at.
-			r.Outcome, r.Err = outbox.Failed, err
-			return r
-		}
-		base = b
-	}
-	for range rebaseAttempts {
-		theirs, lease, err := y.Repo.ReadEpic(name)
-		if err != nil && !errors.Is(err, gitref.ErrNoRef) {
-			r.Err = err
-			break
-		}
-		merged := epic.Merge(name, base, ours, theirs)
-		_, err = y.Repo.WriteEpic(name, merged, lease)
-		switch {
-		case err == nil:
-			// Only the entry read above goes: an edit queued during the push
-			// was made on ours, not on the merge, and stays leased where it
-			// is, to lose the next push and be merged in turn.
-			r.Outcome, r.Err = outbox.Sent, y.Box.Settle(e)
-			return r
-		case errors.Is(err, gitref.ErrRaceLost):
-			// Somebody wrote it again between our read and our push: their
-			// state is now the one to merge onto, ours stays what it was.
-			base, ours, oursLease = theirs, merged, lease
-			if ferr := y.fetch(); ferr != nil {
-				err = ferr
-			} else {
-				continue
-			}
-		}
-		r.Err = err
-		break
-	}
-	// Not sent: queue what we have, leased on the ref it was merged onto, so
-	// the next command tries again and loses the race to every write it has
-	// not merged yet — not on the ref as it stands now, which after the fetch
-	// above may hold a write this text never saw. It replaces only the entry
-	// read above: an edit queued since stays, and is merged on the next try.
-	if err := y.Box.Replace(e, ours, oursLease, y.Actor); err != nil {
-		r.Err = err
-	} else {
-		y.dirty = true
-	}
-	r.Outcome = outbox.Unsent
-	return r
+	return y.rebaseRef(r, refKind{
+		pending: y.Box.PendingEpic,
+		readAt:  y.Repo.ReadEpicAt,
+		read:    y.Repo.ReadEpic,
+		write:   y.Repo.WriteEpic,
+		merge:   epic.Merge,
+	})
 }

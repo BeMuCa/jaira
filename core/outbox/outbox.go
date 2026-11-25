@@ -51,6 +51,9 @@ const (
 	// KindEpic is an epic's ref. An epic has no file on disk, so this
 	// queue is also where an unsent epic is read back from.
 	KindEpic Kind = "epics"
+	// KindRoad is a road's ref. Like an epic it has no file on disk, and its
+	// queue is where an unsent road is read back from.
+	KindRoad Kind = "roads"
 )
 
 func (k Kind) or(def Kind) Kind {
@@ -178,6 +181,15 @@ func (b *Box) QueueEpic(name string, content []byte, lease, by string) error {
 // copy of an edit made offline.
 func (b *Box) PendingEpic(name string) (Entry, bool) { return b.pendingKind(KindEpic, name) }
 
+// QueueRoad files a pending write of a road, under the same rules as an epic.
+func (b *Box) QueueRoad(name string, content []byte, lease, by string) error {
+	return b.queueKind(KindRoad, name, "", OpWrite, content, lease, by, nil)
+}
+
+// PendingRoad returns the unsent write of one road, the same copy an epic's
+// is read from while it waits.
+func (b *Box) PendingRoad(name string) (Entry, bool) { return b.pendingKind(KindRoad, name) }
+
 // QueueMigration files the first write of a milestone's ref when it moves an
 // older file to its ID: the migrated content, and the old ref's tip (or
 // "none"), which are sent as a commit of their own. Later edits replace the
@@ -197,6 +209,8 @@ func (b *Box) queueKind(kind Kind, key, file string, op Op, content []byte, leas
 		ref = gitref.MilestoneRefName(key)
 	case KindEpic:
 		ref = gitref.EpicRefName(key)
+	case KindRoad:
+		ref = gitref.RoadRefName(key)
 	}
 	now := time.Now().UTC()
 	e := Entry{
@@ -320,6 +334,7 @@ func (b *Box) List() ([]Entry, error) {
 		{milestoneDir, KindMilestone},
 		{string(KindMilestone), KindMilestone},
 		{string(KindEpic), KindEpic},
+		{string(KindRoad), KindRoad},
 	} {
 		got, err := b.readDir(filepath.Join(b.Dir, d.dir), d.kind)
 		if err != nil {
@@ -508,6 +523,7 @@ type Sender interface {
 	Delete(id, lease string) error
 	WriteMilestone(key, file string, content []byte, lease string) (string, error)
 	WriteEpic(name string, content []byte, lease string) (string, error)
+	WriteRoad(name string, content []byte, lease string) (string, error)
 }
 
 // migrationSender is a Sender that can write a milestone's migration as a
@@ -577,7 +593,7 @@ func (b *Box) Flush(s Sender) ([]Result, error) {
 			// it into the winner and replaces it, and a failure on the way must
 			// not lose the edit — for an epic, which has no file on disk, the
 			// entry is the only copy of it.
-			if kind != KindMilestone && kind != KindEpic {
+			if kind != KindMilestone && kind != KindEpic && kind != KindRoad {
 				if err := b.Settle(e); err != nil {
 					return results, err
 				}
@@ -606,6 +622,11 @@ func send(s Sender, kind Kind, e Entry) (string, error) {
 			return "", fmt.Errorf("outbox: unknown %s op %q", kind, e.Op)
 		}
 		return s.WriteEpic(e.ID, []byte(e.Content), e.Lease)
+	case KindRoad:
+		if e.Op != OpWrite {
+			return "", fmt.Errorf("outbox: unknown %s op %q", kind, e.Op)
+		}
+		return s.WriteRoad(e.ID, []byte(e.Content), e.Lease)
 	case KindMilestone:
 		if e.Op != OpWrite {
 			return "", fmt.Errorf("outbox: unknown %s op %q", kind, e.Op)
