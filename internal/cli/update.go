@@ -444,14 +444,20 @@ func (m ignoreMove) entryLine(root string, dry bool) string {
 }
 
 // writeNotes prints the release notes. A change marked important ("- ! text"
-// in its note file) reads "  ! text" instead of "  - text": plain text, because
-// agents and pipes read this output too.
+// in its note file) reads "  ! text" instead of "  - text", and a feature
+// ("- + text") reads "  + text": plain text, because agents and pipes read this
+// output too.
 func writeNotes(w io.Writer, notes []release.Entry) {
 	for _, e := range notes {
 		fmt.Fprintf(w, "\n%s\n", e.Version)
 		for _, c := range e.Changes {
-			if text, ok := release.Important(c); ok {
+			rest, feature := release.Feature(c)
+			if text, ok := release.Important(rest); ok {
 				fmt.Fprintf(w, "  ! %s\n", text)
+				continue
+			}
+			if feature {
+				fmt.Fprintf(w, "  + %s\n", rest)
 				continue
 			}
 			fmt.Fprintf(w, "  - %s\n", c)
