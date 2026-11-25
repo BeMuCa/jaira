@@ -1,0 +1,46 @@
+# Agent tabs: spawn, close and reap
+_Owner: Sascha · EARS · each line one requirement · [tickets] hold the detail_
+
+## spawn.sh
+SPWN-01  When spawn.sh runs for <slug> <ticket> <lane>, it shall make a worktree beside the repository on <prefix>/<slug>, open a Herdr tab labelled <ticket>/<lane> and start claude there with the role prompt. [KSGSKK, 7KX89C, MHCEN8]
+SPWN-02  The branch prefix shall be JAIRA_BRANCH_PREFIX, default feat. [7KX89C]
+SPWN-03  If spawn.sh runs neither in a Herdr pane nor in Herdr App, then it shall exit 1 before making anything. [KSGSKK, WRMREF]
+SPWN-04  Where HC_TERMINAL_ID is set, hc is on PATH and HERDR_ENV is not 1, spawn.sh shall drive Herdr App through herdr-hc.sh. [WRMREF]
+SPWN-05  The lane argument shall pick the role: dispatch, worker, pr (--by-person), explain/discuss (a chat), any other /jaira-role-lane <id> <lane>. [3YRPXJ, MG677R, GPFA7B]
+SPWN-06  Where --no-worktree or JAIRA_NO_WORKTREE=1 is given, spawn.sh shall start the agent in the repository directory, with no worktree or branch. [7KX89C]
+SPWN-07  When --branch <b> names an existing branch, the new worktree shall check out <b>; without it an existing <prefix>/<slug> is checked out again. [QTQW15]
+SPWN-08  If a worktree at the slug's place stands on another branch, then spawn.sh shall stop before a tab is made. [QTQW15]
+SPWN-09  When neither --parent nor --no-parent is given, spawn.sh shall give the dispatch and worker lanes the calling session's uds: socket as parent. [7V1XPB]
+SPWN-10  If --parent names no running session, then spawn.sh shall stop before a tab is made. [7V1XPB]
+SPWN-11  While another spawn.sh is starting the same ticket and lane, spawn.sh shall exit 1 without opening a second tab. [QTQW15]
+SPWN-12  Where .jaira/worktree-setup is executable, spawn.sh shall call it with <worktree> <slug> <port-offset> <root> and write nothing into the worktree. [167HY8, 7MG5GB]
+SPWN-13  If .jaira/worktree-setup is not executable or fails, then spawn.sh shall stop before a tab opens and remove a worktree and branch it made. [7MG5GB]
+SPWN-14  Where a worktree-setup runs, spawn.sh shall hand it a port offset 1-40 no standing worktree holds, and stop when all 40 are taken. [DBJHNE]
+SPWN-15  The spawn.sh script shall open one tab per agent, never a split, in the caller's Herdr workspace. [KSGSKK]
+SPWN-16  If the pane returned by tab create no longer sits in that tab, then spawn.sh shall type nothing, name both and exit 1. [3YRPXJ, JCBHBE]
+SPWN-17  If claude in the new tab is at an approval dialog, then spawn.sh shall stop without sending a key. [KSGSKK]
+SPWN-18  The spawn.sh script shall record every tab it opens under <git common dir>/jaira/panes/ before claude starts, for reap.sh. [YD4BE9]
+SPWN-19  The spawn.sh script shall read JSON with `jaira json get`, never python3 or jq, and refuse to start when the jaira on PATH lacks it. [TP44SC]
+SPWN-20  When spawn.sh runs in WSL with a Windows Herdr, the tab shall start claude through wsl.exe --cd; under Git Bash it starts natively. [TP44SC]
+SPWN-21  Where the lane is explain or discuss, spawn.sh shall start claude on the board's chat model and hand the ticket brief in a file outside the repository. [5A6RJZ, 42C3RZ, 58DCYM]
+SPWN-38  Where the lane is discuss, spawn.sh shall take --back <lane> as the lane a decision meaning more work moves the ticket to; without it, in-progress. [574VCW]
+
+## run-lane.sh and close-tab.sh
+SPWN-22  When run-lane.sh runs, it shall wait until the ticket has left the lane and the worker ended its turn, then close the tab unless --keep. [PEPTWY]
+SPWN-23  The run-lane.sh script shall exit 3 on timeout (default 240 minutes), 4 at an approval dialog with the tab left open, and 5 on a question. [PEPTWY]
+SPWN-24  When a worker's report reached its parent and the ticket is in the terminal lane, close-tab.sh shall close the worker's tab. [N7JW2Q]
+SPWN-25  While the ticket sits in a non-terminal lane a person owns, close-tab.sh shall keep the tab and write parked=<epoch> into its record. [P122GE]
+SPWN-26  If there is no --parent, an open question, uncommitted work or a tab not labelled <ticket>/<lane>, then close-tab.sh shall keep the tab and print `kept <ticket>: <reason>`. [N7JW2Q]
+SPWN-27  The uncommitted-work rule shall not count ticket and milestone files, in close-tab.sh and reap.sh alike. [N7JW2Q]
+SPWN-28  When reap.sh calls close-tab.sh --reap, a parked tab shall close once its ticket is done or gone, or JAIRA_CACHE_WINDOW (3600 s) has passed. [P122GE]
+
+## reap.sh and herdr-hc.sh
+SPWN-29  When a ticket's pull request is merged, reap.sh shall close its recorded tabs, remove its worktree and delete its local branch. [YD4BE9, N7JW2Q]
+SPWN-30  Where .jaira/pr says none, reap.sh shall count a branch as merged once the remote's default branch contains its tip. [XB97NJ]
+SPWN-31  If the branch is not at the merged head, a worktree has uncommitted work or a detached HEAD, the ticket is back in a lane, or herdr does not answer, then reap.sh shall keep it and print why. [YD4BE9, W80HNH, 8NWE4P]
+SPWN-32  The reap.sh script shall never touch a tab without a spawn.sh record, the main worktree, or the worktree it runs in. [YD4BE9]
+SPWN-33  While one reap.sh runs in a repository, a second shall print `skipped: reap.sh runs already` and exit 0. [N7JW2Q]
+SPWN-34  Where .jaira/worktree-teardown is executable, reap.sh shall call it with the setup's recorded arguments before removing the worktree. [JDDCEZ]
+SPWN-35  If the teardown fails or runs past JAIRA_TEARDOWN_TIMEOUT (300 s), then reap.sh shall keep worktree, branch and records and retry next round. [JDDCEZ]
+SPWN-36  If `hc get` gives no answer for a terminal, then herdr-hc.sh `tab list` shall exit 3 as incomplete instead of dropping it. [8NWE4P]
+SPWN-37  When herdr-hc.sh creates a tab, it shall copy the caller's herdr.space label so the tab opens in the same space. [WRMREF]

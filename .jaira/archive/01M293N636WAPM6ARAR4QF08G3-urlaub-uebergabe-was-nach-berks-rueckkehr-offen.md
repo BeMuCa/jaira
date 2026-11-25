@@ -11,10 +11,19 @@ definition-of-done: "Berk hat den Layout-Wechsel gesehen und gesagt was gilt; 'l
 tags:
   - tui
 blocked-by: []
-commits: []
+commits:
+  - 14a605719d4aec5598731cc639b44a92c19d26fc
+  - ccf02fe6e145e55586e1cc348df8ad4810200f5d
+  - 69e2eb5dae93ddcf4973803e27f1485604efaf9b
+  - 1570bcbea0d952d0aac572dfd6b6d8edbc30b693
+  - e19c5845e07fb4b0987dcc76033bd53fa170e56f
 created-at: 2026-09-11T20:48:28Z
-updated-at: 2026-09-15T21:00:15Z
+updated-at: 2026-11-23T13:16:30Z
 updated-by: Alexander Sacharov
+rejected-kind: obsolete
+rejected-why: "one-off handover from 11.09, all points closed"
+rejected-by: Alexander Sacharov
+rejected-at: "2026-11-23T13:16:30Z"
 ---
 
 # Urlaub-Uebergabe: was nach Berks Rueckkehr offen ist
@@ -68,3 +77,4 @@ Drei Wege, und Berk waehlt:
   c) Beides bauen. Dann muss jemand sagen koennen, wann man das eine und wann das andere nimmt.
 
 Zu tun: Berk 0YGWXQ am laufenden Binary zeigen, dann fragen ob die Pfeile ihm so wichtig sind, dass b) gebaut wird - oder ob a) reicht.
+- **2026-10-12 07:40 · BeMuCa** — 2026-10-12 PUNKT 4 entschieden: Berk waehlt b) - der Epic-Layer D0SAHM bleibt als Ansicht ueber Milestones, ohne eigenes Datenmodell. D0SAHM geht zurueck in brainstorm.

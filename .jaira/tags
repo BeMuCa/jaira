@@ -6,8 +6,10 @@
 acceptance: 197
 ci: 136
 cli: 111
+cockpit: 135
 concurrency: 45
 docs: 33
 gates: 170
+lanes: 178
 release: 209
 tui: 63
