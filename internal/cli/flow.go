@@ -242,6 +242,15 @@ one the real move would have returned.`,
 					res.DoDUnticked, ticket.Handle(t.ID))
 			}
 
+			status := t.Status
+			if res.Filed {
+				status = ""
+			}
+			sugg, serr := suggestionsFor(s, env.Lanes, t.ID, status)
+			if serr != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "working out the next step failed: %v\n", serr)
+			}
+
 			if g.jsonOut {
 				out := map[string]any{
 					"ticket": ticketJSON(t, env.Lanes), "moved": true,
@@ -253,6 +262,9 @@ one the real move would have returned.`,
 				}
 				if res.SettleErr != nil {
 					out["trim_error"] = res.SettleErr.Error()
+				}
+				if len(sugg) > 0 {
+					out["suggestions"] = sugg
 				}
 				return emit(cmd.OutOrStdout(), out)
 			}
@@ -276,6 +288,9 @@ one the real move would have returned.`,
 				fmt.Fprintf(cmd.ErrOrStderr(), "trimming the %s lane failed: %v\n", to, res.SettleErr)
 			}
 			fmt.Fprint(cmd.OutOrStdout(), nextStepLine(env.Lanes, t.ID, to))
+			for _, l := range sugg {
+				fmt.Fprintln(cmd.OutOrStdout(), l.Text)
+			}
 			return nil
 		},
 	}

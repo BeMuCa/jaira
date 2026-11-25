@@ -423,6 +423,8 @@ saying gets "done" and nothing else. One line, never a paragraph: every line
 you send the parent stays in the teamlead's context for the rest of its
 session.
 
+When `jaira move`, `jaira logbook` or `jaira milestone ls` prints a suggestion line, or its `--json` carries `suggestions`, pass every such line to the person word for word, command included. You never run `/jaira-role-pr` yourself: opening a pull request is the person's call, and passing the line on is the whole of your part.
+
 ## Handing it on for acceptance
 
 When the ticket reaches a human lane and its `review-check` asks a person to
