@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Worktree + Herdr pane + claude + role prompt for one jaira lane.
-# Usage: spawn.sh [--no-worktree] [--branch <name>] [--parent <session> | --no-parent] [--copy <path>] <slug> <ticket-id> <lane> [repo-root]
+# Usage: spawn.sh [--no-worktree] [--branch <name>] [--parent <session> | --no-parent] [--copy <path>] [--back <lane>] <slug> <ticket-id> <lane> [repo-root]
 # Prints the pane id on stdout; everything else goes to stderr.
 set -euo pipefail
 
@@ -46,6 +46,10 @@ spawn.sh [--no-worktree] [--branch <name>] [--parent <session> | --no-parent] [-
                   removes it itself as its very last step, after its last
                   jaira write: only the chat knows when that is, and a copy
                   left there hides the ticket's ref.
+  --back <lane>   Only with the lane <discuss>: the lane a decision that the
+                  work goes on moves the ticket back to - the lane the work is
+                  done in on the ticket's board, which the cockpit works out as
+                  for Give back. Without it, in-progress.
   -h, --help      This text.
 
 Five lane names are special. <dispatch> starts the dispatcher itself in the tab
@@ -96,6 +100,7 @@ parent=""
 no_parent=""
 want_branch=""
 copy=""
+back="in-progress"
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-worktree) no_worktree=1; shift ;;
@@ -103,6 +108,7 @@ while [ $# -gt 0 ]; do
     --parent)      parent="${2:?--parent needs a session name}"; no_parent=""; shift 2 ;;
     --no-parent)   parent=""; no_parent=1; shift ;;
     --copy)        copy="${2:?--copy needs a path}"; shift 2 ;;
+    --back)        back="${2:?--back needs a lane}"; shift 2 ;;
     -h|--help)     usage; exit 0 ;;
     --)            shift; break ;;
     -*)            echo "unknown flag: $1" >&2; usage >&2; exit 2 ;;
@@ -641,7 +647,7 @@ elif [ "$lane" = explain ]; then
 elif [ "$lane" = discuss ]; then
   src=" (jaira show $ticket --json: das Feld question und die letzten Notes)"
   [ -z "$brief" ] || src=""
-  prompt="Ticket $ticket wartet auf eine Entscheidung von mir$src. Erklaere mir die Frage und die Optionen in einfachen Worten und frag mich. Wenn ich entschieden habe: schreibe die Entscheidung in einem Satz mit jaira note $ticket \"decision: <Entscheidung>\" an das Ticket und leere die Frage mit jaira set $ticket question=. Heisst die Entscheidung, dass weitergearbeitet wird, bewege das Ticket selbst zurueck, genau so: jaira move $ticket --to in-progress (ohne --what/--why/--resolves: das Ticket hat sein Ergebnis schon, und die Entscheidung steht in der Note). In die naechste Lane annehmen nur, wenn ich ausdruecklich ja dazu sage.${parent:+ Schicke danach eine Zeile mit der Entscheidung per SendMessage an $parent.} Aendere keinen Code. Der Tab schliesst sich danach von selbst. Antworte in der Sprache, in der ich mit dir spreche."
+  prompt="Ticket $ticket wartet auf eine Entscheidung von mir$src. Erklaere mir die Frage und die Optionen in einfachen Worten und frag mich. Wenn ich entschieden habe: schreibe die Entscheidung in einem Satz mit jaira note $ticket \"decision: <Entscheidung>\" an das Ticket und leere die Frage mit jaira set $ticket question=. Heisst die Entscheidung, dass weitergearbeitet wird, bewege das Ticket selbst zurueck, genau so: jaira move $ticket --to $back (ohne --what/--why/--resolves: das Ticket hat sein Ergebnis schon, und die Entscheidung steht in der Note). In die naechste Lane annehmen nur, wenn ich ausdruecklich ja dazu sage.${parent:+ Schicke danach eine Zeile mit der Entscheidung per SendMessage an $parent.} Aendere keinen Code. Der Tab schliesst sich danach von selbst. Antworte in der Sprache, in der ich mit dir spreche."
 else
   prompt="/jaira-role-lane $ticket $lane"
 fi

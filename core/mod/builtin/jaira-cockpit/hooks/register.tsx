@@ -5,7 +5,7 @@ import {
   acceptTreeFor, branchesFor, carrierFor, type Carrier, commitNaming, defaultBranchOf, remoteFor, type Forge, newWorktreeFor, worktreeOfBranch, pendingOf, ticketsNamed, forgeOf, ghRepoOf, hasPullRequest, onHost, repoViewCommand, targetRepoOf,
   explanationNotes, explanationOf, huntOf, isOlder, lightOf, lanesOf, MIN_JAIRA, otherBoardsOf, pullRequestsCommand, stepAfterAccept, type StepAfterAccept, noteOf, whoOf, mainRepoOf, otherRefusal, ownTreeFor, diskOf, snapshotOf, versionOf, withoutWarnings, upwards, worktreeFor,
   offeredRelease, parse, upgradeCheckOf, lanesBetween, prWhenOf, pullRequestsIn, pullRequestsOf, sameAddress,
-  clipLines, commitsOf, titleOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenItemsOf, seenProof, seenToTick, type SeenItem, standOf, storyOf, translatePrompt,
+  clipLines, commitsOf, titleOf, createdHandle, DIFF_LINES, notePaths, decisionLines, executionOf, waitsForAnswer, oneLine, decisionsOf, followTitle, gapItems, languageOf, NOTE_MARK, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenItemsOf, seenProof, seenToTick, type SeenItem, standOf, storyOf, translatePrompt,
   IN_TURN, type Action, type Agent, type GapItem, type Hunt, type HuntState, type NoteClass, type Option, type Waiting,
 } from './board.ts'
 import { cacheView, dollars, guard, isPersonsPrompt, ttlMs, windowsUsed } from './cache.ts'
@@ -683,9 +683,9 @@ async function fail($: EngineInterface, what: string, why: string): Promise<void
 }
 
 // The person pressed Accept: that press is the human exit the lane asks for,
-// and nothing more. Accept moves the ticket to its next lane, and only where
-// that lane is the terminal one (snapshotOf sets acceptTo): from signoff to
-// done, never from human past review and signoff. The gates run first as a
+// and nothing more. Accept moves the ticket to its next lane (snapshotOf sets
+// acceptTo), one step: from signoff to done, from a person's lane mid-board
+// on to the lane after it (M5JSE9), never past review and signoff. The gates run first as a
 // dry run; --force follows only when the human exit is all they refuse, so
 // an open definition-of-done item or plan step still stops the press.
 // refused: where a gate's refusal goes instead of the message pane - the
@@ -736,7 +736,8 @@ async function accepting($: EngineInterface, w: Waiting, to: string, dir: string
     // refused or failed Accept writes nothing and creates no follow-up.
     if (after !== undefined) await after(dir)
     await say($, t.accepted(w.id, to))
-    const next = await afterAccept($, w.id, to)
+    // A pull request or a landing follows only the move that ends the work.
+    const next = w.acceptEnds ? await afterAccept($, w.id, to) : ''
     // One line into this session, the teamlead's, once the press has done
     // all it does: it goes on from there — logbook, the next worker — without
     // the person typing it, and never starts the pull request Accept started.
@@ -765,7 +766,7 @@ async function accepting($: EngineInterface, w: Waiting, to: string, dir: string
 // .jaira/pr saying none, a board without a signoff lane before done, and a
 // board whose pr-when cannot be read are not touched.
 async function heldInSignoff($: EngineInterface, w: Waiting): Promise<boolean> {
-  if (!board || w.acceptTo === null) return false
+  if (!board || w.acceptTo === null || !w.acceptEnds) return false
   const b = board
   const hold = async (why: string) => {
     await fail($, `${t.accept} ${w.id}`, `${why}\n${t.staysInLane(w.id, w.lane)}`)
@@ -1156,7 +1157,7 @@ async function parentArgs($: EngineInterface): Promise<string[]> {
 // Without Herdr this session is asked instead: Explain by a subagent, which
 // writes the same note a tab would; Discuss here, since a subagent cannot
 // talk with a person.
-async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discuss'): Promise<void | 'hold'> {
+async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discuss', back = 'in-progress'): Promise<void | 'hold'> {
   const what = `${kind === 'explain' ? t.explain : t.discuss} ${id}`
   if (!board) return fail($, what, t.noBoard)
   // One chat at a time on a ticket a chat holds a copy for: that chat removes
@@ -1179,7 +1180,7 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
   if ((await herdr($)) === undefined) {
     await opened()
     await say($, kind === 'explain' ? t.explainAsked(id) : t.discussHere(id))
-    void $.prompt.submit({ text: kind === 'explain' ? t.explainBySubagent(id, dir, copy) : t.discussInThisChat(id, dir, copy) })
+    void $.prompt.submit({ text: kind === 'explain' ? t.explainBySubagent(id, dir, copy) : t.discussInThisChat(id, dir, back, copy) })
     return 'hold'
   }
   const script = await spawnScript($)
@@ -1188,7 +1189,12 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
     return fail($, what, t.noSpawn)
   }
   // A Discuss chat sends its decision to this session.
-  const parent = kind === 'discuss' ? await parentArgs($) : []
+  // It moves the ticket back to the lane Give back would (backLaneOf): a
+  // board without in-progress refuses that move. Only a lane other than
+  // spawn.sh's default is passed: a project's older spawn.sh, kept by
+  // jaira update --roles because someone edited it, refuses --back.
+  const backArg = kind === 'discuss' && back !== 'in-progress' ? ['--back', back] : []
+  const parent = kind === 'discuss' ? [...await parentArgs($), ...backArg] : []
   const removes = copy === undefined ? [] : ['--copy', copy]
   // Registered before spawn.sh runs, which waits up to two minutes for
   // claude while the row unlocks after BUSY_MS: a second press in that time
@@ -1368,8 +1374,17 @@ async function deciding($: EngineInterface, id: string, text: string, action: Ac
   // Answered from here on, before the next look at the notes says so too.
   await update($, explainedAtom, e => (e[id] === undefined ? e : { ...e, [id]: { ...e[id], decided: text } }))
   const w = (await read($, boardAtom))?.waiting.find(x => x.id === id)
-  if (action === 'giveBack' && w !== undefined) return giveBack($, id, w.lane, text, share)
+  if (action === 'giveBack' && w !== undefined) return giveBack($, id, w.lane, w.backTo, text, share)
   if (action === 'accept' && w !== undefined && w.acceptTo !== null) {
+    // As Execute: a press read off an older band moves nothing - mid-board
+    // it would send a ticket that went on back a lane (M5JSE9).
+    if (await stillIn($, w, t.accept) === undefined) return
+    // The decision is the answer to the question the ticket waits on: it
+    // goes off the ticket before the move, or the next lane inherits it.
+    if (waitsForAnswer(w)) {
+      const cleared = await jaira($, dir, ['set', id, 'question='])
+      if (!cleared.ok) return fail($, `${t.accept} ${id}`, cleared.why)
+    }
     await accept($, w)
     return
   }
@@ -1519,16 +1534,17 @@ async function execute($: EngineInterface, w: Waiting, typed: string, share: num
   const items = c?.id === w.id ? c.items : []
   const seen = await seenOf($, w.id)
   const unticked = seen.filter(x => !x.checked)
-  const e = executionOf(items, typed, w.acceptTo, unticked.length)
+  const e = executionOf(items, typed, w.acceptTo, unticked.length, waitsForAnswer(w))
   const refuse = async (text: string) => void await update($, refusalAtom, () => ({ id: w.id, text }))
   await update($, refusalAtom, () => null)
-  if (e.step === 'notTerminal') return refuse(t.notTerminal(w.id, w.lane))
+  if (e.step === 'noNext') return refuse(t.noNext(w.id, w.lane))
+  if (e.step === 'needAnswer') return refuse(t.needAnswer(w.id, w.lane, w.acceptTo ?? ''))
   if (e.step === 'needWhy') return refuse(canType ? t.blockerNeedsWhy(w.id) : t.blockerNeedsTyping(w.id))
   if (e.step === 'needSeen') return refuse(t.seenMissing(w.id, unticked.map(x => x.text)))
   // The pane closes once the ticket moved, as for Accept: a refusal before
   // that leaves the person's marks in it.
   if (e.step === 'giveBack') {
-    if (items.length === 0) return giveBack($, w.id, w.lane, typed.trim(), share, () => closeAcceptance($))
+    if (items.length === 0) return giveBack($, w.id, w.lane, w.backTo, typed.trim(), share, () => closeAcceptance($))
     return giveBackWith($, w, items, typed.trim(), share, () => closeAcceptance($))
   }
   const moved = await acceptWith($, w, items, e.asksWhy ? typed : '', (why, ticked) => refuse(`${ticked.length === 0 ? t.refused(w.id) : t.refusedTicked(w.id, ticked)}\n${why}`), seen)
@@ -1677,7 +1693,7 @@ async function createFollowUps($: EngineInterface, dir: string, id: string, onBo
 async function giveBackWith($: EngineInterface, w: Waiting, items: readonly GapItem[], extra: string, share: number, onMoved?: () => void): Promise<void> {
   const stand = await stillIn($, w, t.giveBack)
   if (stand === undefined) return
-  await giveBack($, w.id, w.lane, async dir => decisionLines(items, await createFollowUps($, dir, w.id, stand.board, items), extra), share, onMoved)
+  await giveBack($, w.id, w.lane, w.backTo, async dir => decisionLines(items, await createFollowUps($, dir, w.id, stand.board, items), extra), share, onMoved)
 }
 
 // why: what the person typed to accept a blocker not fixed, which goes onto
@@ -1694,7 +1710,7 @@ async function acceptWith($: EngineInterface, w: Waiting, items: readonly GapIte
     const notes = [...(lines === '' ? [] : [`Accepted from ${w.lane}: ${lines}`]), ...(why.trim() === '' ? [] : [`decision: ${t.acceptedDespite}: ${oneLine(why)}`])]
     for (const note of notes) {
       const noted = await jaira($, dir, ['note', w.id, note])
-      if (!noted.ok) await fail($, t.noteOn(w.id), t.noteLost(w.id, noted.why, note))
+      if (!noted.ok) await fail($, t.noteOn(w.id), t.noteLost(w.id, noted.why, note, w.acceptTo ?? ''))
     }
   }, why => refused(why, done), seen.length === 0 ? undefined : async dir => {
     const shown = await jaira($, dir, ['show', w.id, '--json'])
@@ -1753,32 +1769,34 @@ async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
 // carried it while that is cheaper — its tab alive, its cache warm, its
 // context small, and always while it is at work — else its tab is closed
 // FIRST and a new worker started, so a ticket never has two worker tabs. A
-// second press finds the ticket in in-progress already (movedBefore) and
+// second press finds the ticket in `to` already (movedBefore) and
 // starts nothing. A new worker starts on the branch the ticket's commits
 // ride on and reports to the ticket's teamlead (workPlace, spawnWorker).
 // The choice and why go onto the ticket.
 // The review lane is not touched here: the worker always hands it to a new
 // agent, whose tab run-lane.sh closes after the lane.
-// onMoved: called once the ticket is back in in-progress - the Acceptance
+// `to` is the lane the work is done in (Waiting.backTo): in-progress on the
+// shipped board, another lane on a board without one (PGXJG0).
+// onMoved: called once the ticket is back in `to` - the Acceptance
 // pane closes then, and keeps the person's marks on any refusal before it.
-async function giveBack($: EngineInterface, id: string, lane: string, given: string | ((dir: string) => Promise<string>), share: number, onMoved?: () => void): Promise<void> {
+async function giveBack($: EngineInterface, id: string, lane: string, to: string, given: string | ((dir: string) => Promise<string>), share: number, onMoved?: () => void): Promise<void> {
   if (!board) return
   const here = await ticketHere($, board, id)
   if (!here.ok) return fail($, `${t.giveBack} ${id}`, here.why)
   try {
-    await givingBack($, id, lane, given, share, here.dir, onMoved)
+    await givingBack($, id, lane, to, given, share, here.dir, onMoved)
   } finally {
     await here.leave()
   }
 }
 
-async function givingBack($: EngineInterface, id: string, lane: string, given: string | ((dir: string) => Promise<string>), share: number, dir: string, onMoved?: () => void): Promise<void> {
+async function givingBack($: EngineInterface, id: string, lane: string, to: string, given: string | ((dir: string) => Promise<string>), share: number, dir: string, onMoved?: () => void): Promise<void> {
   if (!board) return
   // Back to an earlier lane needs no --force since jaira 0.3.7 (MIN_JAIRA),
   // so any other refusal of the move still stops it. The move goes first: a
   // note written before a refused move would say the ticket went back.
-  const moved = await jaira($, dir, ['move', id, '--to', 'in-progress'])
-  if (movedBefore(moved, id, 'in-progress')) return movedFirst($, t.giveBack, id, 'in-progress')
+  const moved = await jaira($, dir, ['move', id, '--to', to])
+  if (movedBefore(moved, id, to)) return movedFirst($, t.giveBack, id, to)
   if (!moved.ok) return fail($, `${t.giveBack} ${id}`, moved.why)
   onMoved?.()
   // Decisions on the review's notes are written out only now: a follow-up
@@ -1786,18 +1804,18 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   const reason = typeof given === 'string' ? given : await given(dir)
   // The reason is the one thing the person typed: a note that did not land is
   // shown with its text, and the handover still goes on — the ticket already
-  // sits in in-progress, and nothing here could hand it out again.
+  // sits in `to`, and nothing here could hand it out again.
   const note = `Given back from ${lane}: ${reason}`
   const noted = await jaira($, dir, ['note', id, note])
-  if (!noted.ok) await fail($, t.noteOn(id), t.noteLost(id, noted.why, note))
+  if (!noted.ok) await fail($, t.noteOn(id), t.noteLost(id, noted.why, note, to))
   // Who got it, as it happened: the note and the toast say only that.
   const handedTo = async (who: 'old' | 'new' | 'none', why: string, worker = '') => {
-    const to = who === 'old' ? 'the old worker' : who === 'new' ? 'a new worker' : 'nobody (no worker started)'
-    await jaira($, dir, ['note', id, `cockpit: given back to ${to} - ${why}`])
-    await say($, t.returnedTo(id, who))
+    const whom = who === 'old' ? 'the old worker' : who === 'new' ? 'a new worker' : 'nobody (no worker started)'
+    await jaira($, dir, ['note', id, `cockpit: given back to ${whom} - ${why}`])
+    await say($, t.returnedTo(id, who, to))
     // One line into this session, the teamlead's: the work is back and who
     // carries it now, so it starts no second worker beside this one.
-    void $.prompt.submit({ text: t.toSessionGivenBack(id, lane, who, reason, worker) })
+    void $.prompt.submit({ text: t.toSessionGivenBack(id, lane, to, who, reason, worker) })
     await refreshBoard($)
   }
   const bin = await herdr($)
@@ -1811,7 +1829,7 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   if (tabs?.exitCode !== 0) {
     const why = tabs === undefined ? 'herdr tab list gave no answer' : `herdr tab list failed: ${(tabs.stderr || tabs.stdout).trim().slice(-160) || `exit ${tabs.exitCode}`}`
     await handedTo('none', `${why}; the tab state could not be read, so no worker started and nothing typed`, `none: tab state unreadable (${why}) - check the ticket's worker tab, then start one if none runs`)
-    return say($, t.tabsUnreadable(id))
+    return say($, t.tabsUnreadable(id, to))
   }
   const tab = carrierTab(tabsOf(tabs.stdout), id)
   const record = carrierOf(await readRecords($), id)
@@ -1821,7 +1839,7 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   // the old one would still hang at its dialog beside a new one.
   const atDialog = async (where: string) => {
     await handedTo('none', `the old worker waits at an approval dialog in ${where}; no Enter pressed, no second worker started`, `${where} waits at an approval dialog: answer it there, then type the decision into it`)
-    return say($, t.workerBlocked(id, where))
+    return say($, t.workerBlocked(id, where, to))
   }
   if (tab?.agent_status === 'blocked') return atDialog(`tab ${tab.label}`)
   // A worker at work is never replaced: closing its tab would end it in the
@@ -1840,7 +1858,7 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
     if (await paneBlocked($, bin, record.pane, dir)) return atDialog(`pane ${record.pane}`)
     // The pane may have gone since the tab list: only text that arrived
     // counts as handed to the old worker.
-    const sent = await run($, [bin, 'pane', 'send-text', record.pane, backMessage(id, lane, reason)], dir)
+    const sent = await run($, [bin, 'pane', 'send-text', record.pane, backMessage(id, lane, to, reason)], dir)
     if (sent?.exitCode === 0) {
       await $.clock.sleep(1000)
       // The text has arrived either way: Herdr App's hc send pressed Enter
@@ -2488,7 +2506,7 @@ export const register: Register = (on, options) => {
                 ? <Button key={`read-${w.id}`} label={t.readExplanation} onPress={() => void readExplanation($, w.id, explained[w.id]!)} />
                 : null}
               {w.question !== ''
-                ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void once($, w.id, () => openChat($, w.id, 'discuss'))} />
+                ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void once($, w.id, () => openChat($, w.id, 'discuss', w.backTo))} />
                 : null}
             </Box>
           </Box>
@@ -2529,7 +2547,7 @@ export const register: Register = (on, options) => {
                   {w.id}{SEP}{w.lane}{SEP}{w.assignee}{w.verdict !== '' ? `${SEP}${w.verdict}` : ''}{' '}
                 </Text>
                 {w.question !== ''
-                  ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void once($, w.id, () => openChat($, w.id, 'discuss'))} />
+                  ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void once($, w.id, () => openChat($, w.id, 'discuss', w.backTo))} />
                   : null}
               </Box>
               {w.question !== '' ? <Text dimColor wrap="truncate-end">  ? {w.question}</Text> : null}
@@ -2586,7 +2604,7 @@ export const register: Register = (on, options) => {
     const hunt = (await read($, huntsAtom))[w.id]
     const light = lightOf(w, hunt, items.map(x => x.cls))
     const first = light.reasons[0]
-    const exec = executionOf(items, typed, w.acceptTo, unseen)
+    const exec = executionOf(items, typed, w.acceptTo, unseen, waitsForAnswer(w))
     const now = await $.clock.now()
     const choose = (n: number, choice: GapItem['choice']) =>
       void update($, choosingAtom, c => (c === null || c.id !== w.id ? c : { ...c, items: c.items.map((x, i) => (i === n ? { ...x, choice } : x)) }))
@@ -2669,7 +2687,7 @@ export const register: Register = (on, options) => {
             {reasons[x.text] !== undefined ? <Text dimColor wrap="wrap">{`  ${reasons[x.text] === '' ? t.explaining : reasons[x.text]}`}</Text> : null}
           </Box>
         ))}
-        <Box marginTop={1}><Text bold wrap="wrap">{t.summary(exec.step, exec.fix, exec.followUps, w.acceptTo ?? '')}</Text></Box>
+        <Box marginTop={1}><Text bold wrap="wrap">{t.summary(exec.step, exec.fix, exec.followUps, w.acceptTo ?? '', w.acceptEnds)}</Text></Box>
         {refusal?.id === w.id ? <Text key="refusal" color="error" wrap="wrap">{refusal.text}</Text> : null}
         {Input !== undefined
           ? (
@@ -2688,7 +2706,7 @@ export const register: Register = (on, options) => {
                 // While Execute reads running…, Enter does nothing at all -
                 // not even the nothing-to-fix notice.
                 if (busy) return
-                const plan = executionOf(items, text, w.acceptTo, unseen)
+                const plan = executionOf(items, text, w.acceptTo, unseen, waitsForAnswer(w))
                 if ((plan.step === 'accept' || plan.step === 'needSeen') && !plan.asksWhy) return void say($, t.nothingToFix(w.id))
                 void once($, w.id, () => execute($, w, text, share), late)
               }}

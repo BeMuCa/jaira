@@ -166,8 +166,8 @@ export const TYPED_BY_COCKPIT = '[jaira-cockpit]'
 // What the old worker is told when work comes back to it.
 // One line: the text is typed into the worker's prompt, where a line break
 // would send it half-written; the note on the ticket keeps the lines.
-export function backMessage(ticket: string, lane: string, reason: string): string {
-  return `${TYPED_BY_COCKPIT} Ticket ${ticket} came back from ${lane} to in-progress. Reason: ${reason.replace(/\s*\n\s*/g, ' ')} - also a note on the ticket. Carry it on as before (jaira show ${ticket} --json).`
+export function backMessage(ticket: string, lane: string, to: string, reason: string): string {
+  return `${TYPED_BY_COCKPIT} Ticket ${ticket} came back from ${lane} to ${to}. Reason: ${reason.replace(/\s*\n\s*/g, ' ')} - also a note on the ticket. Carry it on as before (jaira show ${ticket} --json).`
 }
 
 export function isExpired(record: SessionRecord, now: number): boolean {

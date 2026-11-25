@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { acceptTreeFor, carrierFor, ghRepoOf, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenToTick, snapshotOf, storyOf, translatePrompt, type Waiting } from '../hooks/board.ts'
+import { acceptTreeFor, backLaneOf, carrierFor, ghRepoOf, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenToTick, snapshotOf, storyOf, translatePrompt, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 import { ANSWERED_MS, answer as answerThread, answerLine, asksOf, asksTranslatePrompt, classifyPrompt, file, moved, parseFiling, recent, settled, titled, untitled, watched, whenOf, type Filing } from '../hooks/threads.ts'
@@ -935,15 +935,42 @@ describe('waiting for you', () => {
     expect(w.toasts.filter(x => x.includes('still at work'))).toHaveLength(1)
   })
 
-  test('Acceptance is offered on every waiting ticket; where the next lane does not end the board, Execute accepts nothing and says so', async ($, on) => {
+  // M5JSE9: a person's lane mid-board accepts into the lane after it, and the
+  // pane says where, so nobody reads the press as done.
+  test('Acceptance is offered on every waiting ticket; where the next lane does not end the board, Execute moves it one lane on and says where', async ($, on) => {
     const w = world(on)
+    // Its question answered: cleared, as the Discuss chat clears it.
+    w.tickets = [SIGNOFF, { ...HUMAN, question: '' }]
     await startSession($)
     const ui = await $.ui.mount(BAND)
     expect(await ui.find({ key: 'acceptance-MG677R' })).toBeDefined()
+    const pane = await quietly($, ui, 'K7P2QX', w)
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Execute: accept → review')
+    await pane.press({ key: 'execute-K7P2QX' })
+    expect(ran(w, 'jaira', 'move', 'K7P2QX').map(r => r.slice(3, 6))).toEqual([['--to', 'review', '--dry-run'], ['--to', 'review', '--force']])
+    expect(ran(w, 'jaira', 'note', 'K7P2QX').map(r => r[3])).toContain('cockpit: accepted by the person, human -> review')
+  })
+
+  test('a question still open in a lane that does not end the work: Execute moves nothing and asks for the answer', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
     expect(await ui.find({ key: 'discuss-K7P2QX' })).toBeDefined()
+    const pane = await quietly($, ui, 'K7P2QX', w)
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Execute: answer the question first - or mark a note fix, or type what is missing')
+    await pane.press({ key: 'execute-K7P2QX' })
+    expect(ran(w, 'jaira', 'move')).toEqual([])
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('K7P2QX waits in human for the answer to its question: answer it first - Discuss, or an option marked [accept] under Explain - and Execute then moves it on to review. Mark a note fix, or type what is missing, to give it back.')
+  })
+
+  test('where jaira names no lane after it, Execute accepts nothing and says so', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...HUMAN, next_lane: undefined }]
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
     const pane = await pressAccept($, ui, 'K7P2QX', w)
     expect(ran(w, 'jaira', 'move')).toEqual([])
-    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('K7P2QX waits in human, which does not end the work: nothing to accept there. Mark a note fix, or type what is missing, to give it back.')
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('K7P2QX waits in human, and jaira names no lane after it: nothing to accept there. Mark a note fix, or type what is missing, to give it back.')
   })
 
   // 2V50Y5 DoD 3: a gate that refuses done says so in the pane, changes
@@ -1015,6 +1042,7 @@ describe('waiting for you', () => {
     expect(await (await acceptancePane($, ui, 'K7P2QX')).find({ type: 'Text', text: '? Popup oder eigene Seite?' })).toBeDefined()
     await ui.press({ key: 'discuss-K7P2QX' })
     // The chat sends its decision to this session, by its messaging socket.
+    // No --back on the default board: an older spawn.sh refuses the flag.
     expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 8)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'k7p2qx', 'K7P2QX', 'discuss'])
   })
 
@@ -1126,6 +1154,7 @@ describe('waiting for you', () => {
     expect(asked).toContain('waits for a decision of mine')
     expect(asked).toContain("note K7P2QX \"decision: <decision>\"")
     expect(asked).toContain('set K7P2QX question=')
+    expect(asked).toContain('move K7P2QX --to in-progress (')
     expect(asked).not.toContain('subagent')
   })
 
@@ -1406,6 +1435,29 @@ describe('waiting for you', () => {
     expect(ran(w, 'jaira', 'note').map(r => r[3])).toEqual(['decision: 2) accept it as it is', 'cockpit: accepted by the person, signoff -> done'])
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
     expect(w.submitted).toEqual(['jaira-cockpit: MG677R: accepted, signoff -> done (Person, Cockpit)'])
+  })
+
+  // M5JSE9: mid-board the decision answers the question: it is cleared before
+  // the move, so review does not inherit it.
+  test('an option marked [accept] on a ticket waiting on a question clears the question and moves it one lane on', async ($, on) => {
+    const w = world(on)
+    w.bodies.K7P2QX = MARKED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-K7P2QX' })
+    await (await $.ui.mount(EXPLANATION('Explanation of K7P2QX'))).press({ key: 'pick-K7P2QX-2' })
+    expect(ran(w, 'jaira', 'set', 'K7P2QX', 'question=')).toHaveLength(1)
+    expect(ran(w, 'jaira', 'move', 'K7P2QX', '--to', 'review', '--force')).toHaveLength(1)
+  })
+
+  test('an option marked [accept] on a ticket that moved on meanwhile moves nothing', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = MARKED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    w.tickets = [{ ...SIGNOFF, status: 'review' }, HUMAN]
+    await pane.press({ key: 'pick-MG677R-2' })
+    expect(ran(w, 'jaira', 'move')).toEqual([])
   })
 
   test('after a restart an answered explanation is read with its decision, not offered again; a newer one is open', async ($, on) => {
@@ -2357,7 +2409,7 @@ describe('give back', () => {
     expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
     expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Note on MG677R failed', focus: true })
     const pane = await $.ui.mount(MESSAGE('Note on MG677R failed'))
-    expect(await pane.find({ type: 'Text', text: /MG677R went back to in-progress, but the note with your reason was not written: jaira: ticket file is locked/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /MG677R moved to in-progress, but the note with your reason was not written: jaira: ticket file is locked/ })).toBeDefined()
     expect(await pane.find({ type: 'Text', text: /jaira note MG677R 'Given back from signoff: der Branch fehlt im Schluessel'/ })).toBeDefined()
     expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
   })
@@ -3369,6 +3421,87 @@ describe('the line a press hands this session', () => {
 })
 
 describe('give back, the edges', () => {
+  // PGXJG0: Give back goes to the lane that does the work before the
+  // person's lane, read off the ticket's own board - not to in-progress by name.
+  const SHIPPED = [
+    { id: 'in-progress', agentic: true, context: '', rejects_to: null },
+    { id: 'critique', agentic: true, context: '', rejects_to: ['in-progress'] },
+    { id: 'testing', agentic: true, context: '', rejects_to: ['in-progress'] },
+    { id: 'human', agentic: false, context: '', requires_question: true, rejects_to: null },
+    { id: 'review', agentic: true, context: 'fresh', rejects_to: null },
+    { id: 'signoff', agentic: false, context: '', human_exit: true, rejects_to: null },
+    { id: 'done', agentic: false, context: '', terminal: true, rejects_to: null },
+  ]
+  const VIDEO = [
+    { id: 'todo', agentic: false, context: '', rejects_to: null },
+    { id: 'script', agentic: true, context: '', rejects_to: null },
+    { id: 'script-approval', agentic: false, context: '', human_exit: true, rejects_to: null },
+    { id: 'build', agentic: true, context: '', rejects_to: null },
+    { id: 'draft-approval', agentic: false, context: '', human_exit: true, rejects_to: null },
+    { id: 'voice-approval', agentic: false, context: '', human_exit: true, rejects_to: null },
+    { id: 'voice', agentic: true, context: '', rejects_to: null },
+    { id: 'final', agentic: true, context: '', rejects_to: null },
+    { id: 'acceptance', agentic: false, context: '', human_exit: true, rejects_to: null },
+    { id: 'done', agentic: false, context: '', terminal: true, rejects_to: null },
+  ]
+
+  test('the shipped board gives back to in-progress, past the review, the human lane and the loop lanes', () => {
+    expect(backLaneOf(SHIPPED, 'signoff')).toBe('in-progress')
+    expect(backLaneOf(SHIPPED, 'human')).toBe('in-progress')
+  })
+
+  test('a board without in-progress gives back to the lane that works before the person\'s lane', () => {
+    expect(backLaneOf(VIDEO, 'script-approval')).toBe('script')
+    expect(backLaneOf(VIDEO, 'draft-approval')).toBe('build')
+    expect(backLaneOf(VIDEO, 'voice-approval')).toBe('build')
+    expect(backLaneOf(VIDEO, 'acceptance')).toBe('final')
+  })
+
+  test('a rejects_to naming a lane not on the board, or a person\'s lane, is passed by', () => {
+    const work = { id: 'build', agentic: true, context: '', rejects_to: null }
+    const approve = { id: 'approve', agentic: false, context: '', human_exit: true, rejects_to: null }
+    const ask = { id: 'ask', agentic: false, context: '', requires_question: true, rejects_to: null }
+    expect(backLaneOf([work, { id: 'check', agentic: true, context: '', rejects_to: ['in-progress'] }, approve], 'approve')).toBe('check')
+    expect(backLaneOf([work, ask, { id: 'check', agentic: true, context: '', rejects_to: ['ask', 'build'] }, approve], 'approve')).toBe('build')
+  })
+
+  test('a jaira that lists no rejects_to, or a lane with nothing before it, keeps in-progress', () => {
+    expect(backLaneOf(SHIPPED.map(({ rejects_to, ...l }) => l), 'signoff')).toBe('in-progress')
+    expect(backLaneOf(VIDEO, 'todo')).toBe('in-progress')
+  })
+
+  test('Give back on a video board moves the ticket into its build lane and says so', async ($, on) => {
+    const w = world(on)
+    w.tickets = []
+    w.boards.video = { lanes: VIDEO, tickets: [{ handle: 'MG677R', title: 'intro', status: 'draft-approval', next_lane: 'voice-approval', question: '', review: {} }] }
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'acceptance-MG677R' })
+    await (await $.ui.mount(ACCEPT('Acceptance of MG677R'))).input({ key: 'typed-MG677R', text: 'Schnitt zu lang' })
+    expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'MG677R', '--to', 'build'])
+    expect(await ui.find({ type: 'Text', text: "MG677R back in build; no worker started (the ticket's note says why)" })).toBeDefined()
+    expect(w.submitted.at(-1)).toMatch(/\(Person, Cockpit; draft-approval -> build\)$/)
+  })
+
+  // Discuss moves a decision that the work goes on back to the lane Give back
+  // would: a video board has no in-progress, and jaira refuses that move.
+  for (const herdr of [true, false]) {
+    test(`Discuss on a video board moves the work back to its build lane${herdr ? '' : ', without Herdr'}`, async ($, on) => {
+      const w = world(on, { herdr })
+      w.tickets = []
+      w.boards.video = { lanes: VIDEO, tickets: [{ handle: 'MG677R', title: 'intro', status: 'draft-approval', next_lane: 'voice-approval', question: 'kuerzer?', review: {} }] }
+      await startSession($)
+      const ui = await $.ui.mount(BAND)
+      await ui.press({ key: 'discuss-MG677R' })
+      if (herdr) {
+        expect(ran(w, 'bash', SPAWN)[0]?.slice(5, 7)).toEqual(['--back', 'build'])
+      } else {
+        expect(w.submitted.at(-1)).toContain('move MG677R --to build (')
+        expect(w.submitted.at(-1)).not.toContain('in-progress')
+      }
+    })
+  }
+
   test('a record a day old decides nothing and is dropped', async ($, on) => {
     const w = world(on, { herdr: true, store: { 'session:old': {
       session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
@@ -5459,7 +5592,7 @@ describe('a ticket not on the disk the press writes from', () => {
 describe('the verdict light', () => {
   const ready: Waiting = {
     id: 'MG677R', title: 'cache key', goal: '', lane: 'signoff', verdict: 'approve', question: '', dodComplete: true,
-    dodOpen: { person: 0, other: 0 }, acceptTo: 'done', assignee: '', blockers: [], notes: [], findingsKnown: true, gaps: '',
+    dodOpen: { person: 0, other: 0 }, acceptTo: 'done', acceptEnds: true, backTo: 'in-progress', assignee: '', blockers: [], notes: [], findingsKnown: true, gaps: '',
   }
   const first = (w: Waiting, hunt: Parameters<typeof lightOf>[1]) => {
     const l = lightOf(w, hunt)
@@ -5498,11 +5631,11 @@ describe('the verdict light', () => {
   // A ticket in human waits for an answer: its open items are no reason to
   // give it back, so the question decides the light.
   test('a question in a lane that does not end the work makes the light yellow, the question first', () => {
-    const asking = { ...ready, lane: 'human', acceptTo: null, question: 'keep the old key?', dodComplete: false, dodOpen: { person: 1, other: 2 } }
+    const asking = { ...ready, lane: 'human', acceptTo: 'review', acceptEnds: false, question: 'keep the old key?', dodComplete: false, dodOpen: { person: 1, other: 2 } }
     const l = lightOf(asking, { state: 'fail', at: 'abc1234' })
     expect([l.color, l.reasons.map(r => r.kind)]).toEqual(['yellow', ['question', 'staleHunt', 'dodOpen', 'byAPerson']])
     // In signoff, where Accept ends the work, the same open items stay red.
-    expect(first({ ...asking, lane: 'signoff', acceptTo: 'done' }, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'dodOpen'])
+    expect(first({ ...asking, lane: 'signoff', acceptTo: 'done', acceptEnds: true }, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'dodOpen'])
   })
 
   // GY8T52: the review states each note's class after 'note:'; the light
@@ -6066,12 +6199,21 @@ describe('the Acceptance pane, read alone', () => {
     ['blocker kept with a reason', [item('blocker', 'accept')], 'ist bekannt', 'done', 'accept', 0, 0],
     ['blocker to a follow-up with a reason', [item('blocker', 'later')], 'später', 'done', 'accept', 0, 1],
     ['blocker kept, another to fix', [item('blocker', 'accept'), item('edge', 'now')], '', 'done', 'giveBack', 1, 0],
-    ['all ok in a lane that does not end', [item('edge', 'accept')], '', null, 'notTerminal', 0, 0],
-    ['to fix in a lane that does not end', [item('edge', 'now')], '', null, 'giveBack', 1, 0],
-    ['words in a lane that does not end', [], 'fehlt', null, 'giveBack', 0, 0],
-    ['blocker kept, words typed, in a lane that does not end', [item('blocker', 'accept')], 'fehlt', null, 'giveBack', 0, 0],
-    ['blocker kept, nothing typed, in a lane that does not end', [item('blocker', 'later')], '', null, 'notTerminal', 0, 1],
+    ['all ok in a lane that does not end', [item('edge', 'accept')], '', 'build', 'accept', 0, 0],
+    ['blocker kept with a reason in a lane that does not end', [item('blocker', 'accept')], 'ist bekannt', 'build', 'accept', 0, 0],
+    ['all ok with no next lane', [item('edge', 'accept')], '', null, 'noNext', 0, 0],
+    ['to fix with no next lane', [item('edge', 'now')], '', null, 'giveBack', 1, 0],
+    ['words with no next lane', [], 'fehlt', null, 'giveBack', 0, 0],
+    ['blocker kept, words typed, with no next lane', [item('blocker', 'accept')], 'fehlt', null, 'giveBack', 0, 0],
+    ['blocker kept, nothing typed, with no next lane', [item('blocker', 'later')], '', null, 'noNext', 0, 1],
   ]
+  test('an open question in a lane that does not end the work waits for its answer; words typed still give back', () => {
+    expect(executionOf([item('edge', 'accept')], '', 'review', 0, true).step).toBe('needAnswer')
+    expect(executionOf([item('blocker', 'accept')], '', 'review', 0, true)).toEqual({ step: 'needAnswer', fix: 0, followUps: 0, asksWhy: false })
+    expect(executionOf([], 'fehlt', 'review', 0, true).step).toBe('giveBack')
+    expect(executionOf([item('edge', 'now')], '', 'review', 0, true).step).toBe('giveBack')
+  })
+
   for (const [name, items, typed, to, step, fix, followUps] of TABLE) {
     test(`Execute: ${name} -> ${step}`, () => {
       const e = executionOf(items, typed, to)
@@ -6556,7 +6698,7 @@ describe('what the person checks themselves', () => {
     expect(executionOf([], '', 'done', 1).step).toBe('needSeen')
     expect(executionOf([], '', 'done', 0).step).toBe('accept')
     expect(executionOf([], 'missing', 'done', 1).step).toBe('giveBack')
-    expect(executionOf([], '', null, 1).step).toBe('notTerminal')
+    expect(executionOf([], '', null, 1).step).toBe('noNext')
   })
 })
 

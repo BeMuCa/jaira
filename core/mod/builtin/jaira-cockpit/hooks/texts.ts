@@ -68,21 +68,26 @@ export const t = {
   // press again, and a second one may write beside the first.
   stillRunning: (id: string, seconds: number) => `${id}: Execute still at work after ${seconds} s - it takes a press again; look at the ticket before you press once more`,
   // What Execute will do, in the pane's last line before the button.
-  summary: (step: 'giveBack' | 'accept' | 'needWhy' | 'notTerminal' | 'needSeen', fix: number, followUps: number, to: string) => {
+  // ends: whether to is the terminal lane; elsewhere the line names the lane
+  // the ticket goes on to, so nobody reads it as done (M5JSE9).
+  summary: (step: 'giveBack' | 'accept' | 'needWhy' | 'noNext' | 'needAnswer' | 'needSeen', fix: number, followUps: number, to: string, ends: boolean) => {
+    const into = ends ? to : `accept → ${to}`
     const tickets = followUps > 0 ? ` + ${followUps} follow-up ticket${followUps === 1 ? '' : 's'}` : ''
     switch (step) {
       case 'giveBack': return `Execute: give back${fix > 0 ? ` with ${fix} note${fix === 1 ? '' : 's'} to fix` : ' with what you typed'}${tickets}`
-      case 'accept': return `Execute: ${to}${tickets}`
+      case 'accept': return `Execute: ${into}${tickets}`
       case 'needWhy': return `Execute: type why the blocker is accepted${tickets}`
-      case 'notTerminal': return 'Execute: nothing to accept in this lane - mark a note fix, or type what is missing'
-      case 'needSeen': return `Execute: tick what you checked above first, then ${to}${tickets}`
+      case 'noNext': return 'Execute: nothing to accept in this lane - mark a note fix, or type what is missing'
+      case 'needAnswer': return 'Execute: answer the question first - or mark a note fix, or type what is missing'
+      case 'needSeen': return `Execute: tick what you checked above first, then ${into}${tickets}`
     }
   },
   // DKMG91: the 'seen by a person' items of the definition of done, which
   // only the person ticks - listed above the review notes, ticked by Accept.
   checkYourself: 'Check yourself - tick what you have seen',
   seenMissing: (id: string, texts: string[]) => `${id}: not accepted - ${texts.length === 1 ? 'one item is' : `${texts.length} items are`} still to check yourself and tick:\n${texts.map(x => `- ${x}`).join('\n')}`,
-  notTerminal: (id: string, lane: string) => `${id} waits in ${lane}, which does not end the work: nothing to accept there. Mark a note fix, or type what is missing, to give it back.`,
+  noNext: (id: string, lane: string) => `${id} waits in ${lane}, and jaira names no lane after it: nothing to accept there. Mark a note fix, or type what is missing, to give it back.`,
+  needAnswer: (id: string, lane: string, to: string) => `${id} waits in ${lane} for the answer to its question: answer it first - Discuss, or an option marked [accept] under Explain - and Execute then moves it on to ${to}. Mark a note fix, or type what is missing, to give it back.`,
   refused: (id: string) => `${id} was not accepted, nothing was changed:`,
   refusedTicked: (id: string, ns: readonly number[]) => `${id} was not accepted; only definition-of-done item${ns.length === 1 ? '' : 's'} ${ns.join(', ')} ${ns.length === 1 ? 'was' : 'were'} ticked as seen by you:`,
   seenChanged: (texts: string[]) => `${texts.length === 1 ? 'this item' : 'these items'} changed on the ticket since the pane opened - close it, open it again and look once more:\n${texts.map(x => `- ${x}`).join('\n')}`,
@@ -107,10 +112,10 @@ export const t = {
   followUpsLost: (id: string, texts: string[]) => `These notes of ${id} were marked follow-up, but jaira created no ticket for them; the note on ${id} names each as not created:\n${texts.map(x => `- ${x}`).join('\n')}`,
   movedMeanwhile: (id: string, lane: string, now: string) => `${id} is no longer in ${lane} but in ${now}: someone else decided it meanwhile. Nothing was written.`,
   accepted: (id: string, lane: string) => `${id} accepted: ${lane}`,
-  returnedTo: (id: string, who: 'old' | 'new' | 'none') =>
-    who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
-  tabsUnreadable: (id: string) => `${id} back in in-progress; Herdr's tab list could not be read, so it is unknown whether its worker still runs - no worker started. Check its tab, and start one only if none runs.`,
-  workerBlocked: (id: string, where: string) => `${id} back in in-progress; its worker waits at an approval dialog in ${where} - answer it there, then type the decision into it. No Enter was pressed for you.`,
+  returnedTo: (id: string, who: 'old' | 'new' | 'none', to: string) =>
+    who === 'none' ? `${id} back in ${to}; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
+  tabsUnreadable: (id: string, to: string) => `${id} back in ${to}; Herdr's tab list could not be read, so it is unknown whether its worker still runs - no worker started. Check its tab, and start one only if none runs.`,
+  workerBlocked: (id: string, where: string, to: string) => `${id} back in ${to}; its worker waits at an approval dialog in ${where} - answer it there, then type the decision into it. No Enter was pressed for you.`,
   dialogBeforeEnter: (id: string, pane: string) => `${id} given back to the worker that carried it; an approval dialog opened in pane ${pane} before the Enter - answer it there, then press Enter if the decision still waits in its input.`,
   // The one line Accept and Give back hand this session, the teamlead's,
   // after a move that went through: what happened, and what already runs.
@@ -124,8 +129,8 @@ export const t = {
   branchAmbiguous: (id: string, branches: string[]) => `${branches.join(' and ')} could each be ${id}'s branch and none is its worktree's: no branch picked for it - start its worker or pull request on the right one by hand`,
   acceptAmbiguous: (id: string, branches: string[], to: string) => `${branches.join(' and ')} could each carry ${id}'s commits and none is its worktree's: nothing moved - check out the right one and run 'jaira move ${id} --to ${to} --force' there`,
   acceptNoteLost: (id: string, why: string) => `${id} accepted; the note saying so was not written: ${oneLine(why).slice(0, 120)}`,
-  toSessionGivenBack: (id: string, from: string, who: 'old' | 'new' | 'none', reason: string, worker: string) =>
-    `jaira-cockpit: ${id} given back: ${inLine(reason, 120)}, worker ${who === 'none' ? worker || "none (the ticket's note says why)" : `${who === 'old' ? 'that carried it' : 'new'} ${worker}`} (Person, Cockpit; ${from} -> in-progress)`,
+  toSessionGivenBack: (id: string, from: string, to: string, who: 'old' | 'new' | 'none', reason: string, worker: string) =>
+    `jaira-cockpit: ${id} given back: ${inLine(reason, 120)}, worker ${who === 'none' ? worker || "none (the ticket's note says why)" : `${who === 'old' ? 'that carried it' : 'new'} ${worker}`} (Person, Cockpit; ${from} -> ${to})`,
   afterAcceptFailed: (id: string) => `the next step after ${id} failed, see the cockpit`,
   failed: (what: string) => `${what} failed`,
   afterAccept: (id: string) => `Next step after ${id}`,
@@ -156,7 +161,7 @@ export const t = {
   prNeedsHerdr: (branch: string) => `${branch} needs a pull request, which opens in a Herdr tab of its own (HERDR_ENV=1 or Herdr App, and spawn.sh from jaira roles install).`,
   noteOn: (id: string) => `Note on ${id}`,
   copyNotRemoved: (id: string, path: string, why: string) => `${id}: the copy pulled into the main checkout is still there and hides its ref (${oneLine(why)}); remove it: git clean -fqx -- ${shellQuoted(path)}`,
-  noteLost: (id: string, why: string, note: string) => `${id} went back to in-progress, but the note with your reason was not written: ${why}\nAdd it by hand: jaira note ${id} '${note.replaceAll("'", `'\\''`)}'`,
+  noteLost: (id: string, why: string, note: string, to: string) => `${id} moved to ${to}, but the note with your reason was not written: ${why}\nAdd it by hand: jaira note ${id} '${note.replaceAll("'", `'\\''`)}'`,
   tooOld: (installed: string, needed: string) => `jaira ${installed} is too old for this cockpit: it needs ${needed} or later. Give back will be refused until you update jaira.`,
   released: (latest: string, installed: string) => `jaira ${latest} is released (this is ${installed})`,
   update: 'Update',
@@ -248,9 +253,9 @@ export const t = {
     `Two to four options with 1) 2) 3) 4) at the start of the line - the numbers the person picks by in the cockpit - in the order you recommend them, no fixed order. Each option ends in [give back] when it means giving the work back to change something, [accept] when it means accepting the ticket as it is, and no mark when it is neither. When no note is a blocker, the recommendation says plainly that the ticket can be accepted as it is. ` +
     `Change nothing else, commit nothing, do not move the ticket. Answer in the language the person speaks with this session; keep the words Status:, Recommendation:, ok, fail and the class marks in English, the cockpit reads them.` +
     removeCopy(copy),
-  discussInThisChat: (id: string, dir: string, copy?: string) =>
+  discussInThisChat: (id: string, dir: string, back: string, copy?: string) =>
     `The cockpit's Discuss on ${id}, without Herdr: ticket ${id} waits for a decision of mine. Read it with jaira -C '${dir}' show ${id} --brief (the question field and the latest notes), explain the question and the options to me in plain words and ask me. ` +
-    `When I have decided: write the decision in one sentence onto the ticket with jaira -C '${dir}' note ${id} "decision: <decision>" and clear the question with jaira -C '${dir}' set ${id} question=. If the decision means the work goes on, move the ticket back yourself, exactly so: jaira -C '${dir}' move ${id} --to in-progress (without --what/--why/--resolves: the ticket has its outcome already, and the decision is in the note). ` +
+    `When I have decided: write the decision in one sentence onto the ticket with jaira -C '${dir}' note ${id} "decision: <decision>" and clear the question with jaira -C '${dir}' set ${id} question=. If the decision means the work goes on, move the ticket back yourself, exactly so: jaira -C '${dir}' move ${id} --to ${back} (without --what/--why/--resolves: the ticket has its outcome already, and the decision is in the note). ` +
     `Accept it into the next lane only when I say yes to that explicitly. Change no code. Answer in the language I speak with you.` +
     removeCopy(copy),
   copyLeft: (id: string, path: string) => `${id}: the copy pulled into the main checkout for a chat is still there and hides its ref; once no chat on ${id} runs any more, remove it: git clean -fqx -- ${shellQuoted(path)}`,

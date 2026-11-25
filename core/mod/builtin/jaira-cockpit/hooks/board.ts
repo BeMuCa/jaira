@@ -25,10 +25,18 @@ export type Waiting = {
   // tick ('seen by a person: ...') and every other one; undefined where jaira
   // listed no items.
   dodOpen?: { person: number; other: number }
-  // Where Accept moves it: the ticket's next lane, when that lane is the
-  // board's terminal one (signoff -> done); null where the next lane is
-  // still work to do (human -> review), so a press never skips a review.
+  // Where Accept moves it: the ticket's next lane, terminal (signoff ->
+  // done) or not (script-approval -> build, human -> review: M5JSE9) - one
+  // step, so a press never skips a lane; null where jaira named none.
   acceptTo: string | null
+  // Whether acceptTo is the board's terminal lane: only there does Accept
+  // end the work - a pull request, the signoff hold - and does a question
+  // stop being what the ticket waits for.
+  acceptEnds: boolean
+  // Where Give back moves it: the lane that does the work before the
+  // person's lane it sits in (backLaneOf) - in-progress on the shipped
+  // board, build before draft-approval on a video board (PGXJG0).
+  backTo: string
   // Whose it is; '' for nobody's.
   assignee: string
   // The review's findings, one per line: its blocker lines, and every other
@@ -50,6 +58,9 @@ export type Counts = { worker: number; review: number; person: number }
 
 export type Lane = {
   id: string; agentic: boolean; terminal?: boolean; context: string; human_exit?: boolean; requires_question?: boolean
+  // Where a loop lane sends work back (critique, optimize, testing); null
+  // for any other lane, absent from a jaira before PGXJG0.
+  rejects_to?: string[] | null
   verdicts?: { accept?: string[]; send_back?: string[] }
 }
 export type VerdictWay = 'accept' | 'sendBack' | 'other'
@@ -92,6 +103,27 @@ const PERSON_LANES = new Set(['human', 'signoff'])
 export function isPersons(lane: Lane): boolean {
   if (lane.human_exit === undefined && lane.requires_question === undefined) return PERSON_LANES.has(lane.id)
   return lane.human_exit === true || lane.requires_question === true
+}
+
+// Where Give back sends a ticket out of the person's lane `from`: walking
+// back along the board, the first lane an agent works that is neither fresh
+// (the review judges, it does not do the work) nor a person's - and where
+// that is a loop lane, the first lane it sends work back to that an agent
+// works on this board (a rejects_to naming a missing or a person's lane is
+// passed by; none left: the loop lane itself). The shipped board:
+// signoff <- review (fresh) <- human <- testing -> in-progress. A video
+// board: draft-approval <- build. A jaira that lists no rejects_to cannot
+// tell a loop lane from the work's: there, and where the walk finds
+// nothing, in-progress as before.
+export function backLaneOf(lanes: readonly Lane[], from: string): string {
+  if (!lanes.some(l => l.rejects_to !== undefined)) return 'in-progress'
+  const works = (l: Lane | undefined) => l !== undefined && l.agentic && l.context !== 'fresh' && !isPersons(l)
+  for (let i = lanes.findIndex(l => l.id === from) - 1; i >= 0; i--) {
+    const l = lanes[i]!
+    if (!works(l)) continue
+    return (l.rejects_to ?? []).find(to => works(lanes.find(x => x.id === to))) ?? l.id
+  }
+  return 'in-progress'
 }
 
 // The boards `jaira boards --json` names besides today's, whose tickets the
@@ -155,7 +187,9 @@ export function snapshotOf(
       question: oneLine(t.question),
       ...(typeof t.dod_complete === 'boolean' ? { dodComplete: t.dod_complete } : {}),
       ...(t.dod_items !== undefined && t.dod_items.length > 0 ? { dodOpen: dodOpenOf(t.dod_items) } : {}),
-      acceptTo: next?.terminal === true ? next.id : null,
+      acceptTo: next?.id ?? null,
+      acceptEnds: next?.terminal === true,
+      backTo: backLaneOf(lanes, t.status),
       assignee,
       // Before a review there are no review notes; after a later round's
       // optimize lane rewrote review-gaps they are in the copy jaira kept.
@@ -326,7 +360,7 @@ export function lightOf(w: Waiting, hunt: HuntState | undefined, classes?: reado
   // A ticket waiting on a question in a lane that does not end the work
   // (human: Accept would not move it to done) is there for the answer, not
   // for acceptance: the question decides, yellow, whatever else is open.
-  if (w.question !== '' && w.acceptTo === null) {
+  if (waitsForAnswer(w)) {
     return { color: 'yellow', reasons: [{ kind: 'question' }, ...red, ...yellow.filter(r => r.kind !== 'question')] }
   }
   const color = red.length > 0 ? 'red' : yellow.length > 0 ? 'yellow' : 'green'
@@ -1171,21 +1205,30 @@ export function rephrasedOf(answer: string, n: number): string[] | undefined {
 // such note are what is missing, and give it back too. A blocker not marked
 // fix now is accepted only with a reason, which the field then asks for: its
 // words are that reason, not work to do. Nothing to fix accepts — through the
-// same gates as Accept — where the next lane ends the work; in a lane that
-// does not (human -> review) there is nothing to accept: words typed give it
-// back, nothing typed does nothing. An accept with 'seen by a person' items
+// same gates as Accept, into the next lane whether or not it ends the work
+// (M5JSE9); where jaira named no next lane there is nothing to accept: words
+// typed give it back, nothing typed does nothing. A question still open in a
+// lane that does not end the work (human) is what the ticket waits
+// for - jaira keeps it on the ticket past the move - so it is answered
+// first. An accept with 'seen by a person' items
 // still unticked in the pane (unseen) is no accept yet: it waits for them.
-export type Step = 'giveBack' | 'accept' | 'needWhy' | 'notTerminal' | 'needSeen'
+export type Step = 'giveBack' | 'accept' | 'needWhy' | 'noNext' | 'needAnswer' | 'needSeen'
 export type Execution = { step: Step; fix: number; followUps: number; asksWhy: boolean }
 
-export function executionOf(items: readonly GapItem[], typed: string, acceptTo: string | null, unseen = 0): Execution {
+// Whether the ticket waits on a question in a lane that does not end the
+// work: the answer comes before any accept (lightOf, executionOf).
+export function waitsForAnswer(w: Pick<Waiting, 'question' | 'acceptEnds'>): boolean {
+  return w.question !== '' && !w.acceptEnds
+}
+
+export function executionOf(items: readonly GapItem[], typed: string, acceptTo: string | null, unseen = 0, waiting = false): Execution {
   const fix = items.filter(i => i.choice === 'now').length
   const followUps = items.filter(i => i.choice === 'later' && i.follow === undefined).length
   // Only where the ticket can be accepted at all: elsewhere words typed are
   // what is missing, never a reason to accept.
-  const asksWhy = acceptTo !== null && fix === 0 && items.some(i => i.cls === 'blocker' && i.choice !== 'now')
+  const asksWhy = acceptTo !== null && !waiting && fix === 0 && items.some(i => i.cls === 'blocker' && i.choice !== 'now')
   const words = typed.trim() !== ''
-  const step: Step = fix > 0 || (words && !asksWhy) ? 'giveBack' : acceptTo === null ? 'notTerminal' : asksWhy && !words ? 'needWhy' : unseen > 0 ? 'needSeen' : 'accept'
+  const step: Step = fix > 0 || (words && !asksWhy) ? 'giveBack' : acceptTo === null ? 'noNext' : waiting ? 'needAnswer' : asksWhy && !words ? 'needWhy' : unseen > 0 ? 'needSeen' : 'accept'
   return { step, fix, followUps, asksWhy }
 }
 
