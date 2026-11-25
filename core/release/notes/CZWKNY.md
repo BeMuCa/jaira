@@ -1,0 +1,3 @@
+- > Shorter release notes: headlines first, the rest folds under Others
+- Press `o` in the release notes popup to show the plain changes folded under "Others"; headlines, features and lines marked `!` stay visible, and `jaira update` still prints every line.
+- Expect `jaira update --json` to list a version's changes starting `> ` before its others; the text keeps the `> ` so a script can tell them apart.

@@ -21,6 +21,7 @@ func fixtureNotes() []release.Entry {
 
 func TestNotesViewMarksImportantLines(t *testing.T) {
 	v := newNotesView("Release notes", fixtureNotes())
+	v.key("o") // unfold the plain changes
 	out := stripANSI(v.render(60, 30))
 	for _, want := range []string{"! run jaira update now", "- a plain change", "0.5.2"} {
 		if !strings.Contains(out, want) {
@@ -42,6 +43,7 @@ func TestNotesViewStartsOnTheNewestAndPagesOneVersionAtATime(t *testing.T) {
 		{Version: "0.5.2", Changes: []string{"middle change"}},
 		{Version: "0.5.1", Changes: []string{"oldest change"}},
 	})
+	v.key("o")
 	page := func() string { return stripANSI(v.render(60, 30)) }
 	want := func(step, header, change string, absent ...string) {
 		t.Helper()
@@ -83,6 +85,7 @@ func TestNotesViewSplitsFeaturesFromOthers(t *testing.T) {
 		{Version: "0.5.2", Changes: []string{"an other change", "+ a new feature", "+ ! a feature to act on"}},
 		{Version: "0.5.1", Changes: []string{"a plain change"}},
 	})
+	v.key("o")
 	out := stripANSI(v.render(60, 30))
 	at := func(s string) int {
 		t.Helper()
@@ -126,6 +129,7 @@ func TestNotesViewScrollsAndCloses(t *testing.T) {
 		changes = append(changes, "change "+string(rune('A'+i%26))+string(rune('a'+i/26)))
 	}
 	v := newNotesView("Release notes", []release.Entry{{Version: "1.0.0", Changes: changes}})
+	v.key("o")
 
 	first := stripANSI(v.render(60, 12))
 	if !strings.Contains(first, "1.0.0") || strings.Contains(first, "change Ab") {
@@ -315,5 +319,105 @@ func TestNoPopupOnAFreshBoardOrDevBuild(t *testing.T) {
 	}
 	if got := release.NotesSeen(dev.store.StateDir()); got != "0.4.0" {
 		t.Errorf("a dev build must not write notes-seen, got %q", got)
+	}
+}
+
+func TestNotesViewPutsHooksFirst(t *testing.T) {
+	v := newNotesView("Release notes", []release.Entry{
+		{Version: "0.5.9", Changes: []string{"> the hook", "an other change", "+ a new feature"}},
+	})
+	out := stripANSI(v.render(60, 30))
+	hook, features := strings.Index(out, "> the hook"), strings.Index(out, "Features")
+	if hook < 0 || features < 0 || hook > features {
+		t.Fatalf("want the hook above Features:\n%s", out)
+	}
+	if strings.Contains(out, "- > ") {
+		t.Errorf("the hook marker was printed with a bullet:\n%s", out)
+	}
+}
+
+// A board three releases behind pages through all three, not only the newest.
+func TestPopupThreeVersionsBehindPagesAllThree(t *testing.T) {
+	m := popupBoard(t, "0.5.8", "0.5.5", "")
+	if m.mode != modeReleaseNotes {
+		t.Fatalf("mode = %v, want the release-notes popup", m.mode)
+	}
+	n := len(release.Since("0.5.5"))
+	var pages strings.Builder
+	for i := 0; i < n; i++ {
+		pages.WriteString(stripANSI(m.render()))
+		press(m, "h")
+	}
+	// A page header is "│ <version> · i/n" inside the box; the title reads
+	// "since 0.5.5 · n unread", so the box edge keeps the title out of the match.
+	all := pages.String()
+	for _, v := range []string{"0.5.6", "0.5.7", "0.5.8"} {
+		if !strings.Contains(all, "│ "+v+" · ") {
+			t.Errorf("never paged to %s", v)
+		}
+	}
+	if strings.Contains(all, "│ 0.5.5 · ") {
+		t.Errorf("paged to the stamped version 0.5.5 itself")
+	}
+}
+
+func TestNotesViewHookIsAHeadlineWithItsSentenceBelow(t *testing.T) {
+	v := newNotesView("Release notes", []release.Entry{{Version: "0.6.0", Changes: []string{
+		"> New skill: /interreview walks review tickets in chat",
+		"> Second: another sentence",
+		"> No colon here",
+	}}})
+	var got []string
+	for _, l := range v.lines(60) {
+		got = append(got, stripANSI(l))
+	}
+	want := []string{
+		"> New skill", "  /interreview walks review tickets in chat", "",
+		"> Second", "  another sentence", "",
+		"> No colon here",
+	}
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("lines =\n%q\nwant\n%q", got, want)
+	}
+}
+
+func TestNotesViewFoldsPlainChangesUnderOthers(t *testing.T) {
+	v := newNotesView("Release notes", []release.Entry{{Version: "0.6.0", Changes: []string{
+		"> Hook: the sentence", "+ a feature", "! act now", "plain one", "plain two",
+	}}})
+	out := stripANSI(v.render(60, 40))
+	for _, want := range []string{"> Hook", "the sentence", "Features", "+ a feature", "Others", "! act now", "2 more · o shows them"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("folded: missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "plain one") {
+		t.Errorf("a plain change shows while folded:\n%s", out)
+	}
+	if v.key("o") {
+		t.Fatal("o closed the view")
+	}
+	out = stripANSI(v.render(60, 40))
+	if !strings.Contains(out, "- plain one") || !strings.Contains(out, "- plain two") || strings.Contains(out, "more · o shows them") {
+		t.Errorf("o did not unfold the plain changes:\n%s", out)
+	}
+	v.key("o")
+	if out = stripANSI(v.render(60, 40)); strings.Contains(out, "plain one") {
+		t.Errorf("a second o did not fold them again:\n%s", out)
+	}
+}
+
+// A version without a hook or a feature has nothing to show above its plain
+// changes, so it does not fold them.
+func TestNotesViewDoesNotFoldAVersionWithoutHeadlines(t *testing.T) {
+	v := newNotesView("Release notes", []release.Entry{{Version: "0.5.8", Changes: []string{"! act now", "plain one", "plain two"}}})
+	out := stripANSI(v.render(60, 30))
+	for _, want := range []string{"! act now", "- plain one", "- plain two"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "more · o shows them") || strings.Contains(out, "Others") {
+		t.Errorf("a version without hooks or features was folded:\n%s", out)
 	}
 }

@@ -16,11 +16,15 @@ var styImportant = lipgloss.NewStyle().Foreground(colWarn).Bold(true)
 // styFeature colours a feature line, "- + text", its bullet and its text alike.
 var styFeature = lipgloss.NewStyle().Foreground(colAccent)
 
+// styHook carries a hook's headline, "- > Headline: sentence": bold, the first thing on the page.
+var styHook = lipgloss.NewStyle().Bold(true)
+
 // notesView shows release notes one version per page, the newest first:
 // left/h pages to the older version, right/l back to the newer one, and j/k
 // scroll a version longer than the screen. The launcher's "w" opens it with
 // every release; the popup after a version change opens it with the releases
-// since the last one the user read.
+// since the last one the user read. "o" unfolds the plain changes under
+// "Others" and folds them again.
 type notesView struct {
 	title   string
 	entries []release.Entry
@@ -29,6 +33,8 @@ type notesView struct {
 	scroll int
 	// page is how far pgup/pgdown move: the body height of the last render.
 	page int
+	// others shows the plain changes, which stay folded away until "o".
+	others bool
 }
 
 func newNotesView(title string, entries []release.Entry) *notesView {
@@ -58,46 +64,81 @@ func (v *notesView) key(k string) (done bool) {
 		v.scroll += v.page
 	case "pgup", "ctrl+u":
 		v.scroll = max(0, v.scroll-v.page)
+	case "o":
+		v.others = !v.others
 	case "g":
 		v.scroll = 0
 	}
 	return false
 }
 
-// lines lays out the version on screen for width: its features first under a
-// "Features" header, then the rest under "Others". The "Others" header appears
-// only next to a feature, so a version without feature lines reads as a plain
-// list. A blank line follows each header and each change, so every change
-// reads on its own. Each line is styled on its own, so a wrapped change never
-// leaves a padded block behind a prefix.
+// lines lays out the version on screen for width: its hooks first, without a
+// header, then its features under a "Features" header, then the rest under
+// "Others". Of the rest, the changes marked "!" always show. The plain ones
+// fold into one "n more · o shows them" line until "o" unfolds them, but only
+// below a hook or a feature; a version without either shows them all, since
+// folding would leave nothing to read. The "Others" header appears only below a
+// hook or a feature, so a version without either reads as a plain list. A blank
+// line follows each header and each change, so every change reads on its own.
+// Each line is styled on its own, so a wrapped change never leaves a padded
+// block behind a prefix.
 func (v *notesView) lines(width int) []string {
 	if v.at >= len(v.entries) {
 		return nil
 	}
-	var features, others []string
+	var hooks, features, important, plain []string
+	folded := 0
 	for _, c := range v.entries[v.at].Changes {
-		if _, feature := release.Feature(c); feature {
+		text, hook := release.Hook(c)
+		_, feature := release.Feature(c)
+		_, imp := release.Important(c)
+		switch {
+		case hook:
+			hooks = append(hooks, hookLines(text, width)...)
+		case feature:
 			features = append(features, changeLines(c, width)...)
-		} else {
-			others = append(others, changeLines(c, width)...)
+		case imp:
+			important = append(important, changeLines(c, width)...)
+		default:
+			plain = append(plain, changeLines(c, width)...)
+			folded++
 		}
 	}
-	var out []string
+	out := hooks
 	if len(features) > 0 {
 		out = append(out, styReview.Render("Features"), "")
 		out = append(out, features...)
 	}
-	if len(others) > 0 {
-		if len(features) > 0 {
+	if len(important) > 0 || folded > 0 {
+		headed := len(out) > 0
+		if headed {
 			out = append(out, styMeta.Render("Others"), "")
 		}
-		out = append(out, others...)
+		out = append(out, important...)
+		switch {
+		case v.others || !headed:
+			out = append(out, plain...)
+		case folded > 0:
+			out = append(out, styMeta.Render(truncate(fmt.Sprintf("%d more · o shows them", folded), width)), "")
+		}
 	}
 	// The last change's gap is the gap render puts above the key hint.
 	if n := len(out); n > 0 {
 		out = out[:n-1]
 	}
 	return out
+}
+
+// hookLines lays out a hook, "Headline: one short sentence": the headline bold
+// behind the "> " bullet, the sentence dimmed under it, and a blank line. A
+// hook without ": " is all headline.
+func hookLines(text string, width int) []string {
+	head, sentence, _ := strings.Cut(text, ": ")
+	out := bulletLines(head, "> ", styHook, width)
+	if sentence != "" {
+		out = append(out, bulletLines(sentence, "  ", styMeta, width)...)
+	}
+	return append(out, "")
 }
 
 // changeLines lays out one change for width: its first line carries the bullet,
@@ -112,6 +153,12 @@ func changeLines(c string, width int) []string {
 	case feature:
 		bullet, sty = "+ ", styFeature
 	}
+	return append(bulletLines(text, bullet, sty, width), "")
+}
+
+// bulletLines wraps text for width, the bullet in front of its first line and
+// the rest indented under it, each line rendered in sty on its own.
+func bulletLines(text, bullet string, sty lipgloss.Style, width int) []string {
 	var out []string
 	for j, l := range strings.Split(wrap(text, max(1, width-2), 0), "\n") {
 		lead := "  "
@@ -120,7 +167,7 @@ func changeLines(c string, width int) []string {
 		}
 		out = append(out, sty.Render(lead+l))
 	}
-	return append(out, "")
+	return out
 }
 
 // render draws the title, the version and its position ("0.5.4 · 1/12"), the
@@ -141,7 +188,7 @@ func (v *notesView) render(width, height int) string {
 	}
 	b.WriteString("\n")
 	b.WriteString(strings.Join(all[v.scroll:end], "\n"))
-	b.WriteString("\n\n" + styMeta.Render(truncate("←/→ older/newer · j/k scroll · esc close", width)))
+	b.WriteString("\n\n" + styMeta.Render(truncate("←/→ older/newer · j/k scroll · o others · esc close", width)))
 	return b.String()
 }
 
