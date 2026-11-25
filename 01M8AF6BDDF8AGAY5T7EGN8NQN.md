@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-25T23:12:10Z
+updated-at: 2026-11-25T23:12:43Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-25T23:07:35Z
@@ -31,7 +31,8 @@ stop-after-fix: "true"
 
 ## Definition of Done
 
-- [ ] jaira-worker sagt: ohne --parent und als Hintergrund-Subagent geht eine Frage per SendMessage to="main" raus (Optionen, Empfehlung zuerst), wird mit jaira note festgehalten, und der Worker arbeitet an Unabhaengigem weiter
+- [x] jaira-worker sagt: ohne --parent und als Hintergrund-Subagent geht eine Frage per SendMessage to="main" raus (Optionen, Empfehlung zuerst), wird mit jaira note festgehalten, und der Worker arbeitet an Unabhaengigem weiter
+  proof: core/role/builtin/jaira-worker/SKILL.md:363-381 (new no-parent case, SendMessage to main, note + question field, keep working; answer-from-main paragraph); :54 when-you-wait bullet; go test ./core/role/... passes
 - [ ] jaira-dispatcher und die Rollen, die heute 'Optionen in den Bericht' sagen, sagen dasselbe; Vordergrund-Subagent behaelt den alten Weg
 - [ ] jaira-teamlead sagt, dass so eine Nachricht von einem Subagenten wie eine Dispatcher-Frage behandelt wird (AskUserQuestion an die Person, Antwort per SendMessage zurueck)
 - [ ] shipped.sha256 und core/shipped-Tests stimmen; Release-Note-Zeile in core/release/notes/<ID>.md
