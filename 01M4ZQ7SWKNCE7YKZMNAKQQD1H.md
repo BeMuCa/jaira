@@ -1,7 +1,7 @@
 ---
 id: 01M4ZQ7SWKNCE7YKZMNAKQQD1H
 title: "Die Swimlanes der Roadmap heissen Roads, tragen einen Namen und lassen sich im TUI umbenennen"
-status: signoff
+status: done
 ready: true
 creator: BeMuCa
 assignee: berkc
@@ -31,9 +31,22 @@ commits:
   - 253a8870dff3122ec09fbff8792e0bc74a342e15
   - 07dbb35e8f53f1ab2704e6d690e5dc664216f625
   - 94792682d5ded521fb7f7f7eeed271561c6631fa
+  - c7b4f9fe
+  - 6b8b832b
+  - 33fe7cb6
+  - "94792682"
+  - 60b78d91
+  - 07dbb35e
+  - 253a8870
+  - 347817d4
+  - 60167c57
+  - 40cd909f
+  - ab7adf83
+  - cbc02c6d
+  - 2e834d0b
 created-at: 2026-10-15T12:05:22Z
-updated-at: 2026-11-23T22:58:25Z
-updated-by: berkc
+updated-at: 2026-11-25T23:01:06Z
+updated-by: Berk
 claimed-by: berk-ca-423748
 claimed-at: 2026-11-03T23:32:10Z
 question: ""
