@@ -21,10 +21,10 @@ related: []
 commits:
   - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-25T23:22:09Z
+updated-at: 2026-11-25T23:32:44Z
 updated-by: Berk
 claimed-by: w-gn8nqn
-claimed-at: 2026-11-25T23:07:35Z
+claimed-at: 2026-11-25T23:32:44Z
 stop-after-fix: "true"
 outcome-what: "Worker, dispatcher and teamlead skills: a background subagent with no parent sends its question to main via SendMessage to=\"main\", notes it, sets the question field and keeps working; refused or no SendMessage keeps the report path. Teamlead handles such a message like a dispatcher question. Shipped hashes appended (3 lines); release note core/release/notes/GN8NQN.md."
 outcome-why: "A background subagent's question sat in its final report until it ended, so the work stood; SendMessage to main reaches the main session at once (tested 23.11.2026)."
