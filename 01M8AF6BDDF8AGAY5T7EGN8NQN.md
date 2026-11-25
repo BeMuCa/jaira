@@ -1,7 +1,7 @@
 ---
 id: 01M8AF6BDDF8AGAY5T7EGN8NQN
 title: "Ein Worker ohne Herdr schickt seine Fragen per SendMessage an main und arbeitet weiter, statt mit der Frage im Bericht stehen zu bleiben"
-status: in-progress
+status: critique
 ready: true
 creator: Berk
 assignee: Berk
@@ -21,14 +21,14 @@ related: []
 commits:
   - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-25T23:54:38Z
+updated-at: 2026-11-25T23:56:06Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-25T23:32:44Z
 stop-after-fix: "true"
-outcome-what: "Worker, dispatcher and teamlead skills: a background subagent with no parent sends its question to main via SendMessage to=\"main\", notes it, sets the question field and keeps working; refused or no SendMessage keeps the report path. Teamlead handles such a message like a dispatcher question. Shipped hashes appended (3 lines); release note core/release/notes/GN8NQN.md."
-outcome-why: "A background subagent's question sat in its final report until it ended, so the work stood; SendMessage to main reaches the main session at once (tested 23.11.2026)."
-outcome-resolves: "Goal: a background worker or dispatcher question reaches main immediately and independent work continues; the old report path stays only for foreground or headless agents."
+outcome-what: "one ask-main order in worker and dispatcher (note and question field first, then SendMessage to main); dispatcher clears the question field after the answer"
+outcome-why: "critique round 1 found two gaps: stale question field on dispatcher, and a send-note-send-again reading of the ask-main step"
+outcome-resolves: "critique round 1: dispatcher had no clear-the-field sentence; worker/dispatcher ask-main step read as send, note, send again"
 review-summary: |-
   core/role/builtin/jaira-dispatcher/SKILL.md:199-208 now has the dispatcher set the question field for its own question to main, but nothing tells it to clear it when the answer arrives (worker got that at jaira-worker/SKILL.md:381-382; dispatcher :222 only clears its workers fields) — a stale field reads as open in the cockpit and close-tab.sh; add the same sentence after the dispatcher list: answer from main comes as a message, jaira note it, jaira set <id> question=, go on
   core/role/builtin/jaira-worker/SKILL.md:364-368 and jaira-dispatcher/SKILL.md:200-203 say "tries SendMessage to=main first: if accepted ..." and then "write onto the ticket ..., send the same text to main" — reads as send, then note, then send again; reword to one order: jaira note + question field, then SendMessage to=main; accepted = it reached main, refused/no tool = old way
