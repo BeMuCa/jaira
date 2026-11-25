@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-25T23:57:13Z
+updated-at: 2026-11-25T23:59:45Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -150,3 +150,4 @@ I) people: 'jaira people' gains 'active' (assignees + creators of board tickets,
 - **2026-11-25 23:13 · Berk** — waiting: in-progress P1-P4 (haiku subagent) since 00:13
 - **2026-11-25 23:48 · Berk** — P2 core/inbox: Ack records the key as acked even when no entry is there, so a later Record of that key is refused. Clean turns newline/tab into a space and drops other control chars after stripping ANSI; stored text stays verbatim. Lock file is inbox.lock beside inbox.json in the repo state dir (ticket.LockFile needs the dir to exist, so update() MkdirAlls first).
 - **2026-11-25 23:57 · Berk** — P2 fix: TestConcurrentRecordLosesNothing timed out on the ticket lock (5s wait) under load: load avg 12.9 on 8 cores made each fsync in WriteAtomic slow, and a writer that just released re-takes the O_EXCL lock before queued waiters poll, so one waiter ran out of its wait. Decision: update() retries LockFile up to lockAttempts=5 instead of failing the write; the test is not shrunk. Lock release is already on every path (defer unlock). Commit 294aa5dea landed with this test failing: my pipe hid the go test exit code. Fixed here in a new commit.
+- **2026-11-25 23:59 · Berk** — worker: inbox lock fix b12eb5542 retries ticket.LockFile 5x. Cause was starvation, not a leak: 8 in-process hot writers x 10 records with fsync'd WriteAtomic on WSL, and LockFile's backoff grows to 100ms so a waiter loses to fresh grabbers past its 5s. Real contention is 2-3 processes. Verified go test ./core/inbox -count=3 green. Critique may prefer a smaller test over the retry loop.
