@@ -1,7 +1,7 @@
 ---
 id: 01M8AF6BDDF8AGAY5T7EGN8NQN
 title: "Ein Worker ohne Herdr schickt seine Fragen per SendMessage an main und arbeitet weiter, statt mit der Frage im Bericht stehen zu bleiben"
-status: in-progress
+status: critique
 ready: true
 creator: Berk
 assignee: Berk
@@ -18,13 +18,17 @@ tags:
   - gates
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-25T23:15:44Z
+updated-at: 2026-11-25T23:19:36Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-25T23:07:35Z
 stop-after-fix: "true"
+outcome-what: "Worker, dispatcher and teamlead skills: a background subagent with no parent sends its question to main via SendMessage to=\"main\", notes it, sets the question field and keeps working; refused or no SendMessage keeps the report path. Teamlead handles such a message like a dispatcher question. Shipped hashes appended (3 lines); release note core/release/notes/GN8NQN.md."
+outcome-why: "A background subagent's question sat in its final report until it ended, so the work stood; SendMessage to main reaches the main session at once (tested 23.11.2026)."
+outcome-resolves: "Goal: a background worker or dispatcher question reaches main immediately and independent work continues; the old report path stays only for foreground or headless agents."
 ---
 
 # Ein Worker ohne Herdr schickt seine Fragen per SendMessage an main und arbeitet weiter, statt mit der Frage im Bericht stehen zu bleiben
