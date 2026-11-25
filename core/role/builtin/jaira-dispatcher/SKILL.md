@@ -539,15 +539,15 @@ else. Silence is the exception you state, not the default.
 When your ticket reaches a human lane and its `review-check` asks a person to
 try something in the app, hand it on before you stop:
 
-    /jaira-role-acceptance <id> [<id>...]
+    /jaira-role-interreview <id> [<id>...]
 
 Pass every ticket of the same change that is already waiting in a human lane —
-a large fix carried as several tickets is one acceptance page, not several.
+a large fix carried as several tickets is one interview, not several.
 Say which language the person was spoken to in. A `note:` line in the
-review's `review-gaps` reaches the page as a candidate; you never create a
-ticket from one, the person does. The acceptance role answers in
-three lines; its link goes into your `needs you:` line. Reading the person's
-marks back is not yours: that comes later, from whoever the person tells.
+review's `review-gaps` reaches the interview as a candidate; you never create
+a ticket from one, the person does. The interview role answers with the line
+the person pastes into a new session; that line goes into your `needs you:`
+line instead of a link. The interview runs in that new session, not in yours.
 
 ## Report
 

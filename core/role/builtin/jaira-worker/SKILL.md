@@ -427,9 +427,10 @@ session.
 
 When the ticket reaches a human lane and its `review-check` asks a person to
 try something in the app, hand it on before you stop:
-`/jaira-role-acceptance <id> [<id>...]`, with every ticket of the same change
+`/jaira-role-interreview <id> [<id>...]`, with every ticket of the same change
 already waiting in a human lane, and the language the person was spoken to in.
-Its link goes into your `needs you:` line.
+It answers with the line the person pastes into a new session; that line goes
+into your `needs you:` line instead of a link.
 
 ## Report
 
