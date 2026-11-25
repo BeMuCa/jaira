@@ -1369,7 +1369,7 @@ async function deciding($: EngineInterface, id: string, text: string, action: Ac
   // Answered from here on, before the next look at the notes says so too.
   await update($, explainedAtom, e => (e[id] === undefined ? e : { ...e, [id]: { ...e[id], decided: text } }))
   const w = (await read($, boardAtom))?.waiting.find(x => x.id === id)
-  if (action === 'giveBack' && w !== undefined) return giveBack($, id, w.lane, text, share)
+  if (action === 'giveBack' && w !== undefined) return giveBack($, id, w.lane, w.backTo, text, share)
   if (action === 'accept' && w !== undefined && w.acceptTo !== null) {
     // As Execute: a press read off an older band moves nothing - mid-board
     // it would send a ticket that went on back a lane (M5JSE9).
@@ -1539,7 +1539,7 @@ async function execute($: EngineInterface, w: Waiting, typed: string, share: num
   // The pane closes once the ticket moved, as for Accept: a refusal before
   // that leaves the person's marks in it.
   if (e.step === 'giveBack') {
-    if (items.length === 0) return giveBack($, w.id, w.lane, typed.trim(), share, () => closeAcceptance($))
+    if (items.length === 0) return giveBack($, w.id, w.lane, w.backTo, typed.trim(), share, () => closeAcceptance($))
     return giveBackWith($, w, items, typed.trim(), share, () => closeAcceptance($))
   }
   const moved = await acceptWith($, w, items, e.asksWhy ? typed : '', (why, ticked) => refuse(`${ticked.length === 0 ? t.refused(w.id) : t.refusedTicked(w.id, ticked)}\n${why}`), seen)
@@ -1688,7 +1688,7 @@ async function createFollowUps($: EngineInterface, dir: string, id: string, onBo
 async function giveBackWith($: EngineInterface, w: Waiting, items: readonly GapItem[], extra: string, share: number, onMoved?: () => void): Promise<void> {
   const stand = await stillIn($, w, t.giveBack)
   if (stand === undefined) return
-  await giveBack($, w.id, w.lane, async dir => decisionLines(items, await createFollowUps($, dir, w.id, stand.board, items), extra), share, onMoved)
+  await giveBack($, w.id, w.lane, w.backTo, async dir => decisionLines(items, await createFollowUps($, dir, w.id, stand.board, items), extra), share, onMoved)
 }
 
 // why: what the person typed to accept a blocker not fixed, which goes onto
@@ -1705,7 +1705,7 @@ async function acceptWith($: EngineInterface, w: Waiting, items: readonly GapIte
     const notes = [...(lines === '' ? [] : [`Accepted from ${w.lane}: ${lines}`]), ...(why.trim() === '' ? [] : [`decision: ${t.acceptedDespite}: ${oneLine(why)}`])]
     for (const note of notes) {
       const noted = await jaira($, dir, ['note', w.id, note])
-      if (!noted.ok) await fail($, t.noteOn(w.id), t.noteLost(w.id, noted.why, note))
+      if (!noted.ok) await fail($, t.noteOn(w.id), t.noteLost(w.id, noted.why, note, w.acceptTo ?? ''))
     }
   }, why => refused(why, done), seen.length === 0 ? undefined : async dir => {
     const shown = await jaira($, dir, ['show', w.id, '--json'])
@@ -1764,32 +1764,34 @@ async function readRecords($: EngineInterface): Promise<SessionRecord[]> {
 // carried it while that is cheaper — its tab alive, its cache warm, its
 // context small, and always while it is at work — else its tab is closed
 // FIRST and a new worker started, so a ticket never has two worker tabs. A
-// second press finds the ticket in in-progress already (movedBefore) and
+// second press finds the ticket in `to` already (movedBefore) and
 // starts nothing. A new worker starts on the branch the ticket's commits
 // ride on and reports to the ticket's teamlead (workPlace, spawnWorker).
 // The choice and why go onto the ticket.
 // The review lane is not touched here: the worker always hands it to a new
 // agent, whose tab run-lane.sh closes after the lane.
-// onMoved: called once the ticket is back in in-progress - the Acceptance
+// `to` is the lane the work is done in (Waiting.backTo): in-progress on the
+// shipped board, another lane on a board without one (PGXJG0).
+// onMoved: called once the ticket is back in `to` - the Acceptance
 // pane closes then, and keeps the person's marks on any refusal before it.
-async function giveBack($: EngineInterface, id: string, lane: string, given: string | ((dir: string) => Promise<string>), share: number, onMoved?: () => void): Promise<void> {
+async function giveBack($: EngineInterface, id: string, lane: string, to: string, given: string | ((dir: string) => Promise<string>), share: number, onMoved?: () => void): Promise<void> {
   if (!board) return
   const here = await ticketHere($, board, id)
   if (!here.ok) return fail($, `${t.giveBack} ${id}`, here.why)
   try {
-    await givingBack($, id, lane, given, share, here.dir, onMoved)
+    await givingBack($, id, lane, to, given, share, here.dir, onMoved)
   } finally {
     await here.leave()
   }
 }
 
-async function givingBack($: EngineInterface, id: string, lane: string, given: string | ((dir: string) => Promise<string>), share: number, dir: string, onMoved?: () => void): Promise<void> {
+async function givingBack($: EngineInterface, id: string, lane: string, to: string, given: string | ((dir: string) => Promise<string>), share: number, dir: string, onMoved?: () => void): Promise<void> {
   if (!board) return
   // Back to an earlier lane needs no --force since jaira 0.3.7 (MIN_JAIRA),
   // so any other refusal of the move still stops it. The move goes first: a
   // note written before a refused move would say the ticket went back.
-  const moved = await jaira($, dir, ['move', id, '--to', 'in-progress'])
-  if (movedBefore(moved, id, 'in-progress')) return movedFirst($, t.giveBack, id, 'in-progress')
+  const moved = await jaira($, dir, ['move', id, '--to', to])
+  if (movedBefore(moved, id, to)) return movedFirst($, t.giveBack, id, to)
   if (!moved.ok) return fail($, `${t.giveBack} ${id}`, moved.why)
   onMoved?.()
   // Decisions on the review's notes are written out only now: a follow-up
@@ -1797,18 +1799,18 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   const reason = typeof given === 'string' ? given : await given(dir)
   // The reason is the one thing the person typed: a note that did not land is
   // shown with its text, and the handover still goes on — the ticket already
-  // sits in in-progress, and nothing here could hand it out again.
+  // sits in `to`, and nothing here could hand it out again.
   const note = `Given back from ${lane}: ${reason}`
   const noted = await jaira($, dir, ['note', id, note])
-  if (!noted.ok) await fail($, t.noteOn(id), t.noteLost(id, noted.why, note))
+  if (!noted.ok) await fail($, t.noteOn(id), t.noteLost(id, noted.why, note, to))
   // Who got it, as it happened: the note and the toast say only that.
   const handedTo = async (who: 'old' | 'new' | 'none', why: string, worker = '') => {
-    const to = who === 'old' ? 'the old worker' : who === 'new' ? 'a new worker' : 'nobody (no worker started)'
-    await jaira($, dir, ['note', id, `cockpit: given back to ${to} - ${why}`])
-    await say($, t.returnedTo(id, who))
+    const whom = who === 'old' ? 'the old worker' : who === 'new' ? 'a new worker' : 'nobody (no worker started)'
+    await jaira($, dir, ['note', id, `cockpit: given back to ${whom} - ${why}`])
+    await say($, t.returnedTo(id, who, to))
     // One line into this session, the teamlead's: the work is back and who
     // carries it now, so it starts no second worker beside this one.
-    void $.prompt.submit({ text: t.toSessionGivenBack(id, lane, who, reason, worker) })
+    void $.prompt.submit({ text: t.toSessionGivenBack(id, lane, to, who, reason, worker) })
     await refreshBoard($)
   }
   const bin = await herdr($)
@@ -1822,7 +1824,7 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   if (tabs?.exitCode !== 0) {
     const why = tabs === undefined ? 'herdr tab list gave no answer' : `herdr tab list failed: ${(tabs.stderr || tabs.stdout).trim().slice(-160) || `exit ${tabs.exitCode}`}`
     await handedTo('none', `${why}; the tab state could not be read, so no worker started and nothing typed`, `none: tab state unreadable (${why}) - check the ticket's worker tab, then start one if none runs`)
-    return say($, t.tabsUnreadable(id))
+    return say($, t.tabsUnreadable(id, to))
   }
   const tab = carrierTab(tabsOf(tabs.stdout), id)
   const record = carrierOf(await readRecords($), id)
@@ -1832,7 +1834,7 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
   // the old one would still hang at its dialog beside a new one.
   const atDialog = async (where: string) => {
     await handedTo('none', `the old worker waits at an approval dialog in ${where}; no Enter pressed, no second worker started`, `${where} waits at an approval dialog: answer it there, then type the decision into it`)
-    return say($, t.workerBlocked(id, where))
+    return say($, t.workerBlocked(id, where, to))
   }
   if (tab?.agent_status === 'blocked') return atDialog(`tab ${tab.label}`)
   // A worker at work is never replaced: closing its tab would end it in the
@@ -1851,7 +1853,7 @@ async function givingBack($: EngineInterface, id: string, lane: string, given: s
     if (await paneBlocked($, bin, record.pane, dir)) return atDialog(`pane ${record.pane}`)
     // The pane may have gone since the tab list: only text that arrived
     // counts as handed to the old worker.
-    const sent = await run($, [bin, 'pane', 'send-text', record.pane, backMessage(id, lane, reason)], dir)
+    const sent = await run($, [bin, 'pane', 'send-text', record.pane, backMessage(id, lane, to, reason)], dir)
     if (sent?.exitCode === 0) {
       await $.clock.sleep(1000)
       // The text has arrived either way: Herdr App's hc send pressed Enter

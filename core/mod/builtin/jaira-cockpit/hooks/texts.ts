@@ -112,10 +112,10 @@ export const t = {
   followUpsLost: (id: string, texts: string[]) => `These notes of ${id} were marked follow-up, but jaira created no ticket for them; the note on ${id} names each as not created:\n${texts.map(x => `- ${x}`).join('\n')}`,
   movedMeanwhile: (id: string, lane: string, now: string) => `${id} is no longer in ${lane} but in ${now}: someone else decided it meanwhile. Nothing was written.`,
   accepted: (id: string, lane: string) => `${id} accepted: ${lane}`,
-  returnedTo: (id: string, who: 'old' | 'new' | 'none') =>
-    who === 'none' ? `${id} back in in-progress; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
-  tabsUnreadable: (id: string) => `${id} back in in-progress; Herdr's tab list could not be read, so it is unknown whether its worker still runs - no worker started. Check its tab, and start one only if none runs.`,
-  workerBlocked: (id: string, where: string) => `${id} back in in-progress; its worker waits at an approval dialog in ${where} - answer it there, then type the decision into it. No Enter was pressed for you.`,
+  returnedTo: (id: string, who: 'old' | 'new' | 'none', to: string) =>
+    who === 'none' ? `${id} back in ${to}; no worker started (the ticket's note says why)` : `${id} given back to ${who === 'old' ? 'the worker that carried it' : 'a new worker'}`,
+  tabsUnreadable: (id: string, to: string) => `${id} back in ${to}; Herdr's tab list could not be read, so it is unknown whether its worker still runs - no worker started. Check its tab, and start one only if none runs.`,
+  workerBlocked: (id: string, where: string, to: string) => `${id} back in ${to}; its worker waits at an approval dialog in ${where} - answer it there, then type the decision into it. No Enter was pressed for you.`,
   dialogBeforeEnter: (id: string, pane: string) => `${id} given back to the worker that carried it; an approval dialog opened in pane ${pane} before the Enter - answer it there, then press Enter if the decision still waits in its input.`,
   // The one line Accept and Give back hand this session, the teamlead's,
   // after a move that went through: what happened, and what already runs.
@@ -129,8 +129,8 @@ export const t = {
   branchAmbiguous: (id: string, branches: string[]) => `${branches.join(' and ')} could each be ${id}'s branch and none is its worktree's: no branch picked for it - start its worker or pull request on the right one by hand`,
   acceptAmbiguous: (id: string, branches: string[], to: string) => `${branches.join(' and ')} could each carry ${id}'s commits and none is its worktree's: nothing moved - check out the right one and run 'jaira move ${id} --to ${to} --force' there`,
   acceptNoteLost: (id: string, why: string) => `${id} accepted; the note saying so was not written: ${oneLine(why).slice(0, 120)}`,
-  toSessionGivenBack: (id: string, from: string, who: 'old' | 'new' | 'none', reason: string, worker: string) =>
-    `jaira-cockpit: ${id} given back: ${inLine(reason, 120)}, worker ${who === 'none' ? worker || "none (the ticket's note says why)" : `${who === 'old' ? 'that carried it' : 'new'} ${worker}`} (Person, Cockpit; ${from} -> in-progress)`,
+  toSessionGivenBack: (id: string, from: string, to: string, who: 'old' | 'new' | 'none', reason: string, worker: string) =>
+    `jaira-cockpit: ${id} given back: ${inLine(reason, 120)}, worker ${who === 'none' ? worker || "none (the ticket's note says why)" : `${who === 'old' ? 'that carried it' : 'new'} ${worker}`} (Person, Cockpit; ${from} -> ${to})`,
   afterAcceptFailed: (id: string) => `the next step after ${id} failed, see the cockpit`,
   failed: (what: string) => `${what} failed`,
   afterAccept: (id: string) => `Next step after ${id}`,
@@ -161,7 +161,7 @@ export const t = {
   prNeedsHerdr: (branch: string) => `${branch} needs a pull request, which opens in a Herdr tab of its own (HERDR_ENV=1 or Herdr App, and spawn.sh from jaira roles install).`,
   noteOn: (id: string) => `Note on ${id}`,
   copyNotRemoved: (id: string, path: string, why: string) => `${id}: the copy pulled into the main checkout is still there and hides its ref (${oneLine(why)}); remove it: git clean -fqx -- ${shellQuoted(path)}`,
-  noteLost: (id: string, why: string, note: string) => `${id} went back to in-progress, but the note with your reason was not written: ${why}\nAdd it by hand: jaira note ${id} '${note.replaceAll("'", `'\\''`)}'`,
+  noteLost: (id: string, why: string, note: string, to: string) => `${id} moved to ${to}, but the note with your reason was not written: ${why}\nAdd it by hand: jaira note ${id} '${note.replaceAll("'", `'\\''`)}'`,
   tooOld: (installed: string, needed: string) => `jaira ${installed} is too old for this cockpit: it needs ${needed} or later. Give back will be refused until you update jaira.`,
   released: (latest: string, installed: string) => `jaira ${latest} is released (this is ${installed})`,
   update: 'Update',
