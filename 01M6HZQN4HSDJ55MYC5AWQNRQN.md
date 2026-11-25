@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-25T23:05:52Z
+updated-at: 2026-11-25T23:06:08Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:05:52Z
@@ -115,3 +115,4 @@ Nicht hier: Web-Gegenstueck (nach DVPAPE/CW2X0F eigenes Ticket).
 - **2026-11-04 21:27 · berkc** — Nachtrag Brainstorm: es gibt kein 'jaira assign' - zugewiesen wird per 'set assignee=', 'tickets create --assignee' (internal/cli/tickets.go:460), pull/move (core/move/move.go:100). Erkennung muss daher in refsync.Incoming alten gegen neuen Assignee vergleichen, nicht an einem Befehl haengen. Das Cockpit kennt 'me' schon ueber 'jaira whoami --json' (core/mod/builtin/jaira-cockpit/hooks/register.tsx:105) und koennte 'jaira inbox --json' als Zaehler zeigen - eigenes Folgeticket. Ungeprueft: ob ein leeres refs-seen.json beim ersten Fetch alle meine Tickets als neu meldet.
 - **2026-11-04 21:40 · berkc** — Entscheidung berkc 04.11.2026: Option 1 (lokaler Posteingang + Banner + Kartenmarker + Liste i) und B1 (gebuendelt). Zusatz wortgetreu: 'Es soll reichen zu sagen "milestone x zu alsa" um alle tickets im milestone zuzuweisen. auf dem ticket ein "Alsa -> Berk" waere aber zusaetzlich gut'. Also: ein Befehl weist alle Tickets eines Milestones zu (z.B. 'jaira milestone assign <name> <person>'), und das Ticket zeigt, wer an wen zugewiesen hat (Von -> An).
 - **2026-11-25 23:04 · Berk** — berkc 26.11.2026, woertlich: 'kann man so dann auch die arbeit einem Kollegen sharen zb? Ich glaub wir hatten die idee dass wir anderen Usern tickets überreichen kann indem man ihn zum assignee macht. Wenn wir da noch adden dass man den aktuellsten commit mitgibt, dann könnte der Kolegge das einfach übernehmen und weiterführen oder? bzw. ein anderer Kollege kann sich das ticket nach absprache einfach ziehen (also sich selber assignee machen) und dann weiterführen. ... Vielleicht könnte man sogar für User ein Postfach anlegen wo man sich per ref nachrichten schreiben könnte ... so ein chat ticket wäre funny. ich sehe grad WQNRQN ist genau das glaub ich oder? wenn ja erweiter es um unsere neuen ideen und dann setz das ticket um.' Entscheidung Main-Session: Uebergabe/Uebernahme/Nachrichten/people als DoD 11-15 in WQNRQN; Cockpit-Icon als Folgeticket; 28PD7N nutzt danach denselben Inbox.
+- **2026-11-25 23:06 · Berk** — worker w-wqnrqn: /home/berkc/code/X_General/jaira-WQNRQN existed as a stale detached worktree (0.5.10, uncommitted lane edits, not mine) - left untouched; working in /home/berkc/code/X_General/jaira-WQNRQN-inbox on branch feat/WQNRQN-inbox
