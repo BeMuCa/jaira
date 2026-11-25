@@ -33,6 +33,10 @@ export type Waiting = {
   // end the work - a pull request, the signoff hold - and does a question
   // stop being what the ticket waits for.
   acceptEnds: boolean
+  // Where Give back moves it: the lane that does the work before the
+  // person's lane it sits in (backLaneOf) - in-progress on the shipped
+  // board, build before draft-approval on a video board (PGXJG0).
+  backTo: string
   // Whose it is; '' for nobody's.
   assignee: string
   // The review's findings, one per line: its blocker lines, and every other
@@ -54,6 +58,9 @@ export type Counts = { worker: number; review: number; person: number }
 
 export type Lane = {
   id: string; agentic: boolean; terminal?: boolean; context: string; human_exit?: boolean; requires_question?: boolean
+  // Where a loop lane sends work back (critique, optimize, testing); null
+  // for any other lane, absent from a jaira before PGXJG0.
+  rejects_to?: string[] | null
   verdicts?: { accept?: string[]; send_back?: string[] }
 }
 export type VerdictWay = 'accept' | 'sendBack' | 'other'
@@ -96,6 +103,27 @@ const PERSON_LANES = new Set(['human', 'signoff'])
 export function isPersons(lane: Lane): boolean {
   if (lane.human_exit === undefined && lane.requires_question === undefined) return PERSON_LANES.has(lane.id)
   return lane.human_exit === true || lane.requires_question === true
+}
+
+// Where Give back sends a ticket out of the person's lane `from`: walking
+// back along the board, the first lane an agent works that is neither fresh
+// (the review judges, it does not do the work) nor a person's - and where
+// that is a loop lane, the first lane it sends work back to that an agent
+// works on this board (a rejects_to naming a missing or a person's lane is
+// passed by; none left: the loop lane itself). The shipped board:
+// signoff <- review (fresh) <- human <- testing -> in-progress. A video
+// board: draft-approval <- build. A jaira that lists no rejects_to cannot
+// tell a loop lane from the work's: there, and where the walk finds
+// nothing, in-progress as before.
+export function backLaneOf(lanes: readonly Lane[], from: string): string {
+  if (!lanes.some(l => l.rejects_to !== undefined)) return 'in-progress'
+  const works = (l: Lane | undefined) => l !== undefined && l.agentic && l.context !== 'fresh' && !isPersons(l)
+  for (let i = lanes.findIndex(l => l.id === from) - 1; i >= 0; i--) {
+    const l = lanes[i]!
+    if (!works(l)) continue
+    return (l.rejects_to ?? []).find(to => works(lanes.find(x => x.id === to))) ?? l.id
+  }
+  return 'in-progress'
 }
 
 // The boards `jaira boards --json` names besides today's, whose tickets the
@@ -161,6 +189,7 @@ export function snapshotOf(
       ...(t.dod_items !== undefined && t.dod_items.length > 0 ? { dodOpen: dodOpenOf(t.dod_items) } : {}),
       acceptTo: next?.id ?? null,
       acceptEnds: next?.terminal === true,
+      backTo: backLaneOf(lanes, t.status),
       assignee,
       // Before a review there are no review notes; after a later round's
       // optimize lane rewrote review-gaps they are in the copy jaira kept.

@@ -1,6 +1,6 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { acceptTreeFor, carrierFor, ghRepoOf, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenToTick, snapshotOf, storyOf, translatePrompt, type Waiting } from '../hooks/board.ts'
+import { acceptTreeFor, backLaneOf, carrierFor, ghRepoOf, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenToTick, snapshotOf, storyOf, translatePrompt, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
 import { ANSWERED_MS, answer as answerThread, answerLine, asksOf, asksTranslatePrompt, classifyPrompt, file, moved, parseFiling, recent, settled, titled, untitled, watched, whenOf, type Filing } from '../hooks/threads.ts'
@@ -2407,7 +2407,7 @@ describe('give back', () => {
     expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
     expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Note on MG677R failed', focus: true })
     const pane = await $.ui.mount(MESSAGE('Note on MG677R failed'))
-    expect(await pane.find({ type: 'Text', text: /MG677R went back to in-progress, but the note with your reason was not written: jaira: ticket file is locked/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /MG677R moved to in-progress, but the note with your reason was not written: jaira: ticket file is locked/ })).toBeDefined()
     expect(await pane.find({ type: 'Text', text: /jaira note MG677R 'Given back from signoff: der Branch fehlt im Schluessel'/ })).toBeDefined()
     expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
   })
@@ -3419,6 +3419,68 @@ describe('the line a press hands this session', () => {
 })
 
 describe('give back, the edges', () => {
+  // PGXJG0: Give back goes to the lane that does the work before the
+  // person's lane, read off the ticket's own board - not to in-progress by name.
+  const SHIPPED = [
+    { id: 'in-progress', agentic: true, context: '', rejects_to: null },
+    { id: 'critique', agentic: true, context: '', rejects_to: ['in-progress'] },
+    { id: 'testing', agentic: true, context: '', rejects_to: ['in-progress'] },
+    { id: 'human', agentic: false, context: '', requires_question: true, rejects_to: null },
+    { id: 'review', agentic: true, context: 'fresh', rejects_to: null },
+    { id: 'signoff', agentic: false, context: '', human_exit: true, rejects_to: null },
+    { id: 'done', agentic: false, context: '', terminal: true, rejects_to: null },
+  ]
+  const VIDEO = [
+    { id: 'todo', agentic: false, context: '', rejects_to: null },
+    { id: 'script', agentic: true, context: '', rejects_to: null },
+    { id: 'script-approval', agentic: false, context: '', human_exit: true, rejects_to: null },
+    { id: 'build', agentic: true, context: '', rejects_to: null },
+    { id: 'draft-approval', agentic: false, context: '', human_exit: true, rejects_to: null },
+    { id: 'voice-approval', agentic: false, context: '', human_exit: true, rejects_to: null },
+    { id: 'voice', agentic: true, context: '', rejects_to: null },
+    { id: 'final', agentic: true, context: '', rejects_to: null },
+    { id: 'acceptance', agentic: false, context: '', human_exit: true, rejects_to: null },
+    { id: 'done', agentic: false, context: '', terminal: true, rejects_to: null },
+  ]
+
+  test('the shipped board gives back to in-progress, past the review, the human lane and the loop lanes', () => {
+    expect(backLaneOf(SHIPPED, 'signoff')).toBe('in-progress')
+    expect(backLaneOf(SHIPPED, 'human')).toBe('in-progress')
+  })
+
+  test('a board without in-progress gives back to the lane that works before the person\'s lane', () => {
+    expect(backLaneOf(VIDEO, 'script-approval')).toBe('script')
+    expect(backLaneOf(VIDEO, 'draft-approval')).toBe('build')
+    expect(backLaneOf(VIDEO, 'voice-approval')).toBe('build')
+    expect(backLaneOf(VIDEO, 'acceptance')).toBe('final')
+  })
+
+  test('a rejects_to naming a lane not on the board, or a person\'s lane, is passed by', () => {
+    const work = { id: 'build', agentic: true, context: '', rejects_to: null }
+    const approve = { id: 'approve', agentic: false, context: '', human_exit: true, rejects_to: null }
+    const ask = { id: 'ask', agentic: false, context: '', requires_question: true, rejects_to: null }
+    expect(backLaneOf([work, { id: 'check', agentic: true, context: '', rejects_to: ['in-progress'] }, approve], 'approve')).toBe('check')
+    expect(backLaneOf([work, ask, { id: 'check', agentic: true, context: '', rejects_to: ['ask', 'build'] }, approve], 'approve')).toBe('build')
+  })
+
+  test('a jaira that lists no rejects_to, or a lane with nothing before it, keeps in-progress', () => {
+    expect(backLaneOf(SHIPPED.map(({ rejects_to, ...l }) => l), 'signoff')).toBe('in-progress')
+    expect(backLaneOf(VIDEO, 'todo')).toBe('in-progress')
+  })
+
+  test('Give back on a video board moves the ticket into its build lane and says so', async ($, on) => {
+    const w = world(on)
+    w.tickets = []
+    w.boards.video = { lanes: VIDEO, tickets: [{ handle: 'MG677R', title: 'intro', status: 'draft-approval', next_lane: 'voice-approval', question: '', review: {} }] }
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'acceptance-MG677R' })
+    await (await $.ui.mount(ACCEPT('Acceptance of MG677R'))).input({ key: 'typed-MG677R', text: 'Schnitt zu lang' })
+    expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'MG677R', '--to', 'build'])
+    expect(await ui.find({ type: 'Text', text: "MG677R back in build; no worker started (the ticket's note says why)" })).toBeDefined()
+    expect(w.submitted.at(-1)).toMatch(/\(Person, Cockpit; draft-approval -> build\)$/)
+  })
+
   test('a record a day old decides nothing and is dropped', async ($, on) => {
     const w = world(on, { herdr: true, store: { 'session:old': {
       session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
@@ -5509,7 +5571,7 @@ describe('a ticket not on the disk the press writes from', () => {
 describe('the verdict light', () => {
   const ready: Waiting = {
     id: 'MG677R', title: 'cache key', goal: '', lane: 'signoff', verdict: 'approve', question: '', dodComplete: true,
-    dodOpen: { person: 0, other: 0 }, acceptTo: 'done', acceptEnds: true, assignee: '', blockers: [], notes: [], findingsKnown: true, gaps: '',
+    dodOpen: { person: 0, other: 0 }, acceptTo: 'done', acceptEnds: true, backTo: 'in-progress', assignee: '', blockers: [], notes: [], findingsKnown: true, gaps: '',
   }
   const first = (w: Waiting, hunt: Parameters<typeof lightOf>[1]) => {
     const l = lightOf(w, hunt)
