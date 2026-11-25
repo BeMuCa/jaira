@@ -361,16 +361,16 @@ yes-or-no is a choice too.
 - **No parent, and `AskUserQuestion` in your session** — the person started
   you directly. Ask with it.
 - **No `AskUserQuestion` and no `--parent`** — started as a subagent or
-  headless. A background subagent tries `SendMessage` with `to="main"` first:
-  if it is accepted, the question reaches the main session at once. Write the
-  question and its numbered options onto the ticket with `jaira note`, set the
-  `question` field (`jaira set <id> question="<the question>"`), send the same
-  text to `main`, and keep working on whatever does not depend on the answer.
-  When nothing is left, write a `waiting:` note and end your turn with the
-  options on top of the status line. Only a refused `SendMessage`, or no such
-  tool at all (a foreground subagent, or headless), means the old way: the
-  options go into your report as a numbered list, recommendation first, on top
-  of the status line, and you stop.
+  headless. A background subagent asks in one order: first `jaira note` the
+  question with its numbered options, recommendation first, and set the
+  `question` field (`jaira set <id> question="<the question>"`); then send the
+  same text with `SendMessage` to `to="main"`. Accepted means it reached main:
+  keep working on whatever does not depend on the answer. When nothing is
+  left, write a `waiting:` note and end your turn with the options on top of
+  the status line. Only a refused `SendMessage`, or no such tool at all (a
+  foreground subagent, or headless), means the old way: the options go into
+  your report as a numbered list, recommendation first, on top of the status
+  line, and you stop.
 
 You never pick an option because nobody answered. An agent you started never
 asks the person either: it writes its question onto the ticket (a note with
