@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-25T23:02:20Z
+updated-at: 2026-11-25T23:02:35Z
 updated-by: Berk
 claimed-by: berk-ca-2068644
 claimed-at: 2026-11-05T09:41:19Z
@@ -54,6 +54,11 @@ review-check: "1. cd /home/berkc/code/X_General/jaira-EH6Z0N && go test ./intern
   proof: internal/tui/diffpane.go renderDiffPane, diffLine, spreadRow, markWordPairs; tests TestParseDiffNumbersBothSides, TestParseDiffTagsNewDeletedAndRenamedFiles, TestWordPairsMarkOnlyTheChangedMiddle, TestChangedRowsAreTintedAcrossThePane, TestGutterShowsOldAndNewNumbersOnTheirSides, TestDiffTitleCountsFilesAndTotals, TestBlankRowSeparatesFilesAndJumpsStillLandOnHeaders, TestLongCodeRowIsCutToThePane, TestEmptyStateIsNoticeBelowTheTitle, TestTicketDiffSaysWhyThereAreNoRows
 - [x] BranchFor picks the newest of several branches carrying the handle (rule 9); test
   proof: core/gitrepo/branchdiff.go BranchFor (for-each-ref --sort=-committerdate); test TestBranchForPicksTheNewestBranchCarryingTheHandle in core/gitrepo/branchdiff_test.go
+- [ ] Der Diff oeffnet als Dateiliste: jeder Pfad ab Repo-Root, mit +/- Zahlen; Pfeil hoch/runter waehlt eine Datei, Enter klappt ihren Diff auf, nochmal Enter klappt ihn zu und die Liste ist wieder waehlbar; ] und [ entfallen; Test
+- [ ] Im aufgeklappten Diff scrollen Pfeil hoch/runter die Zeilen und Pfeil links/rechts horizontal, so dass abgeschnittene Zeilen lesbar werden; Test
+- [ ] Die Zeilennummern-Spalte ist schmal: nur so breit wie die groesste Nummer der Datei verlangt, nicht fest alt+neu nebeneinander in voller Breite; Test
+- [ ] Der Spalt zwischen Ticket-Text und Diff laesst sich mit der Maus nach links/rechts ziehen, die Breite bleibt fuer die Sitzung; Test
+- [ ] o oeffnet die Datei wirklich: unter WSL2 mit VS Code auf Windows getestet; schlaegt der Start fehl, steht der Fehler sichtbar in der Titelzeile statt nichts zu passieren; Test
 
 ## Options
 
