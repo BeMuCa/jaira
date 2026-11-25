@@ -1,7 +1,7 @@
 ---
 id: 01M8AF6BDDF8AGAY5T7EGN8NQN
 title: "Ein Worker ohne Herdr schickt seine Fragen per SendMessage an main und arbeitet weiter, statt mit der Frage im Bericht stehen zu bleiben"
-status: critique
+status: in-progress
 ready: true
 creator: Berk
 assignee: Berk
@@ -21,7 +21,7 @@ related: []
 commits:
   - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-25T23:32:51Z
+updated-at: 2026-11-25T23:54:31Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-25T23:32:44Z
@@ -32,6 +32,10 @@ outcome-resolves: "Goal: a background worker or dispatcher question reaches main
 review-summary: |-
   core/role/builtin/jaira-dispatcher/SKILL.md:199-208 now has the dispatcher set the question field for its own question to main, but nothing tells it to clear it when the answer arrives (worker got that at jaira-worker/SKILL.md:381-382; dispatcher :222 only clears its workers fields) — a stale field reads as open in the cockpit and close-tab.sh; add the same sentence after the dispatcher list: answer from main comes as a message, jaira note it, jaira set <id> question=, go on
   core/role/builtin/jaira-worker/SKILL.md:364-368 and jaira-dispatcher/SKILL.md:200-203 say "tries SendMessage to=main first: if accepted ..." and then "write onto the ticket ..., send the same text to main" — reads as send, then note, then send again; reword to one order: jaira note + question field, then SendMessage to=main; accepted = it reached main, refused/no tool = old way
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Ein Worker ohne Herdr schickt seine Fragen per SendMessage an main und arbeitet weiter, statt mit der Frage im Bericht stehen zu bleiben
@@ -45,7 +49,7 @@ review-summary: |-
 - [x] jaira-teamlead sagt, dass so eine Nachricht von einem Subagenten wie eine Dispatcher-Frage behandelt wird (AskUserQuestion an die Person, Antwort per SendMessage zurueck)
   proof: core/role/builtin/jaira-teamlead/SKILL.md:90-96 (background subagent message = dispatcher question: AskUserQuestion unchanged, jaira note, SendMessage back to agent)
 - [x] shipped.sha256 und core/shipped-Tests stimmen; Release-Note-Zeile in core/release/notes/<ID>.md
-  proof: core/shipped/shipped.sha256:806, :1221, :1268 (new hashes appended in path order); core/release/notes/GN8NQN.md:1; go test ./core/shipped ./core/role/... ok
+  proof: core/shipped/shipped.sha256:777 and :1273 (round-2 hashes, dispatcher and worker SKILL.md); :807, :1222, :1269 (round-1 hashes, shifted by the insert); core/release/notes/GN8NQN.md:1
 
 ## Options
 
@@ -69,3 +73,6 @@ review-summary: |-
 - **2026-11-25 23:07 · Berk** — waiting: in-progress (haiku subagent, background) since 00:07
 - **2026-11-25 23:15 · Berk** — Dead end: go test ./core/shipped passes on its own; the role hashes are checked by TestEveryInstalledFileIsAShippedVersion in core/role (the shipped test only checks one fixed path). Did not run scripts/shipped-history.sh --write (regenerates the whole manifest from git history); appended the 3 new hashes by hand in path order, 0 lines removed. Role-lane left unchanged on purpose (its questions go to the dispatcher via the question field and exit 5).
 - **2026-11-25 23:22 · Berk** — waiting: critique (opus subagent, background) since 00:22
+- **2026-11-25 23:32 · Berk** — critique (round 1): core/role/builtin/jaira-dispatcher/SKILL.md:199-208 now has the dispatcher set the question field for its own question to main, but nothing tells it to clear it when the answer arrives (worker got that at jaira-worker/SKILL.md:381-382; dispatcher :222 only clears its workers fields) — a stale field reads as open in the cockpit and close-tab.sh; add the same sentence after the dispatcher list: answer from main comes as a message, jaira note it, jaira set <id> question=, go on
+core/role/builtin/jaira-worker/SKILL.md:364-368 and jaira-dispatcher/SKILL.md:200-203 say "tries SendMessage to=main first: if accepted ..." and then "write onto the ticket ..., send the same text to main" — reads as send, then note, then send again; reword to one order: jaira note + question field, then SendMessage to=main; accepted = it reached main, refused/no tool = old way. Left alone: setting the question field beside the note and ending the turn with the options on top of the status line (plan decisions 4 and 5 in the 23:06 note); role-lane/role-pr unchanged (decisions 2, 3); duplicated paragraph in worker+dispatcher matches the existing pattern there.
+- **2026-11-25 23:35 · Berk** — waiting: in-progress round 2 (haiku subagent) since 00:35
