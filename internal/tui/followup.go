@@ -127,7 +127,7 @@ func (m *Model) scrollFocused(d int) {
 		return
 	}
 	if m.diffFocus && m.diffPaneShown() {
-		m.diffScroll += d
+		m.diffStep(d)
 		return
 	}
 	m.detailScroll += d

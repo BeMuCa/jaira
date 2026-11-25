@@ -164,7 +164,8 @@ type Model struct {
 	// diffFor is the ticket whose diff is loaded, diffRows its patch, diffNote
 	// where the patch came from, diffDir the checkout 'o' opens files in and
 	// diffNotice what the pane says when there are no rows. diffScroll is the
-	// top row of the diff pane and diffFocus gives it the keys. diffScrollFor
+	// top row of the diff pane and diffFocus gives it the keys. diffSel is the
+	// selected file and diffOpen the file whose rows show, -1 for none. diffScrollFor
 	// is the ticket those two belong to: a reload clears diffFor but keeps the
 	// scroll, and only a different ticket resets it. diffOpened is the 'o'
 	// confirmation in the diff title; like copied it clears on the next key.
@@ -175,6 +176,8 @@ type Model struct {
 	diffNotice    paneNotice
 	diffScroll    int
 	diffFocus     bool
+	diffSel       int
+	diffOpen      int
 	diffScrollFor string
 	diffOpened    string
 
@@ -1705,6 +1708,11 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.diffOpened = ""
 		switch s {
 		case "esc", "q", "enter":
+			// In the diff pane enter opens the selected file, or closes it again.
+			if s == "enter" && m.diffFocus && m.diffPaneShown() {
+				m.toggleDiffFile()
+				return m, nil
+			}
 			// One level back: out of the split first, onto the ticket the follow-up
 			// was written for, and only then out of the ticket.
 			if m.follow != nil {
@@ -1725,14 +1733,6 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				m.follow.focusLeft = !m.follow.focusLeft
 			} else if m.diffPaneShown() {
 				m.diffFocus = !m.diffFocus
-			}
-		case "]":
-			if m.diffPaneShown() {
-				m.jumpFile(true)
-			}
-		case "[":
-			if m.diffPaneShown() {
-				m.jumpFile(false)
 			}
 		case "o":
 			if m.diffPaneShown() {

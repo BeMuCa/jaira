@@ -60,6 +60,7 @@ func diffModel(t *testing.T, w int, status string) *Model {
 	m.detail = tk
 	m.mode = modeDetail
 	m.diffFor, m.diffScrollFor, m.diffRows, m.diffNote = tk.ID, tk.ID, parseDiff(samplePatch), "feat/x → master"
+	m.diffOpen = -1
 	return m
 }
 
@@ -114,6 +115,7 @@ func TestParseDiffDropsCommitNoise(t *testing.T) {
 
 func TestPersonLaneShowsDiffBesideTheTicketWhenWide(t *testing.T) {
 	m := diffModel(t, 160, "signoff")
+	m.diffOpen = 0
 	out := stripANSI(m.render())
 	for _, want := range []string{"internal/a.go", "+    y := 3", "o open in IDE"} {
 		if !strings.Contains(out, want) {
@@ -131,6 +133,7 @@ func TestPersonLaneShowsDiffBesideTheTicketWhenWide(t *testing.T) {
 
 func TestHumanLaneShowsDiffBesideTheTicketWhenWide(t *testing.T) {
 	m := diffModel(t, 160, "human")
+	m.diffOpen = 0
 	out := stripANSI(m.render())
 	if !strings.Contains(out, "+    y := 3") || !strings.Contains(out, "o open in IDE") {
 		t.Errorf("human lane screen misses the diff pane:\n%s", out)
@@ -151,22 +154,60 @@ func TestNarrowTerminalKeepsTheSingleColumn(t *testing.T) {
 	}
 }
 
-func TestBracketJumpsBetweenFiles(t *testing.T) {
+// The diff opens as a list with one row per file, each path from the repository
+// root and no blank rows between them.
+func TestDiffOpensAsAListOfFiles(t *testing.T) {
+	m := diffModel(t, 160, "signoff")
+	lines := strings.Split(stripANSI(m.renderDiffPane(77, 8)), "\n")
+	if !strings.Contains(lines[1], "internal/a.go") || !strings.Contains(lines[1], "+2") || !strings.Contains(lines[1], "−1") {
+		t.Errorf("first file row %q misses its path or counts", lines[1])
+	}
+	if !strings.Contains(lines[2], "docs/b.md") || !strings.Contains(lines[2], "+2") {
+		t.Errorf("second file row %q misses its path or counts", lines[2])
+	}
+	if strings.TrimSpace(lines[3]) != "" || strings.Contains(strings.Join(lines, "\n"), "y := 3") {
+		t.Errorf("the list shows more than one row per file:\n%s", strings.Join(lines, "\n"))
+	}
+}
+
+// Tab gives the diff the keys. Down selects the next file, enter opens it, and a
+// second enter closes it, after which the list can be moved through again.
+func TestEnterOpensAndClosesTheSelectedFile(t *testing.T) {
 	m := diffModel(t, 160, "signoff")
 	m.render()
-	press := func(s string) {
-		m.Update(tea.KeyPressMsg{Code: rune(s[0]), Text: s})
-		m.render()
+	m.Update(key("tab"))
+	m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	if m.diffSel != 1 || m.diffOpen != -1 {
+		t.Fatalf("down: sel=%d open=%d, want the second file selected and none open", m.diffSel, m.diffOpen)
 	}
-	top := func() diffRow { return m.diffRows[m.diffScroll] }
+	m.Update(tea.KeyPressMsg{Code: ']', Text: "]"})
+	if m.diffSel != 1 {
+		t.Errorf("] moved the selection to %d; it is no longer a key", m.diffSel)
+	}
+	m.Update(key("enter"))
+	if m.diffOpen != 1 {
+		t.Fatalf("enter: open=%d, want 1", m.diffOpen)
+	}
+	if out := stripANSI(m.render()); !strings.Contains(out, "+first") || strings.Contains(out, "y := 3") {
+		t.Errorf("open docs/b.md should show its own rows and not internal/a.go's:\n%s", out)
+	}
+	m.Update(key("enter"))
+	if m.diffOpen != -1 || m.detail == nil {
+		t.Fatalf("second enter: open=%d detail=%v, want the file closed and the ticket still open", m.diffOpen, m.detail != nil)
+	}
+	m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
+	if m.diffSel != 0 {
+		t.Errorf("up after closing: sel=%d, want the list selectable again", m.diffSel)
+	}
+}
 
-	press("]")
-	if got := top(); got.kind != 'H' || got.path != "docs/b.md" {
-		t.Fatalf("after ] the top row is %+v, want the docs/b.md header", got)
-	}
-	press("[")
-	if got := top(); got.kind != 'H' || got.path != "internal/a.go" {
-		t.Fatalf("after [ the top row is %+v, want the internal/a.go header", got)
+// Without the diff's focus enter keeps its meaning: it closes the ticket.
+func TestEnterWithoutDiffFocusStillClosesTheTicket(t *testing.T) {
+	m := diffModel(t, 160, "signoff")
+	m.render()
+	m.Update(key("enter"))
+	if m.detail != nil {
+		t.Error("enter with the list not focused left the ticket open")
 	}
 }
 
@@ -216,42 +257,6 @@ func TestOKeyOpensFileAtLine(t *testing.T) {
 	want := []string{"code", "-g", "internal/a.go:10"}
 	if !slices.Equal(gotArgv, want) || gotDir != "/repo/worktree" {
 		t.Errorf("openInCode(%q, %q), want (/repo/worktree, %q)", gotDir, gotArgv, want)
-	}
-}
-
-// A blank separator above a header has no path. With it on top, 'o' opens the
-// file below, and the counter and marker name that same file.
-func TestOKeyOnABlankRowOpensTheFileBelow(t *testing.T) {
-	var gotArgv []string
-	orig := openInCode
-	openInCode = func(_ string, argv []string) error {
-		gotArgv = argv
-		return nil
-	}
-	t.Cleanup(func() { openInCode = orig })
-
-	m := diffModel(t, 160, "signoff")
-	m.diffDir = "/repo/worktree"
-	blank := -1
-	for i, r := range m.diffRows {
-		if r.kind == 'B' {
-			blank = i
-			break
-		}
-	}
-	if blank < 0 {
-		t.Fatal("sample patch has no blank row")
-	}
-	m.diffScroll = blank
-	if out := stripANSI(m.render()); !strings.Contains(out, "file 2/2") {
-		t.Errorf("counter with a blank row on top does not name the file below:\n%s", out)
-	}
-	m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
-	if got := gotArgv[len(gotArgv)-1]; got != "docs/b.md:1" {
-		t.Errorf("openInCode got %q, want the file below at docs/b.md:1", gotArgv)
-	}
-	if out := stripANSI(m.render()); !strings.Contains(out, "opened docs/b.md:1") {
-		t.Errorf("diff title misses the open:\n%s", out)
 	}
 }
 
@@ -417,6 +422,7 @@ func TestChangedRowsAreTintedAcrossThePane(t *testing.T) {
 	m := diffModel(t, 160, "signoff")
 	m.darkBG = true
 	m.diffRows = parseDiff(pairPatch)
+	m.diffOpen = 0
 	width := m.width - diffLeftWidth - 5
 	add, del, wordAdd, wordDel := bgOpen("22"), bgOpen("52"), bgOpen("28"), bgOpen("88")
 	if add != "\x1b[48;5;22m" || wordDel != "\x1b[48;5;88m" {
@@ -454,6 +460,7 @@ func TestChangedRowsAreTintedAcrossThePane(t *testing.T) {
 // second.
 func TestGutterShowsOldAndNewNumbersOnTheirSides(t *testing.T) {
 	m := diffModel(t, 160, "signoff")
+	m.diffOpen = 0
 	width := m.width - diffLeftWidth - 5
 	lines := strings.Split(stripANSI(m.renderDiffPane(width, 20)), "\n")
 	find := func(text string) []rune {
@@ -482,7 +489,7 @@ func TestDiffTitleCountsFilesAndTotals(t *testing.T) {
 	if out := stripANSI(m.render()); !strings.Contains(out, "file 1/2  +4 −1") || !strings.Contains(out, "○ Diff  feat/x → master") {
 		t.Errorf("title misses the counter or the unfocused mark:\n%s", out)
 	}
-	m.diffScroll = 8 // the header of docs/b.md
+	m.diffSel = 1 // docs/b.md
 	m.diffFocus = true
 	if out := stripANSI(m.render()); !strings.Contains(out, "file 2/2  +4 −1") || !strings.Contains(out, "● Diff  feat/x → master") {
 		t.Errorf("title after scrolling to file 2 misses the counter or the focus mark:\n%s", out)
@@ -533,26 +540,12 @@ func TestTicketDiffSaysWhyThereAreNoRows(t *testing.T) {
 	}
 }
 
-// A blank row sits above every file header but the first, and jumping to a
-// file still lands on its header.
-func TestBlankRowSeparatesFilesAndJumpsStillLandOnHeaders(t *testing.T) {
-	rows := parseDiff(samplePatch)
-	if len(rows) < 9 || rows[7].kind != 'B' || rows[8].kind != 'H' {
-		t.Fatalf("want a blank row above the second header, got %+v", rows)
-	}
-	m := diffModel(t, 160, "signoff")
-	m.diffScroll = 0
-	m.jumpFile(true)
-	if m.diffRows[m.diffScroll].kind != 'H' || m.diffRows[m.diffScroll].path != "docs/b.md" {
-		t.Errorf("] from the first file lands on %+v, want the docs/b.md header", m.diffRows[m.diffScroll])
-	}
-}
-
 // A code row longer than the pane ends in "…" and stays exactly one row wide.
 func TestLongCodeRowIsCutToThePane(t *testing.T) {
 	m := diffModel(t, 160, "signoff")
 	m.darkBG = true
 	m.diffRows = parseDiff("diff --git a/x.txt b/x.txt\n@@ -1 +1 @@\n+" + strings.Repeat("x", 200) + "\n")
+	m.diffOpen = 0
 	width := 40
 	for _, line := range strings.Split(m.renderDiffPane(width, 6), "\n") {
 		if strings.Contains(line, "xxx") {

@@ -326,6 +326,7 @@ func (m *Model) loadDiff(t *ticket.Ticket) {
 		m.diffScroll = 0
 		m.diffFocus = false
 		m.diffOpened = ""
+		m.diffSel, m.diffOpen = 0, -1
 		m.diffScrollFor = t.ID
 	}
 }
@@ -341,52 +342,87 @@ func (m *Model) diffPaneShown() bool {
 	return ok && (l.RequiresHumanExit || l.RequiresQuestion)
 }
 
-// diffTop is the row at the top of the diff pane, kept inside the rows.
-func (m *Model) diffTop() int {
-	return min(max(m.diffScroll, 0), max(len(m.diffRows)-1, 0))
+// diffHeaders is the index into diffRows of each file's header row, in file order.
+func (m *Model) diffHeaders() []int {
+	var hdrs []int
+	for i, r := range m.diffRows {
+		if r.kind == 'H' {
+			hdrs = append(hdrs, i)
+		}
+	}
+	return hdrs
 }
 
-// diffTarget is the row the file counter, the marker and 'o' act on: the top
-// row, or the row below it when the top row is a blank separator, which has no
-// path and is never opened.
-func (m *Model) diffTarget() int {
-	t := m.diffTop()
-	if t+1 < len(m.diffRows) && m.diffRows[t].kind == 'B' {
-		t++
+// diffFileRows is the index of each row under the header at hdr, up to the next
+// file's header. Blank separators are left out: the pane never shows them.
+func (m *Model) diffFileRows(hdr int) []int {
+	var rows []int
+	for i := hdr + 1; i < len(m.diffRows) && m.diffRows[i].kind != 'H'; i++ {
+		if m.diffRows[i].kind != 'B' {
+			rows = append(rows, i)
+		}
 	}
-	return t
+	return rows
 }
 
-// jumpFile moves the diff to the next file's header, or to the header of the
-// file the top row is in when going back, or the one before it if the top row
-// is that header.
-func (m *Model) jumpFile(next bool) {
-	if len(m.diffRows) == 0 {
-		return
+// diffShown settles the selection and scroll for a body of body rows, and returns
+// the rows the pane shows as indices into diffRows. With no file open that is one
+// header per file from diffScroll, moved so the selected file stays in view. With
+// a file open it is that file's header, its rows from diffScroll, then the headers
+// of the files after it.
+func (m *Model) diffShown(body int) []int {
+	hdrs := m.diffHeaders()
+	m.diffSel = min(max(m.diffSel, 0), max(len(hdrs)-1, 0))
+	if m.diffOpen >= len(hdrs) {
+		m.diffOpen = -1
 	}
-	top := m.diffTop()
-	if next {
-		for i := top + 1; i < len(m.diffRows); i++ {
-			if m.diffRows[i].kind == 'H' {
-				m.diffScroll = i
-				return
-			}
+	if m.diffOpen < 0 {
+		top := min(max(m.diffScroll, 0), max(len(hdrs)-body, 0))
+		if m.diffSel < top {
+			top = m.diffSel
 		}
-		return
-	}
-	hdr := top
-	for hdr > 0 && m.diffRows[hdr].kind != 'H' {
-		hdr--
-	}
-	if hdr < top {
-		m.diffScroll = hdr
-		return
-	}
-	for i := hdr - 1; i >= 0; i-- {
-		if m.diffRows[i].kind == 'H' {
-			m.diffScroll = i
-			return
+		if m.diffSel >= top+body {
+			top = m.diffSel - body + 1
 		}
+		m.diffScroll = top
+		return hdrs[top:]
+	}
+	hdr := hdrs[m.diffOpen]
+	rows := m.diffFileRows(hdr)
+	m.diffScroll = min(max(m.diffScroll, 0), max(len(rows)-1, 0))
+	shown := append([]int{hdr}, rows[m.diffScroll:]...)
+	return append(shown, hdrs[m.diffOpen+1:]...)
+}
+
+// diffTargetRow is the row 'o' opens: the header of the selected file, or of the
+// open file. A non-empty diff always has a header, since every row follows one.
+func (m *Model) diffTargetRow() int {
+	hdrs := m.diffHeaders()
+	if m.diffOpen >= 0 && m.diffOpen < len(hdrs) {
+		return hdrs[m.diffOpen]
+	}
+	return hdrs[min(max(m.diffSel, 0), len(hdrs)-1)]
+}
+
+// diffStep moves the pane by d: the file selection while no file is open, the
+// open file's rows otherwise.
+func (m *Model) diffStep(d int) {
+	if m.diffOpen < 0 {
+		m.diffSel = min(max(m.diffSel+d, 0), max(len(m.diffHeaders())-1, 0))
+		return
+	}
+	m.diffScroll += d
+}
+
+// toggleDiffFile opens the selected file, or closes the open one, which gives the
+// list its keys back.
+func (m *Model) toggleDiffFile() {
+	if m.diffOpen >= 0 {
+		m.diffOpen, m.diffScroll = -1, 0
+		return
+	}
+	if len(m.diffHeaders()) > 0 {
+		m.diffOpen, m.diffScroll = m.diffSel, 0
 	}
 }
 
@@ -398,7 +434,7 @@ func (m *Model) openDiffRow() tea.Cmd {
 	if len(m.diffRows) == 0 {
 		return nil
 	}
-	r := m.diffRows[m.diffTarget()]
+	r := m.diffRows[m.diffTargetRow()]
 	cur := settings.Load()
 	argv := ideCommand(cur.IDETemplate(), r.path, r.line)
 	err := openInCode(m.diffDir, argv)
@@ -529,9 +565,12 @@ func (m *Model) diffLine(r diffRow, width, nw, sel int) string {
 	case 'B':
 		return ""
 	case 'H':
-		bg := lipgloss.NewStyle().Background(fill)
+		// Only the selected file's header takes the selection fill: the rest of
+		// the list is plain, so the selection is the one bar on the screen.
+		bg := lipgloss.NewStyle()
 		mark := colFaint
 		if r.file == sel {
+			bg = lipgloss.NewStyle().Background(fill)
 			mark = colAccent
 		}
 		dir, base := "", r.path
@@ -617,15 +656,7 @@ func (m *Model) renderDiffPane(width, height int) string {
 			dels += r.dels
 		}
 	}
-	// The scroll may go to the last row, not the last full page: "]" must be
-	// able to put a short file's header at the top even when the whole diff
-	// would fit.
-	top := m.diffTop()
-	m.diffScroll = top
-	selFile := -1
-	if len(m.diffRows) > 0 {
-		selFile = m.diffRows[m.diffTarget()].file
-	}
+	shown := m.diffShown(max(1, height-1))
 
 	mark, markSty := "○ ", styMeta
 	if m.diffFocus {
@@ -643,7 +674,7 @@ func (m *Model) renderDiffPane(width, height int) string {
 		right = []diffSeg{{m.diffOpened, styOK}, {" ", lipgloss.NewStyle()}}
 	case files > 0:
 		right = []diffSeg{
-			{fmt.Sprintf("file %d/%d", selFile+1, files), styMeta},
+			{fmt.Sprintf("file %d/%d", m.diffSel+1, files), styMeta},
 			{fmt.Sprintf("  +%d", adds), styOK},
 			{fmt.Sprintf(" −%d", dels), styErr},
 			{" ", lipgloss.NewStyle()},
@@ -653,10 +684,8 @@ func (m *Model) renderDiffPane(width, height int) string {
 	if len(m.diffRows) == 0 {
 		lines = append(lines, noticeRows(m.diffNotice, width)...)
 	}
-	body := max(1, height-1)
-	end := min(len(m.diffRows), top+body)
-	for _, r := range m.diffRows[top:end] {
-		lines = append(lines, m.diffLine(r, width, nw, selFile))
+	for _, i := range shown[:min(len(shown), max(1, height-1))] {
+		lines = append(lines, m.diffLine(m.diffRows[i], width, nw, m.diffSel))
 	}
 	pane, _ := clipPane(strings.Join(lines, "\n"), width, height, 0)
 	return pane
@@ -666,7 +695,7 @@ func (m *Model) renderDiffPane(width, height int) string {
 // diff on the right, with the footer below both. hint is the ticket's own key
 // list; the diff's keys are appended to it.
 func (m *Model) withDiff(left, hint string) string {
-	footer := wrapHints(strings.Split(hint+" · tab diff · ]/[ file · o open in IDE", " · "), max(1, m.width))
+	footer := wrapHints(strings.Split(hint+" · tab diff · ↑↓ file · enter open/close · o open in IDE", " · "), max(1, m.width))
 	// A pane costs a row top and bottom for its box, and a column each side and
 	// the space between them.
 	rows := max(1, m.height-len(footer)-2)
