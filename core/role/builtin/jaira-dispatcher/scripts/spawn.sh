@@ -55,7 +55,7 @@ spawn.sh [--no-worktree] [--branch <name>] [--parent <session> | --no-parent] [-
 Five lane names are special. <dispatch> starts the dispatcher itself in the tab
 (/jaira-dispatcher <ticket-id>) instead of one lane's worker; <worker> starts
 the worker that carries the whole ticket itself (/jaira-worker <ticket-id>),
-which is what a teamlead passes when settings.json says "dispatch": "worker".
+which is what a teamlead passes unless settings.json says "dispatch": "lanes".
 <explain> and <discuss> open a chat for a person about the ticket — the review
 finding explained, or the ticket's open question talked through — and are what
 the jaira-cockpit mod's buttons start, with --no-worktree. They start claude on

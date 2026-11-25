@@ -71,8 +71,8 @@ func TestRolesListJSON(t *testing.T) {
 }
 
 // The teamlead reads which role to start for a ticket off 'roles list': the
-// dispatcher by default, the worker once settings.json says "dispatch":
-// "worker". spawn.sh reads the model for the cockpit's chats off it too:
+// worker by default, the dispatcher once settings.json says "dispatch":
+// "lanes". spawn.sh reads the model for the cockpit's chats off it too:
 // empty, the account's own, until settings.json says "chat-model".
 func TestRolesListReportsTheDispatchSetting(t *testing.T) {
 	home := t.TempDir()
@@ -90,17 +90,17 @@ func TestRolesListReportsTheDispatchSetting(t *testing.T) {
 		}
 		return p
 	}
-	if p := read(); p["dispatch"] != "lanes" || p["dispatch_role"] != "jaira-dispatcher" || p["chat_model"] != "" {
-		t.Errorf("default: dispatch=%v role=%v chat_model=%v, want lanes/jaira-dispatcher/empty", p["dispatch"], p["dispatch_role"], p["chat_model"])
+	if p := read(); p["dispatch"] != "worker" || p["dispatch_role"] != "jaira-worker" || p["chat_model"] != "" {
+		t.Errorf("default: dispatch=%v role=%v chat_model=%v, want worker/jaira-worker/empty", p["dispatch"], p["dispatch_role"], p["chat_model"])
 	}
-	if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(`{"dispatch": "worker", "chat-model": "sonnet"}`), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(home, "settings.json"), []byte(`{"dispatch": "lanes", "chat-model": "sonnet"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if p := read(); p["dispatch"] != "worker" || p["dispatch_role"] != "jaira-worker" || p["chat_model"] != "sonnet" {
-		t.Errorf("opted in: dispatch=%v role=%v chat_model=%v, want worker/jaira-worker/sonnet", p["dispatch"], p["dispatch_role"], p["chat_model"])
+	if p := read(); p["dispatch"] != "lanes" || p["dispatch_role"] != "jaira-dispatcher" || p["chat_model"] != "sonnet" {
+		t.Errorf("opted out: dispatch=%v role=%v chat_model=%v, want lanes/jaira-dispatcher/sonnet", p["dispatch"], p["dispatch_role"], p["chat_model"])
 	}
 	out, err := runCLI(t, dir, "roles", "list")
-	if err != nil || !strings.Contains(out, "dispatch: worker — a ticket handed to an agent goes to /jaira-worker") {
+	if err != nil || !strings.Contains(out, "dispatch: lanes — a ticket handed to an agent goes to /jaira-dispatcher") {
 		t.Errorf("roles list does not say which role a ticket goes to: %v\n%s", err, out)
 	}
 	if !strings.Contains(out, "chat model: sonnet") || !strings.Contains(out, "settings.json on this machine") {

@@ -72,11 +72,11 @@ mixes committed content with scratch state.
   move work on out of it. See [Lanes are pipeline stages](#lanes-are-pipeline-stages).
   - Use case: a cheap model implements, a strong model reviews, a person
     accepts.
-- **One agent per ticket.** Set `"dispatch": "worker"` in
-  `~/.jaira/settings.json`, or switch "Agents per ticket" under `S` on the
-  board, then run `jaira roles install --force`. One agent then carries a whole
+- **One agent per ticket.** This is the default. One agent carries a whole
   ticket through every lane; only the fresh-context lane (`review` on the
-  shipped board) gets a new agent.
+  shipped board) gets a new agent. Set `"dispatch": "lanes"` in
+  `~/.jaira/settings.json`, or switch "Agents per ticket" under `S` on the
+  board, to get one new agent per lane instead.
   - Use case: keep one agent's context from plan to tests, instead of a new
     agent per lane.
 - **Several milestones at once.** `M` on the board opens the milestone picker.
@@ -836,9 +836,9 @@ left alone and reported, and `--force` replaces it too.
 | Skill | What it does |
 |---|---|
 | `jaira` | Teaches the agent the CLI. Not a role, but `roles install` writes it beside them as `jaira/SKILL.md`. |
-| `/jaira-teamlead` | Plans with you and starts one dispatcher per ticket. Writes no code. |
-| `/jaira-dispatcher <id>` | Carries one ticket lane by lane to the next lane a person owns, one worker per lane. |
-| `/jaira-worker <id>` | Opt-in alternative to the dispatcher: carries the ticket through every lane itself, and only a lane marked `context: fresh` gets a new agent. |
+| `/jaira-teamlead` | Plans with you and starts one worker per ticket (a dispatcher with `"dispatch": "lanes"`). Writes no code. |
+| `/jaira-dispatcher <id>` | Carries one ticket lane by lane to the next lane a person owns, one worker per lane. A teamlead starts it only with `"dispatch": "lanes"`. |
+| `/jaira-worker <id>` | The default: carries the ticket through every lane itself, and only a lane marked `context: fresh` gets a new agent. |
 | `/jaira-role-lane <id> <lane>` | Works exactly one lane, then stops. |
 | `/jaira-role-brainstorm <idea>` | Turns an idea into tickets, or says it is not one. |
 | `/jaira-role-research <question>` | Finds the facts out first, each with its source and confidence. |
@@ -861,11 +861,12 @@ walk-through in German: **[docs/how-to-work-with-jaira.html](docs/how-to-work-wi
   itself and hands only a lane marked `context: fresh` in its lane file — on a
   board where no lane says, the last agentic lane before the first lane a person
   owns, `review` on the shipped board — to a new agent in a tab of its own.
-  Turn it on with `"dispatch": "worker"` in `~/.jaira/settings.json`, or on the
-  board's settings screen (`S`, "Agents per ticket"); a teamlead then starts it
-  instead of the dispatcher. `jaira roles list` says which is set.
+  It is the default: a teamlead starts it instead of the dispatcher unless
+  `~/.jaira/settings.json` says `"dispatch": "lanes"`, or the board's settings
+  screen (`S`, "Agents per ticket") is switched to lanes. `jaira roles list`
+  says which is set.
 - `/jaira-teamlead` is for several tickets at once: it decides the order, says
-  what is not worth doing, and starts one dispatcher per ticket.
+  what is not worth doing, and starts one worker per ticket.
 - `/jaira-role-interreview <id>...` turns the tickets waiting for you into a
   chat interview: per ticket one line on what it does, how to check it and a
   recommendation. You answer `accept <id>`, `explain <id>` or `fix <id> <what is
