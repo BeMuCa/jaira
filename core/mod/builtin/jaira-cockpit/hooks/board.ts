@@ -108,17 +108,20 @@ export function isPersons(lane: Lane): boolean {
 // Where Give back sends a ticket out of the person's lane `from`: walking
 // back along the board, the first lane an agent works that is neither fresh
 // (the review judges, it does not do the work) nor a person's - and where
-// that is a loop lane, the lane it sends work back to. The shipped board:
+// that is a loop lane, the first lane it sends work back to that an agent
+// works on this board (a rejects_to naming a missing or a person's lane is
+// passed by; none left: the loop lane itself). The shipped board:
 // signoff <- review (fresh) <- human <- testing -> in-progress. A video
 // board: draft-approval <- build. A jaira that lists no rejects_to cannot
 // tell a loop lane from the work's: there, and where the walk finds
 // nothing, in-progress as before.
 export function backLaneOf(lanes: readonly Lane[], from: string): string {
   if (!lanes.some(l => l.rejects_to !== undefined)) return 'in-progress'
+  const works = (l: Lane | undefined) => l !== undefined && l.agentic && l.context !== 'fresh' && !isPersons(l)
   for (let i = lanes.findIndex(l => l.id === from) - 1; i >= 0; i--) {
     const l = lanes[i]!
-    if (!l.agentic || l.context === 'fresh' || isPersons(l)) continue
-    return l.rejects_to?.[0] ?? l.id
+    if (!works(l)) continue
+    return (l.rejects_to ?? []).find(to => works(lanes.find(x => x.id === to))) ?? l.id
   }
   return 'in-progress'
 }

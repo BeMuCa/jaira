@@ -3455,6 +3455,14 @@ describe('give back, the edges', () => {
     expect(backLaneOf(VIDEO, 'acceptance')).toBe('final')
   })
 
+  test('a rejects_to naming a lane not on the board, or a person\'s lane, is passed by', () => {
+    const work = { id: 'build', agentic: true, context: '', rejects_to: null }
+    const approve = { id: 'approve', agentic: false, context: '', human_exit: true, rejects_to: null }
+    const ask = { id: 'ask', agentic: false, context: '', requires_question: true, rejects_to: null }
+    expect(backLaneOf([work, { id: 'check', agentic: true, context: '', rejects_to: ['in-progress'] }, approve], 'approve')).toBe('check')
+    expect(backLaneOf([work, ask, { id: 'check', agentic: true, context: '', rejects_to: ['ask', 'build'] }, approve], 'approve')).toBe('build')
+  })
+
   test('a jaira that lists no rejects_to, or a lane with nothing before it, keeps in-progress', () => {
     expect(backLaneOf(SHIPPED.map(({ rejects_to, ...l }) => l), 'signoff')).toBe('in-progress')
     expect(backLaneOf(VIDEO, 'todo')).toBe('in-progress')
