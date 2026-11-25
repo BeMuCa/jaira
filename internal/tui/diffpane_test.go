@@ -455,32 +455,52 @@ func TestChangedRowsAreTintedAcrossThePane(t *testing.T) {
 	}
 }
 
-// The gutter's old-side number sits in the first columns and the new-side one
-// after them, so a removed row shows only the first and an added row only the
-// second.
-func TestGutterShowsOldAndNewNumbersOnTheirSides(t *testing.T) {
+// One number column: a removed row shows its old-side number, every other row its
+// new-side one, and the column is as wide as the largest number of the open file.
+func TestGutterShowsOneNumberOnTheRowsSide(t *testing.T) {
 	m := diffModel(t, 160, "signoff")
 	m.diffOpen = 0
-	width := m.width - diffLeftWidth - 5
-	lines := strings.Split(stripANSI(m.renderDiffPane(width, 20)), "\n")
-	find := func(text string) []rune {
+	lines := strings.Split(stripANSI(m.renderDiffPane(77, 20)), "\n")
+	find := func(text string) string {
 		for _, l := range lines {
 			if strings.Contains(l, text) {
-				return []rune(l)
+				return l
 			}
 		}
 		t.Fatalf("no row shows %q", text)
-		return nil
+		return ""
 	}
-	removed, added, context := find("y := 2"), find("y := 3"), find("return x")
-	if string(removed[0:3]) != " 11" || string(removed[4:7]) != "   " || removed[10] != '-' {
-		t.Errorf("removed row gutter %q, want old 11 and no new number", string(removed[:10]))
+	if removed := find("y := 2"); !strings.HasPrefix(removed, "11 │ -") {
+		t.Errorf("removed row = %q, want its old number 11 then │ and the sign", removed)
 	}
-	if string(added[0:3]) != "   " || string(added[4:7]) != " 11" || added[10] != '+' {
-		t.Errorf("added row gutter %q, want no old number and new 11", string(added[:10]))
+	if added := find("y := 3"); !strings.HasPrefix(added, "11 │ +") {
+		t.Errorf("added row = %q, want its new number 11 then │ and the sign", added)
 	}
-	if string(context[0:3]) != " 12" || string(context[4:7]) != " 13" {
-		t.Errorf("context row gutter %q, want old 12 and new 13", string(context[:10]))
+	if context := find("return x"); !strings.HasPrefix(context, "13 │ ") {
+		t.Errorf("context row = %q, want its new number 13", context)
+	}
+	if hunk := find("@@"); !strings.HasPrefix(hunk, strings.Repeat(" ", 5)+"@@") {
+		t.Errorf("hunk header %q is not indented past the two-digit gutter", hunk)
+	}
+}
+
+// A file whose largest number has one digit gets a one-column gutter.
+func TestGutterIsOneDigitForAShortFile(t *testing.T) {
+	m := diffModel(t, 160, "signoff")
+	m.diffRows = parseDiff("diff --git a/s.go b/s.go\n@@ -1,2 +1,2 @@\n a\n-b\n+c\n")
+	m.diffOpen = 0
+	lines := strings.Split(stripANSI(m.renderDiffPane(77, 8)), "\n")
+	var added, context string
+	for _, l := range lines {
+		switch {
+		case strings.Contains(l, "+c"):
+			added = l
+		case strings.Contains(l, " a"):
+			context = l
+		}
+	}
+	if !strings.HasPrefix(added, "2 │ +c") || !strings.HasPrefix(context, "1 │  a") {
+		t.Errorf("rows %q and %q, want a one-digit gutter: \"2 │ +c\" and \"1 │  a\"", added, context)
 	}
 }
 

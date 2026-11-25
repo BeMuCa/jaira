@@ -431,6 +431,29 @@ func (m *Model) diffPan(d int) {
 	}
 }
 
+// diffGutter is the width of the line numbers: as many digits as the largest
+// number in the open file, so the gutter keeps its width as the file scrolls. With
+// no file open there are no numbers, and the width is one digit.
+func (m *Model) diffGutter() int {
+	nw := 1
+	hdrs := m.diffHeaders()
+	if m.diffOpen < 0 || m.diffOpen >= len(hdrs) {
+		return nw
+	}
+	for _, i := range m.diffFileRows(hdrs[m.diffOpen]) {
+		r := m.diffRows[i]
+		if r.kind == '@' {
+			continue
+		}
+		n := r.line
+		if r.kind == '-' {
+			n = r.old
+		}
+		nw = max(nw, len(strconv.Itoa(n)))
+	}
+	return nw
+}
+
 // diffFileWidth is the length in columns of the file's longest row, sign not
 // counted: how far its code can be scrolled sideways.
 func (m *Model) diffFileWidth(rows []int) int {
@@ -625,23 +648,22 @@ func (m *Model) diffLine(r diffRow, width, nw, sel int) string {
 			head, heading = r.text[:i+4], r.text[i+4:]
 		}
 		segs := []diffSeg{
-			{strings.Repeat(" ", 2*nw+4), lipgloss.NewStyle()},
+			{strings.Repeat(" ", nw+3), lipgloss.NewStyle()},
 			{head, lipgloss.NewStyle().Foreground(colAgentic)},
 			{heading, styMeta},
 		}
 		return padRow(segs, width, lipgloss.NewStyle())
 	}
-	// A '-' row has no new-side number and a '+' row no old-side one, so each
-	// number is shown only on the side the row belongs to.
+	// A '-' row shows its old-side number and every other row its new-side one.
 	num := func(n int) string {
 		if n == 0 {
 			return strings.Repeat(" ", nw)
 		}
 		return fmt.Sprintf("%*d", nw, n)
 	}
-	newNum := num(r.line)
+	n := r.line
 	if r.kind == '-' {
-		newNum = num(0)
+		n = r.old
 	}
 	bg, wordBg, sign := lipgloss.NewStyle(), lipgloss.NewStyle(), lipgloss.NewStyle()
 	switch r.kind {
@@ -653,7 +675,7 @@ func (m *Model) diffLine(r diffRow, width, nw, sel int) string {
 		sign = bg.Foreground(colErr)
 	}
 	segs := []diffSeg{
-		{num(r.old) + " " + newNum + " │ ", bg.Foreground(colFaint)},
+		{num(n) + " │ ", bg.Foreground(colFaint)},
 		{r.text[:1], sign},
 	}
 	// The code after the sign scrolls sideways; the sign and the gutter stay, and
@@ -677,11 +699,8 @@ func (m *Model) diffLine(r diffRow, width, nw, sel int) string {
 // the rows from diffScroll, or the notice when there are no rows. The file of
 // the top row is marked in its header. Every row is built at width exactly.
 func (m *Model) renderDiffPane(width, height int) string {
-	// Line numbers are as wide as the largest in the diff, so the gutter does not
-	// change width as the diff is scrolled.
-	nw, files, adds, dels := 3, 0, 0, 0
+	files, adds, dels := 0, 0, 0
 	for _, r := range m.diffRows {
-		nw = max(nw, len(strconv.Itoa(max(r.line, r.old))))
 		if r.kind == 'H' {
 			files++
 			adds += r.adds
@@ -689,6 +708,7 @@ func (m *Model) renderDiffPane(width, height int) string {
 		}
 	}
 	shown := m.diffShown(max(1, height-1))
+	nw := m.diffGutter()
 
 	mark, markSty := "○ ", styMeta
 	if m.diffFocus {
