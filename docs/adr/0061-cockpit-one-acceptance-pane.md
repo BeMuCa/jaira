@@ -8,7 +8,8 @@ The person read notes in Give back (where each could be toggled) and then had to
 
 ## Decision
 Each band row has one Acceptance button. The pane shows light, ticket, history and every note with ok / fix / ticket.
-Execute derives the step: any fix or typed words -> give back; all ok -> accept into the terminal lane; ticket -> follow-up ticket.
+Execute derives the step: any fix or typed words -> give back; all ok -> accept into the next lane; ticket -> follow-up ticket.
+The next lane is done from signoff, or one lane on from a person's lane mid-board (ADR 0077).
 
 ## Rejected
 - Three buttons per row (Accept, Give back, Verdict) - same notes read three times (2V50Y5).
@@ -19,4 +20,4 @@ The band row carries only marks; all reading happens in the pane.
 The pane stays open with its marks on any refusal and closes once the ticket moved.
 
 ## Sources
-2V50Y5, PDZ444, MFYM1A, AJ41SC, MK8HD2
+2V50Y5, PDZ444, MFYM1A, AJ41SC, MK8HD2, M5JSE9

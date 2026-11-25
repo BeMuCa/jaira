@@ -10,6 +10,7 @@ LANE-05  When the first command after an upgrade runs, jaira shall replace every
 LANE-06  If a lane's rejects-to names itself or a lane that is not installed, then jaira shall warn about that target. [TQXBY5]
 LANE-07  If a lane requires an input that no earlier lane produces, then jaira shall warn and name the lane that produces it, if any. [RFMQ4K]
 LANE-08  If a ticket's status names a lane that is not installed, then jaira shall show it in a read-only column and refuse every move of it. [BNZERQ]
+LANE-58  `jaira lanes --json` shall list each lane's rejects_to, so a reader finds where a loop lane sends work back. [PGXJG0]
 
 ## The contract of one lane
 LANE-10  Each lane shall declare its contract in frontmatter: agentic, model-tier, input-requires, output-produces, and the requires-* rails.

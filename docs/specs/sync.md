@@ -27,6 +27,7 @@ SYNC-18  If the remote refuses a milestone write, then the jaira CLI shall merge
 SYNC-19  If the remote refuses an epic write, then the jaira CLI shall merge both sides' members and resend up to three times, else keep it queued. [F914QH, S1SA89]
 SYNC-20  If git refuses a queued write for any other reason, then the jaira CLI shall keep the entry and report it as failed. [8566KF]
 SYNC-21  If the outbox cannot be listed during a flush, then the jaira CLI shall return that error and leave the queue untouched. [MMKENA]
+SYNC-65  If a session queues a write for a key while another session is sending that key, then the newer write shall stay queued for the next command. [WV2J2W]
 SYNC-22  While the board TUI runs, it shall flush its outbox before each background fetch, so board edits reach the team without a CLI call. [17TJ1H]
 SYNC-23  While a ticket has an unsent write, the board shall mark its card as unsent. [8566KF]
 

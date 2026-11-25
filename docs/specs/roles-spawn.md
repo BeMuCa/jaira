@@ -23,6 +23,7 @@ SPWN-18  The spawn.sh script shall record every tab it opens under <git common d
 SPWN-19  The spawn.sh script shall read JSON with `jaira json get`, never python3 or jq, and refuse to start when the jaira on PATH lacks it. [TP44SC]
 SPWN-20  When spawn.sh runs in WSL with a Windows Herdr, the tab shall start claude through wsl.exe --cd; under Git Bash it starts natively. [TP44SC]
 SPWN-21  Where the lane is explain or discuss, spawn.sh shall start claude on the board's chat model and hand the ticket brief in a file outside the repository. [5A6RJZ, 42C3RZ, 58DCYM]
+SPWN-38  Where the lane is discuss, spawn.sh shall take --back <lane> as the lane a decision meaning more work moves the ticket to; without it, in-progress. [574VCW]
 
 ## run-lane.sh and close-tab.sh
 SPWN-22  When run-lane.sh runs, it shall wait until the ticket has left the lane and the worker ended its turn, then close the tab unless --keep. [PEPTWY]
@@ -36,7 +37,7 @@ SPWN-28  When reap.sh calls close-tab.sh --reap, a parked tab shall close once i
 ## reap.sh and herdr-hc.sh
 SPWN-29  When a ticket's pull request is merged, reap.sh shall close its recorded tabs, remove its worktree and delete its local branch. [YD4BE9, N7JW2Q]
 SPWN-30  Where .jaira/pr says none, reap.sh shall count a branch as merged once the remote's default branch contains its tip. [XB97NJ]
-SPWN-31  If the branch is not at the merged head, a worktree has uncommitted work or a detached HEAD, the ticket is back in a lane, or herdr does not answer, then reap.sh shall keep it and print why. [YD4BE9, W80HNH]
+SPWN-31  If the branch is not at the merged head, a worktree has uncommitted work or a detached HEAD, the ticket is back in a lane, or herdr does not answer, then reap.sh shall keep it and print why. [YD4BE9, W80HNH, 8NWE4P]
 SPWN-32  The reap.sh script shall never touch a tab without a spawn.sh record, the main worktree, or the worktree it runs in. [YD4BE9]
 SPWN-33  While one reap.sh runs in a repository, a second shall print `skipped: reap.sh runs already` and exit 0. [N7JW2Q]
 SPWN-34  Where .jaira/worktree-teardown is executable, reap.sh shall call it with the setup's recorded arguments before removing the worktree. [JDDCEZ]

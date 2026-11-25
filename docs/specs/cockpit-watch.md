@@ -5,7 +5,7 @@ _Owner: Sascha · EARS · each line one requirement · [tickets] hold the detail
 COCKW-01  Where Herdr runs, Explain all and Discuss shall open a chat in a Herdr tab `<id>/explain` or `<id>/discuss` via spawn.sh, in the ticket's worktree. [NZZDRH, 58DCYM]
 COCKW-02  Where Herdr is absent, Explain shall ask this session to start one subagent that writes the explain note, and Discuss shall talk here. [42C3RZ]
 COCKW-03  An Explain chat shall write one `explain:` note: a status line, one classed line per review note, 2-4 numbered options and a recommendation. [13PQB3, GY8T52]
-COCKW-04  A Discuss chat shall note `decision:`, clear the question, and move the ticket back to in-progress only when the decision means more work. [NZZDRH]
+COCKW-04  A Discuss chat shall note `decision:`, clear the question, and move the ticket to its back lane (COCK-81) only when the decision means more work. [NZZDRH, 574VCW]
 COCKW-05  When a chat's note is on the ticket from its opening minute on and its agent is out of its turn, the cockpit shall close its tab. [NZZDRH]
 COCKW-06  If a chat already holds a pulled copy of the ticket, then a second Explain or Discuss on it shall be refused until that chat ends. [DF46B9]
 COCKW-07  When Read explanation is pressed, the cockpit shall show the options one row each, picked by digit, with "Own answer…" after the last. [13PQB3]
@@ -13,6 +13,7 @@ COCKW-08  When an option is picked, the cockpit shall note `decision:` and then 
 COCKW-09  When an own answer is submitted, the cockpit shall note it as a decision and give the ticket back with it as the reason. [13PQB3]
 COCKW-10  The cockpit shall read whether an explanation is answered off the ticket (a decision note after it), not off session state. [13PQB3]
 COCKW-11  When a Discuss chat noted a decision, the band shall show "<id> | decided" with Read decision until it is read. [NZZDRH]
+COCKW-76  When an Explain option marked [accept] is picked for a ticket mid-board, the cockpit shall check it is still in its lane and clear its answered question before moving it on. [M5JSE9]
 
 ## Agent reports in the chat
 COCKW-20  When an agent report or task-notification names a ticket, the cockpit shall replace it in the chat with one line led by "[shortened by jaira-cockpit]". [T8QS1Y, QEPS3M]
@@ -29,10 +30,13 @@ COCKW-28  When `/cockpit ticket <id>` runs, the cockpit shall open a pane with t
 COCKW-30  When the person finishes a turn, the cockpit shall file it into a conversation thread with one haiku call, never per agent report. [NZZDRH, 1M3X77]
 COCKW-31  A thread shall be marked "?" while a question waits for the person, "->" once a ticket holds it and "~" after 5 turns without either. [1M3X77]
 COCKW-32  The band shall show "threads: Q open question(s), S left lying"; while Q > 0 it is a button, also on key q. [1M3X77]
-COCKW-33  The "Waiting for you" pane shall list unanswered questions, last asked first, each with its ticket, title and options, the first nine picked by digit. [1M3X77]
+COCKW-33  The "Waiting for you" pane shall list unanswered questions, last asked first, in the words asked, with ticket, title, options and when asked; nine picked by digit. [1M3X77, CSQXKR]
 COCKW-34  When an option is picked, the cockpit shall send it as the person's message and drop the question at once. [1M3X77]
 COCKW-35  When "Answer in the chat…" is pressed, the cockpit shall close the pane and fill the prompt with what the answer is for. [1M3X77]
-COCKW-36  The cockpit shall keep threads per session, for the 20 sessions heard from last. [1M3X77]
+COCKW-36  The cockpit shall keep threads per session for the 20 sessions heard from last; past 30 threads it drops those touched longest ago, never one still asking. [1M3X77, CSQXKR]
+COCKW-77  When x is pressed, or the ticket a question names leaves the lane it was asked in, the cockpit shall settle that question. [CSQXKR]
+COCKW-78  The pane shall show settled questions for 24 hours under "Answered", dimmed, each with when it was asked and when answered. [CSQXKR]
+COCKW-79  When t is pressed in the pane, the cockpit shall show the questions in the settings.json language; t again shows the original. [CSQXKR]
 
 ## Cache guard
 COCKW-40  If the prompt cache went cold and the context is at least cacheGuardTokens (default 30k), then a person's prompt shall be held. [QRHB35]

@@ -36,19 +36,21 @@ COCK-39  Where settings.json names a language, Translate (key t) shall show head
 COCK-40  The Translate button shall never write to the ticket and every opening of the pane shall start in the original. [FMWBA8]
 COCK-41  The pane shall list open "seen by a person" DoD items under "Check yourself" for the person to tick. [DKMG91, 3DVVFZ]
 COCK-42  The pane's last line shall say what Execute will do before it is pressed. [2V50Y5]
+COCK-78  Where the next lane does not end the work, the pane's last line shall name it, as "Execute: accept → <lane>". [M5JSE9]
 
 ## Execute
-COCK-50  When a note is marked fix or words are typed, Execute shall give the ticket back to in-progress with those notes and words as the reason. [2V50Y5, MFYM1A]
+COCK-50  When a note is marked fix or words are typed, Execute shall give the ticket back to its back lane (COCK-81) with those notes and words as the reason. [2V50Y5, MFYM1A, PGXJG0]
 COCK-51  If a blocker is not marked fix and nothing is typed, then Execute shall refuse and ask why the blocker is accepted. [MFYM1A]
 COCK-52  If "seen by a person" items remain unticked, then Execute shall refuse to accept and list them. [DKMG91]
-COCK-53  If the ticket's next lane is not terminal, then Execute shall accept nothing and ask for a note marked fix or typed words. [2V50Y5, NC323D]
+COCK-53  If jaira names no next lane for the ticket, then Execute shall accept nothing and ask for a note marked fix or typed words. [2V50Y5, NC323D, M5JSE9]
 COCK-54  When Execute accepts, the cockpit shall tick each seen item with proof "seen by <name> in the cockpit", unless its text changed since opening. [DKMG91]
 COCK-55  When Execute runs, the cockpit shall create one follow-up ticket, following this one, per note marked ticket and say each that failed. [2V50Y5]
 COCK-56  If the ticket left its lane since the pane opened, then Execute shall write nothing and say who moved it. [MFYM1A]
 COCK-57  The pane shall stay open with the person's marks on any refusal and close once the ticket moved. [2V50Y5]
+COCK-79  If a ticket in a lane that does not end the work still has an open question, then Execute shall refuse to accept until it is answered. [M5JSE9]
 
 ## Accept
-COCK-60  The Accept step shall move only into the terminal lane, run `move --dry-run` first and pass with --force only the needs_human refusal. [NZZDRH, GPFA7B]
+COCK-60  The Accept step shall move into the ticket's next lane, terminal or not, run `move --dry-run` first and pass with --force only the needs_human refusal. [NZZDRH, GPFA7B, M5JSE9]
 COCK-61  When a press is about to write, the cockpit shall first pull a ticket that is ref-only or stale on disk and remove a copy it pulled into the main checkout after. [76ERHH, DF46B9]
 COCK-62  When the ticket has no own worktree, Accept shall move it in the worktree of the one branch holding its newest commit beyond HEAD, refusing if several do. [VHGWQF]
 COCK-63  When Accept succeeds, the cockpit shall note "accepted by the person" on the ticket and submit one line to this session naming the move. [409XCV]
@@ -57,9 +59,10 @@ COCK-65  Where `.jaira/pr` on the base says none, Accept shall start the lane th
 COCK-66  Where `.jaira/pr-when` says signoff, Accept shall open the pull request first, keep the ticket in signoff and accept only a settled review round. [JG3REW]
 COCK-67  The Accept step shall never start the next ticket; which ticket runs next is the teamlead's call. [X6JHQX]
 COCK-68  If the pull request cannot be opened, then the ticket shall stay in done and the cockpit shall say why. [GPFA7B]
+COCK-80  Only an Accept into the terminal lane shall start the pr or land lane or hold the ticket in signoff; an Accept mid-board moves it one lane on. [M5JSE9]
 
 ## Give back
-COCK-70  The Give back step shall move to in-progress first, then note "Given back from <lane>: <reason>"; a refused move writes nothing. [NZZDRH, WP1CHK]
+COCK-70  The Give back step shall move to the ticket's back lane first, then note "Given back from <lane>: <reason>"; a refused move writes nothing. [NZZDRH, WP1CHK, PGXJG0]
 COCK-71  When given back, the work shall return to the old worker while its tab lives, cache is warm and context is under workerContextShare (default 50%). [QRHB35, P122GE]
 COCK-72  While the old worker is working, Give back shall type into its recorded pane, or else name its tab, and never start a second worker. [QRHB35, QTQW15]
 COCK-73  If the old worker waits at an approval dialog, then Give back shall type nothing, start nobody and say where to answer. [M31BYV]
@@ -67,3 +70,4 @@ COCK-74  If Herdr's tab list cannot be read, then Give back shall start no worke
 COCK-75  When a new worker is needed, Give back shall close the old tab first and start it on the branch carrying the ticket's commits. [QTQW15]
 COCK-76  A worker Give back starts shall report to the ticket's noted parent session, else this session, else none. [T5QN9P, 7V1XPB]
 COCK-77  When Give back has moved a ticket, the cockpit shall note who got the work and why and submit one line to this session. [409XCV]
+COCK-81  The back lane shall be, walking back from the person's lane, the first agentic lane that is not fresh and not a person's, or its rejects-to target; else in-progress. [PGXJG0]
