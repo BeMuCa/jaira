@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-25T23:10:39Z
+updated-at: 2026-11-25T23:10:42Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:05:52Z
@@ -48,6 +48,7 @@ question: ""
 - [ ] message text with newlines, tabs, ANSI escapes and control characters is shown stripped in TUI and text output, kept verbatim in --json; empty text is refused; Test
 - [ ] handover whose push fails leaves the assignee unchanged and exits non-zero; msg/handover with no reachable remote write nothing; Test
 - [ ] acceptance rule: an assignment by someone else that never shows is worse than one shown twice
+- [ ] seen by a person: banner, card marker and the i-list on the board in a real terminal
 
 ## Options
 
