@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-25T23:12:13Z
+updated-at: 2026-11-25T23:12:18Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:05:52Z
@@ -145,3 +145,4 @@ F) handover: branch = current branch (refuse on detached or the remote's default
 G) take = pull --steal semantics (refsync.Pull) or Mutate when the file is here. pull: when the ticket carries handover-branch (else one remote branch containing the handle) and no worktree has it checked out, fetch it and 'git worktree add <parent of repo>/<repo>-<HANDLE> <branch>'; existing path -> say so, no worktree.
 H) TUI: 'x' on the board is archive, so x acks only inside the i-list; enter on a ticket acks its entries.
 I) people: 'jaira people' gains 'active' (assignees + creators of board tickets, git authors --since 30 days, canonical names) in text and --json.
+- **2026-11-25 23:12 · Berk** — in-progress split into 4 sequential Haiku runs (P1-P4, P5-P7, P8-P10, P11-P13); the last one moves to critique
