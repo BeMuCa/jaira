@@ -21,7 +21,7 @@ related: []
 commits:
   - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-25T23:19:36Z
+updated-at: 2026-11-25T23:22:09Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-25T23:07:35Z
@@ -65,3 +65,4 @@ outcome-resolves: "Goal: a background worker or dispatcher question reaches main
 - **2026-11-25 23:06 · Berk** — stop-after-fix=true: the change is skill text only, no code; a further hunt after a fix cannot find anything worth a round
 - **2026-11-25 23:07 · Berk** — waiting: in-progress (haiku subagent, background) since 00:07
 - **2026-11-25 23:15 · Berk** — Dead end: go test ./core/shipped passes on its own; the role hashes are checked by TestEveryInstalledFileIsAShippedVersion in core/role (the shipped test only checks one fixed path). Did not run scripts/shipped-history.sh --write (regenerates the whole manifest from git history); appended the 3 new hashes by hand in path order, 0 lines removed. Role-lane left unchanged on purpose (its questions go to the dispatcher via the question field and exit 5).
+- **2026-11-25 23:22 · Berk** — waiting: critique (opus subagent, background) since 00:22
