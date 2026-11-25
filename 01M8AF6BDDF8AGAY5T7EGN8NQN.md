@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-25T23:12:54Z
+updated-at: 2026-11-25T23:13:01Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-25T23:07:35Z
@@ -37,7 +37,8 @@ stop-after-fix: "true"
   proof: core/role/builtin/jaira-dispatcher/SKILL.md:199-208 (same case, old report path only for refused SendMessage or no tool); worker's old-way narrowed at jaira-worker/SKILL.md:370; role-lane left unchanged by plan decision
 - [x] jaira-teamlead sagt, dass so eine Nachricht von einem Subagenten wie eine Dispatcher-Frage behandelt wird (AskUserQuestion an die Person, Antwort per SendMessage zurueck)
   proof: core/role/builtin/jaira-teamlead/SKILL.md:90-96 (background subagent message = dispatcher question: AskUserQuestion unchanged, jaira note, SendMessage back to agent)
-- [ ] shipped.sha256 und core/shipped-Tests stimmen; Release-Note-Zeile in core/release/notes/<ID>.md
+- [x] shipped.sha256 und core/shipped-Tests stimmen; Release-Note-Zeile in core/release/notes/<ID>.md
+  proof: core/shipped/shipped.sha256:806, :1221, :1268 (new hashes appended in path order); core/release/notes/GN8NQN.md:1; go test ./core/shipped ./core/role/... ok
 
 ## Options
 
