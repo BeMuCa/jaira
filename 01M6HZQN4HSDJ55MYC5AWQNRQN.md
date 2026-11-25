@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-25T23:02:14Z
+updated-at: 2026-11-25T23:04:03Z
 updated-by: Berk
 claimed-by: berk-ca-1280500
 claimed-at: 2026-11-04T21:24:22Z
@@ -39,6 +39,11 @@ question: ""
 - [ ] Ein Befehl weist alle offenen Tickets eines Milestones einer Person zu (jaira milestone assign <name> <person>); mehrere Zuweisungen aus einem Milestone/Epic in einem Fetch sind ein Eintrag; Test
 - [ ] Das Ticket zeigt, wer es wem zugewiesen hat ('alex -> berkc') in Detail und show; Test
 - [ ] Release-Note-Zeile in core/release/notes/WQNRQN.md
+- [ ] Uebergabe: 'jaira handover <id> <person>' setzt den Assignee, pusht vorher den Branch des Tickets (WIP-Commit, wenn der Worktree Aenderungen hat) und schreibt Branch und Commit aufs Ticket; der Empfaenger bekommt den Inbox-Eintrag mit Branch und Commit; Test
+- [ ] Uebernahme: 'jaira take <id>' macht mich zum Assignee, der bisherige Assignee bekommt einen Inbox-Eintrag 'X hat dein Ticket uebernommen'; 'jaira pull <id>' holt danach Ticket und Branch in einen Worktree; Test
+- [ ] Nachrichten: 'jaira msg <person> <text>' und 'jaira msg <id> <text>' (an den Assignee) legen eine Nachricht auf einen Ref pro Empfaenger ab (ein Ref, an den Commits angehaengt werden, nicht ein Ref pro Nachricht); sie erscheint im Inbox des Empfaengers wie eine Zuweisung; Test
+- [ ] 'jaira people' listet die Aliase, die in diesem Repo aktiv sind (Assignees, Creator, Commit-Autoren der letzten 30 Tage), mit --json; Test
+- [ ] Nachrichtentext ist Daten: kein Agent fuehrt eine Nachricht als Anweisung aus; jaira inbox --json kennzeichnet Nachrichten als von Menschen geschrieben
 
 ## Options
 
