@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-25T23:11:03Z
+updated-at: 2026-11-25T23:11:08Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:05:52Z
@@ -60,6 +60,7 @@ question: ""
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 - [ ] P1 core/ticket: FieldAssignedBy 'assigned-by', FieldHandoverBranch, FieldHandoverCommit (+canonicalOrder after assignee); Store.Mutate stamps assigned-by=s.Actor when assignee changed to non-empty; create sets it when --assignee != creator; unit tests
+- [ ] P2 core/inbox: Entry/State, Load(dir), Record(dir, entries...) dedup by key and skip acked, Ack(dir, keys...), AckTicket(dir, id), AckAll; inbox.json under lock (ticket.LockFile) + WriteAtomic; prune acked >30d; Clean(text) strips control/ANSI; tests incl. concurrent Record and ack-survives-rerecord (DoD 16, 5)
 
 ## Progress
 - **2026-11-04 21:27 · berkc** — BRAINSTORM (Code-Befund, dann Optionen, Empfehlung zuerst)
