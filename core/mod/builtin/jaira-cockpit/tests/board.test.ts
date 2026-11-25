@@ -1,8 +1,9 @@
 import type { On, SessionRateLimit } from 'claude-code'
 import { describe, expect, mock, test } from 'claude-code/testing'
-import { acceptTreeFor, carrierFor, ghRepoOf, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenToTick, snapshotOf, storyOf, translatePrompt, type Waiting } from '../hooks/board.ts'
+import { acceptTreeFor, backLaneOf, carrierFor, ghRepoOf, parseRemote, classOf, clipLines, commitNaming, commitsOf, executionOf, followTitle, gapItems, notePaths, explanationNotes, type GapItem, languageOf, lightOf, reasonOf, reasonPrompt, releaseLines, rephrasedOf, seenToTick, snapshotOf, storyOf, translatePrompt, type Waiting } from '../hooks/board.ts'
 import { reportLine } from '../hooks/digest.ts'
 import { durationOf, stoneSize } from '../hooks/overview.ts'
+import { ANSWERED_MS, answer as answerThread, answerLine, asksOf, asksTranslatePrompt, classifyPrompt, file, moved, parseFiling, recent, settled, titled, untitled, watched, whenOf, type Filing } from '../hooks/threads.ts'
 
 // A world beneath the plugin: a repository at /repo with a board, jaira, git
 // and Herdr answering from memory, and every command the plugin runs
@@ -42,6 +43,8 @@ type World = {
   // Translate answers each text it is handed from this, a text not in it as
   // it is; undefined: it answers model.
   translations?: Record<string, string>
+  // The exit code 'jaira show <id>' fails with, by id; unset: it answers.
+  showExit?: Record<string, number>
   // The Explain-on-one-note calls, and what each answers; undefined: no
   // answer.
   reasonPrompts: string[]
@@ -58,6 +61,8 @@ type World = {
   modelHeld?: (() => void)[]
   filled: string[]
   store: Map<string, unknown>
+  // A key prefix whose writes the store refuses with an error.
+  storeRefuses?: string
   status: (string | undefined)[]
   // What a dry run of a move refuses, by code: a person's lane always refuses
   // needs_human, the exit Accept stands for.
@@ -128,6 +133,11 @@ type World = {
   noRoom?: boolean
   // When set, every `herdr tab list` waits here until the test lets it go.
   heldTabs?: (() => void)[]
+  // Every `herdr tab list` fails with this on stderr (W80HNH).
+  tabsFail?: string
+  // Every `herdr tab list` prints the tabs but exits 3 with this on stderr,
+  // as herdr-hc.sh does when a terminal gave no answer (8NWE4P).
+  tabsIncomplete?: string
   // spawn.sh calls wait here until released, as one waiting for claude does.
   heldSpawn?: (() => void)[]
   // `git worktree list --porcelain`, WORKTREES unless set.
@@ -253,6 +263,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
   // The store, readable by the test; insertion order kept as the engine's is.
   on('store.get', ($, e) => ({ value: w.store.get(e.key) }))
   on('store.set', ($, e) => {
+    if (w.storeRefuses !== undefined && e.key.startsWith(w.storeRefuses)) throw new Error('store full')
     w.store.set(e.key, e.value)
     return { value: undefined } as never
   })
@@ -385,11 +396,14 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
       const id = args[1]!
       return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ id, ...(id in w.hunts ? { bughunt: w.hunts[id] } : {}) }))
     }
+    if (cmd === 'jaira' && args[0] === 'show' && w.showExit?.[args[1]!] !== undefined) {
+      return { value: { exitCode: w.showExit[args[1]!]!, stdout: '', stderr: 'jaira: show failed', isStdoutTruncated: false, isStderrTruncated: false } }
+    }
     if (cmd === 'jaira' && args[0] === 'show') {
       const status = (w.tickets.find(x => (x as { handle: string }).handle === args[1]) as { status?: string } | undefined)?.status
       const disk = args[1] === (w.diskId ?? 'MG677R') ? w.disk[here] : undefined
       const file = disk === 'ref-only' ? {} : { path: `${e.init?.cwd ?? ''}/.jaira/tickets/01${args[1]}-cache-key.md` }
-      return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ ...w.shows[args[1]!], handle: args[1], body: w.bodies[args[1]!] ?? '', ...(status !== undefined ? { status, board: '' } : {}), 'on-ref-only': disk === 'ref-only', 'behind-ref': disk === 'behind', ...file }))
+      return ok((w.warns ? `${OLDER}\n` : '') + JSON.stringify({ handle: args[1], body: w.bodies[args[1]!] ?? '', ...(status !== undefined ? { status, board: '' } : {}), ...w.shows[args[1]!], 'on-ref-only': disk === 'ref-only', 'behind-ref': disk === 'behind', ...file }))
     }
     if (cmd === 'git' && args[0] === 'rev-parse' && args[1] === '--abbrev-ref') return w.originHead === undefined ? { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } } : ok(`${w.originHead}\n`)
     if (cmd === 'git' && args[0] === 'rev-parse') return ok('/repo/.git\n')
@@ -448,6 +462,8 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     if (cmd === 'gh' || cmd === 'glab') return ok(JSON.stringify(w.prs))
     if (cmd === 'jaira' && args[0] === 'next' && w.nextFails) return failed('jaira: board unreadable')
     if (cmd === 'jaira' && args[0] === 'next') return ok(JSON.stringify({ count: w.next.length, tickets: w.next.map(handle => ({ handle })) }))
+    if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list' && w.tabsFail !== undefined) return failed(w.tabsFail)
+    if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list' && w.tabsIncomplete !== undefined) return { value: { exitCode: 3, stdout: JSON.stringify({ result: { tabs: w.tabs } }), stderr: w.tabsIncomplete, isStdoutTruncated: false, isStderrTruncated: false } }
     if (cmd === 'herdr' && args[0] === 'tab' && args[1] === 'list') return ok(JSON.stringify({ result: { tabs: w.tabs } }))
     if (cmd === 'herdr' && args[0] === 'pane' && args[1] === 'get' && !w.paneGone) return ok(JSON.stringify({ result: { pane: { agent: 'claude', agent_status: w.paneStates.shift() ?? 'idle' } } }))
     if (cmd === 'herdr' && args[0] === 'pane' && w.paneGone) return { value: { exitCode: 1, stdout: '', stderr: 'no such pane', isStdoutTruncated: false, isStderrTruncated: false } }
@@ -470,7 +486,7 @@ function world(on: On, opts: { board?: boolean; herdr?: boolean; store?: Record<
     w.modelCalls++
     w.prompts.push(prompt)
     if (w.modelDown) return { value: { isAnswered: false } } as never
-    const text = w.translations === undefined ? w.model : JSON.stringify((JSON.parse(prompt.slice(prompt.lastIndexOf('\n') + 1)) as string[]).map(x => w.translations![x] ?? x))
+    const text = w.translations === undefined || !prompt.startsWith('Translate each text') ? w.model : JSON.stringify((JSON.parse(prompt.slice(prompt.lastIndexOf('\n') + 1)) as string[]).map(x => w.translations![x] ?? x))
     if (w.modelHeld) await new Promise<void>(go => w.modelHeld!.push(go))
     return { value: { isAnswered: true, text, usage: { input_tokens: 1, output_tokens: 1, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 } } }
   })
@@ -521,6 +537,12 @@ async function pressChat($: Test$, band: Pressable, kind: string, id: string, w?
 const opening = (r: string[]) =>
   r[0] === 'gh' || r[0] === 'glab' || (r[0] === 'jaira' && r[1] === 'show' && r[3] === '--json') ||
   (r[0] === 'git' && (['worktree', 'config', 'remote', 'fetch', 'rev-parse'].includes(r[1]!) || (r[1] === 'log' && r[2] === '--format=%h')))
+// N5ZZP6: what Execute reads, and whether it is drawn dim.
+const executeLabel = async (pane: { find: (q: { key: string }) => Promise<{ props: { label?: string }; children: unknown[] } | undefined> }) => {
+  const button = await pane.find({ key: 'execute-MG677R' })
+  const text = button?.children[0] as { props: { dimColor?: boolean }; children: string[] }
+  return { label: button?.props.label, text: text.children[0], dim: text.props.dimColor }
+}
 async function quietly($: Test$, band: Pressable, id: string, w?: World) {
   const ran = w?.ran.length ?? 0
   const opened = w?.opened.length ?? 0
@@ -848,15 +870,107 @@ describe('waiting for you', () => {
     await w.clock.advance(20_000)
   })
 
-  test('Acceptance is offered on every waiting ticket; where the next lane does not end the board, Execute accepts nothing and says so', async ($, on) => {
+  test('Execute reads running… and takes no press and no Enter until its step is done', async ($, on) => {
     const w = world(on)
+    w.held = []
+    w.stay = true
+    await startSession($)
+    const pane = await quietly($, await $.ui.mount(BAND), 'MG677R', w)
+    expect(await executeLabel(pane)).toEqual({ label: 'Execute', text: 'Execute', dim: false })
+    void pane.press({ key: 'execute-MG677R' })
+    await w.clock.settle()
+    expect(await executeLabel(pane)).toEqual({ label: 'running…', text: 'running…', dim: true })
+    expect((await pane.find({ key: 'typed-MG677R' }))?.props.submitLabel).toBe('running…')
+    const toasts = w.toasts.length
+    // A second press and Enter with words typed: nothing runs, nothing is said.
+    await pane.press({ key: 'execute-MG677R' })
+    void pane.input({ key: 'typed-MG677R', text: 'the header' })
+    // Enter on an empty field: no nothing-to-fix notice either.
+    void pane.input({ key: 'typed-MG677R', text: '' })
+    await w.clock.settle()
+    expect(w.toasts.length).toBe(toasts)
+    await release(w)
+    await release(w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(2)
+    // The accepted note of the one press, no give-back with what was typed;
+    // the pane closes behind the accepted ticket.
+    expect(ran(w, 'jaira', 'note').map(r => r[3])).toEqual(['cockpit: accepted by the person, signoff -> done'])
+    expect(w.closed).toContain('cockpit-acceptance')
+  })
+
+  test('a step refused reads Execute again at once, the refusal beside it', async ($, on) => {
+    const w = world(on)
+    w.held = []
+    w.stay = true
+    await startSession($)
+    const pane = await quietly($, await $.ui.mount(BAND), 'MG677R', w)
+    w.refusals = [...w.refusals, { code: 'needs_commits', message: 'no commit names MG677R' }]
+    void pane.press({ key: 'execute-MG677R' })
+    await w.clock.settle()
+    expect((await executeLabel(pane)).text).toBe('running…')
+    // The dry run refuses: nothing moves, and Execute takes a press again.
+    await release(w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
+    expect(await executeLabel(pane)).toEqual({ label: 'Execute', text: 'Execute', dim: false })
+    expect((await pane.findAll({ type: 'Text' })).some(x => x.text.includes('no commit names MG677R'))).toBe(true)
+  })
+
+  test('a step that has not ended after 20 seconds frees Execute and says so once', async ($, on) => {
+    const w = world(on)
+    w.held = []
+    w.stay = true
+    await startSession($)
+    const pane = await quietly($, await $.ui.mount(BAND), 'MG677R', w)
+    void pane.press({ key: 'execute-MG677R' })
+    await w.clock.advance(19_999)
+    expect((await executeLabel(pane)).text).toBe('running…')
+    expect(w.toasts.filter(x => x.includes('still at work'))).toEqual([])
+    await w.clock.advance(1)
+    await w.clock.settle()
+    expect(await executeLabel(pane)).toEqual({ label: 'Execute', text: 'Execute', dim: false })
+    expect(w.toasts.filter(x => x.includes('still at work'))).toEqual(['MG677R: Execute still at work after 20 s - it takes a press again; look at the ticket before you press once more'])
+    // The late end says nothing more.
+    await release(w)
+    await release(w)
+    expect(w.toasts.filter(x => x.includes('still at work'))).toHaveLength(1)
+  })
+
+  // M5JSE9: a person's lane mid-board accepts into the lane after it, and the
+  // pane says where, so nobody reads the press as done.
+  test('Acceptance is offered on every waiting ticket; where the next lane does not end the board, Execute moves it one lane on and says where', async ($, on) => {
+    const w = world(on)
+    // Its question answered: cleared, as the Discuss chat clears it.
+    w.tickets = [SIGNOFF, { ...HUMAN, question: '' }]
     await startSession($)
     const ui = await $.ui.mount(BAND)
     expect(await ui.find({ key: 'acceptance-MG677R' })).toBeDefined()
+    const pane = await quietly($, ui, 'K7P2QX', w)
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Execute: accept → review')
+    await pane.press({ key: 'execute-K7P2QX' })
+    expect(ran(w, 'jaira', 'move', 'K7P2QX').map(r => r.slice(3, 6))).toEqual([['--to', 'review', '--dry-run'], ['--to', 'review', '--force']])
+    expect(ran(w, 'jaira', 'note', 'K7P2QX').map(r => r[3])).toContain('cockpit: accepted by the person, human -> review')
+  })
+
+  test('a question still open in a lane that does not end the work: Execute moves nothing and asks for the answer', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
     expect(await ui.find({ key: 'discuss-K7P2QX' })).toBeDefined()
+    const pane = await quietly($, ui, 'K7P2QX', w)
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Execute: answer the question first - or mark a note fix, or type what is missing')
+    await pane.press({ key: 'execute-K7P2QX' })
+    expect(ran(w, 'jaira', 'move')).toEqual([])
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('K7P2QX waits in human for the answer to its question: answer it first - Discuss, or an option marked [accept] under Explain - and Execute then moves it on to review. Mark a note fix, or type what is missing, to give it back.')
+  })
+
+  test('where jaira names no lane after it, Execute accepts nothing and says so', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...HUMAN, next_lane: undefined }]
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
     const pane = await pressAccept($, ui, 'K7P2QX', w)
     expect(ran(w, 'jaira', 'move')).toEqual([])
-    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('K7P2QX waits in human, which does not end the work: nothing to accept there. Mark a note fix, or type what is missing, to give it back.')
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('K7P2QX waits in human, and jaira names no lane after it: nothing to accept there. Mark a note fix, or type what is missing, to give it back.')
   })
 
   // 2V50Y5 DoD 3: a gate that refuses done says so in the pane, changes
@@ -928,6 +1042,7 @@ describe('waiting for you', () => {
     expect(await (await acceptancePane($, ui, 'K7P2QX')).find({ type: 'Text', text: '? Popup oder eigene Seite?' })).toBeDefined()
     await ui.press({ key: 'discuss-K7P2QX' })
     // The chat sends its decision to this session, by its messaging socket.
+    // No --back on the default board: an older spawn.sh refuses the flag.
     expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 8)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'k7p2qx', 'K7P2QX', 'discuss'])
   })
 
@@ -1039,6 +1154,7 @@ describe('waiting for you', () => {
     expect(asked).toContain('waits for a decision of mine')
     expect(asked).toContain("note K7P2QX \"decision: <decision>\"")
     expect(asked).toContain('set K7P2QX question=')
+    expect(asked).toContain('move K7P2QX --to in-progress (')
     expect(asked).not.toContain('subagent')
   })
 
@@ -1056,8 +1172,11 @@ describe('waiting for you', () => {
     await w.clock.advance(300)
     await pressExplain($, ui, 'MG677R', w)
     expect(w.submitted).toHaveLength(2)
-    // Pressed again after the lock, it is asked again.
+    // Pressed again after the lock, it is asked again; a held request's lock
+    // running out is no step still at work (N5ZZP6): nothing is said.
     await w.clock.advance(20_000)
+    await w.clock.settle()
+    expect(w.toasts.filter(x => x.includes('still at work'))).toEqual([])
     await pressExplain($, ui, 'MG677R', w)
     expect(w.submitted).toHaveLength(3)
   })
@@ -1316,6 +1435,29 @@ describe('waiting for you', () => {
     expect(ran(w, 'jaira', 'note').map(r => r[3])).toEqual(['decision: 2) accept it as it is', 'cockpit: accepted by the person, signoff -> done'])
     expect(ran(w, 'jaira', 'move', 'MG677R', '--to', 'done', '--force')).toHaveLength(1)
     expect(w.submitted).toEqual(['jaira-cockpit: MG677R: accepted, signoff -> done (Person, Cockpit)'])
+  })
+
+  // M5JSE9: mid-board the decision answers the question: it is cleared before
+  // the move, so review does not inherit it.
+  test('an option marked [accept] on a ticket waiting on a question clears the question and moves it one lane on', async ($, on) => {
+    const w = world(on)
+    w.bodies.K7P2QX = MARKED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-K7P2QX' })
+    await (await $.ui.mount(EXPLANATION('Explanation of K7P2QX'))).press({ key: 'pick-K7P2QX-2' })
+    expect(ran(w, 'jaira', 'set', 'K7P2QX', 'question=')).toHaveLength(1)
+    expect(ran(w, 'jaira', 'move', 'K7P2QX', '--to', 'review', '--force')).toHaveLength(1)
+  })
+
+  test('an option marked [accept] on a ticket that moved on meanwhile moves nothing', async ($, on) => {
+    const w = world(on)
+    w.bodies.MG677R = MARKED
+    await startSession($)
+    await (await $.ui.mount(BAND)).press({ key: 'read-MG677R' })
+    const pane = await $.ui.mount(EXPLANATION('Explanation of MG677R'))
+    w.tickets = [{ ...SIGNOFF, status: 'review' }, HUMAN]
+    await pane.press({ key: 'pick-MG677R-2' })
+    expect(ran(w, 'jaira', 'move')).toEqual([])
   })
 
   test('after a restart an answered explanation is read with its decision, not offered again; a newer one is open', async ($, on) => {
@@ -2267,7 +2409,7 @@ describe('give back', () => {
     expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
     expect(w.opened.at(-1)).toEqual({ id: 'cockpit-message', title: 'Note on MG677R failed', focus: true })
     const pane = await $.ui.mount(MESSAGE('Note on MG677R failed'))
-    expect(await pane.find({ type: 'Text', text: /MG677R went back to in-progress, but the note with your reason was not written: jaira: ticket file is locked/ })).toBeDefined()
+    expect(await pane.find({ type: 'Text', text: /MG677R moved to in-progress, but the note with your reason was not written: jaira: ticket file is locked/ })).toBeDefined()
     expect(await pane.find({ type: 'Text', text: /jaira note MG677R 'Given back from signoff: der Branch fehlt im Schluessel'/ })).toBeDefined()
     expect(ran(w, 'herdr', 'pane', 'send-text', 'w1:p9')).toHaveLength(1)
   })
@@ -2516,6 +2658,42 @@ describe('give back', () => {
     expect(ran(w, 'herdr', 'tab', 'close')[0]?.[3]).toBe('w1:t9')
     expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 8)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'mg677r', 'MG677R', 'worker'])
     expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toStartWith('cockpit: given back to a new worker - tab alive, cache warm for 40 more min, context 80k, but its pane took no text; ')
+  })
+  // W80HNH: a tab list Herdr did not give is not "no tab open": the old worker
+  // may still run, and a new one beside it is the second worker Give back must
+  // never make.
+  test('a failed herdr tab list starts no worker, types nothing and says the tab state was unreadable', async ($, on) => {
+    const w = world(on, { herdr: true, store: { 'session:old': {
+      session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
+      lastAnswerAt: 1_000_000 - 70 * 60_000, tokens: 80_000, ttl: 3_600_000, updatedAt: 1_000_000 - 70 * 60_000,
+    } } })
+    w.tabsFail = 'herdr: timed out'
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(ran(w, 'herdr', 'tab', 'close')).toEqual([])
+    expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to nobody (no worker started) - herdr tab list failed: herdr: timed out; the tab state could not be read, so no worker started and nothing typed')
+    expect(w.toasts.at(-1)).toBe("MG677R back in in-progress; Herdr's tab list could not be read, so it is unknown whether its worker still runs - no worker started. Check its tab, and start one only if none runs.")
+  })
+  // 8NWE4P: under Herdr App a terminal that does not answer `hc get` is left
+  // out of the list, and herdr-hc.sh says so with exit 3. The worker's tab may
+  // be the one missing: the tabs that did come back prove nothing about it.
+  test('a tab list missing a terminal that gave no answer starts no worker either', async ($, on) => {
+    const w = world(on, { herdr: true, store: { 'session:old': {
+      session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
+      lastAnswerAt: 1_000_000 - 70 * 60_000, tokens: 80_000, ttl: 3_600_000, updatedAt: 1_000_000 - 70 * 60_000,
+    } } })
+    w.tabs = [{ tab_id: 't1', label: 'AB12CD/worker', agent_status: 'idle' }]
+    w.tabsIncomplete = 'herdr-hc.sh: tab list incomplete: hc get gave no answer for t7'
+    await startSession($)
+    await giveBack($, w)
+    expect(ran(w, 'jaira', 'move', 'MG677R')).toHaveLength(1)
+    expect(ran(w, 'bash', SPAWN)).toEqual([])
+    expect(ran(w, 'herdr', 'pane', 'send-text')).toEqual([])
+    expect(ran(w, 'jaira', 'note', 'MG677R').at(-1)?.[3]).toBe('cockpit: given back to nobody (no worker started) - herdr tab list failed: herdr-hc.sh: tab list incomplete: hc get gave no answer for t7; the tab state could not be read, so no worker started and nothing typed')
+    expect(w.toasts.at(-1)).toBe("MG677R back in in-progress; Herdr's tab list could not be read, so it is unknown whether its worker still runs - no worker started. Check its tab, and start one only if none runs.")
   })
 })
 
@@ -3243,6 +3421,87 @@ describe('the line a press hands this session', () => {
 })
 
 describe('give back, the edges', () => {
+  // PGXJG0: Give back goes to the lane that does the work before the
+  // person's lane, read off the ticket's own board - not to in-progress by name.
+  const SHIPPED = [
+    { id: 'in-progress', agentic: true, context: '', rejects_to: null },
+    { id: 'critique', agentic: true, context: '', rejects_to: ['in-progress'] },
+    { id: 'testing', agentic: true, context: '', rejects_to: ['in-progress'] },
+    { id: 'human', agentic: false, context: '', requires_question: true, rejects_to: null },
+    { id: 'review', agentic: true, context: 'fresh', rejects_to: null },
+    { id: 'signoff', agentic: false, context: '', human_exit: true, rejects_to: null },
+    { id: 'done', agentic: false, context: '', terminal: true, rejects_to: null },
+  ]
+  const VIDEO = [
+    { id: 'todo', agentic: false, context: '', rejects_to: null },
+    { id: 'script', agentic: true, context: '', rejects_to: null },
+    { id: 'script-approval', agentic: false, context: '', human_exit: true, rejects_to: null },
+    { id: 'build', agentic: true, context: '', rejects_to: null },
+    { id: 'draft-approval', agentic: false, context: '', human_exit: true, rejects_to: null },
+    { id: 'voice-approval', agentic: false, context: '', human_exit: true, rejects_to: null },
+    { id: 'voice', agentic: true, context: '', rejects_to: null },
+    { id: 'final', agentic: true, context: '', rejects_to: null },
+    { id: 'acceptance', agentic: false, context: '', human_exit: true, rejects_to: null },
+    { id: 'done', agentic: false, context: '', terminal: true, rejects_to: null },
+  ]
+
+  test('the shipped board gives back to in-progress, past the review, the human lane and the loop lanes', () => {
+    expect(backLaneOf(SHIPPED, 'signoff')).toBe('in-progress')
+    expect(backLaneOf(SHIPPED, 'human')).toBe('in-progress')
+  })
+
+  test('a board without in-progress gives back to the lane that works before the person\'s lane', () => {
+    expect(backLaneOf(VIDEO, 'script-approval')).toBe('script')
+    expect(backLaneOf(VIDEO, 'draft-approval')).toBe('build')
+    expect(backLaneOf(VIDEO, 'voice-approval')).toBe('build')
+    expect(backLaneOf(VIDEO, 'acceptance')).toBe('final')
+  })
+
+  test('a rejects_to naming a lane not on the board, or a person\'s lane, is passed by', () => {
+    const work = { id: 'build', agentic: true, context: '', rejects_to: null }
+    const approve = { id: 'approve', agentic: false, context: '', human_exit: true, rejects_to: null }
+    const ask = { id: 'ask', agentic: false, context: '', requires_question: true, rejects_to: null }
+    expect(backLaneOf([work, { id: 'check', agentic: true, context: '', rejects_to: ['in-progress'] }, approve], 'approve')).toBe('check')
+    expect(backLaneOf([work, ask, { id: 'check', agentic: true, context: '', rejects_to: ['ask', 'build'] }, approve], 'approve')).toBe('build')
+  })
+
+  test('a jaira that lists no rejects_to, or a lane with nothing before it, keeps in-progress', () => {
+    expect(backLaneOf(SHIPPED.map(({ rejects_to, ...l }) => l), 'signoff')).toBe('in-progress')
+    expect(backLaneOf(VIDEO, 'todo')).toBe('in-progress')
+  })
+
+  test('Give back on a video board moves the ticket into its build lane and says so', async ($, on) => {
+    const w = world(on)
+    w.tickets = []
+    w.boards.video = { lanes: VIDEO, tickets: [{ handle: 'MG677R', title: 'intro', status: 'draft-approval', next_lane: 'voice-approval', question: '', review: {} }] }
+    await startSession($)
+    const ui = await $.ui.mount(BAND)
+    await ui.press({ key: 'acceptance-MG677R' })
+    await (await $.ui.mount(ACCEPT('Acceptance of MG677R'))).input({ key: 'typed-MG677R', text: 'Schnitt zu lang' })
+    expect(ran(w, 'jaira', 'move', 'MG677R')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'MG677R', '--to', 'build'])
+    expect(await ui.find({ type: 'Text', text: "MG677R back in build; no worker started (the ticket's note says why)" })).toBeDefined()
+    expect(w.submitted.at(-1)).toMatch(/\(Person, Cockpit; draft-approval -> build\)$/)
+  })
+
+  // Discuss moves a decision that the work goes on back to the lane Give back
+  // would: a video board has no in-progress, and jaira refuses that move.
+  for (const herdr of [true, false]) {
+    test(`Discuss on a video board moves the work back to its build lane${herdr ? '' : ', without Herdr'}`, async ($, on) => {
+      const w = world(on, { herdr })
+      w.tickets = []
+      w.boards.video = { lanes: VIDEO, tickets: [{ handle: 'MG677R', title: 'intro', status: 'draft-approval', next_lane: 'voice-approval', question: 'kuerzer?', review: {} }] }
+      await startSession($)
+      const ui = await $.ui.mount(BAND)
+      await ui.press({ key: 'discuss-MG677R' })
+      if (herdr) {
+        expect(ran(w, 'bash', SPAWN)[0]?.slice(5, 7)).toEqual(['--back', 'build'])
+      } else {
+        expect(w.submitted.at(-1)).toContain('move MG677R --to build (')
+        expect(w.submitted.at(-1)).not.toContain('in-progress')
+      }
+    })
+  }
+
   test('a record a day old decides nothing and is dropped', async ($, on) => {
     const w = world(on, { herdr: true, store: { 'session:old': {
       session: 'old', pane: 'w1:p9', cwd: '/x', ticket: 'MG677R', role: 'worker', lane: '',
@@ -3594,6 +3853,476 @@ describe('conversation threads', () => {
     expect(w.modelCalls).toBe(1)
     // No board: no thread stands on a ticket.
     expect((await $.command.run(typed('threads'))).text).toContain('~ #1 Logo')
+  })
+})
+
+const ASKS_PANE = { plugin: 'jaira-cockpit', surface: 'terminal', component: 'Pane', requestId: 'cockpit-asks', props: { title: 'Waiting for you', isFocused: true, bodyColumns: 80, placement: 'dock', scroll: { offset: 0, bodyRows: 30 }, view: {} } } as never
+
+describe('open questions with their ticket and options (1M3X77)', () => {
+  const filing = (o: Record<string, unknown>) => parseFiling(JSON.stringify({ thread: null, title: 'T', line: 'l', ticket: null, question: 'Q?', answered: [], ...o }))!
+  // Every shape the cheap model may hand back for the two new fields.
+  for (const [name, raw, want] of [
+    ['named options', { options: ['ja', 'nein'] }, ['ja', 'nein']],
+    ['no options key', {}, []],
+    ['options not a list', { options: 'ja, nein' }, []],
+    ['null in the list, blanks, numbers', { options: [null, ' ', 3, ' ja '] }, ['ja']],
+    ['more than nine', { options: Array.from({ length: 12 }, (_, i) => `o${i}`) }, Array.from({ length: 9 }, (_, i) => `o${i}`)],
+  ] as const) {
+    test(`options: ${name}`, () => {
+      expect(filing(raw).options).toEqual(want)
+    })
+  }
+  for (const [name, about, want] of [
+    ['an id', 'VTSF24', 'VTSF24'],
+    ['lower case', 'vtsf24', 'VTSF24'],
+    ['too long', 'VTSF245', null],
+    ['prose', 'the ticket', null],
+    ['null', null, null],
+    ['a number', 123456, null],
+  ] as const) {
+    test(`about: ${name}`, () => {
+      expect(filing({ about }).about).toBe(want)
+    })
+  }
+
+  const f = (o: Partial<Filing>): Filing => ({ thread: null, title: 'Release', line: '', ticket: null, question: null, about: null, options: [], answered: [], ...o })
+  test('the ticket and options ride with the question and go with it', () => {
+    let ts = file([], f({ question: 'Antworte ja zu VTSF24?', about: 'VTSF24', options: ['ja', 'nein'] }), 1)
+    expect(untitled(ts)).toEqual(['VTSF24'])
+    ts = titled(ts, 'VTSF24', 'Release-Knopf')
+    expect(untitled(ts)).toEqual([])
+    expect(asksOf(ts)).toEqual([{ thread: 1, ticket: 'VTSF24', title: 'Release-Knopf', question: 'Antworte ja zu VTSF24?', options: ['ja', 'nein'] }])
+    // A new question on the same thread replaces ticket, title and options.
+    const again = file(ts, f({ thread: 1, question: 'Welche Farbe?' }), 2)
+    expect(asksOf(again)).toEqual([{ thread: 1, title: 'Release', question: 'Welche Farbe?', options: [] }])
+    // Answered by a filing, or by a pick: nothing of it is left.
+    for (const done of [file(ts, f({ thread: 1, answered: [1] }), 2), answerThread(ts, 1, 2)]) {
+      expect(asksOf(done)).toEqual([])
+      expect(Object.keys(done[0]!).sort()).toEqual(['id', 'lastTurn', 'lines', 'title'])
+    }
+  })
+
+  test('the thread\'s own ticket stands in where the question names none; asked last comes first', () => {
+    const ts = file(file([], f({ title: 'A', ticket: 'AAAAAA', question: 'a?' }), 1), f({ title: 'B', question: 'b?' }), 2)
+    expect(asksOf(ts).map(a => [a.ticket, a.title])).toEqual([[undefined, 'B'], ['AAAAAA', 'A']])
+    expect(answerLine(asksOf(ts)[0]!, 'ja')).toBe('B: ja')
+    expect(answerLine(asksOf(ts)[1]!, 'ja')).toBe('AAAAAA: ja')
+  })
+
+  test('the band opens the pane; a digit answers into the session and the question leaves', async ($, on) => {
+    const w = world(on)
+    w.shows['VTSF24'] = { title: 'Release-Knopf in Actions' }
+    await startSession($)
+    w.model = '{"thread": null, "title": "Release", "line": "Frage zu VTSF24", "ticket": null, "question": "Antworte ja zu VTSF24?", "about": "vtsf24", "options": ["ja", "nein, spaeter"], "answered": []}'
+    await $.prompt.submit({ text: 'Was ist mit dem Release?', origin: { kind: 'composer' }, wait: false })
+    await answer($, 'Naechster Schritt: antworte ja zu VTSF24')
+    await w.clock.settle()
+    const band = await $.ui.mount(BAND)
+    const button = await band.find({ key: 'asks' })
+    expect(button?.props.hotkey).toBe('q')
+    await band.press({ key: 'asks' })
+    expect(w.opened.at(-1)).toEqual({ id: 'cockpit-asks', title: 'Waiting for you', focus: true })
+    const pane = await $.ui.mount(ASKS_PANE)
+    const text = (await pane.find({ type: 'Box' }))!.text
+    expect(text).toContain('VTSF24')
+    expect(text).toContain('Release-Knopf in Actions')
+    expect(text).toContain('Antworte ja zu VTSF24?')
+    expect((await pane.find({ key: 'ask-1-0' }))?.props.hotkey).toBe('1')
+    expect((await pane.find({ key: 'ask-1-1' }))?.props.hotkey).toBe('2')
+    await pane.press({ key: 'ask-1-1' })
+    await w.clock.settle()
+    expect(w.submitted).toContain('VTSF24: nein, spaeter')
+    // The pane stays: the question stands under 'Answered' now (CSQXKR).
+    expect(w.closed).not.toContain('cockpit-asks')
+    expect(await (await $.ui.mount(BAND)).find({ key: 'asks' })).toBeUndefined()
+    await pane.unmount()
+    const after = (await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text
+    expect(after).toContain('No question is waiting for you.')
+    expect(after).toContain('Answered')
+  })
+
+  test('a ticket jaira has no title for is asked about once, and the thread\'s title stands in', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    w.model = '{"thread": null, "title": "Logo", "line": "Frage", "ticket": null, "question": "Wie gross?", "about": "ZZZZZZ", "answered": []}'
+    for (let i = 0; i < 3; i++) {
+      await $.prompt.submit({ text: `Logo ${i}?`, origin: { kind: 'composer' }, wait: false })
+      await answer($, 'Wie gross?')
+      await w.clock.settle()
+      w.model = '{"thread": 1, "title": "Logo", "line": "noch offen", "ticket": null, "question": null, "answered": []}'
+    }
+    expect(ran(w, 'jaira', 'show', 'ZZZZZZ')).toHaveLength(1)
+    expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('ZZZZZZ | Logo')
+  })
+
+  test('one button holds the focus: the newest question\'s first', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    w.model = '{"thread": null, "title": "A", "line": "a", "ticket": null, "question": "a?", "options": ["x", "y"], "answered": []}'
+    await $.prompt.submit({ text: 'a', origin: { kind: 'composer' }, wait: false })
+    await answer($, 'a?')
+    await w.clock.settle()
+    w.model = '{"thread": null, "title": "B", "line": "b", "ticket": null, "question": "b?", "answered": []}'
+    await $.prompt.submit({ text: 'b', origin: { kind: 'composer' }, wait: false })
+    await answer($, 'b?')
+    await w.clock.settle()
+    const pane = await $.ui.mount(ASKS_PANE)
+    const focused = (await pane.findAll({ type: 'Button' })).filter(b => b.props.autoFocus === true).map(b => b.key)
+    expect(focused).toEqual(['ask-2-chat'])
+  })
+
+  test('a question with no options is answered in the chat, the prompt started with its ticket', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    w.model = '{"thread": null, "title": "Logo", "line": "Frage", "ticket": "ABCDEF", "question": "Wie gross?", "answered": []}'
+    await $.prompt.submit({ text: 'Logo?', origin: { kind: 'composer' }, wait: false })
+    await answer($, 'Wie gross?')
+    await w.clock.settle()
+    const pane = await $.ui.mount(ASKS_PANE)
+    // The ticket is the thread's own, and jaira was not asked for a title.
+    expect((await pane.find({ type: 'Box' }))!.text).toContain('ABCDEF')
+    expect(ran(w, 'jaira', 'show', 'ABCDEF')).toEqual([])
+    await pane.press({ key: 'ask-1-chat' })
+    expect(w.filled).toEqual(['ABCDEF: '])
+    expect(w.submitted).toEqual([])
+  })
+})
+
+describe('settling questions, their times and Translate (CSQXKR)', () => {
+  const f = (o: Partial<Filing>): Filing => ({ thread: null, title: 'Release', line: '', ticket: null, question: null, about: null, options: [], answered: [], ...o })
+  const NOW = new Date(2026, 10, 24, 9, 30).getTime()
+
+  test('a question remembers when it was asked; the lane is read with the title', () => {
+    let ts = file([], f({ question: 'Annehmen?', about: 'MG677R' }), 1, NOW)
+    expect(ts[0]!.askedAt).toBe(NOW)
+    ts = titled(ts, 'MG677R', 'cache key', 'signoff')
+    expect(ts[0]!.aboutLane).toBe('signoff')
+    expect(watched(ts)).toEqual(['MG677R'])
+    expect(asksOf(ts)[0]!.askedAt).toBe(NOW)
+  })
+
+  for (const [name, lane, settles] of [
+    ['same lane', 'signoff', false],
+    ['moved on to done', 'done', true],
+    ['given back', 'in-progress', true],
+    ['jaira no longer knows it', null, true],
+  ] as const) {
+    test(`lane after: ${name}`, () => {
+      const ts = titled(file([], f({ question: 'Annehmen?', about: 'MG677R' }), 1, NOW), 'MG677R', 'cache key', 'signoff')
+      expect(asksOf(moved(ts, new Map([['MG677R', lane]]), 2)).length).toBe(settles ? 0 : 1)
+    })
+  }
+
+  test('a ticket not read this round, or one whose lane was never read, keeps its question', () => {
+    const ts = titled(file([], f({ question: 'Annehmen?', about: 'MG677R' }), 1, NOW), 'MG677R', 'cache key', 'signoff')
+    expect(asksOf(moved(ts, new Map(), 2)).length).toBe(1)
+    const unread = file([], f({ question: 'Annehmen?', about: 'MG677R' }), 1, NOW)
+    expect(watched(unread)).toEqual([])
+    expect(asksOf(moved(unread, new Map([['MG677R', 'done']]), 2)).length).toBe(1)
+  })
+
+  test('what a change settled carries both times; a day later it is gone', () => {
+    const before = file([], f({ question: 'a?', options: ['x'] }), 1, NOW - 60_000)
+    const done = settled(before, answerThread(before, 1, 2), NOW)
+    expect(done).toEqual([{ thread: 1, title: 'Release', question: 'a?', options: [], askedAt: NOW - 60_000, answeredAt: NOW }])
+    // A new question on the same thread settles the one it replaces.
+    expect(settled(before, file(before, f({ thread: 1, question: 'b?' }), 2, NOW), NOW).map(a => a.question)).toEqual(['a?'])
+    expect(settled(before, before, NOW)).toEqual([])
+    expect(recent(done, NOW + ANSWERED_MS - 1)).toHaveLength(1)
+    expect(recent(done, NOW + ANSWERED_MS)).toEqual([])
+  })
+
+  test('thirty threads at most: the one touched longest ago goes, never one whose question waits', () => {
+    let ts: ReturnType<typeof file> = []
+    ts = file(ts, f({ title: 'T1', question: 'still waiting?' }), 1, NOW)
+    for (let i = 2; i <= 30; i++) ts = file(ts, f({ title: `T${i}` }), i, NOW)
+    // Thread 2 is touched again: thread 3 is now the one touched longest ago.
+    ts = file(ts, f({ thread: 2, line: 'again' }), 31, NOW)
+    const after = file(ts, f({ title: 'T31' }), 32, NOW)
+    expect(after).toHaveLength(30)
+    expect(after.map(t => t.id)).toContain(1)
+    expect(after.map(t => t.id)).toContain(2)
+    expect(after.map(t => t.id)).not.toContain(3)
+    expect(asksOf(after).map(a => a.question)).toEqual(['still waiting?'])
+    expect(settled(ts, after, NOW)).toEqual([])
+  })
+
+  test('over thirty, the newest thread is kept, so no id is handed out twice', () => {
+    let ts: ReturnType<typeof file> = []
+    for (let i = 1; i <= 30; i++) ts = file(ts, f({ title: `T${i}`, question: `q${i}?` }), i, NOW)
+    ts = file(ts, f({ title: 'Plain' }), 31, NOW)
+    ts = file(ts, f({ thread: 1, line: 'again' }), 32, NOW)
+    expect(ts.find(t => t.id === 31)?.title).toBe('Plain')
+    ts = file(ts, f({ title: 'Other' }), 33, NOW)
+    expect(new Set(ts.map(t => t.id)).size).toBe(ts.length)
+    expect(ts.find(t => t.title === 'Other')!.id).toBe(32)
+  })
+
+  test('thirty threads all waiting on a question: none is dropped', () => {
+    let ts: ReturnType<typeof file> = []
+    for (let i = 1; i <= 30; i++) ts = file(ts, f({ title: `T${i}`, question: `q${i}?` }), i, NOW)
+    expect(file(ts, f({ title: 'T31' }), 31, NOW)).toHaveLength(31)
+  })
+
+  test('a thread dropped to keep thirty is not answered by settled()', () => {
+    const before = file([], f({ question: 'q?' }), 1, NOW)
+    expect(settled(before, [], NOW)).toEqual([])
+  })
+
+  test('the same question asked again keeps when it was first asked; another question is asked now', () => {
+    const before = file([], f({ question: 'a?' }), 1, NOW - 60_000)
+    expect(file(before, f({ thread: 1, question: 'a?' }), 2, NOW)[0]!.askedAt).toBe(NOW - 60_000)
+    expect(file(before, f({ thread: 1, question: 'b?' }), 2, NOW)[0]!.askedAt).toBe(NOW)
+    expect(settled(before, file(before, f({ thread: 1, question: 'a?' }), 2, NOW), NOW)).toEqual([])
+  })
+
+  test('times: today by the clock, another day with its date', () => {
+    expect(whenOf(new Date(2026, 10, 24, 7, 12).getTime(), NOW)).toBe('today 07:12')
+    expect(whenOf(new Date(2026, 10, 23, 21, 40).getTime(), NOW)).toBe('23.11. 21:40')
+    expect(whenOf(new Date(2026, 0, 5, 0, 5).getTime(), NOW)).toBe('05.01. 00:05')
+  })
+
+  test('the classifier keeps the question in its own words; Translate asks for every text at once', () => {
+    expect(classifyPrompt([], 'h', 'a', true)).toContain("quoted in the assistant's own words and language, never translated")
+    const p = asksTranslatePrompt('Русский', ['Annehmen?', 'ja'])
+    expect(p).toContain('into Русский')
+    expect(p.split('\n').at(-1)).toBe('["Annehmen?","ja"]')
+  })
+
+  const ask = async ($: Test$, w: World, model: string, text = 'q') => {
+    w.model = model
+    await $.prompt.submit({ text, origin: { kind: 'composer' }, wait: false })
+    await answer($, 'Frage')
+    await w.clock.settle()
+  }
+
+  test('a question on a ticket goes to Answered once the ticket leaves the lane it was asked in', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Cache", "line": "Frage", "ticket": null, "question": "MG677R annehmen?", "about": "MG677R", "options": ["ja", "nein"], "answered": []}')
+    // Still in signoff a minute later: it stays open.
+    await w.clock.advance(60_000)
+    await w.clock.settle()
+    const pane = await $.ui.mount(ASKS_PANE)
+    let text = (await pane.find({ type: 'Box' }))!.text
+    expect(text).toContain('? MG677R annehmen?')
+    expect(text).not.toContain('Answered')
+    await pane.unmount()
+    // Accepted in the Acceptance pane: the board says done.
+    w.tickets = [{ ...SIGNOFF, status: 'done' }, HUMAN, WORKING]
+    await w.clock.advance(60_000)
+    await w.clock.settle()
+    text = (await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text
+    expect(text).toContain('No question is waiting for you.')
+    expect(text).toMatch(/Answered[\s\S]*MG677R annehmen\?/)
+    expect(text).toMatch(/asked today \d\d:\d\d · answered today \d\d:\d\d/)
+    expect(w.submitted).toEqual([])
+  })
+
+  test('a filed-away ticket jaira lists nowhere is asked of jaira once and settles the question', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Cache", "line": "Frage", "ticket": null, "question": "MG677R annehmen?", "about": "MG677R", "answered": []}')
+    w.tickets = [HUMAN, WORKING]
+    // jaira show still finds a ticket in the logbook, as done.
+    w.shows.MG677R = { status: 'done' }
+    const shows = ran(w, 'jaira', 'show', 'MG677R').length
+    await w.clock.advance(60_000)
+    await w.clock.settle()
+    expect(ran(w, 'jaira', 'show', 'MG677R').length).toBeGreaterThan(shows)
+    expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('No question is waiting for you.')
+  })
+
+  test('a listed lane other than the one asked in is read again with jaira show before it settles anything', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Cache", "line": "Frage", "ticket": null, "question": "MG677R annehmen?", "about": "MG677R", "answered": []}')
+    // The list read at the start of a refresh is older than the question:
+    // jaira show, read now, still says signoff.
+    w.tickets = [{ ...SIGNOFF, status: 'in-progress' }, HUMAN, WORKING]
+    w.shows.MG677R = { status: 'signoff' }
+    const shows = ran(w, 'jaira', 'show', 'MG677R').length
+    await w.clock.advance(60_000)
+    await w.clock.settle()
+    expect(ran(w, 'jaira', 'show', 'MG677R').length).toBeGreaterThan(shows)
+    const pane = await $.ui.mount(ASKS_PANE)
+    expect((await pane.find({ type: 'Box' }))!.text).toContain('? MG677R annehmen?')
+    await pane.unmount()
+    // jaira show agrees with the list: now it settles.
+    w.shows.MG677R = {}
+    await w.clock.advance(60_000)
+    await w.clock.settle()
+    expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('No question is waiting for you.')
+  })
+
+  test('a jaira show that exits 0 without a lane that can be read settles nothing', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Cache", "line": "Frage", "ticket": null, "question": "MG677R annehmen?", "about": "MG677R", "answered": []}')
+    w.tickets = [HUMAN, WORKING]
+    await w.clock.advance(60_000)
+    await w.clock.settle()
+    expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('? MG677R annehmen?')
+  })
+
+  for (const [exit, settles] of [[1, false], [5, true]] as const) {
+    test(`a ticket in no list whose jaira show exits ${exit}: ${settles ? 'gone, the question settles' : 'not known, the question stays'}`, async ($, on) => {
+      const w = world(on)
+      await startSession($)
+      await ask($, w, '{"thread": null, "title": "Cache", "line": "Frage", "ticket": null, "question": "MG677R annehmen?", "about": "MG677R", "answered": []}')
+      w.tickets = [HUMAN, WORKING]
+      w.showExit = { MG677R: exit }
+      await w.clock.advance(60_000)
+      await w.clock.settle()
+      const text = (await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text
+      if (settles) expect(text).toContain('No question is waiting for you.')
+      else expect(text).toContain('? MG677R annehmen?')
+    })
+  }
+
+  test('x settles a question without a word into the session; it stands dimmed under Answered with both times', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Logo", "line": "Frage", "ticket": null, "question": "Wie gross?", "options": ["gross"], "answered": []}')
+    let pane = await $.ui.mount(ASKS_PANE)
+    expect((await pane.find({ type: 'Box' }))!.text).toMatch(/Logo \| asked today \d\d:\d\d/)
+    const x = await pane.find({ key: 'ask-1-done' })
+    expect(x?.props.hotkey).toBe('x')
+    await pane.press({ key: 'ask-1-done' })
+    await w.clock.settle()
+    expect(w.submitted).toEqual([])
+    expect(w.filled).toEqual([])
+    await pane.unmount()
+    pane = await $.ui.mount(ASKS_PANE)
+    const answered = (await pane.findAll({ type: 'Text' })).filter(x => /Wie gross\?|Answered|answered today/.test(x.text))
+    expect(answered.length).toBeGreaterThan(0)
+    for (const x of answered) expect(x.props.dimColor).toBe(true)
+    // No option of a settled question can be picked any more.
+    expect(await pane.find({ key: 'ask-1-0' })).toBeUndefined()
+  })
+
+  test('settled questions are kept across a restart, and one settled a day ago is no longer shown', async ($, on) => {
+    const settledAt = (ms: number) => ({ thread: 1, title: 'Logo', question: `vor ${ms}?`, options: [], answeredAt: 1_000_000 - ms })
+    world(on, { store: { 'threads:abcdef12': { turn: 1, threads: [], done: [settledAt(ANSWERED_MS - 60_000), settledAt(ANSWERED_MS)] } } })
+    await startSession($)
+    const text = (await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text
+    expect(text).toContain(`vor ${ANSWERED_MS - 60_000}?`)
+    expect(text).not.toContain(`vor ${ANSWERED_MS}?`)
+  })
+
+  test('the pane opens on the original; t translates every question at once, t again shows the original', async ($, on) => {
+    const w = world(on)
+    w.files.set('/home/a/.jaira/settings.json', JSON.stringify({ language: 'Русский' }))
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Logo", "line": "Frage", "ticket": null, "question": "Wie gross?", "options": ["gross", "klein"], "answered": []}')
+    await ask($, w, '{"thread": null, "title": "Farbe", "line": "Frage", "ticket": null, "question": "Welche Farbe?", "answered": []}', 'r')
+    const calls = w.modelCalls
+    await (await $.ui.mount(BAND)).press({ key: 'asks' })
+    let pane = await $.ui.mount(ASKS_PANE)
+    expect((await pane.find({ type: 'Box' }))!.text).toContain('Wie gross?')
+    expect(w.modelCalls).toBe(calls)
+    const button = await pane.find({ key: 'asks-translate' })
+    expect(button?.props.hotkey).toBe('t')
+    expect(button?.props.label).toBe('Translate')
+    w.translations = { 'Wie gross?': 'Какой размер?', gross: 'большой', klein: 'маленький', 'Welche Farbe?': 'Какой цвет?' }
+    await pane.press({ key: 'asks-translate' })
+    await w.clock.settle()
+    expect(w.modelCalls).toBe(calls + 1)
+    await pane.unmount()
+    pane = await $.ui.mount(ASKS_PANE)
+    const shown = (await pane.find({ type: 'Box' }))!.text
+    expect(shown).toContain('Какой размер?')
+    expect(shown).toContain('Какой цвет?')
+    expect(shown).toContain('маленький')
+    expect((await pane.find({ key: 'asks-translate' }))?.props.label).toBe('Original')
+    // A pick sends the option as the assistant worded it.
+    await pane.press({ key: 'ask-1-1' })
+    await w.clock.settle()
+    expect(w.submitted).toContain('Logo: klein')
+    await pane.press({ key: 'asks-translate' })
+    await pane.unmount()
+    const back = (await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text
+    expect(back).toContain('Welche Farbe?')
+    expect(back).not.toContain('Какой цвет?')
+  })
+
+  test('a question filed while Translate is out is translated once that call is back', async ($, on) => {
+    const w = world(on)
+    w.files.set('/home/a/.jaira/settings.json', JSON.stringify({ language: 'Русский' }))
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Logo", "line": "Frage", "ticket": null, "question": "Wie gross?", "answered": []}')
+    await (await $.ui.mount(BAND)).press({ key: 'asks' })
+    const pane = await $.ui.mount(ASKS_PANE)
+    w.translations = { 'Wie gross?': 'Какой размер?', 'Welche Farbe?': 'Какой цвет?' }
+    const held: (() => void)[] = []
+    w.modelHeld = held
+    await pane.press({ key: 'asks-translate' })
+    await w.clock.settle()
+    expect(held).toHaveLength(1)
+    w.modelHeld = undefined
+    await ask($, w, '{"thread": null, "title": "Farbe", "line": "Frage", "ticket": null, "question": "Welche Farbe?", "answered": []}', 'r')
+    held.shift()!()
+    await w.clock.settle()
+    await pane.unmount()
+    const shown = (await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text
+    expect(shown).toContain('Какой размер?')
+    expect(shown).toContain('Какой цвет?')
+  })
+
+  test('t pressed again while Translate is out starts no second call; the one out still lands', async ($, on) => {
+    const w = world(on)
+    w.files.set('/home/a/.jaira/settings.json', JSON.stringify({ language: 'Русский' }))
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Logo", "line": "Frage", "ticket": null, "question": "Wie gross?", "answered": []}')
+    await (await $.ui.mount(BAND)).press({ key: 'asks' })
+    const pane = await $.ui.mount(ASKS_PANE)
+    w.translations = { 'Wie gross?': 'Какой размер?' }
+    const held: (() => void)[] = []
+    w.modelHeld = held
+    const calls = w.modelCalls
+    for (let i = 0; i < 3; i++) {
+      await pane.press({ key: 'asks-translate' })
+      await w.clock.settle()
+    }
+    // Closed and opened again, t still starts no second call.
+    await pane.unmount()
+    await (await $.ui.mount(BAND)).press({ key: 'asks' })
+    const again = await $.ui.mount(ASKS_PANE)
+    await again.press({ key: 'asks-translate' })
+    await w.clock.settle()
+    expect(held).toHaveLength(1)
+    expect(w.modelCalls).toBe(calls + 1)
+    w.modelHeld = undefined
+    held.shift()!()
+    await w.clock.settle()
+    await again.unmount()
+    expect((await (await $.ui.mount(ASKS_PANE)).find({ type: 'Box' }))!.text).toContain('Какой размер?')
+  })
+
+  test('a Translate call that throws frees t: the next press asks again', async ($, on) => {
+    const w = world(on)
+    w.files.set('/home/a/.jaira/settings.json', JSON.stringify({ language: 'Русский' }))
+    w.storeRefuses = 'rephrased:'
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Logo", "line": "Frage", "ticket": null, "question": "Wie gross?", "answered": []}')
+    await (await $.ui.mount(BAND)).press({ key: 'asks' })
+    const pane = await $.ui.mount(ASKS_PANE)
+    w.translations = { 'Wie gross?': 'Какой размер?' }
+    const calls = w.modelCalls
+    await pane.press({ key: 'asks-translate' })
+    await w.clock.settle()
+    expect((await pane.find({ key: 'asks-translate' }))?.props.label).toBe('Translate')
+    await pane.press({ key: 'asks-translate' })
+    await w.clock.settle()
+    expect(w.modelCalls).toBe(calls + 2)
+  })
+
+  test('without a language set there is no Translate', async ($, on) => {
+    const w = world(on)
+    await startSession($)
+    await ask($, w, '{"thread": null, "title": "Logo", "line": "Frage", "ticket": null, "question": "Wie gross?", "answered": []}')
+    await (await $.ui.mount(BAND)).press({ key: 'asks' })
+    expect(await (await $.ui.mount(ASKS_PANE)).find({ key: 'asks-translate' })).toBeUndefined()
   })
 })
 
@@ -4863,7 +5592,7 @@ describe('a ticket not on the disk the press writes from', () => {
 describe('the verdict light', () => {
   const ready: Waiting = {
     id: 'MG677R', title: 'cache key', goal: '', lane: 'signoff', verdict: 'approve', question: '', dodComplete: true,
-    dodOpen: { person: 0, other: 0 }, acceptTo: 'done', assignee: '', blockers: [], notes: [], findingsKnown: true, gaps: '',
+    dodOpen: { person: 0, other: 0 }, acceptTo: 'done', acceptEnds: true, backTo: 'in-progress', assignee: '', blockers: [], notes: [], findingsKnown: true, gaps: '',
   }
   const first = (w: Waiting, hunt: Parameters<typeof lightOf>[1]) => {
     const l = lightOf(w, hunt)
@@ -4902,11 +5631,11 @@ describe('the verdict light', () => {
   // A ticket in human waits for an answer: its open items are no reason to
   // give it back, so the question decides the light.
   test('a question in a lane that does not end the work makes the light yellow, the question first', () => {
-    const asking = { ...ready, lane: 'human', acceptTo: null, question: 'keep the old key?', dodComplete: false, dodOpen: { person: 1, other: 2 } }
+    const asking = { ...ready, lane: 'human', acceptTo: 'review', acceptEnds: false, question: 'keep the old key?', dodComplete: false, dodOpen: { person: 1, other: 2 } }
     const l = lightOf(asking, { state: 'fail', at: 'abc1234' })
     expect([l.color, l.reasons.map(r => r.kind)]).toEqual(['yellow', ['question', 'staleHunt', 'dodOpen', 'byAPerson']])
     // In signoff, where Accept ends the work, the same open items stay red.
-    expect(first({ ...asking, lane: 'signoff', acceptTo: 'done' }, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'dodOpen'])
+    expect(first({ ...asking, lane: 'signoff', acceptTo: 'done', acceptEnds: true }, { state: 'ok', at: 'abc1234' })).toEqual(['red', 'dodOpen'])
   })
 
   // GY8T52: the review states each note's class after 'note:'; the light
@@ -5470,12 +6199,21 @@ describe('the Acceptance pane, read alone', () => {
     ['blocker kept with a reason', [item('blocker', 'accept')], 'ist bekannt', 'done', 'accept', 0, 0],
     ['blocker to a follow-up with a reason', [item('blocker', 'later')], 'später', 'done', 'accept', 0, 1],
     ['blocker kept, another to fix', [item('blocker', 'accept'), item('edge', 'now')], '', 'done', 'giveBack', 1, 0],
-    ['all ok in a lane that does not end', [item('edge', 'accept')], '', null, 'notTerminal', 0, 0],
-    ['to fix in a lane that does not end', [item('edge', 'now')], '', null, 'giveBack', 1, 0],
-    ['words in a lane that does not end', [], 'fehlt', null, 'giveBack', 0, 0],
-    ['blocker kept, words typed, in a lane that does not end', [item('blocker', 'accept')], 'fehlt', null, 'giveBack', 0, 0],
-    ['blocker kept, nothing typed, in a lane that does not end', [item('blocker', 'later')], '', null, 'notTerminal', 0, 1],
+    ['all ok in a lane that does not end', [item('edge', 'accept')], '', 'build', 'accept', 0, 0],
+    ['blocker kept with a reason in a lane that does not end', [item('blocker', 'accept')], 'ist bekannt', 'build', 'accept', 0, 0],
+    ['all ok with no next lane', [item('edge', 'accept')], '', null, 'noNext', 0, 0],
+    ['to fix with no next lane', [item('edge', 'now')], '', null, 'giveBack', 1, 0],
+    ['words with no next lane', [], 'fehlt', null, 'giveBack', 0, 0],
+    ['blocker kept, words typed, with no next lane', [item('blocker', 'accept')], 'fehlt', null, 'giveBack', 0, 0],
+    ['blocker kept, nothing typed, with no next lane', [item('blocker', 'later')], '', null, 'noNext', 0, 1],
   ]
+  test('an open question in a lane that does not end the work waits for its answer; words typed still give back', () => {
+    expect(executionOf([item('edge', 'accept')], '', 'review', 0, true).step).toBe('needAnswer')
+    expect(executionOf([item('blocker', 'accept')], '', 'review', 0, true)).toEqual({ step: 'needAnswer', fix: 0, followUps: 0, asksWhy: false })
+    expect(executionOf([], 'fehlt', 'review', 0, true).step).toBe('giveBack')
+    expect(executionOf([item('edge', 'now')], '', 'review', 0, true).step).toBe('giveBack')
+  })
+
   for (const [name, items, typed, to, step, fix, followUps] of TABLE) {
     test(`Execute: ${name} -> ${step}`, () => {
       const e = executionOf(items, typed, to)
@@ -5654,7 +6392,7 @@ describe('the Acceptance pane', () => {
     expect(await texts(again)).toContain('  Не хватает только теста.')
   })
 
-  test('Execute while an Explain chat still opens is said, not dropped, and writes nothing', async ($, on) => {
+  test('Execute while an Explain chat still opens reads running… and writes nothing', async ($, on) => {
     const w = world(on, { herdr: true })
     w.heldSpawn = []
     await startSession($)
@@ -5662,9 +6400,14 @@ describe('the Acceptance pane', () => {
     void pane.press({ key: 'explain-all-MG677R' })
     await w.clock.settle()
     expect(w.heldSpawn).toHaveLength(1)
+    expect(await executeLabel(pane)).toEqual({ label: 'running…', text: 'running…', dim: true })
     await pane.press({ key: 'execute-MG677R' })
     expect(ran(w, 'jaira', 'move')).toEqual([])
-    expect(w.toasts.at(-1)).toBe('MG677R: an earlier press or an Explain chat is still at work on it - press Execute again once it is done')
+    // Explain's lock running out with its chat still opening says nothing:
+    // only Execute's does (N5ZZP6), and the release row's never.
+    await w.clock.advance(20_000)
+    await w.clock.settle()
+    expect(w.toasts.filter(x => x.includes('still at work'))).toEqual([])
     w.heldSpawn.shift()!()
     await w.clock.settle()
     await pane.press({ key: 'execute-MG677R' })
@@ -5955,7 +6698,7 @@ describe('what the person checks themselves', () => {
     expect(executionOf([], '', 'done', 1).step).toBe('needSeen')
     expect(executionOf([], '', 'done', 0).step).toBe('accept')
     expect(executionOf([], 'missing', 'done', 1).step).toBe('giveBack')
-    expect(executionOf([], '', null, 1).step).toBe('notTerminal')
+    expect(executionOf([], '', null, 1).step).toBe('noNext')
   })
 })
 

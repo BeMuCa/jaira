@@ -10,21 +10,25 @@ import (
 )
 
 // Two dispatchers open a tab at the same moment, and the Herdr stub answers
-// the first 'tab create' with the pane of the second tab - the race 3YRPXJ
-// found. The spawn that was handed the other's pane types nothing, says which
-// pane and which tab, and closes its own empty tab; the other one starts.
+// the critique's 'tab create' with the pane of the optimize tab - the race
+// 3YRPXJ found. The spawn that was handed the other's pane types nothing, says
+// which pane and which tab, and closes its own empty tab; the other one starts.
 func TestSpawnTypesOnlyIntoItsOwnTab(t *testing.T) {
 	state := t.TempDir()
-	// tab create n makes tab tn with pane pn, waits until both tabs exist and
-	// then hands back the newest pane, whoever asked. pane get pk says tk.
+	// Which spawn loses is fixed by its label, not by who reaches the stub
+	// first: the critique gets tab t1, the optimize t2, and both are handed
+	// p2, which pane get places in t2. The critique waits until t2 exists so
+	// the two overlap, but the outcome does not hang on that wait - a counter
+	// and a ten-second bound here made both spawns get t1 once on a loaded CI
+	// runner (JCBHBE).
 	root, spawn := spawnWith(t, `#!/usr/bin/env bash
 s="`+state+`"
 case "$1 $2" in
   "tab create")
-    n=1; until mkdir "$s/t$n" 2>/dev/null; do n=$((n+1)); done
-    for _ in $(seq 200); do [ -d "$s/t2" ] && break; sleep 0.05; done
-    last=2
-    echo "{\"result\":{\"tab\":{\"tab_id\":\"t$n\"},\"root_pane\":{\"pane_id\":\"p$last\"}}}" ;;
+    case "$*" in *AB12CD/critique*) n=1 ;; *) n=2 ;; esac
+    mkdir "$s/t$n"
+    if [ "$n" = 1 ]; then for _ in $(seq 2400); do [ -d "$s/t2" ] && break; sleep 0.05; done; fi
+    echo "{\"result\":{\"tab\":{\"tab_id\":\"t$n\"},\"root_pane\":{\"pane_id\":\"p2\"}}}" ;;
   "pane get") echo "{\"result\":{\"pane\":{\"agent\":\"claude\",\"agent_status\":\"idle\",\"tab_id\":\"t${3#p}\"}}}" ;;
   "pane run") echo "$3" >> "$s/run" ;;
   "pane send-text") echo "$3" >> "$s/sent" ;;
@@ -45,19 +49,11 @@ esac
 	}
 	wg.Wait()
 
-	failed, won := 0, ""
-	for i, lane := range []string{"critique", "optimize"} {
-		if errs[i] == nil {
-			won = lane
-			continue
-		}
-		failed++
-		if !strings.Contains(outs[i], "pane p2 is not in tab t1") || !strings.Contains(outs[i], "nothing was typed") {
-			t.Errorf("the refused spawn names neither the pane nor its tab:\n%s", outs[i])
-		}
+	if errs[0] == nil || errs[1] != nil {
+		t.Fatalf("want the critique, handed optimize's pane, refused and the optimize started; critique: %v, optimize: %v\n%s\n---\n%s", errs[0], errs[1], outs[0], outs[1])
 	}
-	if failed != 1 {
-		t.Fatalf("%d spawns failed, want exactly the one handed the other's pane:\n%s\n---\n%s", failed, outs[0], outs[1])
+	if !strings.Contains(outs[0], "pane p2 is not in tab t1 (AB12CD/critique)") || !strings.Contains(outs[0], "nothing was typed") {
+		t.Errorf("the refused spawn names neither the pane nor its tab:\n%s", outs[0])
 	}
 	read := func(name string) string {
 		b, _ := os.ReadFile(filepath.Join(state, name))
@@ -78,8 +74,8 @@ esac
 	if len(recs) != 1 || filepath.Base(recs[0]) != "p2" {
 		t.Fatalf("pane records %v, want only p2", recs)
 	}
-	if rec, _ := os.ReadFile(recs[0]); !strings.Contains(string(rec), "lane="+won+"\n") {
-		t.Errorf("the record of p2 names another lane than %s:\n%s", won, rec)
+	if rec, _ := os.ReadFile(recs[0]); !strings.Contains(string(rec), "lane=optimize\n") {
+		t.Errorf("the record of p2 names another lane than optimize:\n%s", rec)
 	}
 }
 

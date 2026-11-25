@@ -1016,3 +1016,38 @@ func TestExtraDropsCachedTicketWhoseRefLostItsFile(t *testing.T) {
 		t.Fatalf("Extra after the ref lost its file = %d tickets, err %v; want 0", len(out), err)
 	}
 }
+
+// Flush lists the outbox a second time after tidying milestone entries. A
+// failed second listing is an error, not an empty queue: read as empty, it
+// skips the merge of a refused milestone write, and the next fetch overwrites
+// that edit with the teammate's version.
+func TestFlushReportsAFailedSecondOutboxListing(t *testing.T) {
+	ada, _, _ := twoSides(t)
+	id := create(t, ada, "queued while the outbox cannot be read")
+
+	calls := 0
+	broken := errors.New("outbox unreadable")
+	restore := refsync.SetListBox(func(b *outbox.Box) ([]outbox.Entry, error) {
+		calls++
+		if calls == 3 { // Flush's own, tidyMilestoneEntries', then the second
+			return nil, broken
+		}
+		return b.List()
+	})
+	reports, err := ada.syncer.Flush()
+	restore()
+	if !errors.Is(err, broken) {
+		t.Fatalf("a failed second listing was not reported: err %v, reports %+v", err, reports)
+	}
+	if calls != 3 {
+		t.Fatalf("the outbox was listed %d times, want 3: the test no longer hits the second listing", calls)
+	}
+	if _, ok := ada.syncer.Pending(id); !ok {
+		t.Fatal("the queued write was dropped although nothing was sent")
+	}
+
+	reports, err = ada.syncer.Flush()
+	if err != nil || len(reports) != 1 || reports[0].Outcome != outbox.Sent {
+		t.Fatalf("after the outbox reads again: %+v, %v", reports, err)
+	}
+}

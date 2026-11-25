@@ -1392,7 +1392,11 @@ func newLanesCmd() *cobra.Command {
 						// band reads both rather than knowing lane names.
 						"human_exit":        l.RequiresHumanExit,
 						"requires_question": l.RequiresQuestion,
-						"input_requires":    l.InputRequires, "output_produces": l.OutputProduces,
+						// Where a loop lane sends work back to: the cockpit's Give
+						// back walks back from a person's lane and follows it to
+						// the lane that does the work (PGXJG0).
+						"rejects_to":     l.RejectsTo,
+						"input_requires": l.InputRequires, "output_produces": l.OutputProduces,
 						"source": l.Source, "prompt": l.Prompt, "creator": l.Creator,
 					})
 					// Only for a lane that declares its verdict words, as in the

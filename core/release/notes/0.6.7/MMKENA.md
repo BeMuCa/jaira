@@ -1,0 +1,1 @@
+- When jaira cannot read its queue of unsent ticket writes while sending them, it now fails with that error instead of carrying on as if nothing were queued; the writes stay queued, so fix what the error names and run the command again.

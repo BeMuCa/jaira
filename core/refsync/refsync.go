@@ -814,6 +814,10 @@ type Report struct {
 	Conflicts []milestone.Conflict `json:"conflicts,omitempty"`
 }
 
+// listBox reads the outbox. It is a variable only so a test can make one
+// listing fail in Flush while the others succeed (see export_test.go).
+var listBox = (*outbox.Box).List
+
 // Flush sends what the outbox holds and reports each entry, naming who was
 // quicker for every write the remote refused.
 //
@@ -826,7 +830,7 @@ func (y *Syncer) Flush() ([]Report, error) {
 	if y == nil || y.Usable() != nil {
 		return nil, nil
 	}
-	entries, err := y.Box.List()
+	entries, err := listBox(y.Box)
 	if err != nil {
 		return nil, err
 	}
@@ -850,7 +854,13 @@ func (y *Syncer) Flush() ([]Report, error) {
 		return nil, err
 	}
 	queued := map[string]outbox.Entry{}
-	entries, _ = y.Box.List() // again: tidyMilestoneEntries may have rekeyed some
+	// Again: tidyMilestoneEntries may have rekeyed some. A failed listing is
+	// an error, not an empty queue: an empty one would skip the merge of a
+	// refused milestone write below, and the next fetch would overwrite it.
+	entries, err = listBox(y.Box)
+	if err != nil {
+		return nil, err
+	}
 	for _, e := range entries {
 		if e.Kind == outbox.KindMilestone {
 			queued[e.ID] = e
@@ -943,7 +953,7 @@ func (y *Syncer) mergeRefused(e outbox.Entry) (bool, []milestone.Conflict) {
 	}
 	if bytes.Equal(merged, cur) && chosen == file {
 		// Nothing of the edit is left to send: the winner already says it.
-		_ = y.Box.DropMilestone(e.ID)
+		_ = y.Box.Settle(e)
 		return false, nil
 	}
 	dir := milestone.Dir(y.Store.Root)
@@ -1002,7 +1012,7 @@ func mergedFile(base, local, winner string) (file, clash string) {
 // the same old file to the same ID, and the second one to push must not be told
 // that the remote wins over a write that said the same thing.
 func (y *Syncer) tidyMilestoneEntries() error {
-	entries, err := y.Box.List()
+	entries, err := listBox(y.Box)
 	if err != nil {
 		return err
 	}
@@ -1012,7 +1022,7 @@ func (y *Syncer) tidyMilestoneEntries() error {
 		}
 		if !milestone.IsID(e.ID) {
 			if milestone.RenamedTo([]byte(e.Content)) != "" {
-				if err := y.Box.DropMilestone(e.ID); err != nil {
+				if err := y.Box.Settle(e); err != nil {
 					return err
 				}
 				continue
@@ -1027,8 +1037,10 @@ func (y *Syncer) tidyMilestoneEntries() error {
 			continue
 		}
 		file, content, _, err := y.Repo.ReadMilestone(e.ID)
+		// Only the entry compared goes: this runs outside the milestone lock,
+		// and a write queued during the read above is a newer edit.
 		if err == nil && file == e.File && string(content) == e.Content {
-			if err := y.Box.DropMilestone(e.ID); err != nil {
+			if err := y.Box.Settle(e); err != nil {
 				return err
 			}
 		}

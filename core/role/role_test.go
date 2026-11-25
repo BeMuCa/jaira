@@ -1,6 +1,7 @@
 package role
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"os/exec"
@@ -426,47 +427,55 @@ func TestSpawnDiscussReturnsItsDecision(t *testing.T) {
 	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
-	typed := filepath.Join(t.TempDir(), "typed")
-	stub := filepath.Join(t.TempDir(), "herdr")
-	script := `#!/usr/bin/env bash
+	// --back names the lane the work is done in on the ticket's board (a
+	// video board has no in-progress); without it the move goes to in-progress.
+	for _, c := range []struct {
+		flags []string
+		lane  string
+	}{{nil, "in-progress"}, {[]string{"--back", "script"}, "script"}} {
+		typed := filepath.Join(t.TempDir(), "typed")
+		stub := filepath.Join(t.TempDir(), "herdr")
+		script := `#!/usr/bin/env bash
 case "$1 $2" in
   "tab create") echo '{"result":{"root_pane":{"pane_id":"p1"}}}' ;;
   "pane get")   echo '{"result":{"pane":{"agent":"claude","agent_status":"idle","tab_id":"t1"}}}' ;;
   "pane send-text") printf '%s\n' "$4" >> "` + typed + `" ;;
 esac
 `
-	if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
-	sock := fakeSocket(t)
-	cmd := exec.Command(bash, spawn, "--no-worktree", "--parent", "uds:"+sock, "ab12cd", "AB12CD", "discuss")
-	cmd.Dir = t.TempDir()
-	cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+jairaPath(t))
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("spawn.sh discuss: %v\n%s", err, out)
-	}
-	got, err := os.ReadFile(typed)
-	if err != nil {
-		t.Fatal(err)
-	}
-	line := chatRequest(t, string(got))
-	for _, want := range []string{
-		`jaira note AB12CD "decision: `,
-		"jaira set AB12CD question=",
-		"jaira move AB12CD --to in-progress (",
-		"SendMessage an uds:" + sock,
-	} {
-		if !strings.Contains(line, want) {
-			t.Errorf("discuss prompt lacks %q:\n%s", want, line)
+		if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
+			t.Fatal(err)
 		}
-	}
-	at := strings.Index(line, "jaira move ")
-	if at < 0 {
-		t.Fatalf("discuss prompt has no move back:\n%s", line)
-	}
-	if move, _, _ := strings.Cut(line[at:], "("); strings.Contains(move, "--what") || strings.Contains(move, "--force") {
-		t.Errorf("the move back must be a bare move, jaira refuses outcome flags on a ticket with an outcome: %q", move)
+		spawn := filepath.Join(dir, "jaira-dispatcher", "scripts", "spawn.sh")
+		sock := fakeSocket(t)
+		args := append([]string{spawn, "--no-worktree", "--parent", "uds:" + sock}, c.flags...)
+		cmd := exec.Command(bash, append(args, "ab12cd", "AB12CD", "discuss")...)
+		cmd.Dir = t.TempDir()
+		cmd.Env = append(os.Environ(), "TMPDIR="+t.TempDir(), "HERDR_ENV=1", "HERDR_BIN_PATH="+stub, "HERDR_WORKSPACE_ID=", "PATH="+jairaPath(t))
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("spawn.sh discuss: %v\n%s", err, out)
+		}
+		got, err := os.ReadFile(typed)
+		if err != nil {
+			t.Fatal(err)
+		}
+		line := chatRequest(t, string(got))
+		for _, want := range []string{
+			`jaira note AB12CD "decision: `,
+			"jaira set AB12CD question=",
+			"jaira move AB12CD --to " + c.lane + " (",
+			"SendMessage an uds:" + sock,
+		} {
+			if !strings.Contains(line, want) {
+				t.Errorf("discuss prompt lacks %q:\n%s", want, line)
+			}
+		}
+		at := strings.Index(line, "jaira move ")
+		if at < 0 {
+			t.Fatalf("discuss prompt has no move back:\n%s", line)
+		}
+		if move, _, _ := strings.Cut(line[at:], "("); strings.Contains(move, "--what") || strings.Contains(move, "--force") {
+			t.Errorf("the move back must be a bare move, jaira refuses outcome flags on a ticket with an outcome: %q", move)
+		}
 	}
 }
 
@@ -996,6 +1005,97 @@ fi
 	}
 }
 
+// herdr-hc.sh asks every terminal hc ls names for its label. One that does not
+// answer 'hc get' may be a live worker's: left out of a list that exits 0, its
+// tab reads as closed, and Give back starts a second worker beside it (8NWE4P).
+// The list then still comes out, but with exit 3 and the mute terminal on
+// stderr, which every caller already reads as a failed list. A terminal hc
+// reports not_found was removed since hc ls: closed, left out, exit 0.
+func TestHerdrHcTabListSaysWhichTerminalDidNotAnswer(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	path := jairaPath(t)
+	dir := t.TempDir()
+	if _, err := install(dir, false, true, false); err != nil {
+		t.Fatal(err)
+	}
+	script := filepath.Join(dir, "jaira-dispatcher", "scripts", "herdr-hc.sh")
+	for _, c := range []struct {
+		name, live, mute, gone string
+		listed                 []string // tab ids on stdout, in order
+	}{
+		{"all answer", "t1 t2", "", "", []string{"t1", "t2"}},
+		{"none live", "", "", "", nil},
+		{"one mute", "t1 t2 t3", "t2", "", []string{"t1", "t3"}},
+		{"first mute", "t1 t2", "t1", "", []string{"t2"}},
+		{"all mute", "t1 t2", "t1 t2", "", nil},
+		{"removed since ls", "t1 t2", "", "t2", []string{"t1"}},
+		{"removed and mute", "t1 t2 t3", "t3", "t1", []string{"t2"}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			bin := t.TempDir()
+			hc := `#!/usr/bin/env bash
+live='` + c.live + `'; mute='` + c.mute + `'; gone='` + c.gone + `'
+if [ "$1" = ls ]; then
+  sep=""; printf '['; for a in $live; do printf '%s{"address":"%s"}' "$sep" "$a"; sep=","; done; printf ']\n'
+elif [ "$1" = get ]; then
+  if [[ " $mute " == *" $2 "* ]]; then echo '{"error":{"kind":"timeout"}}' >&2; exit 1; fi
+  if [[ " $gone " == *" $2 "* ]]; then echo '{"error":{"kind":"not_found"}}' >&2; exit 3; fi
+  printf '{"address":"%s","labels":{"jaira.tab":"AB12CD/worker"},"status":{"state":"idle"}}\n' "$2"
+fi
+`
+			if err := os.WriteFile(filepath.Join(bin, "hc"), []byte(hc), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			cmd := exec.Command(bash, script, "tab", "list")
+			cmd.Env = append(os.Environ(), "HC_TERMINAL_ID=", "HC_BIN=", "PATH="+bin+string(os.PathListSeparator)+path)
+			var stderr strings.Builder
+			cmd.Stderr = &stderr
+			out, err := cmd.Output()
+			code := 0
+			if ee, ok := err.(*exec.ExitError); ok {
+				code = ee.ExitCode()
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			if want := map[bool]int{false: 0, true: 3}[c.mute != ""]; code != want {
+				t.Fatalf("exit %d, want %d\nstdout %s\nstderr %s", code, want, out, stderr.String())
+			}
+			var got struct {
+				Result struct {
+					Tabs []struct {
+						TabID string `json:"tab_id"`
+						Label string `json:"label"`
+					} `json:"tabs"`
+				} `json:"result"`
+			}
+			if err := json.Unmarshal(out, &got); err != nil {
+				t.Fatalf("stdout is not the tab list: %v\n%s", err, out)
+			}
+			var ids []string
+			for _, tab := range got.Result.Tabs {
+				ids = append(ids, tab.TabID)
+				if tab.Label != "AB12CD/worker" {
+					t.Errorf("tab %s: label %q", tab.TabID, tab.Label)
+				}
+			}
+			if !slices.Equal(ids, c.listed) {
+				t.Errorf("listed %q, want %q", ids, c.listed)
+			}
+			for _, m := range strings.Fields(c.mute) {
+				if !strings.Contains(stderr.String(), " "+m) {
+					t.Errorf("stderr does not name %s: %q", m, stderr.String())
+				}
+			}
+			if c.mute == "" && stderr.Len() > 0 {
+				t.Errorf("stderr on a complete list: %q", stderr.String())
+			}
+		})
+	}
+}
+
 // A herdr.exe is the Herdr of WSL and of native Windows alike, so spawn.sh
 // tells the two apart by the machine it runs on (issue #79): in WSL the tab
 // crosses back with wsl.exe --cd; in Git Bash it starts claude where it is,
@@ -1374,7 +1474,10 @@ func TestSpawnTakesUpTheBranchTheWorkRidesOn(t *testing.T) {
 	t.Run("second while the first still runs", func(t *testing.T) {
 		root, wt, bin := repo(t, "feat/ab12cd", "")
 		gate := filepath.Join(bin, "go")
-		herdr := "#!/usr/bin/env bash\ncase \"$1 $2\" in\n  \"tab create\") echo tab >> \"" + filepath.Join(bin, "tabs") + "\"; for _ in $(seq 200); do [ -e \"" + gate + "\" ] && break; sleep 0.05; done; echo '{\"result\":{\"root_pane\":{\"pane_id\":\"p1\"}}}' ;;\n  \"pane get\") echo '{\"result\":{\"pane\":{\"agent\":\"claude\",\"agent_status\":\"idle\",\"tab_id\":\"t1\"}}}' ;;\nesac\n"
+		// The first spawn's tab create holds until the test opens the gate.
+		// The bound is two minutes, not ten seconds: run out early, it lets
+		// the first finish and the second through on a slow runner (JCBHBE).
+		herdr := "#!/usr/bin/env bash\ncase \"$1 $2\" in\n  \"tab create\") echo tab >> \"" + filepath.Join(bin, "tabs") + "\"; for _ in $(seq 2400); do [ -e \"" + gate + "\" ] && break; sleep 0.05; done; echo '{\"result\":{\"root_pane\":{\"pane_id\":\"p1\"}}}' ;;\n  \"pane get\") echo '{\"result\":{\"pane\":{\"agent\":\"claude\",\"agent_status\":\"idle\",\"tab_id\":\"t1\"}}}' ;;\nesac\n"
 		if err := os.WriteFile(filepath.Join(bin, "herdr"), []byte(herdr), 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -1387,6 +1490,9 @@ func TestSpawnTakesUpTheBranchTheWorkRidesOn(t *testing.T) {
 			out, err := run(root, bin)
 			first <- result{out, err}
 		}()
+		// A t.Fatal before the gate below would leave the first spawn's stub
+		// waiting out its whole bound: open the gate on every way out.
+		t.Cleanup(func() { _ = os.WriteFile(gate, nil, 0o644) })
 		claim := filepath.Join(root, ".git", "jaira", "spawning", "AB12CD-REVIEW")
 		deadline := time.Now().Add(10 * time.Second)
 		for {

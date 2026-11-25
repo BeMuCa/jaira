@@ -1,0 +1,2 @@
+- Give back in the cockpit now sends a ticket to the lane that does the work on its own board — `build` before `draft-approval` on a video board — instead of failing where no `in-progress` lane exists; the shipped board still goes to `in-progress`.
+- `jaira lanes --json` now lists `rejects_to` for every lane: read it to find where a loop lane sends work back.

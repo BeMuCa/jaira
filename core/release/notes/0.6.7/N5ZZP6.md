@@ -1,0 +1,2 @@
+- In the cockpit's Acceptance pane, Execute now reads "running…" and stays dim from your press until the step is done; a second press or Enter meanwhile does nothing, so wait for the pane to close or the refusal to show instead of pressing again.
+- When a step has not finished after 20 seconds, the cockpit says it is still at work and frees the buttons; look at the ticket before you press once more.

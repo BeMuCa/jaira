@@ -1,0 +1,1 @@
+- When the cockpit cannot read Herdr's tab list, Give back now starts no worker and says the tab state was unreadable: check the ticket's worker tab yourself and start one only if none runs.
