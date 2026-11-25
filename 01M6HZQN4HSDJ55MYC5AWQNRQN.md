@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-25T23:48:45Z
+updated-at: 2026-11-25T23:48:55Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -148,3 +148,4 @@ H) TUI: 'x' on the board is archive, so x acks only inside the i-list; enter on 
 I) people: 'jaira people' gains 'active' (assignees + creators of board tickets, git authors --since 30 days, canonical names) in text and --json.
 - **2026-11-25 23:12 · Berk** — in-progress split into 4 sequential Haiku runs (P1-P4, P5-P7, P8-P10, P11-P13); the last one moves to critique
 - **2026-11-25 23:13 · Berk** — waiting: in-progress P1-P4 (haiku subagent) since 00:13
+- **2026-11-25 23:48 · Berk** — P2 core/inbox: Ack records the key as acked even when no entry is there, so a later Record of that key is refused. Clean turns newline/tab into a space and drops other control chars after stripping ANSI; stored text stays verbatim. Lock file is inbox.lock beside inbox.json in the repo state dir (ticket.LockFile needs the dir to exist, so update() MkdirAlls first).
