@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-25T23:07:39Z
+updated-at: 2026-11-25T23:07:59Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-25T23:03:48Z
@@ -146,3 +146,4 @@ Let stand: hunk header indented 2*nw+4 with no │ (aligns @@ with the sign colu
 - **2026-11-25 23:02 · Berk** — berkc 26.11.2026 nach dem Ansehen, woertlich: '] und [ ist kacke. mach es so dass man zuerst nur die paths zugedeckt sieht. alle paths starten von root. Und dann kannst du mit pfeiltaste hoch und runter durch die files, und mit enter macht man das ausgewählte aus. mit pfeiltaste hoch runter geht man hoch runter, und mit links rechts geht man nach links oder rechts, zb um den rest der zeile zu sehen (zurzeit schneidet es ab). mit nochmal enter schließt man das file und kann die anderen auswählen. bei der ansicht im geöffnete diff, sollte die seitenzahl ganz links kleiner sein. so nimmt es zuviel platz ein. Außerdem soll man die größe der diff seite ändern können indem man den spalt zwischen diff und dem ticket text nach links oder rechts zieht. Außerdem funktioniert "o" nicht, bei mir öffnet sich nix.' Umgebung: WSL2. Zurueck nach in-progress.
 - **2026-11-25 23:06 · Berk** — Worker 2026-11-26: o does nothing on this WSL2 machine because ~/.vscode-server/bin/69047191fc.../ lacks bin/ (the complete server sits nested in .../69047191fc...-1795647297/); 'code -g README.md:3' exits 127 after ~4.5s with 'remote-cli/code: not found' on stderr. The Windows wrapper already handles WSL (wslCode.sh, wsl+$WSL_DISTRO_NAME), so no --remote/wslpath is needed in jaira. jaira's bug: Start() only, stderr dropped, 'opened' shown. Asked main: repair the server dir (1, recommended) / person repairs (2) / leave (3).
 - **2026-11-25 23:07 · Berk** — Plan decisions 2026-11-26 (worker): tab still gives the diff the keys (arrows scroll the ticket otherwise, the person did not ask to drop that); an open file pins its header and hides the files above it so its rows get the pane; mouse capture only while the diff pane is shown, because capture switches off terminal text selection; o waits for the IDE asynchronously (the WSL code wrapper took 4.5s to fail here), so the TUI never blocks. Release note line 1 rewritten rather than appended: ]/[ never shipped in a release.
+- **2026-11-25 23:07 · Berk** — waiting: in-progress Haiku implementer (subagent) and main's answer on the VS Code server repair, since 00:07
