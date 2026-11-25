@@ -1,0 +1,2 @@
+- Switch between this repository's boards with shift+↓/↑ on the board instead of b; it steps through the active boards only.
+- Press b on the board to see every board with its creator and lanes; space there marks a board active or not (stored in .jaira/active-boards, commit it so the team shares it), enter shows that board.

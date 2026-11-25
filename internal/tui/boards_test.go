@@ -10,10 +10,10 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
-// b shows the next of the repository's boards: its lanes, and only its
-// tickets. Without it the board is today's, unchanged, and one more b comes
-// back round to it.
-func TestBPicksABoard(t *testing.T) {
+// shift+down shows the next of the repository's boards: its lanes, and only
+// its tickets. Without it the board is today's, unchanged, and one more
+// shift+down comes back round to it.
+func TestShiftDownPicksABoard(t *testing.T) {
 	m := newTestModel(t, 150, 32)
 	root := m.store.Root
 	lanes := filepath.Join(root, ticket.DirName, "boards", "video", "lanes")
@@ -48,11 +48,11 @@ func TestBPicksABoard(t *testing.T) {
 		t.Errorf("today's board lost its own lanes or tickets:\n%s", out)
 	}
 
-	press(m, "b")
+	pressShift(m, "down")
 	out = stripANSI(m.render())
 	for _, want := range []string{"board: video", "Skript", "Stimme", "Intro video"} {
 		if !strings.Contains(out, want) {
-			t.Errorf("after b, %q is missing:\n%s", want, out)
+			t.Errorf("after shift+down, %q is missing:\n%s", want, out)
 		}
 	}
 	if strings.Contains(out, "Implementing") || strings.Contains(out, "Refactor") {
@@ -72,18 +72,19 @@ func TestBPicksABoard(t *testing.T) {
 	}
 	m.mode = modeBoard
 
-	press(m, "b")
+	pressShift(m, "down")
 	out = stripANSI(m.render())
 	if strings.Contains(out, "board: video") || !strings.Contains(out, "Refactor") {
-		t.Errorf("a second b did not come back to today's board:\n%s", out)
+		t.Errorf("a second shift+down did not come back to today's board:\n%s", out)
 	}
 }
 
-// With one board, b has nothing to switch to and says how another comes about.
-func TestBOnASingleBoardExplains(t *testing.T) {
+// With one board, shift+down has nothing to switch to and says how another
+// comes about.
+func TestShiftDownOnASingleBoardExplains(t *testing.T) {
 	m := newTestModel(t, 150, 32)
-	press(m, "b")
+	pressShift(m, "down")
 	if m.boardName != "" || !strings.Contains(m.message, ".jaira/boards/") {
-		t.Errorf("b on a single board: board %q, message %q", m.boardName, m.message)
+		t.Errorf("shift+down on a single board: board %q, message %q", m.boardName, m.message)
 	}
 }
