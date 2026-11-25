@@ -21,7 +21,7 @@ related: []
 commits:
   - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-25T23:54:31Z
+updated-at: 2026-11-25T23:54:38Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-25T23:32:44Z
@@ -76,3 +76,4 @@ back-count: 1
 - **2026-11-25 23:32 · Berk** — critique (round 1): core/role/builtin/jaira-dispatcher/SKILL.md:199-208 now has the dispatcher set the question field for its own question to main, but nothing tells it to clear it when the answer arrives (worker got that at jaira-worker/SKILL.md:381-382; dispatcher :222 only clears its workers fields) — a stale field reads as open in the cockpit and close-tab.sh; add the same sentence after the dispatcher list: answer from main comes as a message, jaira note it, jaira set <id> question=, go on
 core/role/builtin/jaira-worker/SKILL.md:364-368 and jaira-dispatcher/SKILL.md:200-203 say "tries SendMessage to=main first: if accepted ..." and then "write onto the ticket ..., send the same text to main" — reads as send, then note, then send again; reword to one order: jaira note + question field, then SendMessage to=main; accepted = it reached main, refused/no tool = old way. Left alone: setting the question field beside the note and ending the turn with the options on top of the status line (plan decisions 4 and 5 in the 23:06 note); role-lane/role-pr unchanged (decisions 2, 3); duplicated paragraph in worker+dispatcher matches the existing pattern there.
 - **2026-11-25 23:35 · Berk** — waiting: in-progress round 2 (haiku subagent) since 00:35
+- **2026-11-25 23:54 · Berk** — round 2: dispatcher line ~210 got the clear-the-field sentence; worker and dispatcher now one order (note + question field, then SendMessage to main). shipped.sha256: core/role test demanded dispatcher 69bbb910 and worker 74f035fb; inserted each in its sorted place in the path group, no old line removed. TestReapTearsDownWhatTheSetupBuilt failed once in the full core/role run (child outlived 1s teardown under load), passes alone; not related to skill text
