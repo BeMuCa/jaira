@@ -1190,8 +1190,11 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
   }
   // A Discuss chat sends its decision to this session.
   // It moves the ticket back to the lane Give back would (backLaneOf): a
-  // board without in-progress refuses that move.
-  const parent = kind === 'discuss' ? [...await parentArgs($), '--back', back] : []
+  // board without in-progress refuses that move. Only a lane other than
+  // spawn.sh's default is passed: a project's older spawn.sh, kept by
+  // jaira update --roles because someone edited it, refuses --back.
+  const backArg = kind === 'discuss' && back !== 'in-progress' ? ['--back', back] : []
+  const parent = kind === 'discuss' ? [...await parentArgs($), ...backArg] : []
   const removes = copy === undefined ? [] : ['--copy', copy]
   // Registered before spawn.sh runs, which waits up to two minutes for
   // claude while the row unlocks after BUSY_MS: a second press in that time

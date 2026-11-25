@@ -1042,7 +1042,8 @@ describe('waiting for you', () => {
     expect(await (await acceptancePane($, ui, 'K7P2QX')).find({ type: 'Text', text: '? Popup oder eigene Seite?' })).toBeDefined()
     await ui.press({ key: 'discuss-K7P2QX' })
     // The chat sends its decision to this session, by its messaging socket.
-    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 10)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', '--back', 'in-progress', 'k7p2qx', 'K7P2QX', 'discuss'])
+    // No --back on the default board: an older spawn.sh refuses the flag.
+    expect(ran(w, 'bash', SPAWN)[0]?.slice(0, 8)).toEqual(['bash', SPAWN, '--no-worktree', '--parent', 'uds:/tmp/cc-socks-1000/77.sock', 'k7p2qx', 'K7P2QX', 'discuss'])
   })
 
   test('a Discuss chat\'s decision comes back: its tab closes and the band offers it to read, once', async ($, on) => {
