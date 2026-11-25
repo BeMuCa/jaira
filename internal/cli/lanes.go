@@ -355,7 +355,7 @@ initialised board gets, and the file's path.
 option names); --clear removes the file, returning to the built-ins. An
 unknown lane id or option name is refused rather than written, since a
 default board naming something nobody has installed is how a board ends up
-looking empty.`,
+looking empty. With no options: line a new ticket starts with planning ticked.`,
 		Args: noArgs(),
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			w := cmd.OutOrStdout()

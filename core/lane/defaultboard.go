@@ -9,11 +9,19 @@ import (
 	"github.com/BeMuCa/jaira/core/ticket"
 )
 
+// DefaultOptions are the Options a new ticket starts with when no default
+// board names options:. Without this a fresh ticket has every option unticked
+// and the pre-process planner, which requires planning, is skipped for almost
+// every ticket. A default board with an options: key replaces this list; an
+// options: [] key ticks nothing.
+var DefaultOptions = []string{"planning"}
+
 // DefaultBoard is a per-user setting: which lanes a freshly initialised board
 // gets, and which ticket Options start ticked. An absent file, an absent
 // lanes: field, or an empty list all mean the same thing — the built-ins —
 // which is easy to get backwards, so it is stated here rather than only in
-// the file format.
+// the file format. An absent options: key means DefaultOptions, options: []
+// means none.
 type DefaultBoard struct {
 	Lanes    []string
 	Options  []string
@@ -22,6 +30,10 @@ type DefaultBoard struct {
 	// Body is the prose below the frontmatter, preserved across a save so
 	// SaveDefaultBoard never erases a note the user left themselves.
 	Body string
+	// optionsDefaulted is true when Options is DefaultOptions rather than a
+	// list the user wrote, so Validate does not warn about an option the user
+	// never named.
+	optionsDefaulted bool
 }
 
 // DefaultBoardPath is the per-user file that decides a new board's lanes and
@@ -46,6 +58,8 @@ func DefaultBoardPath() string {
 func LoadDefaultBoard() (*DefaultBoard, error) {
 	path := DefaultBoardPath()
 	b := &DefaultBoard{Path: path}
+	b.Options = append([]string(nil), DefaultOptions...)
+	b.optionsDefaulted = true
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return b, nil // absent or unreadable: treated as no default board
@@ -59,8 +73,10 @@ func LoadDefaultBoard() (*DefaultBoard, error) {
 	if lanes, err := d.List("lanes"); err == nil {
 		b.Lanes = lanes
 	}
-	if opts, err := d.List("options"); err == nil {
-		b.Options = opts
+	if d.Has("options") {
+		if opts, err := d.List("options"); err == nil {
+			b.Options, b.optionsDefaulted = opts, false
+		}
 	}
 	b.Body = strings.TrimSpace(d.Body())
 	return b, nil
@@ -172,10 +188,12 @@ func Validate(board *DefaultBoard, set *Set) []string {
 	for _, o := range set.Options() {
 		known[o] = true
 	}
-	for _, o := range board.Options {
-		if !known[o] {
-			warnings = append(warnings, fmt.Sprintf(
-				"default board names option %q, which no installed lane requires", o))
+	if !board.optionsDefaulted {
+		for _, o := range board.Options {
+			if !known[o] {
+				warnings = append(warnings, fmt.Sprintf(
+					"default board names option %q, which no installed lane requires", o))
+			}
 		}
 	}
 	return warnings

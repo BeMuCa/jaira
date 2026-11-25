@@ -42,12 +42,12 @@ func NewBody(title string, dod []string, options []BodyOption) string {
 	if !wrote {
 		b.WriteString("- [ ] <A checkable statement, readable by someone who was not here>\n")
 	}
-	// Options turn steps on and off for this one ticket. Unticked by default:
-	// most tickets need neither a brainstorm nor a separate planning pass, and
-	// a step every ticket must traverse stops being a decision and becomes
-	// ceremony. They are listed anyway, because an option nobody knows exists
-	// is one nobody ticks. A per-user default board can pre-tick one, which is
-	// what turns "always brainstorm" into a setting rather than a habit.
+	// Options turn steps on and off for this one ticket. NewBody writes the
+	// ticks it is given; the caller decides them. Without a default board that
+	// names options:, a new ticket gets lane.DefaultOptions (planning ticked),
+	// so every ticket goes through the pre-process planner; a per-user default
+	// board can untick it. They are listed anyway, because an option nobody
+	// knows exists is one nobody ticks.
 	b.WriteString("\n## Options\n\n")
 	for _, o := range options {
 		mark := " "

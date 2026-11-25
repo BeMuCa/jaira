@@ -1,0 +1,1 @@
+- ! New tickets now start with planning ticked, so they go through the pre-process (planning) lane; to tick none, run `jaira lanes default --options ''`.
