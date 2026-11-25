@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-25T23:11:20Z
+updated-at: 2026-11-25T23:11:21Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:05:52Z
@@ -64,6 +64,7 @@ question: ""
 - [ ] P3 core/gitref: InboxPrefix 'refs/jaira/inbox/', InboxRefName(slug), ReadInbox(slug), WriteInbox(slug, content, lease) via refRead/refWrite; core/inbox Send(repo, slug, Message) = fetch, read, append JSON line, write with lease, retry on ErrRaceLost (people.Update pattern); Parse lines; tests with a bare remote
 - [ ] P4 core/refsync.Incoming: compare assignee at refs-seen SHA vs tip, classify assigned/taken, sender from assigned-by/updated-by, carry handover-branch/commit; first-ever fetch (no refs-seen.json) is a baseline; read inbox refs for Slug of each name in new Syncer.Me []string and record new message lines; write everything through core/inbox.Record into Store.RepoStateDir(); wire Me in cli/refs.go and tui/refs.go; refsync tests: notes and self-assign make no entry, other's assignment makes one, survives a second Incoming from another tree until acked (DoD 4, 5)
 - [ ] P5 cli 'jaira inbox [--json] [--ack <key|id>] [--all]': runs refs.Incoming when usable, prints grouped rows (bundle by batch+from+milestone/epic per design C), message rows marked; --json entries with kind, from, written_by:human + note for messages, branch/commit; tests (DoD 7, 8, 15)
+- [ ] P6 cli 'jaira msg <person|id> <text...>': id -> its assignee (refuse none, exit 3), canonical name via people list, empty text refused (exit 2), warn when person not active; offline -> nothing written, error; tests (DoD 13, 17, 18)
 
 ## Progress
 - **2026-11-04 21:27 · berkc** — BRAINSTORM (Code-Befund, dann Optionen, Empfehlung zuerst)
