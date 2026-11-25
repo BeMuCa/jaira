@@ -1339,6 +1339,11 @@ func (m *Model) insertText(text string) {
 	case modeCreate, modeDelete, modeReject, modeSendBack:
 		m.input += foldToOneLine(text)
 
+	case modeLanes:
+		if ls := m.laneScreen; ls != nil && ls.form != nil {
+			ls.form.insert(text)
+		}
+
 	case modeLayer:
 		if l := m.layer; l != nil && l.stage == stageForm {
 			l.form.vals[l.form.field] += foldToOneLine(text)
@@ -1564,6 +1569,10 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case modeLanes:
+		if m.laneScreen.form != nil {
+			m.laneScreen.formKey(s, k.Text)
+			return m, nil
+		}
 		done := m.laneScreen.key(s)
 		cmd := m.laneScreen.pendingCmd
 		if done {

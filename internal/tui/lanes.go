@@ -85,6 +85,10 @@ type laneScreen struct {
 	// bool-only signature that every caller and test already relies on.
 	pendingCmd tea.Cmd
 
+	// form is the new-board form B opens (newboard.go); while it is open the
+	// model sends every key to formKey instead of key.
+	form *boardForm
+
 	msg   string
 	isErr bool
 }
@@ -321,6 +325,8 @@ func (ls *laneScreen) key(s string) (done bool) {
 		if ls.focus == 1 {
 			ls.adopt()
 		}
+	case "B":
+		ls.openBoardForm()
 	}
 	return false
 }
@@ -903,6 +909,12 @@ func (ls *laneScreen) render(width, height int) string {
 	sb.WriteString(ls.renderBoard(w))
 	sb.WriteString("\n")
 
+	if ls.form != nil {
+		sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
+		sb.WriteString(ls.renderBoardForm(w))
+		return sb.String()
+	}
+
 	if ls.catalogueOpen {
 		sb.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
 		sb.WriteString(ls.renderCatalogue(w))
@@ -987,9 +999,9 @@ func (ls *laneScreen) render(width, height int) string {
 	// the full footer runs longer than a narrow terminal's column width, and
 	// cutting it off would silently hide a key's name rather than the column
 	// content truncate exists to fit.
-	help := []string{"enter add/remove", "E edit", "x remove", "p publish", "n new", "R refresh", "esc back"}
+	help := []string{"enter add/remove", "E edit", "x remove", "p publish", "n new", "R refresh", "B new board", "esc back"}
 	if len(ls.shared) > 0 {
-		help = []string{"enter add/remove", "E edit", "x remove", "tab switch", "p publish", "a adopt", "esc back"}
+		help = []string{"enter add/remove", "E edit", "x remove", "tab switch", "p publish", "a adopt", "B new board", "esc back"}
 	}
 	for _, l := range wrapHints(help, max(1, w)) {
 		sb.WriteString("\n" + styMeta.Render(l))

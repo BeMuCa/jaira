@@ -309,3 +309,116 @@ func TestLanesTakeABoard(t *testing.T) {
 		t.Errorf("lanes --board vidoe: exit %d (%v), want %d", exitCode(err), err, ExitUsage)
 	}
 }
+
+// 'boards create' is the whole of setting a board up, for an agent too: it
+// needs a description, refuses a board that exists and a type that does not,
+// and the board it writes takes tickets at once.
+func TestBoardsCreate(t *testing.T) {
+	dir := newTwoBoards(t)
+
+	if _, err := runCLI(t, dir, "boards", "create", "research"); exitCode(err) != ExitUsage || !strings.Contains(err.Error(), "--description") {
+		t.Errorf("create without --description: exit %d (%v), want %d naming --description", exitCode(err), err, ExitUsage)
+	}
+	if _, err := runCLI(t, dir, "boards", "create", "research", "--type", "nope", "--description", "x"); exitCode(err) != ExitUsage {
+		t.Errorf("create with an unknown type: exit %d (%v), want %d", exitCode(err), err, ExitUsage)
+	}
+	for _, name := range []string{"video", "default"} {
+		if _, err := runCLI(t, dir, "boards", "create", name, "--description", "x"); exitCode(err) != ExitValidation {
+			t.Errorf("create %s, which exists: exit %d (%v), want %d", name, exitCode(err), err, ExitValidation)
+		}
+	}
+	if d, _ := os.ReadFile(filepath.Join(dir, ticket.DirName, "boards", "video", "lanes", "order")); string(d) != "script\nrender\ndone\n" {
+		t.Errorf("refused create changed video's order file: %q", d)
+	}
+
+	v := jsonCLI(t, dir, "boards", "create", "research", "--description", "Questions to find out before building")
+	if v["name"] != "research" || v["type"] != "code" || v["lanes"].([]any)[0] != "backlog" {
+		t.Errorf("create without --type: %v, want the code lanes", v)
+	}
+	rows := jsonCLI(t, dir, "boards")["boards"].([]any)
+	if r := rows[1].(map[string]any); r["name"] != "research" || r["description"] != "Questions to find out before building" {
+		t.Errorf("boards lists the new board as %v", r)
+	}
+	c := jsonCLI(t, dir, "create", "q", "--board", "research", "--goal", "g", "--context", "c", "--dod", "d", "--assignee", "berk")
+	if c["board"] != "research" || c["status"] != "backlog" {
+		t.Errorf("ticket on the new board: board %v, status %v", c["board"], c["status"])
+	}
+
+	types := jsonCLI(t, dir, "boards", "types")["types"].([]any)
+	if len(types) == 0 || types[0].(map[string]any)["name"] != "code" || types[0].(map[string]any)["description"] == "" {
+		t.Errorf("boards types: %v, want code with a description", types)
+	}
+}
+
+// newBoardRepo is an initialised repository with only today's board.
+func newBoardRepo(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	s, err := ticket.At(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Init(); err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
+// Everything a board can do, without the TUI: pick lanes, land in the
+// catalogue, be built in another repository from it, be published, listed and
+// adopted on a teammate's machine — each with --json.
+func TestBoardsPickSaveShareAndAdoptFromTheCLI(t *testing.T) {
+	t.Setenv("JAIRA_USER", "berk")
+	t.Setenv("JAIRA_HOME", t.TempDir())
+	a, b := newBoardRepo(t), newBoardRepo(t)
+
+	v := jsonCLI(t, a, "boards", "create", "video", "--lanes", "backlog,review,done", "--description", "Video work")
+	if v["catalogue_saved"] != true || v["type"] != "" || len(v["lanes"].([]any)) != 3 {
+		t.Fatalf("create --lanes: %v", v)
+	}
+	for _, args := range [][]string{
+		{"boards", "create", "x", "--lanes", "backlog,nope", "--description", "d"},
+		{"boards", "create", "x", "--lanes", "backlog", "--type", "code", "--description", "d"},
+	} {
+		if _, err := runCLI(t, a, args...); exitCode(err) != ExitUsage {
+			t.Errorf("%v: exit %d (%v), want %d", args, exitCode(err), err, ExitUsage)
+		}
+	}
+
+	types := jsonCLI(t, b, "boards", "types")
+	found := false
+	for _, row := range types["types"].([]any) {
+		r := row.(map[string]any)
+		if r["name"] == "video" {
+			found = r["source"] == "catalogue" && r["description"] == "Video work"
+		}
+	}
+	if !found {
+		t.Fatalf("another repository's boards types does not offer the catalogue board: %v", types)
+	}
+	if c := jsonCLI(t, b, "boards", "create", "clips", "--type", "video", "--description", "Clips"); len(c["lanes"].([]any)) != 3 || c["catalogue_saved"] != true {
+		t.Errorf("create from the catalogue type: %v", c)
+	}
+
+	p := jsonCLI(t, a, "boards", "publish", "video")
+	if p["who"] != "berk" || !strings.HasSuffix(filepath.ToSlash(p["path"].(string)), ".jaira/shared/berk/boards/video") {
+		t.Fatalf("publish: %v", p)
+	}
+	if _, err := runCLI(t, a, "boards", "publish", "video"); exitCode(err) != ExitValidation {
+		t.Errorf("second publish: exit %d, want %d", exitCode(err), ExitValidation)
+	}
+	sh := jsonCLI(t, a, "boards", "shared")
+	if sh["count"] != float64(1) {
+		t.Fatalf("shared: %v", sh)
+	}
+	path := sh["boards"].([]any)[0].(map[string]any)["path"].(string)
+
+	t.Setenv("JAIRA_HOME", t.TempDir()) // a teammate's machine
+	ad := jsonCLI(t, a, "boards", "adopt", path)
+	if ad["name"] != "video" || len(ad["lanes"].([]any)) != 3 {
+		t.Fatalf("adopt: %v", ad)
+	}
+	if _, err := runCLI(t, a, "boards", "adopt", path); exitCode(err) != ExitValidation {
+		t.Errorf("second adopt: exit %d, want %d", exitCode(err), ExitValidation)
+	}
+}
