@@ -73,8 +73,8 @@ mixes committed content with scratch state.
   - Use case: a cheap model implements, a strong model reviews, a person
     accepts.
 - **One agent per ticket.** This is the default. One agent carries a whole
-  ticket through every lane; only the fresh-context lane (`review` on the
-  shipped board) gets a new agent. Set `"dispatch": "lanes"` in
+  ticket through every lane; only the fresh-context lanes (`critique`,
+  `optimize` and `review` on the shipped board) get a new agent. Set `"dispatch": "lanes"` in
   `~/.jaira/settings.json`, or switch "Agents per ticket" under `S` on the
   board, to get one new agent per lane instead.
   - Use case: keep one agent's context from plan to tests, instead of a new
@@ -858,9 +858,10 @@ walk-through in German: **[docs/how-to-work-with-jaira.html](docs/how-to-work-wi
   its own, which `scripts/run-lane.sh` closes once the worker has finished and
   the ticket has left its lane.
 - `/jaira-worker <id>` is the same job done by one agent: it works every lane
-  itself and hands only a lane marked `context: fresh` in its lane file — on a
-  board where no lane says, the last agentic lane before the first lane a person
-  owns, `review` on the shipped board — to a new agent in a tab of its own.
+  itself and hands only a lane marked `context: fresh` in its lane file —
+  `critique`, `optimize` and `review` on the shipped board; on a board where no
+  lane says, the last agentic lane before the first lane a person owns — to a
+  new agent in a tab of its own.
   It is the default: a teamlead starts it instead of the dispatcher unless
   `~/.jaira/settings.json` says `"dispatch": "lanes"`, or the board's settings
   screen (`S`, "Agents per ticket") is switched to lanes. `jaira roles list`

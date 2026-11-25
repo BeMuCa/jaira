@@ -36,6 +36,41 @@ func setUpBoard(t *testing.T) string {
 	return root
 }
 
+// setUpOldBoard is setUpBoard with the lane files made to look like a board
+// written before context: fresh existed, so the default decides which lane is
+// fresh.
+func setUpOldBoard(t *testing.T) string {
+	t.Helper()
+	root := setUpBoard(t)
+	stripLaneContexts(t, root)
+	return root
+}
+
+// stripLaneContexts removes every "context: fresh" line from a board's lane
+// files, so the board reads as one written before the field existed.
+func stripLaneContexts(t *testing.T, root string) {
+	t.Helper()
+	files, err := filepath.Glob(filepath.Join(ProjectLanesDir(root), "*.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range files {
+		b, err := os.ReadFile(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var keep []string
+		for _, l := range strings.Split(string(b), "\n") {
+			if strings.TrimSpace(l) != "context: fresh" {
+				keep = append(keep, l)
+			}
+		}
+		if err := os.WriteFile(p, []byte(strings.Join(keep, "\n")), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 // addFrontmatter writes one line into the frontmatter of a board's lane file.
 func addFrontmatter(t *testing.T, root, id, line string) {
 	t.Helper()
@@ -50,22 +85,23 @@ func addFrontmatter(t *testing.T, root, id, line string) {
 	}
 }
 
-// TestContextDefaultsToReviewOnTheShippedBoard: no shipped lane says
-// context:, so the default decides — and on every lane the binary ships,
-// critique, optimize and testing included, it lands on review. HITL sits
-// between testing and review and only takes a question; counting it as the
-// first lane a person owns would make testing the fresh lane.
-func TestContextDefaultsToReviewOnTheShippedBoard(t *testing.T) {
+// TestContextShippedLanesAreFreshAndAnOldBoardDefaultsToReview: the shipped
+// lanes declare context: fresh on critique, optimize and review, so the offer
+// marks exactly those. A board written before the field has no such line, and
+// there the default decides — it lands on review. HITL sits between testing
+// and review and only takes a question; counting it as the first lane a person
+// owns would make testing the fresh lane.
+func TestContextShippedLanesAreFreshAndAnOldBoardDefaultsToReview(t *testing.T) {
 	t.Setenv("JAIRA_LANES_DIR", t.TempDir())
 	set, err := Load("")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := strings.Join(freshIDs(set), ","); got != "review*" {
-		t.Fatalf("fresh lanes on the shipped offer = %q, want %q", got, "review*")
+	if got := strings.Join(freshIDs(set), ","); got != "critique,optimize,review" {
+		t.Fatalf("fresh lanes on the shipped offer = %q, want %q", got, "critique,optimize,review")
 	}
 
-	root := setUpBoard(t)
+	root := setUpOldBoard(t)
 	board, err := Load(root)
 	if err != nil {
 		t.Fatal(err)
@@ -79,7 +115,7 @@ func TestContextDefaultsToReviewOnTheShippedBoard(t *testing.T) {
 // fresh, and it switches the default off for the whole board — review is no
 // longer fresh just because nobody wrote on it.
 func TestContextDeclaredReplacesTheDefault(t *testing.T) {
-	root := setUpBoard(t)
+	root := setUpOldBoard(t)
 	addFrontmatter(t, root, "in-progress", "context: fresh")
 	set, err := Load(root)
 	if err != nil {
@@ -93,7 +129,7 @@ func TestContextDeclaredReplacesTheDefault(t *testing.T) {
 // TestContextSharedSwitchesTheDefaultOff: shared is how a board says it wants
 // no fresh lane at all. Without it the default would always find one.
 func TestContextSharedSwitchesTheDefaultOff(t *testing.T) {
-	root := setUpBoard(t)
+	root := setUpOldBoard(t)
 	addFrontmatter(t, root, "review", "context: shared")
 	set, err := Load(root)
 	if err != nil {
@@ -130,7 +166,7 @@ func TestContextUnknownValueRunsFresh(t *testing.T) {
 // on the board as the fresh lane, the default does not move to in-progress,
 // and Load says what is wrong.
 func TestContextTypoKeepsTheFreshBoundary(t *testing.T) {
-	root := setUpBoard(t)
+	root := setUpOldBoard(t)
 	addFrontmatter(t, root, "review", "context: Fresh")
 	set, err := Load(root)
 	if err != nil {
@@ -148,7 +184,7 @@ func TestContextTypoKeepsTheFreshBoundary(t *testing.T) {
 // person has no "last look before a person's", and the default marks nothing
 // rather than picking a lane at random.
 func TestContextDefaultNeedsALanePersonOwns(t *testing.T) {
-	root := setUpBoard(t)
+	root := setUpOldBoard(t)
 	if err := os.Remove(filepath.Join(ProjectLanesDir(root), "signoff.md")); err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +201,7 @@ func TestContextDefaultNeedsALanePersonOwns(t *testing.T) {
 // declaration. "context: Shared" on in-progress runs in-progress fresh and
 // leaves the default's fresh review standing; Load names the value.
 func TestContextTypoAddsFreshnessNeverRemovesIt(t *testing.T) {
-	root := setUpBoard(t)
+	root := setUpOldBoard(t)
 	addFrontmatter(t, root, "in-progress", "context: Shared")
 	set, err := Load(root)
 	if err != nil {
@@ -183,7 +219,7 @@ func TestContextTypoAddsFreshnessNeverRemovesIt(t *testing.T) {
 // board has declared itself. review saying shared stays shared, the typo on
 // in-progress still runs that lane fresh, and nothing is implied.
 func TestContextValidSharedWinsOverATypo(t *testing.T) {
-	root := setUpBoard(t)
+	root := setUpOldBoard(t)
 	addFrontmatter(t, root, "review", "context: shared")
 	addFrontmatter(t, root, "in-progress", "context: Shared")
 	set, err := Load(root)

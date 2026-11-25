@@ -6,6 +6,7 @@ after: critique
 precedence: 48
 agentic: true
 model-tier: strong
+context: fresh
 rejects-to: in-progress
 max-rounds: 3
 input-requires: [goal, definition-of-done, outcome-what, diff]
