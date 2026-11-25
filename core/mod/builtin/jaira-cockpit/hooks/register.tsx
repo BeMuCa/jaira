@@ -1157,7 +1157,7 @@ async function parentArgs($: EngineInterface): Promise<string[]> {
 // Without Herdr this session is asked instead: Explain by a subagent, which
 // writes the same note a tab would; Discuss here, since a subagent cannot
 // talk with a person.
-async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discuss'): Promise<void | 'hold'> {
+async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discuss', back = 'in-progress'): Promise<void | 'hold'> {
   const what = `${kind === 'explain' ? t.explain : t.discuss} ${id}`
   if (!board) return fail($, what, t.noBoard)
   // One chat at a time on a ticket a chat holds a copy for: that chat removes
@@ -1180,7 +1180,7 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
   if ((await herdr($)) === undefined) {
     await opened()
     await say($, kind === 'explain' ? t.explainAsked(id) : t.discussHere(id))
-    void $.prompt.submit({ text: kind === 'explain' ? t.explainBySubagent(id, dir, copy) : t.discussInThisChat(id, dir, copy) })
+    void $.prompt.submit({ text: kind === 'explain' ? t.explainBySubagent(id, dir, copy) : t.discussInThisChat(id, dir, back, copy) })
     return 'hold'
   }
   const script = await spawnScript($)
@@ -1189,7 +1189,12 @@ async function openChat($: EngineInterface, id: string, kind: 'explain' | 'discu
     return fail($, what, t.noSpawn)
   }
   // A Discuss chat sends its decision to this session.
-  const parent = kind === 'discuss' ? await parentArgs($) : []
+  // It moves the ticket back to the lane Give back would (backLaneOf): a
+  // board without in-progress refuses that move. Only a lane other than
+  // spawn.sh's default is passed: a project's older spawn.sh, kept by
+  // jaira update --roles because someone edited it, refuses --back.
+  const backArg = kind === 'discuss' && back !== 'in-progress' ? ['--back', back] : []
+  const parent = kind === 'discuss' ? [...await parentArgs($), ...backArg] : []
   const removes = copy === undefined ? [] : ['--copy', copy]
   // Registered before spawn.sh runs, which waits up to two minutes for
   // claude while the row unlocks after BUSY_MS: a second press in that time
@@ -2501,7 +2506,7 @@ export const register: Register = (on, options) => {
                 ? <Button key={`read-${w.id}`} label={t.readExplanation} onPress={() => void readExplanation($, w.id, explained[w.id]!)} />
                 : null}
               {w.question !== ''
-                ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void once($, w.id, () => openChat($, w.id, 'discuss'))} />
+                ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void once($, w.id, () => openChat($, w.id, 'discuss', w.backTo))} />
                 : null}
             </Box>
           </Box>
@@ -2542,7 +2547,7 @@ export const register: Register = (on, options) => {
                   {w.id}{SEP}{w.lane}{SEP}{w.assignee}{w.verdict !== '' ? `${SEP}${w.verdict}` : ''}{' '}
                 </Text>
                 {w.question !== ''
-                  ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void once($, w.id, () => openChat($, w.id, 'discuss'))} />
+                  ? <Button key={`discuss-${w.id}`} label={t.discuss} onPress={() => void once($, w.id, () => openChat($, w.id, 'discuss', w.backTo))} />
                   : null}
               </Box>
               {w.question !== '' ? <Text dimColor wrap="truncate-end">  ? {w.question}</Text> : null}
