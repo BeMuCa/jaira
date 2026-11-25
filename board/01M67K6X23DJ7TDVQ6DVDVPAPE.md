@@ -31,9 +31,11 @@ commits:
   - ed8a1c18b896b50a52ddf407b7fb8b98ad3a604d
   - cb2fef7de6d78d9e325c0c00623a1619ef6028c5
   - 595a841b3bda540fdc0144aa38c08a99ef90300c
+  - aee7831848ef4f20b491752beec50b31c59ab895
   - df805ac87b2bfd8abe66680dbe80b20df246b9e7
+  - c96a0cd2d373604d21c4a4dec528d9011694c325
 created-at: 2026-10-30T23:44:36Z
-updated-at: 2026-11-23T21:28:22Z
+updated-at: 2026-11-23T21:33:08Z
 updated-by: Alexander Sacharov
 outcome-what: "jaira web schreibt unter dem aktuellen jaira-Namen (actAsNow vor jeder Schreibaktion) und die Seite liest nach jedem Fetch neu"
 outcome-why: "Rueckgabe aus signoff: Namen im Web sollen reaktiv sein"

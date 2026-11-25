@@ -16,12 +16,12 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-27T20:52:19Z
-updated-at: 2026-11-23T01:18:36Z
+updated-at: 2026-11-23T22:42:07Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-64bzsr
 claimed-at: 2026-11-23T01:10:10Z
-outcome-what: "jaira show --json gains skipped_lanes: every unticked optional lane ahead of the ticket with lane, option and the 'jaira dod <id> --option <opt>' that turns it on; the agent block says so in one sentence"
+outcome-what: "jaira show --json gains unchosen_lanes: every unticked optional lane ahead of the ticket with lane, option and the 'jaira dod <id> --option <opt>' that turns it on; the agent block says so in one sentence"
 outcome-why: drivers skipped pre-process on tickets that needed a plan because next_lane walks past optional lanes silently (O11)
 outcome-resolves: 64BZSR
 review-summary: "Added lane.Set.UnchosenAhead (core/lane/next.go). It walks the lanes after the ticket's current lane up to the first terminal lane and collects every lane whose requires-option the ticket's Options leave unticked. It returns nothing for a ticket that is parked, waiting on a question, finished or in an unknown lane, the same guard Next uses. ticketJSON (internal/cli/tickets.go) prints the result as unchosen_lanes, never null: one entry per lane with lane, option and enable='jaira dod <ID> --option <option>'. The field therefore appears in every payload built from ticketJSON: show, list, move, resume and create. The agent block (core/board/announce.go, and its copies in CLAUDE.md and AGENTS.md) gains one sentence pointing drivers at the field. The release note says to read the field and to run jaira update. A table test covers backlog, todo, todo with planning ticked, in-progress and done. A driver that used to see only next_lane=todo from backlog now also learns that pre-process exists and how to switch it on."
@@ -74,3 +74,4 @@ review-check: "1. cd into a new empty directory and run: git init && git commit 
 - **2026-11-23 01:16 · BeMuCa** — bughunt: change: internal/cli/tickets.go:1725 - class: option name embedded unquoted in the printed 'enable' command; example: a lane with requires-option: "my step" (lane.go:365 only trims) prints 'jaira dod <id> --option my step', which ticks a new option 'my' and exits 0 while the lane stays off the path; ran: jaira dod 6BPZ6P --option my step (exit 0, '[x] my' added; could not get the spaced lane into unchosen_lanes on a scratch board, so the lane side is read). Edge, not a blocker: stock lanes have single-word options
 - **2026-11-23 01:16 · BeMuCa** — bughunt: done at 25217204c - 1 finding (1 change, 0 pre-existing) in 3 modules, first hunt; concurrency, error paths, input, permissions checked; files: AGENTS.md CLAUDE.md core/board/announce.go core/lane/next.go core/release/notes/64BZSR.md internal/cli/json_test.go internal/cli/tickets.go
 - **2026-11-23 01:16 · BeMuCa** — testing: note: class: option name pasted unquoted into a shell command; example: a custom lane with requires-option 'my step' would get enable 'jaira dod <id> --option my step', which ticks 'my'; fix: quote the option when it holds anything but [A-Za-z0-9._-] - the gate's own refusal at core/gate/gate.go:298 has the same pattern (pre-existing), so fix both together. Not a blocker: stock options are single words and the lane parser does not reject spaces.
+- **2026-11-23 22:42 · BeMuCa** — Signoff follow-up (Berk 2026-11-23): the enable command in unchosen_lanes and in the gate refusal now quotes an option via ticket.ShellWord; tests added for space option, release note line added. Commit e3d9caff6

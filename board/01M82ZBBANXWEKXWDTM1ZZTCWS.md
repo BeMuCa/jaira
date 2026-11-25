@@ -1,7 +1,7 @@
 ---
 id: 01M82ZBBANXWEKXWDTM1ZZTCWS
 title: "Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts"
-status: review
+status: done
 ready: true
 creator: BeMuCa
 goal: "Oeffnet eine Person ein Ticket in human, review oder signoff in der TUI, sieht sie oben in dieser Reihenfolge: So pruefst du (review-check), Was gemacht wurde (outcome what/why), Offene Frage (question, nur wenn eine da ist), die Code-Aenderungen und die DoD mit Proofs. Felder, die der Person bei der Entscheidung nicht helfen, stehen nicht mehr auf dieser Ansicht."
@@ -17,24 +17,42 @@ tags:
   - tui
 blocked-by: []
 related: []
-commits: []
+commits:
+  - f03f8598bf40e6c044bc5f76cff66d1934e6ca5c
+  - 0cfce40a229a99940a9313b9fa1283b7c50c0507
+  - 73d06b02459ba0488e0a7cb8ce137a1d5644afc7
+  - 383b42d9eff50fe92ea74b9ac55b245d3a26f297
+  - 2880173dd19a0719180344d11060a1c608f79fcf
+  - f0b0e438bbaccf12bd0da0a0951979e4069daf21
 created-at: 2026-11-23T01:11:56Z
-updated-at: 2026-11-23T21:28:05Z
+updated-at: 2026-11-23T21:42:27Z
 assignee: Alexander Sacharov
 updated-by: Alexander Sacharov
-claimed-by: DESKTOP-RFTCH11-79231
-claimed-at: 2026-11-23T20:54:57Z
+claimed-by: DESKTOP-RFTCH11-22738
+claimed-at: 2026-11-23T21:30:43Z
 outcome-what: "Sign-off screen (signoff and human) shows blocker lines, check, what, why, question, commits, DoD with proofs; 'i' appends the full detail pane body. Blocker detection uses the cockpit's MARKER/BLOCKER regexes; a label standing alone keeps its row as written."
 outcome-why: "Berk 2026-11-23: the check sat last under a page of account; rounds 2-3: bughunt found blocker forms hidden or emptied, and human-lane context/notes unreachable."
 outcome-resolves: "DoD 1-5; tests TestSignOffViewShowsTheDecisionFirst, TestSignOffKeepsBlockersOnTop (11 forms, 3 label-alone, 5 non-blockers), TestHumanLaneOpensTheDecisionScreen, TestDetailsCarryContextAndNotes; checked: concurrency n/a (render only), error paths n/a, unusual input - blocker forms, label alone, empty fields; permissions n/a"
-review-summary: none
-review-gaps: "round 3: nothing to remove - the fallback is 3 lines inside blockerLines. Earlier rounds: hand-picked details list, gapLines, isBlockerLine removed; regex mirrors hooks/board.ts (two languages). Left: Details repeat Commits/DoD (whole detail pane by design)."
-test-verdict: "pass: go vet ./... + go test -race -count=1 ./internal/tui RC=0 at 2880173dd (full race suite RC=0 at 73d06b024); DoD 1-5 verified in the tree; screen exercised in tmux on a scratch board; render-only, writes nothing"
-hunt-verdict: "pass: bughunt done at 2880173dd - 0 blocker, 1 change edge (a label-only blocker row shows the label, finding is behind 'i'; note for the person), 0 pre-existing; round 1 pre-existing quoted-path finding left as note (EH6Z0N's diff code)"
-round: 3
-back-from: testing
+review-summary: "Delta review from 2880173dd to f0b0e438b. Both fix-now items of the first review are answered: the help screen now has an 'a f i' row naming 'i' (view.go renderHelp), and a blocker label with nothing after it (or only leftover emphasis) now shows the next non-empty line as its finding, list marker dropped, unless that line is another blocker label; with no next line the label stays as written (signoff.go blockerLines/nextFinding). The test asserts the shown text for 5 inputs. go vet and go test ./internal/tui pass."
+review-gaps: |-
+  note: edge: signoff.go:174 blockerLines trims * _ ` from both ends of the finding, so a finding that ends in code or emphasis is cut: 'blocker: run `go test`' shows 'run `go test', '**blocker:** leaks to **stderr**' shows 'leaks to **stderr'; fix: strings.TrimLeft (only the emphasis left over after the label), plus a test with a trailing backtick
+  note: edge: signoff.go:188 nextFinding takes whatever line comes next - a heading, 'none', an edge of another kind, only the first item of a list (bughunt 21:35); the smaller design is to drop nextFinding and show a lone label as written, as the cockpit does, with the whole gaps behind 'i'. That reverses the first review's fix-now, so it is the person's call
+  note: limit: 'i' shows the whole detail pane, so Commits (recorded list only), DoD and 'Before this can start' repeat below the top block - chosen in round 2 to keep one renderer
+  note: elsewhere: internal/tui/diffpane.go:106-112,202-210 keep quoted non-ASCII paths from git show --patch (core/gitrepo/git.go:149 lacks core.quotePath=false); there before this change (EH6Z0N)
+test-verdict: "pass: go vet ./... + go test -race -count=1 ./... RC=0 at f0b0e438b; DoD 1-5 verified in the tree; screen exercised in tmux earlier, help row checked by TestHelpExplainsEveryCardMark; render-only, writes nothing"
+hunt-verdict: "pass: bughunt done at f0b0e438b - 0 blocker, 1 change edge (lone blocker label takes the next line whatever it is; note for the person), 0 pre-existing"
+round: 4
+back-from: review
 back-by: lane
-back-count: 2
+back-count: 1
+review-verdict: "accept: DoD items 1-5 are met and both earlier fix-now items are closed; the remaining findings are cosmetic edges in how a blocker's text is shown, the row itself always appears"
+review-round: 4
+review-verdict-gaps: |-
+  note: edge: signoff.go:174 blockerLines trims * _ ` from both ends of the finding, so a finding that ends in code or emphasis is cut: 'blocker: run `go test`' shows 'run `go test', '**blocker:** leaks to **stderr**' shows 'leaks to **stderr'; fix: strings.TrimLeft (only the emphasis left over after the label), plus a test with a trailing backtick
+  note: edge: signoff.go:188 nextFinding takes whatever line comes next - a heading, 'none', an edge of another kind, only the first item of a list (bughunt 21:35); the smaller design is to drop nextFinding and show a lone label as written, as the cockpit does, with the whole gaps behind 'i'. That reverses the first review's fix-now, so it is the person's call
+  note: limit: 'i' shows the whole detail pane, so Commits (recorded list only), DoD and 'Before this can start' repeat below the top block - chosen in round 2 to keep one renderer
+  note: elsewhere: internal/tui/diffpane.go:106-112,202-210 keep quoted non-ASCII paths from git show --patch (core/gitrepo/git.go:149 lacks core.quotePath=false); there before this change (EH6Z0N)
+review-check: "1. cd /home/alex/projects/.worktrees/jaira-zztcws && go run ./cmd/jaira  2. pick a ticket in signoff (or set one: jaira set <id> review-gaps=$'blocker:\\n- the limit resets on restart\\nnote: edge: wording')  3. open it: the top reads, in order: blocker 'the limit resets on restart', How to check, What was done, Why, the open question if any, Commits/diff, DoD with proofs - and no problem/summary/verdict rows  4. press i: a Details block appears with problem, resolves, summary, the full gaps, verdict, context and notes  5. press ? : the help lists 'a f i'  6. a ticket in the human lane opens to the same screen, but a and f do nothing there"
 ---
 
 # Die Abnahme-Ansicht zeigt oben, wie man prueft, was gemacht wurde, die offene Frage, den Code-Diff und die DoD - und sonst nichts
@@ -95,3 +113,21 @@ back-count: 2
 - **2026-11-23 21:27 · Alexander Sacharov** — hunt report: 1 finding (1 change, edge, not a blocker), note on ZZTCWS | none read whole; read as a diff since 383b42d9e: internal/tui/signoff.go, internal/tui/signoff_test.go (the other 7 files have no diff) | did not compare with the cockpit's own handling of a lone label (hooks/board.ts is outside this change)
 - **2026-11-23 21:27 · Alexander Sacharov** — bughunt: done at 2880173dd - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since 383b42d9e; concurrency, error paths, input, permissions checked; files: core/release/notes/ZZTCWS.md internal/tui/diffpane.go internal/tui/diffpane_test.go internal/tui/model.go internal/tui/owed_test.go internal/tui/signoff.go internal/tui/signoff_test.go internal/tui/tags_test.go internal/tui/view.go
 - **2026-11-23 21:28 · Alexander Sacharov** — waiting: fresh review agent (run-lane.sh, herdr tab) since 22:28
+- **2026-11-23 21:31 · Alexander Sacharov** — review: done at 2880173dd
+- **2026-11-23 21:31 · Alexander Sacharov** — review: fix-now: (1) renderHelp lacks the 'i' key row; (2) blockerLines: a label standing alone shows the label - take the next non-empty line as the finding and assert the text in the test
+- **2026-11-23 21:33 · Alexander Sacharov** — review fix-now closed: (1) help row 'a f i' (view.go renderHelp) names 'i' - folded into the a/f row, a separate row pushed '@name' off the 60-row help in TestHelpExplainsEveryCardMark; (2) blockerLines: a label with no finding (bare, or only emphasis left) takes the next non-empty line, list marker dropped, unless that line is a blocker label itself; no next line keeps the label. Let stand: a lone label followed by a 'note:' line takes that line - telling finding kinds apart would be a new rule (edges-grow).
+- **2026-11-23 21:33 · Alexander Sacharov** — critique (after review give-back, reads only the two fix-now notes and f0b0e438b): help names 'i' - addressed (view.go 'a f i' row); lone label takes the next line - addressed (nextFinding, 5 cases in TestSignOffKeepsBlockersOnTop). Nothing new. review-summary=none.
+- **2026-11-23 21:34 · Alexander Sacharov** — waiting: bughunt after review fix (subagent) and full race suite (bg) since 22:34
+- **2026-11-23 21:35 · Alexander Sacharov** — bughunt: change: internal/tui/signoff.go:176 (nextFinding, :188) - class: a blocker label standing alone takes the next non-empty line whatever it is - a heading, a 'none' line, a gap of another kind - and only the first of several items listed under it; examples: 'blocker:\n- a\n- b' shows 'a' and drops blocker b; '**Blocker:**\n\n## Edges' shows '## Edges' as the blocker; 'blocker:\nedge: cosmetic' shows the cosmetic edge as the blocker; 'blocker:\n- none' shows a blocker row reading 'none'. Not a blocker: the row still says blocker and the whole review-gaps is behind 'i', but the finding shown can be the wrong text. The cockpit (hooks/board.ts:345 BLOCKER, :339 NO_GAP) never consumes the next line, so the two now disagree on what the blocker says; blame: f0b0e438b (names ZZTCWS); ran: scratch go test calling blockerLines on the four inputs (outputs as above)
+- **2026-11-23 21:35 · Alexander Sacharov** — hunt report: 1 finding, 1 change (edge, no blocker), as a note on ZZTCWS | read as a diff since 2880173dd: internal/tui/signoff.go, signoff_test.go, view.go; no file new to the change, the others unchanged since | nothing left unchecked
+- **2026-11-23 21:35 · Alexander Sacharov** — bughunt: done at f0b0e438b - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since 2880173dd; concurrency, error paths, input, permissions checked; files: core/release/notes/ZZTCWS.md internal/tui/diffpane.go internal/tui/diffpane_test.go internal/tui/model.go internal/tui/owed_test.go internal/tui/signoff.go internal/tui/signoff_test.go internal/tui/tags_test.go internal/tui/view.go
+- **2026-11-23 21:36 · Alexander Sacharov** — testing: note: edge: the lone-label heuristic (review fix-now) keeps producing edges (heading, 'none', other kind, only first of a list). Smaller design if the person wants it: drop nextFinding and show a lone label as written, like the cockpit, which never reads the next line - the full gaps are behind 'i'. Not done here: it reverses the reviewer's fix-now.
+- **2026-11-23 21:36 · Alexander Sacharov** — waiting: fresh review agent #2 (run-lane.sh) since 22:36
+- **2026-11-23 21:38 · Alexander Sacharov** — review: done at f0b0e438b
+- **2026-11-23 21:38 · Alexander Sacharov** — report: sign-off screen (signoff+human) leads with blocker, check, what, why, question, commits, DoD; 'i' shows the whole ticket; stacked on EH6Z0N, merge after it | signoff, context unknown | 4 review notes for the person: trailing `/** trimmed off a blocker text (small fix: TrimLeft), lone-label next-line heuristic (smaller design: drop nextFinding - reverses review 1's fix-now, person's call), Details repeat Commits/DoD, quoted non-ASCII paths in EH6Z0N's diff pane; branch not pushed
+- **2026-11-23 21:42 · Alexander Sacharov** — Accepted from signoff: angenommen:
+- note: edge: signoff.go:174 blockerLines trims * _ ` from both ends of the finding, so a finding that ends in code or emphasis is cut: 'blocker: run `go test`' shows 'run `go test', '**blocker:** leaks to **stderr**' shows 'leaks to **stderr'; fix: strings.TrimLeft (only the emphasis left over after the label), plus a test with a trailing backtick
+- note: edge: signoff.go:188 nextFinding takes whatever line comes next - a heading, 'none', an edge of another kind, only the first item of a list (bughunt 21:35); the smaller design is to drop nextFinding and show a lone label as written, as the cockpit does, with the whole gaps behind 'i'. That reverses the first review's fix-now, so it is the person's call
+- note: limit: 'i' shows the whole detail pane, so Commits (recorded list only), DoD and 'Before this can start' repeat below the top block - chosen in round 2 to keep one renderer
+- note: elsewhere: internal/tui/diffpane.go:106-112,202-210 keep quoted non-ASCII paths from git show --patch (core/gitrepo/git.go:149 lacks core.quotePath=false); there before this change (EH6Z0N)
+- **2026-11-23 21:42 · Alexander Sacharov** — cockpit: accepted by the person, signoff -> done
