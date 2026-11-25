@@ -4,7 +4,7 @@ title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht 
 status: todo
 ready: true
 creator: berkc
-assignee: berkc
+assignee: Berk
 goal: "Weist mir jemand anderes ein Ticket zu (einzeln oder alle Tickets eines Milestones/Epics mit einem Befehl), zeigt das Board eine bleibende Nachricht mit Absender, bis ich das Ticket oeffne oder quittiere; das Ticket zeigt 'Von -> An'; gesehen liegt lokal unter ~/.jaira/state, nie im Ticket."
 context: |-
   Wunsch berkc 31.10.2026, Punkt 5, im Original abgebrochen: 'after you get assigned a ticket or milestone (or epic) from a colleague or the web user (PM) you see it in the board as a ...'. Am 04.11. ergaenzt: 'as a message or something - weiss aber nicht wie man das umsetzen kann, muss man brainstormen'.
@@ -17,8 +17,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-04T21:43:02Z
-updated-by: berkc
+updated-at: 2026-11-25T23:02:14Z
+updated-by: Berk
 claimed-by: berk-ca-1280500
 claimed-at: 2026-11-04T21:24:22Z
 question: ""
