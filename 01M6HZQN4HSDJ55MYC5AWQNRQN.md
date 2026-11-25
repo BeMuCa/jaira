@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-25T23:48:55Z
+updated-at: 2026-11-25T23:57:13Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -149,3 +149,4 @@ I) people: 'jaira people' gains 'active' (assignees + creators of board tickets,
 - **2026-11-25 23:12 · Berk** — in-progress split into 4 sequential Haiku runs (P1-P4, P5-P7, P8-P10, P11-P13); the last one moves to critique
 - **2026-11-25 23:13 · Berk** — waiting: in-progress P1-P4 (haiku subagent) since 00:13
 - **2026-11-25 23:48 · Berk** — P2 core/inbox: Ack records the key as acked even when no entry is there, so a later Record of that key is refused. Clean turns newline/tab into a space and drops other control chars after stripping ANSI; stored text stays verbatim. Lock file is inbox.lock beside inbox.json in the repo state dir (ticket.LockFile needs the dir to exist, so update() MkdirAlls first).
+- **2026-11-25 23:57 · Berk** — P2 fix: TestConcurrentRecordLosesNothing timed out on the ticket lock (5s wait) under load: load avg 12.9 on 8 cores made each fsync in WriteAtomic slow, and a writer that just released re-takes the O_EXCL lock before queued waiters poll, so one waiter ran out of its wait. Decision: update() retries LockFile up to lockAttempts=5 instead of failing the write; the test is not shrunk. Lock release is already on every path (defer unlock). Commit 294aa5dea landed with this test failing: my pipe hid the go test exit code. Fixed here in a new commit.
