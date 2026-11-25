@@ -175,6 +175,7 @@ type Model struct {
 	diffDir       string
 	diffNotice    paneNotice
 	diffScroll    int
+	diffHScroll   int
 	diffFocus     bool
 	diffSel       int
 	diffOpen      int
@@ -1733,6 +1734,14 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				m.follow.focusLeft = !m.follow.focusLeft
 			} else if m.diffPaneShown() {
 				m.diffFocus = !m.diffFocus
+			}
+		case "left":
+			if m.diffFocus && m.diffPaneShown() {
+				m.diffPan(-diffPanStep)
+			}
+		case "right":
+			if m.diffFocus && m.diffPaneShown() {
+				m.diffPan(diffPanStep)
 			}
 		case "o":
 			if m.diffPaneShown() {

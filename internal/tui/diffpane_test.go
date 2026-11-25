@@ -641,3 +641,101 @@ func TestOKeyFallsBackToTheEditorWhenTheIDEIsMissing(t *testing.T) {
 		})
 	}
 }
+
+// The open file scrolls with the arrows: down moves its rows under the pinned
+// header and stops at its last row, and the files after it show below it.
+func TestDownScrollsTheOpenFileAndStopsAtItsLastRow(t *testing.T) {
+	m := diffModel(t, 160, "signoff")
+	m.render()
+	m.Update(key("tab"))
+	m.Update(key("enter"))
+	out := stripANSI(m.renderDiffPane(77, 4))
+	if !strings.Contains(out, "internal/a.go") || !strings.Contains(out, "x := 1") {
+		t.Fatalf("open file misses its header or its first row:\n%s", out)
+	}
+	// The file's rows start at its hunk header, so two downs put the removed
+	// line on top and the context line above it is gone.
+	m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	out = stripANSI(m.renderDiffPane(77, 4))
+	if strings.Contains(out, "x := 1") || !strings.Contains(out, "y := 3") {
+		t.Errorf("two downs did not scroll the rows of the file:\n%s", out)
+	}
+	m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	if out = stripANSI(m.renderDiffPane(77, 4)); !strings.Contains(out, "z := 4") {
+		t.Errorf("three downs do not show the added line z := 4:\n%s", out)
+	}
+	for range 20 {
+		m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	}
+	m.render()
+	if last := len(m.diffFileRows(m.diffHeaders()[0])) - 1; m.diffScroll != last {
+		t.Errorf("scroll = %d after many downs, want the last row %d", m.diffScroll, last)
+	}
+	m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
+	if m.diffScroll != len(m.diffFileRows(m.diffHeaders()[0]))-2 {
+		t.Errorf("up from the end moved the scroll to %d", m.diffScroll)
+	}
+}
+
+// Files after the open one show their headers below its rows.
+func TestFilesAfterTheOpenOneShowBelowIt(t *testing.T) {
+	m := diffModel(t, 160, "signoff")
+	m.diffOpen = 0
+	if out := stripANSI(m.renderDiffPane(77, 12)); !strings.Contains(out, "docs/b.md") {
+		t.Errorf("the file after the open one is not listed:\n%s", out)
+	}
+}
+
+// Right and left move the open file's code sideways, the sign and the gutter
+// staying put, and stop at the longest row of the file.
+func TestLeftAndRightScrollTheCodeSideways(t *testing.T) {
+	m := diffModel(t, 160, "signoff")
+	m.diffRows = parseDiff("diff --git a/x.txt b/x.txt\n@@ -1 +1 @@\n+abcdefghijklmnopqrstuvwxyz\n")
+	m.diffOpen = 0
+	m.render()
+	m.Update(key("tab"))
+	m.Update(tea.KeyPressMsg{Code: tea.KeyRight})
+	if m.diffHScroll != 8 {
+		t.Fatalf("right: hscroll = %d, want 8", m.diffHScroll)
+	}
+	out := stripANSI(m.renderDiffPane(40, 6))
+	if !strings.Contains(out, "+ijklmnop") || strings.Contains(out, "abc") {
+		t.Errorf("right did not cut the code from column 8:\n%s", out)
+	}
+	for range 4 {
+		m.Update(tea.KeyPressMsg{Code: tea.KeyRight})
+	}
+	m.render()
+	if m.diffHScroll != 26 {
+		t.Errorf("hscroll = %d after running off the row, want 26 (its 27 runes less the sign)", m.diffHScroll)
+	}
+	m.Update(tea.KeyPressMsg{Code: tea.KeyLeft})
+	if m.diffHScroll != 18 {
+		t.Errorf("left: hscroll = %d, want 18", m.diffHScroll)
+	}
+}
+
+// 'o' opens the row at the top of the open file, not the file's header.
+func TestOKeyOpensTheTopRowOfTheOpenFile(t *testing.T) {
+	var gotArgv []string
+	orig := openInCode
+	openInCode = func(_ string, argv []string) error {
+		gotArgv = argv
+		return nil
+	}
+	t.Cleanup(func() { openInCode = orig })
+
+	m := diffModel(t, 160, "signoff")
+	m.diffDir = "/repo/worktree"
+	m.render()
+	m.Update(key("tab"))
+	m.Update(key("enter"))
+	m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	m.render()
+	m.Update(key("o"))
+	if got := gotArgv[len(gotArgv)-1]; got != "internal/a.go:11" {
+		t.Errorf("o opened %q, want the top row internal/a.go:11", got)
+	}
+}

@@ -27,6 +27,9 @@ const diffSplitMinWidth = 140
 // it did before the diff was added, and the diff gets what is left.
 const diffLeftWidth = 78
 
+// diffPanStep is how many columns left or right moves the open file's code.
+const diffPanStep = 8
+
 // diffRow is one rendered row of the diff pane. Every row is one line on the
 // screen, so the scroll position is an index into the rows.
 type diffRow struct {
@@ -326,7 +329,7 @@ func (m *Model) loadDiff(t *ticket.Ticket) {
 		m.diffScroll = 0
 		m.diffFocus = false
 		m.diffOpened = ""
-		m.diffSel, m.diffOpen = 0, -1
+		m.diffSel, m.diffOpen, m.diffHScroll = 0, -1, 0
 		m.diffScrollFor = t.ID
 	}
 }
@@ -390,6 +393,7 @@ func (m *Model) diffShown(body int) []int {
 	hdr := hdrs[m.diffOpen]
 	rows := m.diffFileRows(hdr)
 	m.diffScroll = min(max(m.diffScroll, 0), max(len(rows)-1, 0))
+	m.diffHScroll = min(max(m.diffHScroll, 0), m.diffFileWidth(rows))
 	shown := append([]int{hdr}, rows[m.diffScroll:]...)
 	return append(shown, hdrs[m.diffOpen+1:]...)
 }
@@ -399,19 +403,42 @@ func (m *Model) diffShown(body int) []int {
 func (m *Model) diffTargetRow() int {
 	hdrs := m.diffHeaders()
 	if m.diffOpen >= 0 && m.diffOpen < len(hdrs) {
-		return hdrs[m.diffOpen]
+		rows := m.diffFileRows(hdrs[m.diffOpen])
+		if len(rows) == 0 {
+			return hdrs[m.diffOpen]
+		}
+		return rows[min(m.diffScroll, len(rows)-1)]
 	}
 	return hdrs[min(max(m.diffSel, 0), len(hdrs)-1)]
 }
 
 // diffStep moves the pane by d: the file selection while no file is open, the
-// open file's rows otherwise.
+// open file's rows otherwise. The rows' upper bound is applied when they are
+// shown, since that is where the file's rows are known.
 func (m *Model) diffStep(d int) {
 	if m.diffOpen < 0 {
 		m.diffSel = min(max(m.diffSel+d, 0), max(len(m.diffHeaders())-1, 0))
 		return
 	}
-	m.diffScroll += d
+	m.diffScroll = max(m.diffScroll+d, 0)
+}
+
+// diffPan moves the open file's code sideways by d columns. diffShown keeps the
+// move inside the file's longest row.
+func (m *Model) diffPan(d int) {
+	if m.diffOpen >= 0 {
+		m.diffHScroll = max(m.diffHScroll+d, 0)
+	}
+}
+
+// diffFileWidth is the length in columns of the file's longest row, sign not
+// counted: how far its code can be scrolled sideways.
+func (m *Model) diffFileWidth(rows []int) int {
+	w := 0
+	for _, i := range rows {
+		w = max(w, len([]rune(m.diffRows[i].text))-1)
+	}
+	return w
 }
 
 // toggleDiffFile opens the selected file, or closes the open one, which gives the
@@ -629,12 +656,17 @@ func (m *Model) diffLine(r diffRow, width, nw, sel int) string {
 		{num(r.old) + " " + newNum + " │ ", bg.Foreground(colFaint)},
 		{r.text[:1], sign},
 	}
+	// The code after the sign scrolls sideways; the sign and the gutter stay, and
+	// the word span moves with the text it marks.
 	rs := []rune(r.text)
-	if r.to > r.from {
+	off := min(m.diffHScroll, max(len(rs)-1, 0))
+	rs = append(rs[:1:1], rs[1+off:]...)
+	from, to := max(r.from-off, 1), max(r.to-off, 1)
+	if r.to > r.from && to > from {
 		segs = append(segs,
-			diffSeg{string(rs[1:r.from]), bg},
-			diffSeg{string(rs[r.from:r.to]), wordBg},
-			diffSeg{string(rs[r.to:]), bg})
+			diffSeg{string(rs[1:from]), bg},
+			diffSeg{string(rs[from:to]), wordBg},
+			diffSeg{string(rs[to:]), bg})
 	} else {
 		segs = append(segs, diffSeg{string(rs[1:]), bg})
 	}
