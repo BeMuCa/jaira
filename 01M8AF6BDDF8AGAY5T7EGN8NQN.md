@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-25T23:06:36Z
+updated-at: 2026-11-25T23:06:41Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-25T23:04:48Z
@@ -48,6 +48,8 @@ claimed-at: 2026-11-25T23:04:48Z
 - [ ] jaira-worker: the old 'options into your report' case narrowed to 'SendMessage to main refused or not there (foreground subagent, headless)'; 'When you wait' bullet gets the main case too
 - [ ] jaira-dispatcher 'Where the question goes': same new case and narrowed fallback; workers' questions it carries go to main the same way
 - [ ] jaira-teamlead 'When to stop': a message from a subagent you started in the background is handled like a dispatcher question — AskUserQuestion with its options unchanged, jaira note, answer back with SendMessage to that agent
+- [ ] append new hashes to core/shipped/shipped.sha256 as the core/shipped tests demand; go test ./core/shipped ./core/role -count=1
+- [ ] release note core/release/notes/GN8NQN.md, one line
 
 ## Progress
 
