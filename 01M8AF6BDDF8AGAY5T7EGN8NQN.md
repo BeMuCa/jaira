@@ -20,7 +20,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-25T23:06:48Z
+updated-at: 2026-11-25T23:06:53Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-25T23:04:48Z
@@ -54,3 +54,4 @@ stop-after-fix: "true"
 
 ## Progress
 - **2026-11-25 23:06 · Berk** — plan decisions: (1) how an agent knows it is a background subagent: it does not need to know — it calls SendMessage to="main"; accepted = background, refused/no tool = foreground/headless -> old way. No detection rule to maintain. (2) jaira-role-lane NOT changed: its questions go to the dispatcher via the ticket question field and run-lane.sh exit 5 / its own report to the caller; sending to main would skip the dispatcher that carries it. (3) jaira-role-pr not changed: grep for 'options go into your report' hits only worker and dispatcher; pr's no-parent case reports in its own tab. (4) worker still sets the question field beside the note so a restarted worker and the cockpit see it open. (5) out of independent work: waiting note + end turn with the options on top of the status line, so nothing is lost if the answer never comes. Never pick an option itself.
+- **2026-11-25 23:06 · Berk** — stop-after-fix=true: the change is skill text only, no code; a further hunt after a fix cannot find anything worth a round
