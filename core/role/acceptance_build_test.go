@@ -22,7 +22,7 @@ func TestAcceptanceBuildPersonItems(t *testing.T) {
 	if _, err := install(dir, false, true, false); err != nil {
 		t.Fatal(err)
 	}
-	build := filepath.Join(dir, "jaira-role-acceptance", "build.py")
+	build := filepath.Join(dir, "jaira-role-interreview", "build.py")
 
 	data := func(person string) string {
 		p := ""
