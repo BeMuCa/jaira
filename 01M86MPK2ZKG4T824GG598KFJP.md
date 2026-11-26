@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:10:55Z
+updated-at: 2026-11-26T08:11:20Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -90,3 +90,4 @@ review-check: "1. cd in den Worktree feat/98kfjp  2. go test -count=1 -race ./co
 - **2026-11-26 08:09 · Sascha** — testing: note: limit: lokales Ref-Lock laenger als 1 s nach angenommenem Push (Fall: ein abgestuerztes git hinterliess eine .lock-Datei) - Write meldet den git-Fehler, Flush Failed, der Eintrag bleibt mit alter Lease und verliert in der naechsten Runde gegen die eigene Schreibung; Verhalten wie vor dem Ticket, laut. Bughunt r2 gitref.go:555. Entschieden vom Teamlead, Option 1.
 - **2026-11-26 08:09 · Sascha** — waiting: review (fresh agent, Herdr-Tab via run-lane.sh) since 09:09
 - **2026-11-26 08:10 · Sascha** — review: done at a6c795086
+- **2026-11-26 08:11 · Sascha** — report: publish laesst update-ref nach angenommenem Push bis 1 s auf ein fremdes Ref-Lock warten (core.filesRefLockTimeout=1000); langes Lock bleibt laut (Teamlead Option 1); 3 Tests, Release-Note | signoff, context 154k of 1000k, cache warm 60 min | offen: Annahme durch eine Person; 3 notes (limit langes Lock, edge Testtiming Windows, elsewhere gitref.go:998); Branch nicht gepusht, Ticketdatei uncommitted bis zum Logbook-Commit
