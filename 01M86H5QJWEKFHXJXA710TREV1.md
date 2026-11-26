@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T07:59:37Z
+updated-at: 2026-11-26T07:59:42Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -34,7 +34,8 @@ goal: "reap.sh liest ein gescheitertes 'herdr pane get' nur dann als geschlossen
   proof: reap.sh hget() + pane/tab get in the close loop; TestReapReadsOnlyNotFoundAsAClosedTab (timeout, silent, tab get timeout: worktree, branch, records kept)
 - [x] Ein Pane, den herdr nicht kennt (not_found bzw. pane_not_found), wird wie bisher als geschlossen behandelt; Test
   proof: TestReapReadsOnlyNotFoundAsAClosedTab cases 'pane unknown to hc', 'pane unknown to the old herdr', 'tab unknown to hc'
-- [ ] Release-Note in core/release/notes/0TREV1.md
+- [x] Release-Note in core/release/notes/0TREV1.md
+  proof: core/release/notes/0TREV1.md
 
 ## Options
 
