@@ -23,7 +23,7 @@ related:
   - 01M58G28438KJJD3YDGM2B4KC9
 commits: []
 created-at: 2026-11-23T22:17:22Z
-updated-at: 2026-11-26T11:00:17Z
+updated-at: 2026-11-26T11:03:30Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-wfhpzt
@@ -31,7 +31,7 @@ claimed-at: 2026-11-26T10:46:36Z
 outcome-what: "The Compact View (v) sets a lane: t steps the focused lane's tier, + and - its agents (1-9). Each press rewrites one frontmatter line of the lane file (core/lane/tune.go SetTier, SetAgents), parsed before it is written; the step shows the planned count in front of its tier (3×cheap), a line under the graph names the file written."
 outcome-why: "The flow was visible (R68J0X) and the key existed (FSPJP9), but changing who runs a lane still meant opening the lane file by hand."
 outcome-resolves: "Concurrency: atomic write; a hand edit between read and write loses (noted). Error paths: a refused or failed write opens the REFUSED box and leaves the file alone; a reload error is shown, not dropped. Unusual input: tier taken from other lane files goes through SetScalar quoting; agents clamps at 1 and 9 and writes nothing there; lanes without agent step or without a file refuse. Permissions: writes only l.Source and, for a byte-equal custom lane, its catalogue twin as E does. Open: a shipped lane set this way is skipped by 'jaira update --lanes'."
-review-summary: "none"
+review-summary: "The compact view (v) can now change a lane's settings. With a lane highlighted, t steps its model-tier (cheap, strong and every tier another lane file of the board names, alphabetically, round and round) and + (or =) / - set its agents between 1 and 9. Each press goes through core/lane/tune.go: under a lock file (<lane>.md.lock, the same ticket.LockFile settings.go uses) it reads the lane file, changes exactly one frontmatter line (model-tier, or agents; agents back at 1 removes the key so the file returns byte-identical), parses the result as the loader would and only then writes it atomically (temp file + rename, mode 0644). A lane without agent step or a built-in lane is refused with a REFUSED box and nothing written; so is agents above 1 on a lane that produces outcome-what or plan. After the write the board is reloaded, the step shows the count in front of the tier ('3×cheap', only on an agent step), a line under the graph reads tier and agent count back from the file, and a custom lane whose catalogue copy was byte-identical is written through to ~/.jaira/lanes as the E edit does. Named boards write to .jaira/boards/<name>/lanes/. Help, README and COMMANDS.md name the keys; the release note has two one-line entries, the second a '- !' warning that 'jaira update --lanes' now skips a shipped lane set this way."
 round: 4
 back-from: testing
 back-by: lane
