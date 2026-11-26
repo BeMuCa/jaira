@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T08:08:30Z
+updated-at: 2026-11-26T08:08:42Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -34,7 +34,7 @@ back-by: lane
 back-count: 1
 review-gaps: "none: round 2 fix (mktemp/tr guard in close-tab.sh ask(), one test case) read in one pass with critique - nothing duplicated, dead or hot"
 test-verdict: "pass: round 2 - go vet ./role, go test ./role ./shipped green (RC=0); DoD 1-4 re-verified, new case TestCloseTabKeepsAWorkerThatIsNotFinished/no_temp_directory: TMPDIR missing -> 'kept AB12CD: mktemp failed ...', exit 0, tab not closed; round 1 full suite green; no new writer"
-hunt-verdict: "fail: bughunt done at 4899c2218, 1 change (close-tab.sh ask(): mktemp/tr fail outside the ERR trap -> exit 1 without kept), 0 pre-existing"
+hunt-verdict: "pass: bughunt done at 40c8324fd, 0 change, 0 pre-existing; round 1's change finding fixed in 40c8324fd"
 ---
 
 # reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only…
