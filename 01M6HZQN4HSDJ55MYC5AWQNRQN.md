@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T00:42:49Z
+updated-at: 2026-11-26T00:42:51Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -159,3 +159,4 @@ I) people: 'jaira people' gains 'active' (assignees + creators of board tickets,
 - **2026-11-26 00:33 · Berk** — waiting: in-progress P5-P7 (haiku subagent #2) since 01:33
 - **2026-11-26 00:39 · Berk** — P5-P7 worker: step 0 done. Batch is one time.Now() per Incoming run (RFC3339 UTC), passed to assignmentEntries; the old updated-at-per-minute batch split a milestone assign crossing a minute. Test: TestOneFetchGivesItsEntriesOneBatch. Design A-I read from ticket lines 142-150; C = display-time bundling by batch+from+milestone/epic, so core/inbox gets a Rows grouping.
 - **2026-11-26 00:41 · Berk** — worker: TestAFinishedTicketThatNeverLandedIsReported failed once (refsync_test.go:831 'a finished ticket that never landed was not reported: []') on a full-package run at cc5f791ad while other agents loaded the machine; then green 5/5 alone and 2/2 full package. Treated as flaky under load, not caused by this ticket; testing lane should re-run it.
+- **2026-11-26 00:42 · Berk** — P5 inbox: rows come from inbox.Rows (core/inbox/rows.go) bundling by batch+sender+milestone/epic (design C); milestone name before epic. --all acks everything (assumption: --all with no --ack clears the inbox, --ack with --all is exit 2). --ack by row key acks the whole row, by ticket id only that ticket's entries. Message rows are not bundled. Release note line in core/release/notes/WQNRQN.md.
