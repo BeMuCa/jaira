@@ -1,7 +1,7 @@
 ---
 id: 01M86MQMBHGM68DJ476VVXQ2YR
 title: Cockpit-Testlauf hinterlaesst node_modules/ - weder gitignored noch aus dem Binary gefiltert
-status: backlog
+status: in-progress
 ready: true
 creator: Sascha
 context: |-
@@ -15,7 +15,7 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T07:56:00Z
+updated-at: 2026-11-26T07:56:32Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -41,3 +41,4 @@ goal: "Ein Testlauf des jaira-cockpit-Mods hinterlaesst nichts, was git als neue
 
 ## Progress
 - **2026-11-26 07:55 · Sascha** — parent session: uds:/run/user/1000/cc-socks/62036.sock
+- **2026-11-26 07:56 · Sascha** — decision: Eintrag in die Root-.gitignore, nicht eine .gitignore im Mod-Ordner - eine Datei dort wuerde go:embed all: mit einbetten und mit dem Mod installieren. Muster /core/mod/builtin/*/node_modules/ fuer alle Mods, wie die tsconfig.json-Zeile daneben. Keine Release-Note: Nutzer eines Release-Binaries sehen davon nichts (Release-Build laeuft auf frischem Checkout).
