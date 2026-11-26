@@ -11,7 +11,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T07:55:45Z
+updated-at: 2026-11-26T07:55:50Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -23,7 +23,7 @@ goal: "herdr-hc.sh 'tab list' endet in begrenzter Zeit, auch wenn hc get (oder h
 
 ## Definition of Done
 
-- [ ] <A checkable statement, readable by someone who was not here>
+- [ ] herdr-hc.sh 'tab list' bricht jedes hc get nach einer Frist ab (Standard 3 s, JAIRA_HC_TIMEOUT); ein haengendes Terminal steht danach als stumm auf stderr und die Liste endet mit Exit 3; Test mit einem hc-Stub, dessen get schlaeft
 
 ## Options
 
