@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:10:43Z
+updated-at: 2026-11-26T08:10:46Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -76,3 +76,4 @@ back-count: 1
 - **2026-11-26 08:09 · Sascha** — critique (Runde 2): nichts. Ganzes Budget statt Parallel-get ist die kleinere Form (siehe Runde-2-Note); Pruefung von JAIRA_HC_TIMEOUT folgt dem Muster reap.sh:154.
 - **2026-11-26 08:09 · Sascha** — waiting: bughunt Runde 2 (background agent) since 09:09
 - **2026-11-26 08:10 · Sascha** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:37-40 - class: JAIRA_HC_TIMEOUT with leading zeros passes the digits-only guard, but $((SECONDS + secs)) reads it as octal; examples: 08/09 -> bash 'value too great for base' + 'end: unbound variable', exit 1 instead of the promised exit 2 (release note '- !' line says any other value is refused with exit 2); 00 -> passes the guard, budget 0, 'hc ls not asked', exit 1; 010 -> silently 8 s instead of 10; ran: JAIRA_HC_TIMEOUT=<v> bash herdr-hc.sh tab list with a stub hc (rc 1/1/1/0, stub asked nothing for 08/09/00); not a blocker - every caller still reads the failure as tabs unknown; fix: strip leading zeros or use 10#$secs and refuse a result of 0
+- **2026-11-26 08:10 · Sascha** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:40-43,52 - class: the budget is counted in whole SECONDS ticks, so it is secs minus up to 1 s depending on where in the wall-clock second the script starts; the watchdog sleeps the truncated 'left' too; example: JAIRA_HC_TIMEOUT=1 with an hc that answers at once reports a live terminal as mute and exits 3 when started just before a second tick; ran: 10 runs of tab list started ~20 ms before a tick with a stub hc (2/10 exit 3 'hc get gave no answer for t1'); with the default 5 the budget is 4-5 s, not a blocker; also the source of possible flakes in TestHerdrHcTabListSaysWhichTerminalDidNotAnswer at JAIRA_HC_TIMEOUT=2; fix: end=$((SECONDS + secs + 1)) or document the -1 s, or the guard minimum as 2
