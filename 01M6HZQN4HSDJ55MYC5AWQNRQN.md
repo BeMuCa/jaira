@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:20:03Z
+updated-at: 2026-11-26T10:20:05Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T10:20:03Z
@@ -25,7 +25,9 @@ question: ""
 outcome-what: "Fixes (a) take on a stale file checks the ref; (b) handover to the current holder records an entry; (c) a holder's pull keeps assigned-by; (h1) inbox refs carry a hash of the name (inbox.Slug); (h2) a send whose push landed is success; (h3) msg refuses a person name neither on the people list nor active here (exit 3, nothing written); (h4) msg help and release note say messages are readable by anyone with the repository"
 outcome-why: "Testing round 2 and bughunt found: take printed 'already yours' for a ticket the ref had given away; a re-handover to the current holder left no inbox entry; a pull rewrote assigned-by; 'Zoë' and 'Zo' shared one inbox; a send reported failed after the message landed; mail to a misspelt name was stored in an inbox nobody opens"
 outcome-resolves: "testing round 2 send-back items (a), (b), (c) and bughunt blockers slug collision, double send, unknown-name mail; the readable-inbox edge is documented, not changed"
-review-summary: none
+review-summary: |-
+  core/refsync/refsync.go:1848 'if holder != y.Actor' compares raw strings, while the steal check ten lines above uses y.isMe(holder) (aliases, case, spaces); a holder stored under an alias of the actor still gets assigned-by restamped to himself on pull, the class of testing finding (c) - use '!y.isMe(holder)' and add an alias case to TestAPullByTheHolderKeepsWhoHandedItOver
+  core/release/notes/WQNRQN.md has no line for the new refusal in internal/cli/msg.go:51-60 (exit 3 unknown_person, nothing sent); add one instruction line: 'jaira msg <person>' refuses a name that is neither on the people list nor active here, add it with 'jaira people alias' first
 round: 3
 back-from: testing
 back-by: lane
