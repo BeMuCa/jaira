@@ -20,7 +20,7 @@ related: []
 follows: 01M5ZJ555685ZXARWNEF5QR36R
 commits: []
 created-at: 2026-11-26T10:44:50Z
-updated-at: 2026-11-26T10:52:33Z
+updated-at: 2026-11-26T10:54:26Z
 updated-by: BeMuCa
 claimed-by: worker-rjw72z
 claimed-at: 2026-11-26T10:46:49Z
@@ -30,6 +30,7 @@ outcome-resolves: "Present, Gather and Answers of jaira-role-interreview SKILL.m
 review-summary: none
 round: 2
 review-gaps: "nothing removed. Left on purpose: the Check rules in section Present repeat 'one action per step, expect concretely' from 'Write one scenario per block' (page path) - the chat format has other parts (Machine, Prepare, Wrong if) and a reader of Present should not have to jump to the page section for the rule the ticket is about. No code, nothing dead."
+test-verdict: "pass: go build and go vet (core/role, core/shipped) RC=0; go test -count=1 ./core/role ./core/shipped ./core/release and ./core/lane -run 'Shipped|Refresh' all ok (RC=0); DoD 1-3 read in the tree at the named sections, DoD 4 note present; branch binary installed the roles into a scratch folder - installed SKILL.md is byte-identical, and 'jaira update' on a scratch board prints the three new note lines. NOT run: the full race suite (house rule: main session before the PR), a live interview with the new text, the bug hunt (no executable code changed; no subagents allowed in this run)."
 ---
 
 # Interreview geht die Tickets einzeln mit der Person durch und beschreibt den Check als Schrittliste
