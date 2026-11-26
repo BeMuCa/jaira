@@ -20,7 +20,7 @@ related: []
 follows: 01M5ZJ555685ZXARWNEF5QR36R
 commits: []
 created-at: 2026-11-26T10:44:50Z
-updated-at: 2026-11-26T10:47:44Z
+updated-at: 2026-11-26T10:47:46Z
 updated-by: BeMuCa
 claimed-by: worker-rjw72z
 claimed-at: 2026-11-26T10:46:49Z
@@ -45,4 +45,4 @@ claimed-at: 2026-11-26T10:46:49Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-26 10:47 · BeMuCa** — decisions (worker, no open decision needed the person): (1) default batch is 1; a number from the person sets it for the rest of the interview, 'all' shows the rest. (2) 'accept all' now covers only tickets already shown and unanswered - otherwise it would accept tickets nobody saw. (3) new word 'next' leaves the shown tickets open and goes on; without it a person is stuck on a ticket they do not want to decide. (4) Gather runs per ticket just before it is shown, not for all up front: with 51 tickets the first message would otherwise wait for 51 machine runs. (5) Order stays the page path's block grouping, so tickets of one theme come one after another. (6) Prepare is done by the role where a build or a copy suffices (same rule the page path's setup has), else it is commands to paste. Page path (--page) untouched: it shows all tickets by design.
