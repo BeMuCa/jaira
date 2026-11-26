@@ -348,12 +348,8 @@ func TestNoGitRepoIsStillNoRepo(t *testing.T) {
 	}
 }
 
-// holdRefLock takes the lock on ref in clone the way another git process does,
-// and lets it go 300 ms after the remote has accepted a new tip for ref — so the
-// write under test meets the lock between its push and its update-ref, for
-// longer than git's own 100 ms lock timeout. The returned func waits until the
-// lock is gone.
-func holdRefLock(t *testing.T, clone, bare, ref string) (wait func()) {
+// lockRef creates the lock file git takes on ref in clone, and returns its path.
+func lockRef(t *testing.T, clone, ref string) string {
 	t.Helper()
 	lock := filepath.Join(clone, ".git", filepath.FromSlash(ref)+".lock")
 	if err := os.MkdirAll(filepath.Dir(lock), 0o755); err != nil {
@@ -362,6 +358,17 @@ func holdRefLock(t *testing.T, clone, bare, ref string) (wait func()) {
 	if err := os.WriteFile(lock, nil, 0o644); err != nil {
 		t.Fatal(err)
 	}
+	return lock
+}
+
+// holdRefLock takes the lock on ref in clone the way another git process does,
+// and lets it go 300 ms after the remote has accepted a new tip for ref — so the
+// write under test meets the lock between its push and its update-ref, for
+// longer than git's own 100 ms lock timeout. The returned func waits until the
+// lock is gone.
+func holdRefLock(t *testing.T, clone, bare, ref string) (wait func()) {
+	t.Helper()
+	lock := lockRef(t, clone, ref)
 	remoteRef := filepath.Join(bare, filepath.FromSlash(ref))
 	done := make(chan struct{})
 	go func() {
@@ -422,13 +429,7 @@ func TestAWriteWaitsOutABrieflyLockedLocalRef(t *testing.T) {
 // write would lease on the stale ref and lose with no cause shown.
 func TestALocalRefThatStaysLockedIsStillAnError(t *testing.T) {
 	ada, _ := twoClones(t)
-	lock := filepath.Join(ada.Dir, ".git", filepath.FromSlash(gitref.RefName("01TEST"))+".lock")
-	if err := os.MkdirAll(filepath.Dir(lock), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(lock, nil, 0o644); err != nil {
-		t.Fatal(err)
-	}
+	lockRef(t, ada.Dir, gitref.RefName("01TEST"))
 	if _, err := ada.Write("01TEST", []byte(ticket), ""); err == nil {
 		t.Fatal("a local ref git could not move came back as a clean write")
 	}
