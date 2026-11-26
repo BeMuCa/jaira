@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:08:12Z
+updated-at: 2026-11-26T08:08:45Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -33,6 +33,7 @@ round: 2
 back-from: testing
 back-by: lane
 back-count: 1
+question: "98KFJP: lokaler Ref-Lock laenger als 1 s nach angenommenem Push - wie melden? Runde 1 schluckte den Fehler (Hunt: blocker, still, naechste Schreibung verliert ohne Ursache); Runde 2 wartet 1 s und meldet danach Failed wie vor dem Ticket (Hunt: blocker, Eintrag bleibt mit alter Lease). 1) (Recommended) So lassen: kurzes Lock (paralleler fetch) ist geloest, langes Lock (abgestuerztes git, .lock liegt) bleibt laut wie vor dem Ticket - Repo ist kaputt, Meldung zeigt git-Text; Hunt-Befund als note fuer die Person. 2) Eigener Fehler ErrLocalRefBehind: Flush meldet Sent mit Warnung und entfernt den Eintrag, refsync claim schreibt trotzdem - +~40 Zeilen in outbox/refsync, naechste Schreibung verliert trotzdem bis zum naechsten Fetch. 3) Wie 2 und zusaetzlich die Lease kuenftiger Schreibungen gegen den Remote-Tip korrigieren - neue Regel, eigenes Ticket."
 ---
 
 # gitref.go:548 publish - schlaegt update-ref nach erfolgreichem Push feh…
