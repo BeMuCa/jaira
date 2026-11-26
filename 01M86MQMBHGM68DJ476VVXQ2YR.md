@@ -17,7 +17,7 @@ commits:
   - e9ba2b87485f704f0f1f59aed65651e3ced35cbd
   - d0291e0ffd6a985a3fb6341dd191ed905d6fe727
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T09:25:01Z
+updated-at: 2026-11-26T09:25:25Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -77,3 +77,4 @@ review-check: "1. mkdir -p core/mod/builtin/jaira-cockpit/node_modules/.vite/vit
 - **2026-11-26 09:25 · Sascha** — Accepted from signoff: angenommen:
 - note: limit: ein lokal nach einem Testlauf gebautes Binary traegt die node_modules-Bytes weiter (go:embed all: kann kein Unterverzeichnis auslassen); installiert werden sie nicht, Release-Builds laufen auf frischem Checkout - so in mod.go:49-54 und .gitignore:41-44 dokumentiert
 - note: limit: nur node_modules/ direkt im Mod-Ordner wird uebersprungen, tiefere (hooks/node_modules) bewusst nicht - der Test haelt das fest
+- **2026-11-26 09:25 · Sascha** — cockpit: accepted by the person, signoff -> done
