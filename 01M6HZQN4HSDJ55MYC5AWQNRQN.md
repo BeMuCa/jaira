@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: Berk
@@ -17,11 +17,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:40:37Z
+updated-at: 2026-11-26T09:40:55Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
 question: ""
+outcome-what: "The board reads what waits for you (core/inbox): a banner above the lanes, a ✉ mark on cards, an i list where enter opens or reads and x acks; a plain pull makes a worktree only from a handover, and take makes the guessed one."
+outcome-why: "An assignment or message from a teammate must stay visible until the person looks at it, and a plain pull must not create worktrees nobody asked for."
+outcome-resolves: "DoD 2, 6, 15, 17 and 19 are ticked with the tests that prove them (internal/tui/inbox_test.go, internal/cli/msg_test.go, core/inbox); the pull and take worktree rules are covered by TestPlainPullMakesNoWorktreeFromAHandleNamedBranch and TestTakeMakesTheWorktreeFromAHandleNamedBranch; DoD 20 stays open for a person."
 ---
 
 # Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht
