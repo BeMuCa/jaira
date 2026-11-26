@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/gitref"
 )
@@ -347,12 +348,42 @@ func TestNoGitRepoIsStillNoRepo(t *testing.T) {
 	}
 }
 
-// A write the remote accepted is a write that happened, even when moving the
-// local copy of the ref fails afterwards — here another process holds its lock.
-// Reporting it as an error made the outbox keep it and send it again with the
-// old lease, where it lost against itself. One case per write path that goes
-// through the same publish step.
-func TestAnAcceptedPushIsAWriteEvenWhenTheLocalRefIsLocked(t *testing.T) {
+// holdRefLock takes the lock on ref in clone the way another git process does,
+// and lets it go 300 ms after the remote has accepted a new tip for ref — so the
+// write under test meets the lock between its push and its update-ref, for
+// longer than git's own 100 ms lock timeout. The returned func waits until the
+// lock is gone.
+func holdRefLock(t *testing.T, clone, bare, ref string) (wait func()) {
+	t.Helper()
+	lock := filepath.Join(clone, ".git", filepath.FromSlash(ref)+".lock")
+	if err := os.MkdirAll(filepath.Dir(lock), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(lock, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	remoteRef := filepath.Join(bare, filepath.FromSlash(ref))
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		deadline := time.Now().Add(30 * time.Second)
+		for time.Now().Before(deadline) {
+			if _, err := os.Stat(remoteRef); err == nil {
+				break
+			}
+			time.Sleep(2 * time.Millisecond)
+		}
+		time.Sleep(300 * time.Millisecond)
+		_ = os.Remove(lock)
+	}()
+	return func() { <-done }
+}
+
+// A ref lock another git process holds for a moment — a fetch running beside
+// the write — no longer fails a write the remote has accepted, and the local
+// ref ends on what the remote holds: it is the lease of the next write, which
+// otherwise loses against this one. One case per write path through publish.
+func TestAWriteWaitsOutABrieflyLockedLocalRef(t *testing.T) {
 	cases := []struct {
 		name  string
 		ref   string
@@ -369,26 +400,36 @@ func TestAnAcceptedPushIsAWriteEvenWhenTheLocalRefIsLocked(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ada, grace := twoClones(t)
-			lock := filepath.Join(ada.Dir, ".git", filepath.FromSlash(tc.ref)+".lock")
-			if err := os.MkdirAll(filepath.Dir(lock), 0o755); err != nil {
-				t.Fatal(err)
-			}
-			if err := os.WriteFile(lock, nil, 0o644); err != nil {
-				t.Fatal(err)
-			}
+			ada, _ := twoClones(t)
+			bare := strings.TrimSpace(git(t, ada.Dir, "config", "remote.origin.url"))
+			wait := holdRefLock(t, ada.Dir, bare, tc.ref)
 
 			sha, err := tc.write(ada, []byte(ticket))
+			wait()
 			if err != nil {
-				t.Fatalf("an accepted push came back as an error: %v", err)
+				t.Fatalf("a write the remote accepted failed on a brief lock: %v", err)
 			}
-			if sha == "" {
-				t.Fatal("an accepted push came back without its sha")
-			}
-			remote := strings.Fields(git(t, grace.Dir, "ls-remote", "origin", tc.ref))
-			if len(remote) == 0 || remote[0] != sha {
-				t.Errorf("remote has %v for %s, want %s", remote, tc.ref, sha)
+			local := strings.TrimSpace(git(t, ada.Dir, "rev-parse", tc.ref))
+			remote := strings.TrimSpace(git(t, bare, "rev-parse", tc.ref))
+			if sha == "" || local != sha || remote != sha {
+				t.Errorf("returned %q, local ref %q, remote %q: all three must be the pushed commit", sha, local, remote)
 			}
 		})
+	}
+}
+
+// A local ref that stays unwritable is still reported: swallowed, every later
+// write would lease on the stale ref and lose with no cause shown.
+func TestALocalRefThatStaysLockedIsStillAnError(t *testing.T) {
+	ada, _ := twoClones(t)
+	lock := filepath.Join(ada.Dir, ".git", filepath.FromSlash(gitref.RefName("01TEST"))+".lock")
+	if err := os.MkdirAll(filepath.Dir(lock), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(lock, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ada.Write("01TEST", []byte(ticket), ""); err == nil {
+		t.Fatal("a local ref git could not move came back as a clean write")
 	}
 }

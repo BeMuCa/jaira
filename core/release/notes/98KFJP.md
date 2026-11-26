@@ -1,1 +1,1 @@
-- A ticket, milestone or epic write the remote accepted is now reported as sent even when the local ref is locked at that moment; the next sync no longer reports it as a lost race against your own write.
+- A ticket, milestone or epic write no longer fails when another git process (a fetch running beside it) holds the local ref lock for a moment; the next write no longer loses against your own earlier one.
