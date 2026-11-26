@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:46:07Z
+updated-at: 2026-11-26T00:46:10Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T00:35:07Z
@@ -158,3 +158,4 @@ Left standing: no openWait deadline (note 2026-11-26 00:35), mouse capture only 
 - **2026-11-26 00:41 · Berk** — Worker in-progress (critique send-back, 2026-11-26): (1) diffOpenedMsg gets id; openDiffRow sets it from m.detail.ID (non-nil at its only call site, diffPaneShown guards it); model.go applies diffOpenedMsg only when modeDetail, detail non-nil and detail.ID == msg.id. Test TestDiffOpenedForAnotherTicketLeavesDiffOpenedUnchanged. (2) release note EH6Z0N.md: line 1 now states the pane and tab only; line 3 '- !' names only up/down, enter opens and closes, left/right scroll, mouse divider drag, o shows IDE failure. ] and [ left out of the note (never shipped). Line 3 kept as '- !' per the brief; critique's 'delete line 3' not applied. gofmt -l empty, go vet clean, go test -run 'TestOKey|TestOpenInCode|TestDiff|TestEnter' green.
 - **2026-11-26 00:42 · Berk** — critique (pass 2, a6afdb51f + 4f032083f, standing on critique 2026-11-26 00:38 and worker notes 00:38/00:41): finding 2 addressed - diffOpenedMsg carries id from openDiffRow, model.go:1289 applies it only when detail.ID == msg.id, TestDiffOpenedForAnotherTicketLeavesDiffOpenedUnchanged green. Finding 1: overlap with line 1 removed and '- ! ' kept per main's brief - accepted. New in 4f032083f: core/release/notes/EH6Z0N.md:3 (commit 4f032083f) now tells users '] and [ are gone', but no user ever had them: no diffpane.go and no EH6Z0N commit in v0.6.8 or origin/master (checked 2026-11-26) - drop the clause '] and [ are gone:' and keep the rest of the line, '- ! ' included as main's brief wants (worker note 2026-11-26 00:38)
 - **2026-11-26 00:43 · Berk** — Worker: critique pass 2 finding applied myself (one clause): '] and [ are gone' dropped from the release line, since no released build ever had them. Critique has sent back twice (the variant-b cap), so the ticket goes on to optimize without a third critique pass; nothing else was open.
+- **2026-11-26 00:46 · Berk** — optimize r10: behaviour-preserving cleanups only (diffRow.shown, dead num() blank branch, redundant span guard, one-line reply closure). Noticed but not changed: diffHScroll survives closing a file and opening another — toggleDiffFile resets diffScroll but not diffHScroll; a behaviour change, so for review/in-progress to decide.
