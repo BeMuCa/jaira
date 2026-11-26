@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:53:33Z
+updated-at: 2026-11-26T00:53:35Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T00:35:07Z
@@ -168,3 +168,4 @@ Left standing: no openWait deadline (note 2026-11-26 00:35), mouse capture only 
 - **2026-11-26 00:53 · Berk** — hunt report: 5 findings, all change (4 blockers: path quoting, stale local master as base, o opens the root checkout, file name read as editor command; 1 edge: no master/main), as notes on EH6Z0N | read whole: core/gitrepo/branchdiff.go, internal/tui/diffpane.go; read as the change hunks with their surrounding functions: internal/tui/model.go, view.go, signoff.go, followup.go, internal/cli/tickets.go, release note (internal/tui is too large to read whole), the git.go/derive.go/external.go/settings.go helpers they call; test files not hunted | not checked: whether VS Code itself opens a path with a trailing tab as a new empty file (no VS Code run here); emacs --eval case read from emacs argument rules, not run
 - **2026-11-26 00:53 · Berk** — bughunt: done at 16e7bd669 - 5 findings (5 change, 0 pre-existing) in 8 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/gitrepo/branchdiff.go core/gitrepo/branchdiff_test.go core/release/notes/EH6Z0N.md internal/cli/tickets.go internal/tui/diffpane.go internal/tui/diffpane_test.go internal/tui/followup.go internal/tui/model.go internal/tui/reviewcheck_test.go internal/tui/signoff.go internal/tui/view.go
 - **2026-11-26 00:53 · Berk** — testing: class: proof lines that name tests not in the tree; example: DoD 5 proof names TestGutterShowsOldAndNewNumbersOnTheirSides and TestBlankRowSeparatesFilesAndJumpsStillLandOnHeaders, grep finds neither in internal/tui or core/gitrepo; fix: point each DoD proof at a test that exists and run it with -run. DoD 5 still says old/new gutter, which DoD 9 replaced with one narrow number column: reword DoD 5 to match. Add a test that the blank row above a file header is skipped by up/down file selection. hunt: the five bughunt change notes at 16e7bd669 are the brief for the path, base, worktree and editor-argument faults
+- **2026-11-26 00:53 · Berk** — testing: note: edge: diffHScroll carries over between files in one ticket (optimize note); judged not to break DoD 8, since left and right still reach every column of every file
