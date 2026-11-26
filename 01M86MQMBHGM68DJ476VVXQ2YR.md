@@ -1,6 +1,6 @@
 ---
 id: 01M86MQMBHGM68DJ476VVXQ2YR
-title: Cockpit-Testlauf hinterlaesst node_modules/ - weder gitignored noch aus dem Binary gefiltert
+title: Cockpit-Testlauf hinterlaesst node_modules/ - weder gitignored noch von der Mod-Installation ausgenommen
 status: in-progress
 ready: true
 creator: Sascha
@@ -15,7 +15,7 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T08:01:55Z
+updated-at: 2026-11-26T08:02:05Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -32,6 +32,7 @@ round: 2
 back-from: testing
 back-by: lane
 back-count: 1
+stop-after-fix: "true"
 ---
 
 # core/mod/builtin/jaira-cockpit/node_modules/ is untracked and not gitig…
