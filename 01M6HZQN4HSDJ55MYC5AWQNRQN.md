@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: testing
+status: in-progress
 ready: true
 creator: berkc
 assignee: Berk
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:42:27Z
+updated-at: 2026-11-26T10:42:30Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T10:27:37Z
@@ -26,8 +26,8 @@ outcome-what: "Fixes (a) take on a stale file checks the ref; (b) handover to th
 outcome-why: "Testing round 2 and bughunt found: take printed 'already yours' for a ticket the ref had given away; a re-handover to the current holder left no inbox entry; a pull rewrote assigned-by; 'Zoë' and 'Zo' shared one inbox; a send reported failed after the message landed; mail to a misspelt name was stored in an inbox nobody opens"
 outcome-resolves: "testing round 2 send-back items (a), (b), (c) and bughunt blockers slug collision, double send, unknown-name mail; the readable-inbox edge is documented, not changed"
 review-summary: none
-round: 4
-back-from: critique
+round: 5
+back-from: testing
 back-by: lane
 back-count: 1
 review-gaps: "round 2: folded inbox.Send's two success returns into one (err == nil || commit != \"\"); msg.go computes listed once and uses people.List.Same instead of a local EqualFold closure; left the double s.Load in take (second read is after refs.Pull, needed); peopleList repeat calls are cached; no other inbox caller still uses identity.Slug"
