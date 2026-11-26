@@ -20,8 +20,10 @@ related: []
 follows: 01M5ZJ555685ZXARWNEF5QR36R
 commits: []
 created-at: 2026-11-26T10:44:50Z
-updated-at: 2026-11-26T10:46:43Z
+updated-at: 2026-11-26T10:46:49Z
 updated-by: BeMuCa
+claimed-by: worker-rjw72z
+claimed-at: 2026-11-26T10:46:49Z
 ---
 
 # Interreview geht die Tickets einzeln mit der Person durch und beschreibt den Check als Schrittliste
