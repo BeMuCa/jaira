@@ -17,10 +17,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:28:53Z
+updated-at: 2026-11-26T14:31:37Z
 updated-by: Berk
 claimed-by: w-wqnrqn
-claimed-at: 2026-11-26T14:13:29Z
+claimed-at: 2026-11-26T14:31:37Z
 question: ""
 outcome-what: "core/refsync Incoming takes the baseline from inbox.json, else from this worktree's refs-seen; core/inbox Load moves an unparseable inbox.json to inbox.json.corrupt"
 outcome-why: "testing round 3: a clone with refs-seen but no inbox.json dropped every assignment since its last fetch, and one unparseable inbox.json failed every fetch"
