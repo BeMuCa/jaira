@@ -23,7 +23,7 @@ related:
   - 01M58G28438KJJD3YDGM2B4KC9
 commits: []
 created-at: 2026-11-23T22:17:22Z
-updated-at: 2026-11-26T10:59:20Z
+updated-at: 2026-11-26T10:59:22Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-wfhpzt
@@ -36,7 +36,7 @@ round: 4
 back-from: testing
 back-by: lane
 back-count: 2
-review-gaps: "second pass, over the lock only: nothing to remove - one call to the existing ticket.LockFile, one test that fails without it (checked by taking the lock out once). First pass stands: removed the guards for an unknown lane and an empty source from core/lane/tune.go; left corrections.go dropFrontmatterLine and share.go stampCreatorLine alone."
+review-gaps: "third pass, over the one-condition fix in renderStep: nothing to remove. Earlier passes stand: removed the guards for an unknown lane and an empty source from core/lane/tune.go; left corrections.go dropFrontmatterLine and share.go stampCreatorLine alone."
 ---
 
 # Der Lane-Verlauf eines Boards ist als Graph zu sehen und einzustellen: Lanes als Knoten, Uebergaenge und Loops als Kanten, je Lane Agent, Modell und Anzahl Agenten
