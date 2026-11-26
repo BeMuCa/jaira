@@ -1,7 +1,7 @@
 ---
 id: 01M8AF6BDDF8AGAY5T7EGN8NQN
 title: "Ein Worker ohne Herdr schickt seine Fragen per SendMessage an main und arbeitet weiter, statt mit der Frage im Bericht stehen zu bleiben"
-status: critique
+status: optimize
 ready: true
 creator: Berk
 assignee: Berk
@@ -21,7 +21,7 @@ related: []
 commits:
   - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-26T00:01:45Z
+updated-at: 2026-11-26T00:02:05Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-26T00:01:36Z
@@ -34,6 +34,7 @@ round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "none removed: worker/dispatcher duplicated ask-main paragraph left (existing pattern, round-1 critique let it stand); teamlead SKILL.md:90-94 slight overlap with the next sentence left because it names the return route; no dead code (skill text only)"
 ---
 
 # Ein Worker ohne Herdr schickt seine Fragen per SendMessage an main und arbeitet weiter, statt mit der Frage im Bericht stehen zu bleiben
