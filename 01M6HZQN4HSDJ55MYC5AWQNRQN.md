@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: optimize
+status: in-progress
 ready: true
 creator: berkc
 assignee: Berk
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T13:52:39Z
+updated-at: 2026-11-26T13:52:42Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T10:27:37Z
@@ -31,8 +31,8 @@ review-summary: |-
   core/refsync/refsync.go:1378 inbox.Start failing returns after entries were recorded but before saveSeen, so the next fetch re-derives the same entries; minor, dedupe by key covers it - let stand
   internal/cli/handover.go, core/gitrepo/git.go CommitTracked/Untracked/Dirty: right shape (git add -u, untracked listed) - no finding
   Noted by worker, left open for the person: ack race (inbox --ack/--all), take-back before fetch, parallel take message, one extra baseline on upgrade
-round: 5
-back-from: testing
+round: 6
+back-from: optimize
 back-by: lane
 back-count: 1
 review-gaps: "round 2: folded inbox.Send's two success returns into one (err == nil || commit != \"\"); msg.go computes listed once and uses people.List.Same instead of a local EqualFold closure; left the double s.Load in take (second read is after refs.Pull, needed); peopleList repeat calls are cached; no other inbox caller still uses identity.Slug"
