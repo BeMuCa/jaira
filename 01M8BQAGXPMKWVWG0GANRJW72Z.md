@@ -20,7 +20,7 @@ related: []
 follows: 01M5ZJ555685ZXARWNEF5QR36R
 commits: []
 created-at: 2026-11-26T10:44:50Z
-updated-at: 2026-11-26T10:54:26Z
+updated-at: 2026-11-26T10:54:29Z
 updated-by: BeMuCa
 claimed-by: worker-rjw72z
 claimed-at: 2026-11-26T10:46:49Z
@@ -63,3 +63,4 @@ core/role/builtin/jaira-role-interreview/SKILL.md section Record: the record is 
 README.md:849 the changed line is 130 characters in a 80-column paragraph - rewrap
 Let stand (note 'decisions (worker...)'): next, all, accept-all narrowing, per-ticket gather.
 - **2026-11-26 10:52 · BeMuCa** — critique pass 2: the three findings of pass 1 are answered (Answers wording, record appended per ticket, README rewrapped); nothing else read again. review-summary=none.
+- **2026-11-26 10:54 · BeMuCa** — report: interreview SKILL.md shows one ticket per message (number/all/next change that), Check is Machine line + Prepare + numbered steps + Wrong if with one example, record appended per ticket; README line + release note | review, context unknown | open: model review not run (worker told to stop here); full race suite and a live interview run are not done; needs a person only to try one real interview
