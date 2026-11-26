@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:20:21Z
+updated-at: 2026-11-26T08:20:25Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -38,6 +38,14 @@ round: 3
 back-from: testing
 back-by: lane
 back-count: 2
+review-verdict: "accept: all five DoD items hold in the code and tests; no blocker, one edge (oversized JAIRA_HC_TIMEOUT wraps) and four limits"
+review-round: 3
+review-verdict-gaps: |-
+  note: edge: JAIRA_HC_TIMEOUT longer than bash's 64-bit range passes the digit check and wraps in $((10#$secs)) - 99999999999999999999 becomes ~7.7e18 s, so a hung hc get waits without limit again; fix: refuse more than 6 digits in the case at herdr-hc.sh:40-43, plus one test value
+  note: limit: the budget is the whole call's - once it is spent the remaining terminals are not asked and are named as mute even when they would answer (checked: t3 answers, still named); every caller drops an exit-3 list, so nothing reads them (ticket note round 2)
+  note: limit: an invalid JAIRA_HC_TIMEOUT now stops every herdr-hc.sh command with exit 2, tab create and pane run included, not only tab list; the release note says so
+  note: limit: the watchdog kills hc alone, not processes hc started; a real hc is one binary, and whether kill -KILL stops a native hc.exe under Git Bash was not checked (no Windows here)
+  note: elsewhere: tab get, pane get, tab close, pane run and send-keys in herdr-hc.sh:157-188 still call hc without a limit and are reached from reap.sh:418-419 under its lock; deliberately left until 0TREV1 lands (ticket note 08:02)
 ---
 
 # herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangs…
