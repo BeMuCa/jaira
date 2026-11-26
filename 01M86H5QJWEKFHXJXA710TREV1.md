@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T08:04:06Z
+updated-at: 2026-11-26T08:05:11Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -65,3 +65,4 @@ test-verdict: "pass: go vet ./... and go test ./... green (RC=0), shipped-histor
 - **2026-11-26 08:00 · Sascha** — critique: (1) *not_found* zu weit - herdr kennt command_not_found/plugin_not_found/agent_not_found; nur die gequoteten Codes "not_found" und "pane_not_found" zaehlen, Test mit command_not_found. (2) hget Rueckgabe 1 ungenutzt - wie ask(): 0 mit leerem hout.
 - **2026-11-26 08:02 · Sascha** — critique Runde 2: nichts mehr. Zwei Kopien des Helfers (reap.sh hget, close-tab.sh ask) bewusst stehen gelassen: die Skripte teilen keine Bibliothek, und eine gesourcte Datei braeuchte Install- und Manifest-Aenderungen fuer 10 Zeilen.
 - **2026-11-26 08:03 · Sascha** — testing: hget gegen echtes hc geprueft - t99999 (not_found) -> leer, rc 0; eigenes Terminal -> tab_id; Stub mit Timeout -> rc 1, herr 'hc: request timed out'. waiting: bughunt (Hintergrund-Agent) und go test ./... seit 09:03
+- **2026-11-26 08:05 · Sascha** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/close-tab.sh:165 - class: a failing command inside a function in close-tab.sh ends the script with exit 1 and no 'kept' line, because the ERR trap (line 95) is not inherited by functions without set -E; new in ask() (mktemp at :165, the tr read at :167), and already there in park() (:153). The usage text promises exit 0 with 'kept <ticket>: ...'. example: TMPDIR not writable -> mktemp exits 1 -> close-tab.sh exits 1 with only mktemp's message. Not a blocker: reap.sh calls close-tab with '|| true', and a worker's tab just stays open. ran: bash model of the same set -e + ERR trap + function shape (rc=1, trap silent); TMPDIR=/nonexistent mktemp (rc=1)
