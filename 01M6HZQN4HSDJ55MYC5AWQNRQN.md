@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:58:19Z
+updated-at: 2026-11-26T10:02:56Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T09:58:12Z
@@ -201,3 +201,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 09:54 · Berk** — critique round 2 (w-wqnrqn, 26.11.): read only round-1 findings and their fixes 2a6ade45f, b24172b1a, 1d784d287. All four answered: (1) inbox tip kept in refs-seen as inbox:<slug>, lines diffed against last-seen commit; checked that Departed and the vanished-ref loop skip inbox: keys (both need a local ticket file), harmless. (2) flash gone, notify only on Arrival.Recorded in TUI and CLI fetch. (3) inbox.Groups/inbox.Line in core/inbox/rows.go used by both. (4) lock retry loop dropped, test 3x5. build+vet ok; go test core/inbox core/gitref core/refsync, tui -run Inbox|Arriv|Help, cli -run Inbox|Fetch|Msg all ok. review-summary=none.
 - **2026-11-26 09:57 · Berk** — optimize (w-wqnrqn, 26.11.): two behaviour-neutral cleanups, see review-gaps. Checked and kept: TUI flash removal left m.flash with other callers (refs.go:145, model.go:1124/1220), so nothing orphaned; peopleList() in the milestone-assign loop is cached (root.go:415). Tests: core/inbox gitrepo refsync full, cli -run Handover|Take|Pull|Inbox|Msg|Milestone|People|Show|Fetch|TestEveryCommandIsDocumented, tui -run Inbox|Handover|Arriv|Help|Detail all ok; build+vet clean.
 - **2026-11-26 09:58 · Berk** — testing: round 2 started at 58e157861; bug hunt started in background (haiku); running gates, then DoD demand and function passes
+- **2026-11-26 10:02 · Berk** — testing r2: go test -race -count=1 on core/ticket core/inbox core/gitref core/refsync core/people core/gitrepo core/shipped internal/tui internal/cli (3 skips): all 9 ok, exit 0; go build ./... and go vet on touched pkgs exit 0
