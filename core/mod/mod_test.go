@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"testing/fstest"
 )
 
 // The cockpit is embedded whole — manifest, hooks module, state contract —
@@ -28,6 +29,24 @@ func TestBuiltinsCarryTheCockpitWithoutItsTests(t *testing.T) {
 		if strings.HasPrefix(f, "tests/") || strings.HasPrefix(f, ".claude-plugin/types/") || f == "tsconfig.json" {
 			t.Errorf("%s would be installed: tests and what Claude Code generates stay out", f)
 		}
+	}
+}
+
+// A test run in the mod folder leaves vitest's cache in node_modules/; a
+// build made after it embeds the folder, and the cache must not be installed.
+func TestBuiltinsLeaveATestRunsCacheOut(t *testing.T) {
+	mods, err := builtinsIn(fstest.MapFS{
+		"builtin/m/.claude-plugin/plugin.json":                 {Data: []byte(`{"name":"m"}`)},
+		"builtin/m/hooks/register.tsx":                         {},
+		"builtin/m/node_modules/.vite/vitest/results.json":     {},
+		"builtin/m/hooks/node_modules/kept-only-at-the-top.ts": {},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{".claude-plugin/plugin.json", "hooks/node_modules/kept-only-at-the-top.ts", "hooks/register.tsx"}
+	if len(mods) != 1 || !slices.Equal(mods[0].Files, want) {
+		t.Fatalf("got %+v, want files %v", mods, want)
 	}
 }
 

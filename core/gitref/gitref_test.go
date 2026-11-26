@@ -2,10 +2,12 @@ package gitref_test
 
 import (
 	"errors"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/gitref"
 )
@@ -343,5 +345,92 @@ func TestNoGitRepoIsStillNoRepo(t *testing.T) {
 	ada.Remote = "nowhere"
 	if err := ada.Usable(); errors.Is(err, gitref.ErrNoGitRepo) {
 		t.Errorf("a repository with a missing remote must not read as having no repository: %v", err)
+	}
+}
+
+// lockRef creates the lock file git takes on ref in clone, and returns its path.
+func lockRef(t *testing.T, clone, ref string) string {
+	t.Helper()
+	lock := filepath.Join(clone, ".git", filepath.FromSlash(ref)+".lock")
+	if err := os.MkdirAll(filepath.Dir(lock), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(lock, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return lock
+}
+
+// holdRefLock takes the lock on ref in clone the way another git process does,
+// and lets it go 300 ms after the remote has accepted a new tip for ref — so the
+// write under test meets the lock between its push and its update-ref, for
+// longer than git's own 100 ms lock timeout. The returned func waits until the
+// lock is gone.
+func holdRefLock(t *testing.T, clone, bare, ref string) (wait func()) {
+	t.Helper()
+	lock := lockRef(t, clone, ref)
+	remoteRef := filepath.Join(bare, filepath.FromSlash(ref))
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		deadline := time.Now().Add(30 * time.Second)
+		for time.Now().Before(deadline) {
+			if _, err := os.Stat(remoteRef); err == nil {
+				break
+			}
+			time.Sleep(2 * time.Millisecond)
+		}
+		time.Sleep(300 * time.Millisecond)
+		_ = os.Remove(lock)
+	}()
+	return func() { <-done }
+}
+
+// A ref lock another git process holds for a moment — a fetch running beside
+// the write — no longer fails a write the remote has accepted, and the local
+// ref ends on what the remote holds: it is the lease of the next write, which
+// otherwise loses against this one. One case per write path through publish.
+func TestAWriteWaitsOutABrieflyLockedLocalRef(t *testing.T) {
+	cases := []struct {
+		name  string
+		ref   string
+		write func(r *gitref.Repo, content []byte) (string, error)
+	}{
+		{"ticket", gitref.RefName("01TEST"), func(r *gitref.Repo, c []byte) (string, error) { return r.Write("01TEST", c, "") }},
+		{"milestone", gitref.MilestoneRefName("01MS"), func(r *gitref.Repo, c []byte) (string, error) {
+			return r.WriteMilestone("01MS", "q4-01MS.md", c, "")
+		}},
+		{"migration", gitref.MilestoneRefName("01MS"), func(r *gitref.Repo, c []byte) (string, error) {
+			return r.WriteMigration("01MS", "q4.md", c, "none", "q4.md", c)
+		}},
+		{"epic", gitref.EpicRefName("sdd"), func(r *gitref.Repo, c []byte) (string, error) { return r.WriteEpic("sdd", c, "") }},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ada, _ := twoClones(t)
+			bare := strings.TrimSpace(git(t, ada.Dir, "config", "remote.origin.url"))
+			wait := holdRefLock(t, ada.Dir, bare, tc.ref)
+
+			sha, err := tc.write(ada, []byte(ticket))
+			wait()
+			if err != nil {
+				t.Fatalf("a write the remote accepted failed on a brief lock: %v", err)
+			}
+			local := strings.TrimSpace(git(t, ada.Dir, "rev-parse", tc.ref))
+			remote := strings.TrimSpace(git(t, bare, "rev-parse", tc.ref))
+			if sha == "" || local != sha || remote != sha {
+				t.Errorf("returned %q, local ref %q, remote %q: all three must be the pushed commit", sha, local, remote)
+			}
+		})
+	}
+}
+
+// A local ref that stays unwritable is still reported: swallowed, every later
+// write would lease on the stale ref and lose with no cause shown.
+func TestALocalRefThatStaysLockedIsStillAnError(t *testing.T) {
+	ada, _ := twoClones(t)
+	lockRef(t, ada.Dir, gitref.RefName("01TEST"))
+	if _, err := ada.Write("01TEST", []byte(ticket), ""); err == nil {
+		t.Fatal("a local ref git could not move came back as a clean write")
 	}
 }
