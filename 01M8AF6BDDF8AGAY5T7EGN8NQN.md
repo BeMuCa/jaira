@@ -21,7 +21,7 @@ related: []
 commits:
   - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-26T00:25:34Z
+updated-at: 2026-11-26T00:25:39Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-26T00:08:22Z
@@ -36,6 +36,7 @@ back-by: lane
 back-count: 1
 review-gaps: "none removed: worker/dispatcher duplicated ask-main paragraph left (existing pattern, round-1 critique let it stand); teamlead SKILL.md:90-94 slight overlap with the next sentence left because it names the return route; no dead code (skill text only)"
 hunt-verdict: "pass: stop-after-fix, no hunt in round 2 (skill text, shipped hashes and release note only; no locking or parser)"
+test-verdict: "pass: go test ./core/shipped ./core/role ./core/release -count=1 RC=0 (run 2; run 1 red RC=1 on TestSpawnOffsetLock under load avg ~21, passes alone RC=0, rerun green); DoD 1-4 checked in the tree: worker/dispatcher ask-main text, teamlead SendMessage clause, three shipped hashes match sha256sum of current files, release note one '- ' line; function not exercisable beyond go:embed + shipped test (LLM-read skill text); no code written, no commit"
 ---
 
 # Ein Worker ohne Herdr schickt seine Fragen per SendMessage an main und arbeitet weiter, statt mit der Frage im Bericht stehen zu bleiben
