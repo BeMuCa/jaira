@@ -4,7 +4,7 @@ title: jaira market index schreibt index.json fuer ein Katalog-Verzeichnis
 status: backlog
 ready: true
 creator: BeMuCa
-assignee: BeMuCa
+assignee: Berk
 goal: "Ein Befehl erzeugt aus einem Katalog-Verzeichnis die Datei index.json, die Client und Website lesen, sodass niemand sie von Hand pflegt."
 context: |-
   Heute gibt es keine Index-Datei. 'jaira lanes market' fragt die GitHub-Contents-API nach dem Verzeichnis und holt dann jede Lane einzeln: N+1 Anfragen, und ohne Anmeldung erlaubt die API 60 Anfragen pro Stunde (core/market/market.go, List).
@@ -19,11 +19,12 @@ definition-of-done: "jaira market index <dir> gibt gueltiges JSON mit allen gena
 tags:
   - cli
 blocked-by:
-  - 5TED33
+  - 01M8BQFBMS778FE9WK6YDAW7WP
 related: []
 commits: []
 created-at: 2026-11-23T23:07:18Z
-updated-at: 2026-11-23T23:07:18Z
+updated-at: 2026-11-26T10:50:57Z
+updated-by: Berk
 ---
 
 # jaira market index schreibt index.json fuer ein Katalog-Verzeichnis

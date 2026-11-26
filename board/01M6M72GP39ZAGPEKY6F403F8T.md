@@ -4,7 +4,7 @@ title: "Schwarm-Debatte im Ideen-Board: mehrere Paare debattieren eine Idee para
 status: ideas
 ready: false
 creator: berkc
-assignee: berkc
+assignee: Berk
 goal: "Eine Idee wird von N Agenten-Paaren parallel debattiert (Pro/Contra), N und die Temperatur je Paar sind waehlbar, und das Ergebnis landet als Zusammenfassung auf dem Ticket."
 context: |-
   Idee von berkc am 04.11.2026: 'Eine Debatte waere eine funny Idee fuer unser Ideen Board ... eine Schwarm-Debatte, man darf entscheiden wieviele Paare parallel brainstormen. Noch besser waere wenn man deren Temp aendern koennte, dann koennte man mehrere Levels abdecken.'
@@ -17,7 +17,8 @@ related:
   - 01M67K72RDJY2N2R2KQGATDG74
 commits: []
 created-at: 2026-11-04T21:22:37Z
-updated-at: 2026-11-04T21:22:37Z
+updated-at: 2026-11-26T10:46:24Z
+updated-by: Berk
 ---
 
 # Schwarm-Debatte im Ideen-Board: mehrere Paare debattieren eine Idee parallel, mit einstellbarer Zahl und Temperatur

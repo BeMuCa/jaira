@@ -1,7 +1,7 @@
 ---
 id: 01M86H5QJWEKFHXJXA710TREV1
 title: "reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only…"
-status: signoff
+status: done
 ready: true
 creator: Sascha
 context: |-
@@ -16,9 +16,13 @@ tags:
 blocked-by: []
 related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
-commits: []
+commits:
+  - 2fc5359c9da14e4a5d6bc2aef6e18f95a4d44de9
+  - 3cec3741f079c09b35e0702bcc192c3b6a748fcb
+  - 4899c2218f69a255af6a32ffe51b863b46351d96
+  - 40c8324fd133f5996d9b75d4db5a81ebabec1ece
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T08:10:53Z
+updated-at: 2026-11-26T09:28:37Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -86,3 +90,8 @@ review-check: "1. cd core && go test ./role/ -run 'TestReapReadsOnlyNotFoundAsAC
 - **2026-11-26 08:08 · Sascha** — waiting: review (frischer Agent via run-lane.sh, eigener Tab) seit 09:08
 - **2026-11-26 08:10 · Sascha** — review: done at 40c8324fd
 - **2026-11-26 08:10 · Sascha** — report: reap.sh und close-tab.sh lesen nur herdrs not_found/pane_not_found als geschlossenen Tab; Timeout/stummes herdr -> kept, Worktree/Branch/Park bleiben; Tests + Release-Note | signoff, context 170k of 1000k, cache warm 60 min | offen: Annahme durch die Person; 3 note:-Zeilen (park() alte Luecke, run-lane.sh-Text, altes herdr tab get unbekannt); Branch nicht gepusht
+- **2026-11-26 09:24 · Sascha** — Accepted from signoff: angenommen:
+- note: limit: how old (non-hc) herdr answers tab get for a gone tab is unknown (no binary here); if not pane_not_found, a pane closed between pane get and tab get keeps the ticket for one extra round, nothing is lost
+- note: elsewhere: close-tab.sh:150 park() - a failing grep or mv inside the function ends the script with exit 1 and no kept line (the ERR trap does not reach functions); there before this change, reap.sh calls it with || true
+- note: elsewhere: run-lane.sh:153 says the tab is already gone when herdr pane get times out (message only, the tab stays open); same class, other script
+- **2026-11-26 09:24 · Sascha** — cockpit: accepted by the person, signoff -> done

@@ -4,7 +4,7 @@ title: jaira lanes market liest index.json aus dem Katalog-Repo und prueft die P
 status: backlog
 ready: true
 creator: BeMuCa
-assignee: BeMuCa
+assignee: Berk
 goal: "jaira lanes market zeigt und holt Lanes aus dem Katalog-Repo mit einer Anfrage fuer die Liste, und eine Datei, deren Pruefsumme nicht zum Index passt, wird nicht uebernommen."
 context: |-
   Heute liest core/market/market.go das Verzeichnis lanes/ im Repo BeMuCa/jaira ueber die GitHub-Contents-API (Konstanten repo und dir, Funktion apiBase), eine Anfrage je Lane dazu.
@@ -21,11 +21,12 @@ definition-of-done: jaira lanes market listet aus index.json mit genau einer Anf
 tags:
   - cli
 blocked-by:
-  - TGYQGJ
+  - 01M8BQFBMS778FE9WK6YDAW7WP
 related: []
 commits: []
 created-at: 2026-11-23T23:07:23Z
-updated-at: 2026-11-23T23:07:23Z
+updated-at: 2026-11-26T10:51:03Z
+updated-by: Berk
 ---
 
 # jaira lanes market liest index.json aus dem Katalog-Repo und prueft die Pruefsumme

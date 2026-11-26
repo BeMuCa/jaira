@@ -4,7 +4,7 @@ title: Eine statische Seite zeigt die Lanes und Boards des Katalogs und den Befe
 status: backlog
 ready: true
 creator: BeMuCa
-assignee: BeMuCa
+assignee: Berk
 goal: "Wer den Katalog im Browser oeffnet, sieht jede Lane mit Vertrag und ganzem Prompt, jedes Board als Abfolge seiner Lanes, und kopiert den Befehl oder laedt die Datei - ohne dass irgendwo ein Server laeuft."
 context: |-
   Heute sieht man den Katalog nur im Terminal ('jaira lanes market') oder als Dateiliste auf GitHub. Wer jaira noch nicht hat, sieht nicht, was es gibt.
@@ -21,11 +21,12 @@ definition-of-done: Die Seite ist unter der Pages-Adresse erreichbar und listet 
 tags:
   - web
 blocked-by:
-  - TGYQGJ
+  - 01M8BQFBMS778FE9WK6YDAW7WP
 related: []
 commits: []
 created-at: 2026-11-23T23:08:49Z
-updated-at: 2026-11-23T23:08:49Z
+updated-at: 2026-11-26T10:51:49Z
+updated-by: Berk
 ---
 
 # Eine statische Seite zeigt die Lanes und Boards des Katalogs und den Befehl zum Uebernehmen

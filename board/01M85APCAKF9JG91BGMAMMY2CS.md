@@ -4,7 +4,7 @@ title: "jaira merkt sich, woher eine uebernommene Lane kommt, und zeigt, wenn de
 status: backlog
 ready: true
 creator: BeMuCa
-assignee: BeMuCa
+assignee: Berk
 goal: "Fuer jede Lane aus dem Marktplatz weiss jaira Quelle und Pruefsumme, zeigt 'neuer im Katalog' oder 'von dir geaendert' an und ueberschreibt eine geaenderte Fassung nie still."
 context: |-
   Heute ist eine uebernommene Lane danach eine Datei ohne Herkunft in ~/.jaira/lanes. Niemand weiss, aus welchem Stand sie kam.
@@ -21,12 +21,13 @@ definition-of-done: adopt schreibt die Herkunftszeile; Test liest sie zurueck
 tags:
   - cli
 blocked-by:
-  - BTHBEX
+  - 01M8BQFBMS778FE9WK6YDAW7WP
 related:
   - 01M2XPBCFVPGPJ62NNN9VHS67E
 commits: []
 created-at: 2026-11-23T23:08:41Z
-updated-at: 2026-11-23T23:08:41Z
+updated-at: 2026-11-26T10:51:15Z
+updated-by: Berk
 ---
 
 # jaira merkt sich, woher eine uebernommene Lane kommt, und zeigt, wenn der Katalog eine neuere hat

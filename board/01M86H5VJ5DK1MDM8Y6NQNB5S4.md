@@ -1,7 +1,7 @@
 ---
 id: 01M86H5VJ5DK1MDM8Y6NQNB5S4
 title: "herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangs…"
-status: signoff
+status: done
 ready: true
 creator: Sascha
 context: |-
@@ -14,9 +14,12 @@ tags: []
 blocked-by: []
 related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
-commits: []
+commits:
+  - 21d6e7e89f4107c2dd795739df33fdd32f8dd46a
+  - ff4b72ae3fd900b4401433f263178b4afa16f2d2
+  - 5e9dfcf8281b07421c566533b6068b8c3364cba8
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:21:04Z
+updated-at: 2026-11-26T09:28:28Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -104,3 +107,10 @@ review-check: "1. cd into this worktree  2. go test ./core/role -run TestHerdrHc
 - **2026-11-26 08:17 · Sascha** — waiting: review (fresh agent, run-lane.sh tab) since 09:17
 - **2026-11-26 08:20 · Sascha** — review: done at 5e9dfcf82
 - **2026-11-26 08:21 · Sascha** — report: herdr-hc.sh: ein Budget (JAIRA_HC_TIMEOUT, 5 s, dezimal) fuer jeden Aufruf, bash-Watchdog um hc ls/get in 'tab list' und den Space-Lookup; ungueltiger Wert -> Exit 2; Tests, Release-Note, Manifest | signoff, context unknown | offen: Abnahme durch Alex; Review: 1 edge (Ueberlauf >18 Ziffern), 4 limits; tab get/pane get erst nach 0TREV1; Branch nicht gepusht
+- **2026-11-26 09:24 · Sascha** — Accepted from signoff: angenommen:
+- note: edge: JAIRA_HC_TIMEOUT longer than bash's 64-bit range passes the digit check and wraps in $((10#$secs)) - 99999999999999999999 becomes ~7.7e18 s, so a hung hc get waits without limit again; fix: refuse more than 6 digits in the case at herdr-hc.sh:40-43, plus one test value
+- note: limit: the budget is the whole call's - once it is spent the remaining terminals are not asked and are named as mute even when they would answer (checked: t3 answers, still named); every caller drops an exit-3 list, so nothing reads them (ticket note round 2)
+- note: limit: an invalid JAIRA_HC_TIMEOUT now stops every herdr-hc.sh command with exit 2, tab create and pane run included, not only tab list; the release note says so
+- note: limit: the watchdog kills hc alone, not processes hc started; a real hc is one binary, and whether kill -KILL stops a native hc.exe under Git Bash was not checked (no Windows here)
+- note: elsewhere: tab get, pane get, tab close, pane run and send-keys in herdr-hc.sh:157-188 still call hc without a limit and are reached from reap.sh:418-419 under its lock; deliberately left until 0TREV1 lands (ticket note 08:02)
+- **2026-11-26 09:24 · Sascha** — cockpit: accepted by the person, signoff -> done

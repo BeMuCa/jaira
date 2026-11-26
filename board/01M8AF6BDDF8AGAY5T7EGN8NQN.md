@@ -1,7 +1,7 @@
 ---
 id: 01M8AF6BDDF8AGAY5T7EGN8NQN
 title: "Ein Worker ohne Herdr schickt seine Fragen per SendMessage an main und arbeitet weiter, statt mit der Frage im Bericht stehen zu bleiben"
-status: review
+status: signoff
 ready: true
 creator: Berk
 assignee: Berk
@@ -21,22 +21,32 @@ related: []
 commits:
   - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-26T00:26:16Z
+updated-at: 2026-11-26T09:02:49Z
 updated-by: Berk
 claimed-by: w-gn8nqn
-claimed-at: 2026-11-26T00:08:22Z
+claimed-at: 2026-11-26T09:02:29Z
 stop-after-fix: "true"
 outcome-what: "one ask-main order in worker and dispatcher (note and question field first, then SendMessage to main); dispatcher clears the question field after the answer"
 outcome-why: "critique round 1 found two gaps: stale question field on dispatcher, and a send-note-send-again reading of the ask-main step"
 outcome-resolves: "critique round 1: dispatcher had no clear-the-field sentence; worker/dispatcher ask-main step read as send, note, send again"
-review-summary: none
+review-summary: "Full review (no earlier review note) of 93e7b219..bf15d840, skill text only. jaira-worker and jaira-dispatcher 'How you ask/Where the question goes': the old 'no AskUserQuestion -> options into report and stop' case becomes 'no AskUserQuestion and no parent': a background subagent notes the question with numbered options, sets the question field, then SendMessage to=main and keeps working on what does not depend on the answer; out of work it writes a waiting: note and ends its turn with the options above the status line. A refused SendMessage or no tool (foreground subagent, headless) keeps the old report-and-stop way. Both say the answer from main arrives as a message: note it, clear the question field, go on. Worker 'When you wait' also sends the waiting line to main. jaira-teamlead 'When to stop': a background subagent's SendMessage question is handled like a dispatcher's (AskUserQuestion with options unchanged, jaira note, SendMessage the answer back by name/id). shipped.sha256 gets 5 appended hashes (2 dispatcher, 2 worker, 1 teamlead; current files match 69bbb910/74f035fb/90844161), release note core/release/notes/GN8NQN.md is one '- ' line."
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
-review-gaps: "none removed: worker/dispatcher duplicated ask-main paragraph left (existing pattern, round-1 critique let it stand); teamlead SKILL.md:90-94 slight overlap with the next sentence left because it names the return route; no dead code (skill text only)"
+review-gaps: |-
+  note: edge: when a background subagent runs out of work it both sent the options to main via SendMessage and ends its turn with the same options above the status line, so main receives one question twice; jaira-teamlead SKILL.md:90-94 does not say the report's options are the already-sent question - add one sentence there (or mark the report options as already sent) so the person is not asked twice
+  note: limit: jaira-role-lane and jaira-role-pr unchanged on purpose (plan note 23:06 decisions 2 and 3) - lane agents still ask via the question field and exit 5
+  note: limit: whether SendMessage to=main is refused in a foreground subagent was not verifiable here; if it is accepted, the run-out-of-work path still puts the options into the report, so the question is not lost
 hunt-verdict: "pass: stop-after-fix, no hunt in round 2 (skill text, shipped hashes and release note only; no locking or parser)"
 test-verdict: "pass: go test ./core/shipped ./core/role ./core/release -count=1 RC=0 (run 2; run 1 red RC=1 on TestSpawnOffsetLock under load avg ~21, passes alone RC=0, rerun green); DoD 1-4 checked in the tree: worker/dispatcher ask-main text, teamlead SendMessage clause, three shipped hashes match sha256sum of current files, release note one '- ' line; function not exercisable beyond go:embed + shipped test (LLM-read skill text); no code written, no commit"
+review-verdict: "accept: all four DoD items met (worker :363-373/381, dispatcher :199-211, teamlead :90-94, shipped hashes match files, go test ./core/role -run Shipped|Installed ok, release note one line); no defect, one plain edge about a doubled question"
+review-round: 2
+review-verdict-gaps: |-
+  note: edge: when a background subagent runs out of work it both sent the options to main via SendMessage and ends its turn with the same options above the status line, so main receives one question twice; jaira-teamlead SKILL.md:90-94 does not say the report's options are the already-sent question - add one sentence there (or mark the report options as already sent) so the person is not asked twice
+  note: limit: jaira-role-lane and jaira-role-pr unchanged on purpose (plan note 23:06 decisions 2 and 3) - lane agents still ask via the question field and exit 5
+  note: limit: whether SendMessage to=main is refused in a foreground subagent was not verifiable here; if it is accepted, the run-out-of-work path still puts the options into the report, so the question is not lost
+review-check: "1. cd into the GN8NQN worktree and run: git diff origin/HEAD...HEAD -- core/role  2. read core/role/builtin/jaira-worker/SKILL.md section 'How you ask', third bullet: it says note + question field first, then SendMessage to=\"main\", keep working; refused/no tool = old report way  3. same in core/role/builtin/jaira-dispatcher/SKILL.md 'Where the question goes', plus the line 'An answer from main comes back as a message ... jaira set <id> question='  4. core/role/builtin/jaira-teamlead/SKILL.md point 4 'When to stop' says a background subagent's SendMessage question is put with AskUserQuestion and answered back by SendMessage  5. run: go test ./core/role -count=1 -run 'Shipped|Installed' - expect ok  6. live check: from a main session start /jaira-worker <some-id> as a background Agent with no --parent on a ticket with an open decision; expect a message from the worker in main with numbered options, the worker still running, and a jaira note + question field on the ticket"
 ---
 
 # Ein Worker ohne Herdr schickt seine Fragen per SendMessage an main und arbeitet weiter, statt mit der Frage im Bericht stehen zu bleiben
@@ -80,3 +90,4 @@ core/role/builtin/jaira-worker/SKILL.md:364-368 and jaira-dispatcher/SKILL.md:20
 - **2026-11-25 23:54 · Berk** — round 2: dispatcher line ~210 got the clear-the-field sentence; worker and dispatcher now one order (note + question field, then SendMessage to main). shipped.sha256: core/role test demanded dispatcher 69bbb910 and worker 74f035fb; inserted each in its sorted place in the path group, no old line removed. TestReapTearsDownWhatTheSetupBuilt failed once in the full core/role run (child outlived 1s teardown under load), passes alone; not related to skill text
 - **2026-11-26 00:01 · Berk** — critique (round 2): both round-1 findings addressed in bf15d840 — dispatcher SKILL.md ~:210 now clears the question field when main answers; worker :364-373 and dispatcher :200-208 now read in one order (note + question field, then SendMessage to main). No defect introduced by the repair. Change is 47 lines outside .jaira, no untracked files, no locking/parser -> critique+optimize in one pass. Optimize: nothing removed. Duplicated worker/dispatcher paragraph left (round-1 critique let it stand, matches existing pattern). Teamlead :90-94 partly restates the following 'Each answer goes onto the ticket ... SendMessage' sentence but adds the return route (by name or id) — left. go test ./core/role ./core/shipped -run 'Shipped|Installed' ok.
 - **2026-11-26 00:25 · Berk** — worker handed back early (harness forced hand-back) at 01:25: ticket in testing, testing subagent still running its background work; left to do: testing verdict, review lane (fresh opus agent), signoff, git push -u origin feat/GN8NQN-ask-main
+- **2026-11-26 09:02 · Berk** — review: done at bf15d840c
