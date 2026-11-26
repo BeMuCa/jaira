@@ -25,21 +25,32 @@ js() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
 # hc with a deadline. hc get waits for the terminal it asks, and one that never
 # answered hung 'tab list' and every caller with it: reap.sh under its lock, so
 # no later round ran, and the cockpit, which gives up after 15 s and then sees
-# no tab at all. After JAIRA_HC_TIMEOUT seconds (3) hc is killed and the call
-# fails like any refusal. Plain bash, not timeout(1): macOS ships none, and Git
-# Bash may find Windows' timeout.exe first (see reap.sh). hc writes into files,
-# not into the caller's pipes: what a killed hc left running would hold those
-# open, and the caller would wait for it all the same.
-secs="${JAIRA_HC_TIMEOUT:-3}"
+# no tab at all. JAIRA_HC_TIMEOUT seconds (5) are the budget of this whole call,
+# not of each hc in it: 'tab list' asks one terminal after the other, and five
+# mute ones at 3 s each took the cockpit's 15 s again. Once the budget is spent
+# hc is killed, or not started, and the call fails like any refusal. Plain
+# bash, not timeout(1): macOS ships none, and Git Bash may find Windows'
+# timeout.exe first (see reap.sh). hc writes into files, not into the caller's
+# pipes: what a killed hc left running would hold those open, and the caller
+# would wait for it all the same.
+secs="${JAIRA_HC_TIMEOUT:-5}"
+case "$secs" in
+  ''|*[!0-9]*|0) echo "herdr-hc.sh: JAIRA_HC_TIMEOUT must be seconds above 0, not '$secs'" >&2; exit 2 ;;
+esac
+end=$((SECONDS + secs))
 bounded() {
-  local o e p w rc=0
+  local o e p w rc=0 left=$((end - SECONDS))
+  if [ "$left" -le 0 ]; then
+    echo "herdr-hc.sh: hc $1 not asked: the ${secs}s were up" >&2
+    return 1
+  fi
   o="$(mktemp)"; e="$(mktemp)"
   "$hc" "$@" >"$o" 2>"$e" &
   p=$!
   # The watchdog: a TERM, once hc has answered, ends its sleep and it.
   ( s=""; trap '[ -z "$s" ] || kill "$s" 2>/dev/null; exit 0' TERM
-    sleep "$secs" >/dev/null 2>&1 & s=$!; wait "$s"
-    kill -KILL "$p" 2>/dev/null && echo "herdr-hc.sh: hc $1 gave no answer within ${secs}s" >&2 ) >/dev/null &
+    sleep "$left" >/dev/null 2>&1 & s=$!; wait "$s"
+    kill -KILL "$p" 2>/dev/null && echo "herdr-hc.sh: hc $1 gave no answer before the ${secs}s were up" >&2 ) >/dev/null &
   w=$!
   wait "$p" || rc=$?
   kill "$w" 2>/dev/null || true
@@ -109,7 +120,8 @@ case "$cmd" in
     # As herdr lists tabs: the cockpit finds a ticket's worker by its label,
     # which hc ls leaves out, so each live terminal is asked for its own.
     # A terminal hc get calls not_found went since hc ls and is left out. Any
-    # other failure (no answer in time) may hide a live worker's tab: the list is still
+    # other failure (no answer in time, or not asked once JAIRA_HC_TIMEOUT
+    # was spent) may hide a live worker's tab: the list is still
     # printed, but stderr names the terminal and the exit is 3. Every caller
     # already reads a failed list as "tabs unknown" - Give back starts no
     # worker, reap.sh removes nothing. A flag in the JSON instead would have to

@@ -1036,9 +1036,15 @@ func TestHerdrHcTabListSaysWhichTerminalDidNotAnswer(t *testing.T) {
 		{"removed and mute", "t1 t2 t3", "t3", "t1", "", false, []string{"t2"}},
 		// QNB5S4: an hc get that never returns counts as mute once
 		// JAIRA_HC_TIMEOUT runs out; it hung the list and every caller before.
-		{"one hangs", "t1 t2 t3", "", "", "t2", false, []string{"t1", "t3"}},
+		// Once a hang has spent the budget, the terminals after it are not
+		// asked and count as mute too: every caller drops a list that
+		// exits 3, so what they would have said is read by nobody.
+		{"one hangs", "t1 t2 t3", "", "", "t2", false, []string{"t1"}},
 		{"all hang", "t1 t2", "", "", "t1 t2", false, nil},
 		{"hangs and mute", "t1 t2 t3", "t1", "", "t3", false, []string{"t2"}},
+		// The budget is the whole list's: five mute terminals at a deadline
+		// each took the cockpit's 15 s again.
+		{"five hang", "t1 t2 t3 t4 t5 t6", "", "", "t1 t2 t3 t4 t5", false, nil},
 		{"ls hangs", "t1", "", "", "", true, nil},
 	} {
 		t.Run(c.name, func(t *testing.T) {
@@ -1060,13 +1066,13 @@ fi
 				t.Fatal(err)
 			}
 			cmd := exec.Command(bash, script, "tab", "list")
-			cmd.Env = append(os.Environ(), "HC_TERMINAL_ID=", "HC_BIN=", "JAIRA_HC_TIMEOUT=1", "PATH="+bin+string(os.PathListSeparator)+path)
+			cmd.Env = append(os.Environ(), "HC_TERMINAL_ID=", "HC_BIN=", "JAIRA_HC_TIMEOUT=2", "PATH="+bin+string(os.PathListSeparator)+path)
 			var stderr strings.Builder
 			cmd.Stderr = &stderr
 			start := time.Now()
 			out, err := cmd.Output()
-			if took := time.Since(start); took > 10*time.Second {
-				t.Errorf("tab list took %s: a hung hc get was not cut off", took)
+			if took := time.Since(start); took > 5*time.Second {
+				t.Errorf("tab list took %s of a 2 s budget: a hung hc was not cut off", took)
 			}
 			code := 0
 			if ee, ok := err.(*exec.ExitError); ok {
@@ -1112,6 +1118,43 @@ fi
 			}
 			if len(mute) == 0 && stderr.Len() > 0 {
 				t.Errorf("stderr on a complete list: %q", stderr.String())
+			}
+		})
+	}
+}
+
+// A JAIRA_HC_TIMEOUT sleep refuses killed every hc at once: tab list read every
+// terminal as mute and tab create lost the herdr.space label without a word.
+// It is refused up front instead, the way reap.sh refuses a bad
+// JAIRA_TEARDOWN_TIMEOUT, and hc is never asked.
+func TestHerdrHcRefusesATimeoutThatIsNoSeconds(t *testing.T) {
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		t.Skipf("no bash on this machine: %v", err)
+	}
+	path := jairaPath(t)
+	dir := t.TempDir()
+	if _, err := install(dir, false, true, false); err != nil {
+		t.Fatal(err)
+	}
+	script := filepath.Join(dir, "jaira-dispatcher", "scripts", "herdr-hc.sh")
+	bin := t.TempDir()
+	asked := filepath.Join(bin, "asked")
+	hc := "#!/usr/bin/env bash\necho \"$@\" >>'" + asked + "'\necho '[]'\n"
+	if err := os.WriteFile(filepath.Join(bin, "hc"), []byte(hc), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, v := range []string{"abc", "0", "-1", "1.5", " 3"} {
+		t.Run(v, func(t *testing.T) {
+			cmd := exec.Command(bash, script, "tab", "list")
+			cmd.Env = append(os.Environ(), "HC_TERMINAL_ID=", "HC_BIN=", "JAIRA_HC_TIMEOUT="+v, "PATH="+bin+string(os.PathListSeparator)+path)
+			out, err := cmd.CombinedOutput()
+			ee, ok := err.(*exec.ExitError)
+			if !ok || ee.ExitCode() != 2 || !strings.Contains(string(out), "JAIRA_HC_TIMEOUT must be seconds") {
+				t.Fatalf("JAIRA_HC_TIMEOUT=%q: err %v, output %q", v, err, out)
+			}
+			if b, _ := os.ReadFile(asked); len(b) > 0 {
+				t.Fatalf("hc was asked: %q", b)
 			}
 		})
 	}
