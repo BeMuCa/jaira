@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T09:00:53Z
+updated-at: 2026-11-26T09:01:08Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T09:00:14Z
@@ -52,7 +52,7 @@ hunt-verdict: "fail: bughunt done at 16e7bd669, 5 change blockers (path parsing 
   proof: internal/tui/diffpane_test.go TestOKeyOpensFileAtLine and TestOKeyConfirmsInTheDiffTitleWithoutAModal; internal/tui/model.go case "o", "]", "[" in modeDetail; internal/tui/diffpane.go openDiffRow
 - [x] Release-Notiz unter core/release/notes/
   proof: core/release/notes/EH6Z0N.md:1
-- [x] Diff pane laid out per the design spec note of 2026-11-04 (rules 1-8, 10): title with file N/M and totals, file header bar, hunk header, old/new line-number gutter, full-width +/- row tint, word-level highlight on paired lines, empty/error states; tests
+- [x] Diff pane laid out per the design spec note of 2026-11-04 (rules 1-8, 10): title with file N/M and totals, file header bar, hunk header, one narrow line-number column (DoD 9), full-width +/- row tint, word-level highlight on paired lines, empty/error states; tests
   proof: internal/tui/diffpane.go renderDiffPane, diffLine, spreadRow, markWordPairs; tests TestParseDiffNumbersBothSides, TestParseDiffTagsNewDeletedAndRenamedFiles, TestWordPairsMarkOnlyTheChangedMiddle, TestChangedRowsAreTintedAcrossThePane, TestGutterShowsOldAndNewNumbersOnTheirSides, TestDiffTitleCountsFilesAndTotals, TestBlankRowSeparatesFilesAndJumpsStillLandOnHeaders, TestLongCodeRowIsCutToThePane, TestEmptyStateIsNoticeBelowTheTitle, TestTicketDiffSaysWhyThereAreNoRows
 - [x] BranchFor picks the newest of several branches carrying the handle (rule 9); test
   proof: core/gitrepo/branchdiff.go BranchFor (for-each-ref --sort=-committerdate); test TestBranchForPicksTheNewestBranchCarryingTheHandle in core/gitrepo/branchdiff_test.go
