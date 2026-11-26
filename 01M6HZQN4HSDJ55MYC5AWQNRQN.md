@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:12:32Z
+updated-at: 2026-11-26T14:12:34Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T14:12:29Z
@@ -33,7 +33,7 @@ round: 7
 back-from: critique
 back-by: lane
 back-count: 1
-review-gaps: "round 2: folded inbox.Send's two success returns into one (err == nil || commit != \"\"); msg.go computes listed once and uses people.List.Same instead of a local EqualFold closure; left the double s.Load in take (second read is after refs.Pull, needed); peopleList repeat calls are cached; no other inbox caller still uses identity.Slug"
+review-gaps: "Seen is replaced per fetch, not merged: vanished refs drop out (critique finding 3); noteSeen uses new inbox.NoteSeen for its one-id merge; test TestRecordFetchWritesEntriesAndSeenTogether updated. Left: pull.go:158 CheckedOut (not redundant, silent vs message); critique findings 1-2 (behaviour, not cleanup); pre-existing gofmt drift in core/refsync/inbox_test.go; handover/gitrepo delta has no duplication or dead code."
 hunt-verdict: "fail: bughunt done at aa08d9806, 4 change blockers: handover pushes untracked files (verified by run), AckAll acks unseen entries, AddWorktree reuses a stale local branch, first-fetch baseline per worktree drops assignments (last three by reading; hunter ran tests)"
 test-verdict: "fail: DoD item 3 is [-] with its proof present (core/release/notes/WQNRQN.md, one unwrapped line); gates green; items 1-19 verified, 20 left for the person"
 ---
