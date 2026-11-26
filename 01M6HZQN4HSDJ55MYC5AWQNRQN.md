@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:43:28Z
+updated-at: 2026-11-26T09:43:31Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T09:43:26Z
@@ -192,3 +192,8 @@ I) people: 'jaira people' gains 'active' (assignees + creators of board tickets,
 - **2026-11-26 09:23 · Berk** — worker: P8-P10 verified (build+vet ok; go test ./internal/cli -run 'Handover|Take|Pull|Show|Inbox|People|Msg|Milestone|TestEveryCommandIsDocumented' ok 164s). Fix ordered for P11 agent: plain 'jaira pull' must NOT guess a worktree from remote branch names — agents pull constantly and would get surprise sibling worktrees (also under --json). Worktree only when the ticket carries handover-branch; the handle-named-branch guess only inside 'jaira take'.
 - **2026-11-26 09:29 · Berk** — worker (w-wqnrqn, 26.11.) step 0: pullWorktree(s, id, guess bool). Plain pull passes false (handover-branch only). take passes true: take had no worktree call before, so it now makes the guessed one itself, and prints it unless --json. Dead end: the guess test needs 'git fetch' in the receiving clone first; jaira fetch only brings refs/jaira/*, so RemoteBranches is empty without it.
 - **2026-11-26 09:36 · Berk** — worker (w-wqnrqn, 26.11.) P11 TUI decisions: enter on a message acks and shows its cleaned text; enter on a bundle row acks the whole row and lists its tickets (no single ticket to open); enter on a single ticket opens detail via showDetail, which acks. ackTicket writes only when the last reload showed an entry for that id. Epics are read (local for-each-ref) only while something waits. Help line added; TestHelpExplainsEveryCardMark needed 61 rows instead of 60 (the help grew one row, the card marks sit at row 59). Footer hint not added: the banner says 'i open'.
+- **2026-11-26 09:43 · Berk** — critique round 1: core/refsync/refsync.go:1200 messageEntries re-reads the whole inbox ref on every fetch and core/inbox/inbox.go:29 forgets acked keys after 30 days, so every acked message comes back a month later (breaks DoD 16) - record messages only when the inbox ref tip moved since the last fetch (keep its sha in refs-seen like ticket refs), as Incoming already does for tickets
+internal/tui/refs.go:181-188 announceArrivals still raises the desktop notification and the "is yours" flash on any ref move of a ticket of mine (the bug the brainstorm named: a colleague note re-announces) beside the new banner - drive both from the Assigned entries this fetch recorded, or drop them for the banner
+internal/tui/inbox.go inboxGroups and inboxLine copy internal/cli/inbox.go inboxGroups, printInboxRow and verbFor by hand (the comment says so) - move the milestone/epic group map and the one-line row text into core/inbox (e.g. inbox.Groups(milestones, epics), inbox.Line(row, name)) and call it from both
+core/inbox/inbox.go:155-163 retries ticket.LockFile 5x on top of its own timeout (up to 5x the wait) only to pass an 8-writer in-process test (note 2026-11-25 23:59) - drop the loop and shrink TestConcurrentRecordLosesNothing to the 2-3 processes that really contend
+Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/take worktree rule per note 2026-11-26 09:23; first-fetch baseline per note 00:27.
