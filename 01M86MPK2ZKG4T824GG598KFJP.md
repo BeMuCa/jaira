@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:09:21Z
+updated-at: 2026-11-26T08:09:24Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -28,12 +28,12 @@ outcome-resolves: "DoD 1-3: TestAWriteWaitsOutABrieflyLockedLocalRef, TestALocal
 review-summary: none
 review-gaps: "lockRef in gitref_test herausgezogen (Lock-Datei stand in holdRefLock und im Dauer-Lock-Test doppelt); gelassen: dieselben 6 Zeilen in outbox_test - anderes Paket, ein Testhilfspaket dafuer waere mehr als es spart"
 test-verdict: "pass: r2 go test -race gitref/outbox/refsync gruen (RC=0), vet/build ok; DoD 1-3 im Baum, Tests rot gegen master-gitref.go; Scratch-Board: Lock 400 ms -> 'jaira set' exit 0, lokal = Remote, naechstes set geht durch; Dauer-Lock -> 'could not be sent' mit git-Meldung (laut), danach verliert die naechste Schreibung gemeldet (vorbestehend, Repo kaputt); zwei parallele Schreiber: einer landet, der andere 'was not sent' klar abgewiesen"
-hunt-verdict: "fail: 1 change blocker (gitref.go:554 lokaler Ref bleibt hinter dem Remote), 1 pre-existing (gitref.go:998 jede Server-Ablehnung gilt als ErrRaceLost) - Note fuer die Person"
+hunt-verdict: "pass: bughunt done at a6c795086 - 0 change nach Entscheidung (r2-Befund langes Lock -> note limit, Teamlead Option 1), 1 pre-existing aus r1 (gitref.go:998 Server-Ablehnung = ErrRaceLost) als note fuer die Person"
 round: 2
 back-from: testing
 back-by: lane
 back-count: 1
-question: "98KFJP: lokaler Ref-Lock laenger als 1 s nach angenommenem Push - wie melden? Runde 1 schluckte den Fehler (Hunt: blocker, still, naechste Schreibung verliert ohne Ursache); Runde 2 wartet 1 s und meldet danach Failed wie vor dem Ticket (Hunt: blocker, Eintrag bleibt mit alter Lease). 1) (Recommended) So lassen: kurzes Lock (paralleler fetch) ist geloest, langes Lock (abgestuerztes git, .lock liegt) bleibt laut wie vor dem Ticket - Repo ist kaputt, Meldung zeigt git-Text; Hunt-Befund als note fuer die Person. 2) Eigener Fehler ErrLocalRefBehind: Flush meldet Sent mit Warnung und entfernt den Eintrag, refsync claim schreibt trotzdem - +~40 Zeilen in outbox/refsync, naechste Schreibung verliert trotzdem bis zum naechsten Fetch. 3) Wie 2 und zusaetzlich die Lease kuenftiger Schreibungen gegen den Remote-Tip korrigieren - neue Regel, eigenes Ticket."
+question: ""
 ---
 
 # gitref.go:548 publish - schlaegt update-ref nach erfolgreichem Push feh…
