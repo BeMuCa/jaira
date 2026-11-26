@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: critique
+status: in-progress
 ready: true
 creator: berkc
 assignee: Berk
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:43:31Z
+updated-at: 2026-11-26T09:43:33Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T09:43:26Z
@@ -31,6 +31,10 @@ review-summary: |-
   internal/tui/inbox.go inboxGroups and inboxLine copy internal/cli/inbox.go inboxGroups, printInboxRow and verbFor by hand (the comment says so) - move the milestone/epic group map and the one-line row text into core/inbox (e.g. inbox.Groups(milestones, epics), inbox.Line(row, name)) and call it from both
   core/inbox/inbox.go:155-163 retries ticket.LockFile 5x on top of its own timeout (up to 5x the wait) only to pass an 8-writer in-process test (note 2026-11-25 23:59) - drop the loop and shrink TestConcurrentRecordLosesNothing to the 2-3 processes that really contend
   Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/take worktree rule per note 2026-11-26 09:23; first-fetch baseline per note 00:27.
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht
