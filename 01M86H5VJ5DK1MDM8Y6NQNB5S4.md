@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:01:16Z
+updated-at: 2026-11-26T08:01:21Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -34,7 +34,8 @@ goal: "herdr-hc.sh 'tab list' endet in begrenzter Zeit, auch wenn hc get (oder h
   proof: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:118; TestHerdrHcTabListSaysWhichTerminalDidNotAnswer/ls_hangs
 - [x] Ohne timeout(1): die Frist laeuft in reinem bash (bash 3.2 tauglich), ohne liegengebliebene Prozesse
   proof: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:34-50 sleep+kill watchdog, kein timeout(1); Stub ohne exec in role_test.go: Test misst <10 s, also haelt nichts die Pipes
-- [ ] Release-Note in core/release/notes/QNB5S4.md
+- [x] Release-Note in core/release/notes/QNB5S4.md
+  proof: core/release/notes/QNB5S4.md
 
 ## Options
 
