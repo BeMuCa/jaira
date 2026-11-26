@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:51:05Z
+updated-at: 2026-11-26T13:52:16Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T10:27:37Z
@@ -25,7 +25,12 @@ question: ""
 outcome-what: "Handover commits tracked changes only and lists untracked files as not handed over; a pull or take that finds a diverged local branch makes no worktree, and a behind one is fast-forwarded; the first-fetch baseline is per repository (inbox.json), so a second worktree's first fetch records assignments made after the clone's last fetch."
 outcome-why: "Testing round 2 showed handover pushing an untracked scratch-credentials.txt, a stale local branch checked out as success, and a new worktree dropping assignments made since the last fetch."
 outcome-resolves: "triage round 2 fixes (1), (3), (4). Left open for the person, per the triage: (2) ack of an entry recorded after the list was printed, take-back before fetch, a losing parallel take."
-review-summary: none
+review-summary: |-
+  core/refsync/refsync.go:1302 baseline now keys on repo inbox.json, but known=loadSeen() is still per worktree: a new worktree (inbox exists, no refs-seen) passes prevSHA="" to assignmentEntries (refsync.go:1163,1194) and records an Assigned entry for every ticket another person assigned to me long ago whose current sha was never acked (all baselined ones) - every pull/take worktree replays old assignments as news; do instead: when this worktree has no seen-state, seed known from a repo-level seen file (move refs-seen.json to RepoStateDir) or store a baseline time in inbox State at Start and skip tickets with UpdatedAt before it; add a test: baseline fetch in main clone with an existing assignment, then a new worktree first fetch records 0 for it
+  core/gitrepo/git.go:538 AddWorktree runs update-ref on the local branch before worktree add; safe only because internal/cli/pull.go:158 checks CheckedOut first - move the CheckedOut refusal into AddWorktree/fastForward so the callee cannot move a branch another worktree has checked out
+  core/refsync/refsync.go:1378 inbox.Start failing returns after entries were recorded but before saveSeen, so the next fetch re-derives the same entries; minor, dedupe by key covers it - let stand
+  internal/cli/handover.go, core/gitrepo/git.go CommitTracked/Untracked/Dirty: right shape (git add -u, untracked listed) - no finding
+  Noted by worker, left open for the person: ack race (inbox --ack/--all), take-back before fetch, parallel take message, one extra baseline on upgrade
 round: 5
 back-from: testing
 back-by: lane
