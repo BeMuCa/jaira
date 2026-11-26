@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:04:55Z
+updated-at: 2026-11-26T08:04:59Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -60,3 +60,4 @@ test-verdict: "pass: go vet + go test -race ./... nach go clean -testcache gruen
 - **2026-11-26 08:02 · Sascha** — not this ticket (teamlead 26.11.): 0TREV1 (feat/0trev1, 2fc5359c9) laesst reap.sh und close-tab.sh nur not_found als geschlossenen Tab lesen, ein Timeout behaelt den Tab. Sind beide gelandet, kann auch 'tab get'/'pane get' in herdr-hc.sh eine Frist bekommen - hier bewusst nicht, nichts auf 0TREV1s ungemergtem Code gebaut.
 - **2026-11-26 08:02 · Sascha** — waiting: bughunt (background agent) since 09:02
 - **2026-11-26 08:04 · Sascha** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:118-130 - class: the deadline applies to each hc call, not to the whole tab list; terminals are asked one after another, so the list takes up to 3 s (ls) + 3 s for each mute terminal and has no total limit; example: 6 terminals, 5 of them hung, take 15.15 s, which is past the cockpit's 15 s limit (register.tsx:212, run() timeoutMs=15_000); the cockpit then gets 'gave no answer' (safe, read as tabs unknown) but still blocks for 15 s on every refresh, which is what this change was meant to stop; reap.sh has no outer limit and holds its lock for N x 3 s; ran: a stub hc with 5 hung terminals, herdr-hc.sh tab list -> rc=3, took 15.15s. Not a blocker: the result is the same safe 'unknown' as before, only the time is wrong
+- **2026-11-26 08:04 · Sascha** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:33 - class: JAIRA_HC_TIMEOUT is not checked; any value sleep refuses kills every hc call at once; example: JAIRA_HC_TIMEOUT=0 (a person may read it as 'no limit'), abc or -1 -> sleep fails at once, the watchdog kills hc, tab list exits 137 with 'hc ls gave no answer within 0s', and tab create quietly loses the herdr.space label so the new tab lands outside the space; reap.sh:154 already checks JAIRA_TEARDOWN_TIMEOUT with case ''|*[!0-9]*|0 -> exit 2; ran: JAIRA_HC_TIMEOUT=abc|0|-1 herdr-hc.sh tab list with an hc that answers in 0.3 s -> rc=137 each, 0.5 -> rc=0
