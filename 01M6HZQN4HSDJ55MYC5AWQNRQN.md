@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: critique
+status: in-progress
 ready: true
 creator: berkc
 assignee: Berk
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T13:59:55Z
+updated-at: 2026-11-26T13:59:58Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T13:59:50Z
@@ -29,8 +29,8 @@ review-summary: |-
   core/refsync/refsync.go:1167 the since gate (prevSHA=="" && updated-at < last_fetch -> no entry) applies in EVERY worktree, not only one without refs-seen: a never-seen ticket assigned to me whose updated-at predates the clone last fetch (created offline and pushed later via the queued push, push latency of a second, or a teammate clock behind mine) is silently never reported - a missed assignment, introduced by 4fdbf8f9a (at 7966b6c5d it was recorded). Reproduced with a scratch test in core/refsync: established worktree, last_fetch set 1 min ahead, ada creates+assigns to grace, grace fetches -> 0 entries, want 1; same flow at 7966b6c5d -> 1. Do instead: apply the gate only when this worktree has no seen-state (y.seenExists() false, refsync.go:1140), as note 13:52 designed, and add that test.
   core/gitrepo/git.go:537 AddWorktree CheckedOut refusal: finding 2 of round 5 addressed, right place; internal/cli/pull.go:158 keeps its own CheckedOut branch - let optimize judge whether it is now redundant.
   Residual even after F1 fix, for the person, not a send-back: in a fresh worktree the same skew/late-push can still drop one assignment; over-report would need refs-seen seeding instead of a time floor.
-round: 6
-back-from: optimize
+round: 7
+back-from: critique
 back-by: lane
 back-count: 1
 review-gaps: "round 2: folded inbox.Send's two success returns into one (err == nil || commit != \"\"); msg.go computes listed once and uses people.List.Same instead of a local EqualFold closure; left the double s.Load in take (second read is after refs.Pull, needed); peopleList repeat calls are cached; no other inbox caller still uses identity.Slug"
