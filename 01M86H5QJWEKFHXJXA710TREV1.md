@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T08:06:59Z
+updated-at: 2026-11-26T08:07:02Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -48,7 +48,7 @@ hunt-verdict: "fail: bughunt done at 4899c2218, 1 change (close-tab.sh ask(): mk
 - [x] Release-Note in core/release/notes/0TREV1.md
   proof: core/release/notes/0TREV1.md
 - [x] Gleicher Fehler in close-tab.sh:159 (Geschwister): ein stummes herdr hebt den Park nicht mehr auf; Test
-  proof: close-tab.sh ask(); TestReapClosesAParkedTabOnceItsCacheIsCold/'herdr gives no answer', TestCloseTabKeepsAWorkerThatIsNotFinished timeout/not_found cases
+  proof: close-tab.sh ask(); TestReapClosesAParkedTabOnceItsCacheIsCold/'herdr gives no answer', TestCloseTabKeepsAWorkerThatIsNotFinished timeout/not_found/'no temp directory' cases
 
 ## Options
 
