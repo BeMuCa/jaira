@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T07:56:29Z
+updated-at: 2026-11-26T07:58:05Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -28,7 +28,8 @@ goal: "Ein Push, den der Remote angenommen hat, gilt als gesendet, auch wenn dan
 
 ## Definition of Done
 
-- [ ] Ein Test haelt den lokalen Ref mit einem .lock fest: Write liefert nach angenommenem Push die SHA ohne Fehler, und der Remote traegt den Inhalt
+- [x] Ein Test haelt den lokalen Ref mit einem .lock fest: Write liefert nach angenommenem Push die SHA ohne Fehler, und der Remote traegt den Inhalt
+  proof: core/gitref/gitref_test.go TestAnAcceptedPushIsAWriteEvenWhenTheLocalRefIsLocked (ticket/milestone/migration/epic; rot ohne Fix)
 - [ ] Ein Outbox-Test: Flush meldet in diesem Fall Sent und der Eintrag ist danach nicht mehr in der Outbox
 - [ ] Release-Note in core/release/notes/98KFJP.md
 
