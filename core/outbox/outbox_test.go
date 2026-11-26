@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/BeMuCa/jaira/core/gitref"
 	"github.com/BeMuCa/jaira/core/outbox"
@@ -425,4 +426,72 @@ func mustList(t *testing.T, b *outbox.Box) []outbox.Entry {
 		t.Fatal(err)
 	}
 	return l
+}
+
+// The case the ticket was filed for, end to end: a ref lock another git process
+// holds for a moment — longer than git's own 100 ms — while a flush pushes. The
+// write is sent and leaves the queue, and the next write, leased on the local
+// ref, goes through instead of losing against the first one. Before, the flush
+// reported Failed, kept the entry, and its next round lost against itself.
+func TestABrieflyLockedLocalRefNeitherFailsTheFlushNorTheNextWrite(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	root := t.TempDir()
+	bare := filepath.Join(root, "board.git")
+	run(t, root, "git", "init", "--bare", "--quiet", bare)
+	clone := filepath.Join(root, "ada")
+	run(t, root, "git", "clone", "--quiet", bare, clone)
+	repo := &gitref.Repo{Dir: clone, Remote: "origin", AuthorName: "ada", AuthorEmail: "ada@example.test"}
+	b := box(t)
+	ref := gitref.RefName("01AAA")
+
+	lock := filepath.Join(clone, ".git", filepath.FromSlash(ref)+".lock")
+	if err := os.MkdirAll(filepath.Dir(lock), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(lock, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	released := make(chan struct{})
+	go func() {
+		defer close(released)
+		for deadline := time.Now().Add(30 * time.Second); time.Now().Before(deadline); time.Sleep(2 * time.Millisecond) {
+			if _, err := os.Stat(filepath.Join(bare, filepath.FromSlash(ref))); err == nil {
+				break
+			}
+		}
+		time.Sleep(300 * time.Millisecond)
+		_ = os.Remove(lock)
+	}()
+
+	if err := b.Queue("01AAA", outbox.OpWrite, []byte("---\nid: 01AAA\n---\n\n# v1\n"), "", "ada"); err != nil {
+		t.Fatal(err)
+	}
+	res, err := b.Flush(repo)
+	<-released
+	if err != nil {
+		t.Fatalf("flush: %v", err)
+	}
+	if len(res) != 1 || res[0].Outcome != outbox.Sent {
+		t.Fatalf("want one sent, got %+v", res)
+	}
+	if left := mustList(t, b); len(left) != 0 {
+		t.Fatalf("a sent write is still queued: %+v", left)
+	}
+
+	lease, err := repo.SHA("01AAA")
+	if err != nil {
+		t.Fatalf("local ref: %v", err)
+	}
+	if err := b.Queue("01AAA", outbox.OpWrite, []byte("---\nid: 01AAA\n---\n\n# v2\n"), lease, "ada"); err != nil {
+		t.Fatal(err)
+	}
+	res, err = b.Flush(repo)
+	if err != nil {
+		t.Fatalf("second flush: %v", err)
+	}
+	if len(res) != 1 || res[0].Outcome != outbox.Sent {
+		t.Fatalf("the next write lost against the first: %+v", res)
+	}
 }

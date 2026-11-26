@@ -1,0 +1,1 @@
+- Press z on a board with several empty lanes side by side: they now share one thin strip, named down the strip (initials on a short terminal), and the lanes with tickets get the width back; the lane under the cursor keeps a strip of its own.

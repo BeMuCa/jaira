@@ -821,6 +821,7 @@ d6592b524f75b81d62ad7f6876faf7ddcbf3efc8b7d56350cebf6356ce813bc5  core/role/buil
 e1a76bfd3cb092f514d918347cd1138a8b508d5de52d1dfc9b475035cf4c4f0f  core/role/builtin/jaira-dispatcher/scripts/close-tab.sh
 f2dfc87a90444fdc2567c258a605a8cdd4eabbfcc59ceff3ca9ff7aaf79902c5  core/role/builtin/jaira-dispatcher/scripts/close-tab.sh
 f772671b5cf587ad3e20a4c491a08067920c589cbae6f107462e7bf9b51af26c  core/role/builtin/jaira-dispatcher/scripts/close-tab.sh
+1b169b602a5d56098524cc21f3042e904b7cac30e2468544b7eaa6c5cb9f2056  core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh
 1d1d794b7183f00bd39b0d3c61be8c091ceb4ec352489c44e86ab8bc7fab87c8  core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh
 21597cd658019827c5b57a07a6b0e5503694c3b800982b7b01a7f6da63987f24  core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh
 3597e65b7383591287df3c51bbf2fd77e232ab0f036f0fedc15653e76489f948  core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh
@@ -828,6 +829,8 @@ f772671b5cf587ad3e20a4c491a08067920c589cbae6f107462e7bf9b51af26c  core/role/buil
 7293067b03df244d91e53d7f1fb79dda0d18b0be6a46fe8ec4256de4d861abe0  core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh
 77cccd9755758e2c9b030827f78102f583e9bf1c1f390998ddf65b25da959f9a  core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh
 795b6fbab7ed342a1e283afeb5156d09511c6eaf768bc75c9778eef3dcbc4247  core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh
+8abd81cbac42c45723537193399e435de62ab231dbd0a68113a8ddd4289ea4a2  core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh
+8d0dc4333773bae4d7dfcea65e687f5222b954c82f6239893398526cc416defd  core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh
 9154a8e9c8261cbde48d7feee70b88397ffbed83d73a2d6c7d40ba13e8891809  core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh
 9a77ffd43e45a931b75b4c218a731b16ac5ef63c45c33e9255864755fa91123c  core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh
 031c3e0422fc20d73cd693d7ca3c67af98cc39ec07b5dfd4830d5f0e38e2e2b0  core/role/builtin/jaira-dispatcher/scripts/reap.sh
