@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:55:07Z
+updated-at: 2026-11-26T09:57:21Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T09:55:07Z
@@ -30,6 +30,7 @@ round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "removed internal/cli/handover.go shortSHA (copy of core/gitrepo shortSHA, now exported as gitrepo.ShortSHA); folded inbox.Record (forwarder with only test callers) and RecordNew into one Record returning what it added. Left: refsync decodeTicket (small, mirrors inline ParseDoc+Decode already repeated in refsync), inbox --all loading the file before AckAll and building groups it does not need (rare command, not a hot path), Arrival.Mine/Changed (still in fetch --json output), gitrepo CheckedOut vs core/board/gitignore.go:334 worktree list (different question), people active, milestone assign (peopleList is cached)"
 ---
 
 # Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht
