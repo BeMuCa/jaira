@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T13:52:16Z
+updated-at: 2026-11-26T13:52:18Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T10:27:37Z
@@ -248,3 +248,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 10:46 · Berk** — fix(1) handover: Dirty ignores untracked files; CommitAll renamed CommitTracked and runs git add -u; new Untracked lists git ls-files --others --exclude-standard; handover prints 'not handed over: <files>' (text) and not_handed_over (json). Test TestHandoverLeavesUntrackedFilesOutOfTheWipCommit red first (scratch-credentials.txt in wip commit), green after. TestHandoverGivesTheReceiverTheBranchAndTheCommit now stages its change, since an untracked file is no longer a wip commit.
 - **2026-11-26 10:48 · Berk** — fix(3) AddWorktree: local branch behind remote is fast-forwarded with update-ref (old value guarded); ahead is used as is; diverged or unrelated history is refused before any worktree is made (error says diverged). Tests core/gitrepo/addworktree_test.go: both red first (stale feat checked out as success; diverged returned nil), green after. Pull doc and release line say so.
 - **2026-11-26 10:50 · Berk** — fix(4) refsync baseline: the first fetch is a baseline while the repo-level inbox.json is missing (inbox.Exists on Store.RepoStateDir), not while this worktree's refs-seen.json is missing. The first successful fetch writes an empty inbox (inbox.Start) just before saveSeen, so the next fetch is not a baseline even when nothing was recorded. Trimmed the noteSeen comment clause 'its first fetch stays a baseline', now false. Test TestASecondWorktreesFirstFetchRecordsAnAssignmentMadeAfterTheFirst: red with 0 entries, green after. Not handled, for the person: a clone that already has refs-seen.json but no inbox.json baselines once more on its first fetch after this build, so an assignment made in that window is dropped. Triage items (2) ack race, take-back before fetch, parallel take left open as the triage said.
+- **2026-11-26 13:52 · Berk** — critique round on delta aa08d9806..7966b6c5d (send-backs exhausted, moved forward to optimize): (1) refsync.go:1302 repo-level baseline with per-worktree known makes a new worktree's first fetch record old, never-acked assignments to me as new entries (prevSHA empty -> Assigned) - regression vs. before, wrong result (spurious inbox rows), not data loss; fix: repo-level seen-state or baseline time in inbox State; (2) git.go:538 update-ref before worktree add relies on caller pull.go:158 CheckedOut guard - move guard into AddWorktree; (3) handover tracked-only fix is the right shape. Neither is data loss or a security hole.
