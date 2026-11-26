@@ -19,11 +19,11 @@ definition-of-done: "jaira market index <dir> gibt gueltiges JSON mit allen gena
 tags:
   - cli
 blocked-by:
-  - 5TED33
+  - 01M8BQFBMS778FE9WK6YDAW7WP
 related: []
 commits: []
 created-at: 2026-11-23T23:07:18Z
-updated-at: 2026-11-26T10:50:55Z
+updated-at: 2026-11-26T10:50:57Z
 updated-by: Berk
 ---
 
