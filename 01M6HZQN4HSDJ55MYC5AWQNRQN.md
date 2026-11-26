@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:35:53Z
+updated-at: 2026-11-26T14:35:56Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T14:35:53Z
@@ -25,12 +25,7 @@ question: ""
 outcome-what: "Seen is nil until a fetch writes it, so a zero-ticket fetch no longer looks like a first fetch and an ack-only inbox no longer looks fetched; first-fetch baseline decided from that Seen plus refs-seen"
 outcome-why: "optimize send-back: len(Seen)>0 broke a new worktree's first-fetch assignment (miss is worse than duplicate); an ack before the first fetch replayed every assignment"
 outcome-resolves: "optimize finding 1 (baseline decision, second inbox.Exists), finding 4 (ack before first fetch test), noteSeen writing Seen into an ack-only inbox"
-review-summary: |-
-  core/refsync/refsync.go:1308-1316 decides inboxBefore by calling inbox.Exists a second time after Load, because Load may have moved the file aside; another process can write a fresh inbox.json between Load and that check, and then prev is the empty Seen of the moved file. Simpler: drop the second Exists and set inboxBefore = len(st.Seen) > 0. A moved-aside file and an inbox.json made by an offline ack before any fetch both land on the refs-seen/baseline path. Today the ack case takes prev={} and records every current assignment as news (a flood of repeats, not a miss).
-  core/inbox/inbox.go:107 throws away the json error (errUnreadable), and nothing tells the user that inbox.json was moved aside, so the unacked entries it held disappear from the board without a word. Testing note 14:22 asked to report the corruption once. Return the parse error wrapped in errUnreadable and print one line on stderr in the fetch caller (or keep a Recovered flag on State).
-  core/inbox/inbox.go:91 renames over any older inbox.json.corrupt; a second corruption deletes the first one. Minor: keep it as is, or name the file inbox.json.corrupt-<unix time>.
-  core/refsync/inbox_test.go: testing note 14:2x listed four cases; the offline-ack-before-first-fetch case has no test. Add it next to TestWithNeitherFileTheFetchIsABaseline.
-  Left alone: the RecordFetch lost-update edge (triage note 14:23 accepted it: worst case is a repeat). Delta is 200 lines, so critique and optimize stay separate lanes. Send-back budget is spent; no blocker in this delta.
+review-summary: "core/inbox/inbox.go:155 NoteSeen's new nil-guard (ack-only inbox stays unfetched) has no test of its own; add one in core/inbox/inbox_test.go: Ack, NoteSeen, Load -> Seen nil | core/refsync/refsync.go:1312-1320 shape is right (Seen==nil is the one 'has fetched' marker, second inbox.Exists gone); no blocker; earlier findings 2 and 3 (silent .corrupt move, .corrupt overwrite) still open for the person per optimize note 14:31"
 round: 9
 back-from: optimize
 back-by: lane
