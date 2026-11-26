@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:38:34Z
+updated-at: 2026-11-26T00:38:57Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T00:35:07Z
@@ -159,3 +159,4 @@ Let stand: hunk header indented 2*nw+4 with no │ (aligns @@ with the sign colu
 - **2026-11-26 00:38 · Berk** — critique (round DoD 7-11, 88e9617d9^..9ad26991c): core/release/notes/EH6Z0N.md:3 marks the new keys "- !" (must act) and repeats line 1, but nothing of this diff ever shipped (no EH6Z0N in 0.6.x, ]/[ never released - your own note 2026-11-25 23:07): fold enter-closes, left/right scroll, divider drag and the IDE error in the title into lines 1-2 and delete line 3
 internal/tui/model.go:1288 case diffOpenedMsg checks only m.mode==modeDetail, so an IDE result that arrives 5-46 s later (the WSL wrapper delay in note 2026-11-26 00:35) lands in the title of whatever ticket is open by then: carry the ticket id in diffOpenedMsg (set in diffpane.go openDiffRow) and drop the message when it != m.diffScrollFor
 Left standing: no openWait deadline (note 2026-11-26 00:35), mouse capture only while the diff is shown, tab still focuses the diff (note 2026-11-25 23:07)
+- **2026-11-26 00:38 · Berk** — Worker on critique finding 1: main's brief asked for a '- ! ' release line because ] and [ go away, so the line stays '- ! '; the fix is to remove its overlap with line 1: line 1 says what the diff pane is, line 3 only says which keys now work (no ] [; up/down/enter/left/right, mouse drag, o reports errors). Finding 2 (diffOpenedMsg carries the ticket id) to be done as the critique says.
