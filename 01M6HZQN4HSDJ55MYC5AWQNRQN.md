@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:22:14Z
+updated-at: 2026-11-26T14:22:16Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T14:13:29Z
@@ -264,3 +264,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 14:16 · Berk** — bughunt: done at 80d62463c - 3 findings (3 change, 0 pre-existing; 1 blocker, 2 edges) in 4 modules read as a diff since aa08d9806, delta only; concurrency, error paths, unusual input, permissions checked; files: core/gitrepo/git.go core/inbox/inbox.go core/refsync/refsync.go internal/cli/handover.go
 - **2026-11-26 14:22 · Berk** — testing: class: the first-fetch baseline is decided by whether inbox.json exists (core/refsync/refsync.go:1305 inboxBefore), not by whether this clone has fetched before; a clone whose snapshot.json exists but whose inbox.json does not (state left by a build before inbox.json, or an inbox made by an ack) takes its next fetch as a baseline and drops every assignment made since; example: by hand, clone b with snapshot.json and no inbox.json, berkc created ZV24NM and set assignee=alex on the ref, then JAIRA_USER=alex jaira fetch rc=0 and jaira inbox --json shows entries [] (with inbox.json present the same kind of assignment, J98HY7, is recorded from berkc); fix: at the cause, decide the baseline by whether this clone has any earlier snapshot (no snapshot is the first fetch), not by inbox.json; test over the class: snapshot without inbox, inbox without snapshot, neither, and an offline ack that creates inbox.json before any fetch (that ack path was read only by the hunt, not run)
 - **2026-11-26 14:22 · Berk** — testing: note: edge: lost update in core/inbox/inbox.go:103 RecordFetch: the Seen map is taken by refsync.go:1308-1312 before the inbox lock, so a NoteSeen from another worktree in between is reverted; example: NoteSeen(T,c2) then RecordFetch with the earlier snapshot leaves Seen[T]=c1 (hunt scratch test at inbox layer; two-process timing not run by testing); the next fetch re-reads that change, the key dedupe hides it until the ack is pruned; fix: take the snapshot under the inbox lock or merge per key
+- **2026-11-26 14:22 · Berk** — testing: note: edge: a corrupt inbox.json fails every fetch: core/refsync/refsync.go:1308 Incoming loads inbox.json on each fetch; example: inbox.json holding {not json makes the fetch fail with inbox: inbox.json: invalid character and nothing new recorded (hunt scratch test at refsync level; testing did not rerun it); fix: report the corruption once and let the fetch record what it can, with a test over a corrupt inbox.json
