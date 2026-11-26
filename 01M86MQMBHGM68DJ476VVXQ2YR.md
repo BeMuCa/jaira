@@ -15,7 +15,7 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T08:04:32Z
+updated-at: 2026-11-26T08:04:36Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -35,6 +35,11 @@ back-from: testing
 back-by: lane
 back-count: 1
 stop-after-fix: "true"
+review-verdict: "accept: beide DoD-Punkte erfuellt (.gitignore:44 greift laut git check-ignore, TestBuiltinsLeaveATestRunsCacheOut gruen); kein Defekt in core/mod/mod.go oder dem Install-Pfad core/role/install.go gefunden"
+review-round: 2
+review-verdict-gaps: |-
+  note: limit: ein lokal nach einem Testlauf gebautes Binary traegt die node_modules-Bytes weiter (go:embed all: kann kein Unterverzeichnis auslassen); installiert werden sie nicht, Release-Builds laufen auf frischem Checkout - so in mod.go:49-54 und .gitignore:41-44 dokumentiert
+  note: limit: nur node_modules/ direkt im Mod-Ordner wird uebersprungen, tiefere (hooks/node_modules) bewusst nicht - der Test haelt das fest
 ---
 
 # core/mod/builtin/jaira-cockpit/node_modules/ is untracked and not gitig…
