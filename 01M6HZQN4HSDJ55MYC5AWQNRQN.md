@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:04:50Z
+updated-at: 2026-11-26T10:04:52Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T09:58:12Z
@@ -206,3 +206,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 10:04 · Berk** — bughunt: change: blocker: core/inbox/send.go:75-81 - class: a send that reached the remote is reported as failed when the local ref update after the push fails, so a retry delivers the message twice; example: publish pushes the inbox commit (core/gitref/gitref.go:579) and then runs update-ref (gitref.go:584); if update-ref fails, for instance on a ref lock held by a concurrent jaira fetch, Send returns that error (send.go:80) although the inbox already holds the line, and a second run appends it again with a new at time; blame: gitref.go:578-588 is 03961b0ca, 69b246649, bb903c8d7 (none name the ticket), send.go:63-83 is 1fdc32973 (names WQNRQN); read only, not run, and the timing window is narrow
 - **2026-11-26 10:04 · Berk** — bughunt: change: blocker: internal/cli/msg.go:47-55 - class: mail addressed to a name that is not on the people list is stored in an inbox its reader never opens, and the sender is told it was sent; example: a ticket assigned to 'Berk Canli' while the reader's own names are 'berkc' and the git email: the sender writes slug 'berk-canli' (msg.go:55), the reader opens only 'berkc' and the email slug (core/identity/identity.go Aliases), so the message is never shown; the only signal is the stderr line 'not on this board's people list; the message is sent anyway' (msg.go:49) before the 'Sent to' reply (msg.go:68); blame: msg.go:47-56 is 5886c6b14 (names WQNRQN); read only, not run
 - **2026-11-26 10:04 · Berk** — bughunt: change: edge: core/gitref/gitref.go:468 - class: inbox refs are fetched by every clone, so anyone with the remote can read every person's messages and the ticket titles in them; example: Fetch uses +refs/jaira/*:refs/jaira/* (gitref.go:887) and the inbox namespace sits under refs/jaira/inbox/ (gitref.go:468), so a message to A is on the disk of every teammate who fetches; blame: the InboxPrefix line is 1fdc32973 (names WQNRQN), the Root refspec predates it; read only; whether messages are meant to be private to the recipient is a decision for a person, the code does not state it
+- **2026-11-26 10:04 · Berk** — bughunt: done at 58e157861 - 4 findings (3 blocker, 1 edge; all change, 0 pre-existing), partial coverage, first hunt; files read whole: core/inbox/inbox.go core/inbox/send.go core/inbox/rows.go core/gitref/gitref.go internal/cli/msg.go internal/cli/handover.go
