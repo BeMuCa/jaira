@@ -465,6 +465,9 @@ func TestReapReadsOnlyNotFoundAsAClosedTab(t *testing.T) {
 			"kept AB12CD: herdr gave no answer for pane p2 (request timed out)"},
 		"pane get fails silently": {"p2", "exit 1", false,
 			"kept AB12CD: herdr gave no answer for pane p2 (exit 1, no message)"},
+		// Old herdr has more *_not_found codes; only the pane's says it is gone.
+		"herdr without pane get": {"p2", `echo '{"error":{"code":"command_not_found"}}'; exit 1`, false,
+			`kept AB12CD: herdr gave no answer for pane p2 ({"error":{"code":"command_not_found"}})`},
 		"tab get times out": {"tp2", "echo 'request timed out' >&2; exit 1", false,
 			"kept AB12CD: herdr gave no answer for tab tp2 (request timed out)"},
 		"pane unknown to hc": {"p2", `echo '{"error":{"kind":"not_found"}}' >&2; exit 3`, true,

@@ -135,17 +135,18 @@ herdr_up=""; "$herdr" tab list >/dev/null 2>&1 && herdr_up=1
 field() { sed -n "s/^$1=//p" "$2" | head -1; }
 
 # Asks herdr about one pane or tab: 'hget pane get <id>'. Its answer lands in
-# $hout. Returns 1 when herdr says the id does not exist - not_found is hc's
-# kind, pane_not_found old herdr's code - and 2 on any other failure, with its
-# last line in $herr: a timeout or a restart says nothing about the tab, and
-# read as closed it would cost the worktree of a worker still in it.
+# $hout, empty when herdr says the id does not exist - "not_found" is hc's
+# kind, "pane_not_found" old herdr's code; not command_not_found and the like,
+# which old herdr also has. Returns 2 on any other failure, with its last line
+# in $herr: a timeout or a restart says nothing about the tab, and read as
+# closed it would cost the worktree of a worker still in it.
 hget() {
   local e rc=0
   e="$(mktemp)"
   hout="$("$herdr" "$@" 2>"$e")" || rc=$?
   herr="$(tr -d '\r' <"$e")"; rm -f "$e"
   [ "$rc" != 0 ] || return 0
-  case "$hout $herr" in *not_found*) hout=""; return 1 ;; esac
+  case "$hout $herr" in *'"not_found"'*|*'"pane_not_found"'*) hout=""; return 0 ;; esac
   herr="$(printf '%s\n%s' "$hout" "$herr" | sed '/^$/d' | tail -1)"
   [ -n "$herr" ] || herr="exit $rc, no message"
   return 2

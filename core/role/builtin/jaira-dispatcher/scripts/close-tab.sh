@@ -156,16 +156,17 @@ park() {
 # A parked tab that is gone — closed by the person, or its id handed out
 # again after a restart — is not asked about again on the next round.
 gone() { [ -z "$reap" ] || park; kept "$@"; }
-# Only herdr's own not_found (hc's kind, old herdr's pane_not_found) says the
-# tab is gone. A herdr that gave no answer keeps the park: read as gone, the
-# record would lose it and no later round would close the tab.
+# Only herdr's own "not_found" (hc's kind) or "pane_not_found" (old herdr's
+# code) says the tab is gone - not its command_not_found and the like. A
+# herdr that gave no answer keeps the park: read as gone, the record would
+# lose it and no later round would close the tab.
 ask() {
   local e rc=0
   e="$(mktemp)"
   out="$("$herdr" "$@" 2>"$e")" || rc=$?
   err="$(tr -d '\r' <"$e")"; rm -f "$e"
   [ "$rc" != 0 ] || return 0
-  case "$out $err" in *not_found*) out=""; return 0 ;; esac
+  case "$out $err" in *'"not_found"'*|*'"pane_not_found"'*) out=""; return 0 ;; esac
   err="$(printf '%s\n%s' "$out" "$err" | sed '/^$/d' | tail -1)"
   kept "herdr gave no answer for $1 $3: ${err:-exit $rc, no message}"
 }
