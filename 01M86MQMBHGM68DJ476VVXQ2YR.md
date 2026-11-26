@@ -11,9 +11,11 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T07:54:53Z
+updated-at: 2026-11-26T07:55:02Z
 assignee: Sascha
 updated-by: Sascha
+claimed-by: DESKTOP-RFTCH11-38348
+claimed-at: 2026-11-26T07:55:02Z
 ---
 
 # core/mod/builtin/jaira-cockpit/node_modules/ is untracked and not gitig…
