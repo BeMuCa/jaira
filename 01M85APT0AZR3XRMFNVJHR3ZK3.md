@@ -10,14 +10,15 @@ context: "Der Milestone extension-marketplace kann nicht starten, bevor feststeh
 definition-of-done: Zu jedem der fuenf Punkte steht Berks Antwort als Notiz auf dem Ticket
 tags:
   - docs
-blocked-by: []
+blocked-by:
+  - 01M8BQFBMS778FE9WK6YDAW7WP
 related:
   - 01M6NHNRNKP678V30QDJAN1XR5
   - 01M5GFAV1C3DV9NWZFXC4G07X9
 commits: []
 created-at: 2026-11-23T23:08:55Z
-updated-at: 2026-11-23T23:09:51Z
-updated-by: BeMuCa
+updated-at: 2026-11-26T10:50:33Z
+updated-by: Berk
 question: "Marktplatz fuer Lanes und Boards - fuenf Entscheidungen (Optionen und Kosten im Kontext): 1) Wo liegt der Katalog: a) neues Repo BeMuCa/jaira-extensions, b) im Plugin-Katalog panda-bobr/jaira-releases neben plugins.json, c) bleibt in BeMuCa/jaira/lanes? Empfehlung b, sonst a. 2) Wer mergt Beitraege? Empfehlung Berk und Alex. 3) Darf ein Agent allein uebernehmen? Empfehlung nein, --yes ist Sache einer Person. 4) Einreichen ueber die Website: vorbelegter GitHub-Link oder Portal mit Server? Empfehlung Link. 5) script:-Lanes im oeffentlichen Katalog nie, und Skills verteilt jaira nicht selbst - einverstanden?"
 ---
 
