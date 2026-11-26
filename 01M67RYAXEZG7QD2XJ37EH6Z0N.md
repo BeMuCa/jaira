@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T09:09:47Z
+updated-at: 2026-11-26T09:10:32Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T09:00:14Z
@@ -177,3 +177,4 @@ Left standing: no openWait deadline (note 2026-11-26 00:35), mouse capture only 
 - **2026-11-26 09:09 · Berk** — bughunt: change: internal/tui/diffpane.go:296-302 (sidePath) - class: a C-quoted diff path holding bytes that are not valid UTF-8 (latin-1 names with a quote, backslash or control char - quotePath=false leaves the raw byte inside the quotes); strconv.Unquote turns each such byte into U+FFFD, so the row's path names a file that does not exist and 'o' opens an empty new buffer; example: file 'lat\xe4"q.txt' -> git writes "b/lat\xe4\"q.txt" -> path 'lat\uFFFD"q.txt'; unquoted latin-1 names are unaffected; not a blocker: before the change every quoted path was wrong, this narrow subset still is; ran: scratch repo with the file + temporary test running parseDiff on git's real patch (removed)
 - **2026-11-26 09:09 · Berk** — hunt report: 2 findings, both change, neither blocker; notes on EH6Z0N | read as diff since 16e7bd669: core/gitrepo/branchdiff.go internal/tui/diffpane.go (plus surrounding parseDiff/ideCommand/openDiffRow/BranchDiff/ticketDiff); tests branchdiff_test.go diffpane_test.go skimmed via stat only; verified quoted, backslash, tab, binary-quoted, -dash, +plus, '--' names parse and get ./ correctly | could not check: real IDE/editor launch with ./-name (exec not run), rename with quoted names (git did not detect a rename in the scratch repo)
 - **2026-11-26 09:09 · Berk** — bughunt: done at bf730d6dd - 2 findings (2 change, 0 pre-existing) in 2 modules, follow-up hunt since 16e7bd669; concurrency, error paths, input, permissions checked; files: core/gitrepo/branchdiff.go core/gitrepo/branchdiff_test.go internal/tui/diffpane.go internal/tui/diffpane_test.go
+- **2026-11-26 09:10 · Berk** — testing: pass 2 on bf730d6dd (judged by testing, not a blocker): bughunt follow-up found two change edges, both written as notes by the hunter. (1) core/gitrepo/branchdiff.go Base()/isBehindOrigin: only a strictly-behind local base falls back to origin; a diverged local base (unpushed commits and behind origin) still wins, so pulled commits show as ticket changes. Same symptom as the 00:52 base blocker, but the input is narrower and was equally wrong before this change, so it rides as a note for review. (2) internal/tui/diffpane.go sidePath: a C-quoted path with non-UTF-8 bytes becomes U+FFFD, so o opens an empty buffer for that file; narrow latin-1 subset. Person to decide whether either gets its own ticket.
