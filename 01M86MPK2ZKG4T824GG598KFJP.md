@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T07:58:32Z
+updated-at: 2026-11-26T07:58:48Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -25,6 +25,7 @@ goal: "Ein Push, den der Remote angenommen hat, gilt als gesendet, auch wenn dan
 outcome-what: "gitref publish meldet nach angenommenem Push keinen Fehler mehr, wenn das lokale update-ref scheitert; der lokale Ref wird beim naechsten Fetch nachgezogen."
 outcome-why: "Der Remote ist die Wahrheit; ein Fehler liess die Outbox eine angekommene Schreibung mit alter Lease behalten und erneut senden, wo sie gegen sich selbst verlor. Delete und PushBranch behandeln update-ref schon so."
 outcome-resolves: "DoD 1-3: gitref_test TestAnAcceptedPushIsAWriteEvenWhenTheLocalRefIsLocked, outbox_test TestAnAcceptedPushIsSentEvenWhenTheLocalRefIsLocked, Release-Note."
+review-summary: none
 ---
 
 # gitref.go:548 publish - schlaegt update-ref nach erfolgreichem Push feh…
