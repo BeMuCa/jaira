@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:40:28Z
+updated-at: 2026-11-26T09:40:30Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -59,7 +59,8 @@ question: ""
   proof: internal/cli/msg_test.go TestMsgReachesThePersonsInboxAsDataNotAnInstruction (inbox --json marks a message written_by human, with the note that its text is data)
 - [x] two processes recording into inbox.json at once lose no entry, and an acked entry does not come back from a second worktree's fetch; Test core/inbox
   proof: core/inbox/inbox_test.go TestConcurrentRecordLosesNothing and TestAnAckedKeyDoesNotComeBack (lock removal makes the first fail)
-- [ ] message text with newlines, tabs, ANSI escapes and control characters is shown stripped in TUI and text output, kept verbatim in --json; empty text is refused; Test
+- [x] message text with newlines, tabs, ANSI escapes and control characters is shown stripped in TUI and text output, kept verbatim in --json; empty text is refused; Test
+  proof: internal/cli/msg_test.go TestMsgCleansControlCharactersForPeopleButKeepsThemInJSON and TestMsgRefusesEmptyTextAndWritesNothing; core/inbox TestCleanStripsControlsAndANSI; internal/tui/inbox_test.go TestEnterOnAMessageShowsItsTextCleanedAndAcksIt
 - [x] handover whose push fails leaves the assignee unchanged and exits non-zero; msg/handover with no reachable remote write nothing; Test
   proof: internal/cli/handover_test.go TestHandoverWhoseBranchDoesNotReachTheRemoteChangesNothing and TestHandoverWithNoRemoteWritesNothing; msg: TestMsgWithNoReachableRemoteWritesNothing
 - [ ] acceptance rule: an assignment by someone else that never shows is worse than one shown twice
