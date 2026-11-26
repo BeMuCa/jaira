@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:15:33Z
+updated-at: 2026-11-26T08:15:37Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -81,3 +81,4 @@ back-count: 2
 - **2026-11-26 08:10 · Sascha** — bughunt: done at ff4b72ae3 - 2 findings (2 change, 0 pre-existing) in 4 modules, follow-up hunt since 21d6e7e89; concurrency, error paths, input, permissions checked; files: core/release/notes/QNB5S4.md core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh core/role/role_test.go core/shipped/shipped.sha256
 - **2026-11-26 08:11 · Sascha** — testing (Runde 2): class: Zahl aus der Umgebung wird von $(( )) als Oktal gelesen; example: JAIRA_HC_TIMEOUT=08 -> Exit 1, 00 -> Budget 0; fix: nach der Ziffern-Pruefung 10#$secs und 0 ablehnen, Test um 08/00/010 erweitern. Dazu: end um 1 s erhoehen, damit das Budget nie unter secs faellt (SECONDS zaehlt ganze Sekunden).
 - **2026-11-26 08:15 · Sascha** — Runde 3: 10#$secs gegen Oktal (08 gilt jetzt als 8 s, 00 -> Exit 2); end=SECONDS+secs+1, ein einzelnes hc wartet hoechstens secs - gemessen 1 haengendes bei secs=1/5: 1,06 s/5,06 s. Folge im Test: ob Terminals nach einem Haenger noch gefragt werden, haengt nun vom Rest-Budget ab; der Test verlangt fuer Haenger-Faelle nur noch 'gelistet oder als stumm genannt', 3x hintereinander gruen.
+- **2026-11-26 08:15 · Sascha** — critique+optimize (Runde 3, ein Durchgang, 39 Zeilen): nichts. 10# und die Kappung sind je eine Zeile an der einen Stelle, durch die jeder hc-Aufruf geht; keine Duplikate, nichts verwaist.
