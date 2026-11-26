@@ -20,14 +20,14 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:43:10Z
+updated-at: 2026-11-26T00:44:04Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T00:35:07Z
 outcome-what: "The diff beside a signoff/human ticket opens as a file list (paths from repo root, +/-): up/down select, enter opens a file inline and enter again closes it; inside it up/down scroll lines and left/right scroll sideways; one narrow line-number column; the divider drags with the mouse for the session; o waits for the IDE and shows its error in the diff title. ] and [ are gone."
 outcome-why: "The person found ]/[ awkward, long lines were cut off, the double gutter wasted room, the split was fixed, and o failed silently under WSL2 (the code wrapper exited 127 with stderr dropped while jaira printed 'opened')."
 outcome-resolves: "Person's signoff feedback of 2026-11-25 (DoD 7-11)."
-review-summary: "core/release/notes/EH6Z0N.md:3 (commit 4f032083f) now tells users '] and [ are gone', but no user ever had them: no diffpane.go and no EH6Z0N commit in v0.6.8 or origin/master (checked 2026-11-26) - drop the clause '] and [ are gone:' and keep the rest of the line, '- ! ' included as main's brief wants (worker note 2026-11-26 00:38)"
+review-summary: "none"
 round: 10
 review-gaps: |-
   note: if only some fallback commits cannot be shown, they are still dropped without a word (diffpane.go:273 only checks the all-unshowable case). Critique accepted this as out of scope; listed so the person sees it
