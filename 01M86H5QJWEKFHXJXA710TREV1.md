@@ -1,7 +1,7 @@
 ---
 id: 01M86H5QJWEKFHXJXA710TREV1
 title: "reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only…"
-status: in-progress
+status: critique
 ready: true
 creator: Sascha
 context: |-
@@ -18,12 +18,15 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T07:59:54Z
+updated-at: 2026-11-26T08:00:11Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
 claimed-at: 2026-11-26T07:54:32Z
 goal: "reap.sh liest ein gescheitertes 'herdr pane get' nur dann als geschlossenen Tab, wenn herdr den Pane nicht kennt (not_found); jede andere Fehlschlag (Timeout, herdr weg) behaelt Tab, Worktree und Record fuer die naechste Runde."
+outcome-what: "reap.sh: pane get/tab get ueber hget(); nur not_found (hc) bzw. pane_not_found (altes herdr) gilt als geschlossener Tab, jeder andere Fehlschlag -> 'kept <t>: herdr gave no answer ...', Runde fuer das Ticket haelt an. close-tab.sh: gleiche Regel, ein stummes herdr hebt den Park nicht auf. Tests: reap 6 Faelle, close-tab 5 Faelle."
+outcome-why: "reap.sh las jeden Fehlschlag von 'herdr pane get' als geschlossenen Tab und entfernte Worktree und Branch, auch wenn herdr nur kurz nicht antwortete und claude noch im Tab sass."
+outcome-resolves: Ein Timeout oder Neustart von herdr kostet keinen Worktree mehr; nur herdr selbst kann einen Tab fuer geschlossen erklaeren.
 ---
 
 # reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only…
