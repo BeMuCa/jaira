@@ -22,6 +22,32 @@ labelof() {
 # a t-address. Quotes and backslashes are escaped all the same.
 js() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
 
+# hc with a deadline. hc get waits for the terminal it asks, and one that never
+# answered hung 'tab list' and every caller with it: reap.sh under its lock, so
+# no later round ran, and the cockpit, which gives up after 15 s and then sees
+# no tab at all. After JAIRA_HC_TIMEOUT seconds (3) hc is killed and the call
+# fails like any refusal. Plain bash, not timeout(1): macOS ships none, and Git
+# Bash may find Windows' timeout.exe first (see reap.sh). hc writes into files,
+# not into the caller's pipes: what a killed hc left running would hold those
+# open, and the caller would wait for it all the same.
+secs="${JAIRA_HC_TIMEOUT:-3}"
+bounded() {
+  local o e p w rc=0
+  o="$(mktemp)"; e="$(mktemp)"
+  "$hc" "$@" >"$o" 2>"$e" &
+  p=$!
+  # The watchdog: a TERM, once hc has answered, ends its sleep and it.
+  ( s=""; trap '[ -z "$s" ] || kill "$s" 2>/dev/null; exit 0' TERM
+    sleep "$secs" >/dev/null 2>&1 & s=$!; wait "$s"
+    kill -KILL "$p" 2>/dev/null && echo "herdr-hc.sh: hc $1 gave no answer within ${secs}s" >&2 ) >/dev/null &
+  w=$!
+  wait "$p" || rc=$?
+  kill "$w" 2>/dev/null || true
+  wait "$w" 2>/dev/null || true
+  cat "$o"; cat "$e" >&2; rm -f "$o" "$e"
+  return "$rc"
+}
+
 cmd="${1:-} ${2:-}"
 [ $# -ge 2 ] && shift 2 || shift $#
 case "$cmd" in
@@ -43,7 +69,7 @@ case "$cmd" in
     [ -z "$cwd" ] || args+=(--cwd "$cwd")
     [ -z "$label" ] || args+=(--label "jaira.tab=$label")
     if [ -n "${HC_TERMINAL_ID:-}" ]; then
-      space="$(labelof "$("$hc" get "$HC_TERMINAL_ID" --json 2>/dev/null || true)" herdr.space)"
+      space="$(labelof "$(bounded get "$HC_TERMINAL_ID" --json 2>/dev/null || true)" herdr.space)"
       [ -z "$space" ] || args+=(--label "herdr.space=$space")
     fi
     # The app's agent list shows a terminal by its hc name and nothing else:
@@ -83,18 +109,18 @@ case "$cmd" in
     # As herdr lists tabs: the cockpit finds a ticket's worker by its label,
     # which hc ls leaves out, so each live terminal is asked for its own.
     # A terminal hc get calls not_found went since hc ls and is left out. Any
-    # other failure (a timeout) may hide a live worker's tab: the list is still
+    # other failure (no answer in time) may hide a live worker's tab: the list is still
     # printed, but stderr names the terminal and the exit is 3. Every caller
     # already reads a failed list as "tabs unknown" - Give back starts no
     # worker, reap.sh removes nothing. A flag in the JSON instead would have to
     # be checked by each of them, and reap.sh would go on to read the mute
     # terminal's 'pane get' failure as a closed tab.
-    ls="$("$hc" ls --json)"
+    ls="$(bounded ls --json)"
     err="$(mktemp)"
     trap 'rm -f "$err"' EXIT
     sep=""; mute=""; printf '{"result":{"tabs":['
     for t in $(grep -o '"address":"[^"]*"' <<<"$ls" | sed 's/^"address":"//; s/"$//'); do
-      if ! j="$("$hc" get "$t" --json 2>"$err")"; then
+      if ! j="$(bounded get "$t" --json 2>"$err")"; then
         grep -q '"not_found"' "$err" || mute="$mute $t"
         continue
       fi

@@ -1023,26 +1023,36 @@ func TestHerdrHcTabListSaysWhichTerminalDidNotAnswer(t *testing.T) {
 	}
 	script := filepath.Join(dir, "jaira-dispatcher", "scripts", "herdr-hc.sh")
 	for _, c := range []struct {
-		name, live, mute, gone string
-		listed                 []string // tab ids on stdout, in order
+		name, live, mute, gone, hang string
+		lsHangs                      bool
+		listed                       []string // tab ids on stdout, in order
 	}{
-		{"all answer", "t1 t2", "", "", []string{"t1", "t2"}},
-		{"none live", "", "", "", nil},
-		{"one mute", "t1 t2 t3", "t2", "", []string{"t1", "t3"}},
-		{"first mute", "t1 t2", "t1", "", []string{"t2"}},
-		{"all mute", "t1 t2", "t1 t2", "", nil},
-		{"removed since ls", "t1 t2", "", "t2", []string{"t1"}},
-		{"removed and mute", "t1 t2 t3", "t3", "t1", []string{"t2"}},
+		{"all answer", "t1 t2", "", "", "", false, []string{"t1", "t2"}},
+		{"none live", "", "", "", "", false, nil},
+		{"one mute", "t1 t2 t3", "t2", "", "", false, []string{"t1", "t3"}},
+		{"first mute", "t1 t2", "t1", "", "", false, []string{"t2"}},
+		{"all mute", "t1 t2", "t1 t2", "", "", false, nil},
+		{"removed since ls", "t1 t2", "", "t2", "", false, []string{"t1"}},
+		{"removed and mute", "t1 t2 t3", "t3", "t1", "", false, []string{"t2"}},
+		// QNB5S4: an hc get that never returns counts as mute once
+		// JAIRA_HC_TIMEOUT runs out; it hung the list and every caller before.
+		{"one hangs", "t1 t2 t3", "", "", "t2", false, []string{"t1", "t3"}},
+		{"all hang", "t1 t2", "", "", "t1 t2", false, nil},
+		{"hangs and mute", "t1 t2 t3", "t1", "", "t3", false, []string{"t2"}},
+		{"ls hangs", "t1", "", "", "", true, nil},
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			bin := t.TempDir()
 			hc := `#!/usr/bin/env bash
-live='` + c.live + `'; mute='` + c.mute + `'; gone='` + c.gone + `'
+live='` + c.live + `'; mute='` + c.mute + `'; gone='` + c.gone + `'; hang='` + c.hang + `'
+# sleep without exec: what hc leaves behind must not hold the caller's pipes.
 if [ "$1" = ls ]; then
+  ` + map[bool]string{true: "sleep 20", false: ":"}[c.lsHangs] + `
   sep=""; printf '['; for a in $live; do printf '%s{"address":"%s"}' "$sep" "$a"; sep=","; done; printf ']\n'
 elif [ "$1" = get ]; then
   if [[ " $mute " == *" $2 "* ]]; then echo '{"error":{"kind":"timeout"}}' >&2; exit 1; fi
   if [[ " $gone " == *" $2 "* ]]; then echo '{"error":{"kind":"not_found"}}' >&2; exit 3; fi
+  if [[ " $hang " == *" $2 "* ]]; then sleep 20; fi
   printf '{"address":"%s","labels":{"jaira.tab":"AB12CD/worker"},"status":{"state":"idle"}}\n' "$2"
 fi
 `
@@ -1050,17 +1060,28 @@ fi
 				t.Fatal(err)
 			}
 			cmd := exec.Command(bash, script, "tab", "list")
-			cmd.Env = append(os.Environ(), "HC_TERMINAL_ID=", "HC_BIN=", "PATH="+bin+string(os.PathListSeparator)+path)
+			cmd.Env = append(os.Environ(), "HC_TERMINAL_ID=", "HC_BIN=", "JAIRA_HC_TIMEOUT=1", "PATH="+bin+string(os.PathListSeparator)+path)
 			var stderr strings.Builder
 			cmd.Stderr = &stderr
+			start := time.Now()
 			out, err := cmd.Output()
+			if took := time.Since(start); took > 10*time.Second {
+				t.Errorf("tab list took %s: a hung hc get was not cut off", took)
+			}
 			code := 0
 			if ee, ok := err.(*exec.ExitError); ok {
 				code = ee.ExitCode()
 			} else if err != nil {
 				t.Fatal(err)
 			}
-			if want := map[bool]int{false: 0, true: 3}[c.mute != ""]; code != want {
+			if c.lsHangs {
+				if code == 0 || !strings.Contains(stderr.String(), "hc ls gave no answer") {
+					t.Fatalf("a hung hc ls: exit %d, stderr %q", code, stderr.String())
+				}
+				return
+			}
+			mute := strings.Fields(c.mute + " " + c.hang)
+			if want := map[bool]int{false: 0, true: 3}[len(mute) > 0]; code != want {
 				t.Fatalf("exit %d, want %d\nstdout %s\nstderr %s", code, want, out, stderr.String())
 			}
 			var got struct {
@@ -1084,12 +1105,12 @@ fi
 			if !slices.Equal(ids, c.listed) {
 				t.Errorf("listed %q, want %q", ids, c.listed)
 			}
-			for _, m := range strings.Fields(c.mute) {
+			for _, m := range mute {
 				if !strings.Contains(stderr.String(), " "+m) {
 					t.Errorf("stderr does not name %s: %q", m, stderr.String())
 				}
 			}
-			if c.mute == "" && stderr.Len() > 0 {
+			if len(mute) == 0 && stderr.Len() > 0 {
 				t.Errorf("stderr on a complete list: %q", stderr.String())
 			}
 		})

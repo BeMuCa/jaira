@@ -1,0 +1,1 @@
+- In Herdr App, a terminal that never answers no longer hangs the cockpit's worker list, Give back or `reap.sh`: `herdr-hc.sh tab list` gives each `hc get` and `hc ls` 3 seconds (`JAIRA_HC_TIMEOUT` changes it) and reports a terminal that ran out as not answering; run `jaira update --roles` to get the new script.
