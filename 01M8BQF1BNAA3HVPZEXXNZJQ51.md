@@ -36,7 +36,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-26T10:47:18Z
-updated-at: 2026-11-26T10:47:18Z
+updated-at: 2026-11-26T10:47:43Z
+updated-by: Berk
 ---
 
 # Marketplace: was es schon gibt, wie andere es machen, und eine Einschaetzung
