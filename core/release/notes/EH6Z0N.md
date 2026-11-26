@@ -1,3 +1,3 @@
 - A ticket waiting on you in signoff or human now shows its diff against master beside it in the TUI when the terminal is at least 140 columns wide; tab switches to the diff.
 - The diff beside a sign-off or human ticket now shows one line number per row (the old one for a removed row, the new one otherwise), tints added and removed lines across the whole pane with the changed words marked, and reads "file N/M" for the selected file, so you can tell where you are in the diff.
-- ! In the diff, ] and [ are gone: up and down pick a file, enter opens and closes it, left and right scroll its code, dragging the divider with the mouse resizes the split, and o shows an IDE failure in the diff title.
+- ! In the diff, up and down pick a file, enter opens and closes it, left and right scroll its code, dragging the divider with the mouse resizes the split, and o shows an IDE failure in the diff title.

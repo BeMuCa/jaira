@@ -20,18 +20,15 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:41:07Z
+updated-at: 2026-11-26T00:43:10Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T00:35:07Z
 outcome-what: "The diff beside a signoff/human ticket opens as a file list (paths from repo root, +/-): up/down select, enter opens a file inline and enter again closes it; inside it up/down scroll lines and left/right scroll sideways; one narrow line-number column; the divider drags with the mouse for the session; o waits for the IDE and shows its error in the diff title. ] and [ are gone."
 outcome-why: "The person found ]/[ awkward, long lines were cut off, the double gutter wasted room, the split was fixed, and o failed silently under WSL2 (the code wrapper exited 127 with stderr dropped while jaira printed 'opened')."
 outcome-resolves: "Person's signoff feedback of 2026-11-25 (DoD 7-11)."
-review-summary: |-
-  core/release/notes/EH6Z0N.md:3 marks the new keys "- !" (must act) and repeats line 1, but nothing of this diff ever shipped (no EH6Z0N in 0.6.x, ]/[ never released - your own note 2026-11-25 23:07): fold enter-closes, left/right scroll, divider drag and the IDE error in the title into lines 1-2 and delete line 3
-  internal/tui/model.go:1288 case diffOpenedMsg checks only m.mode==modeDetail, so an IDE result that arrives 5-46 s later (the WSL wrapper delay in note 2026-11-26 00:35) lands in the title of whatever ticket is open by then: carry the ticket id in diffOpenedMsg (set in diffpane.go openDiffRow) and drop the message when it != m.diffScrollFor
-  Left standing: no openWait deadline (note 2026-11-26 00:35), mouse capture only while the diff is shown, tab still focuses the diff (note 2026-11-25 23:07)
-round: 9
+review-summary: "core/release/notes/EH6Z0N.md:3 (commit 4f032083f) now tells users '] and [ are gone', but no user ever had them: no diffpane.go and no EH6Z0N commit in v0.6.8 or origin/master (checked 2026-11-26) - drop the clause '] and [ are gone:' and keep the rest of the line, '- ! ' included as main's brief wants (worker note 2026-11-26 00:38)"
+round: 10
 review-gaps: |-
   note: if only some fallback commits cannot be shown, they are still dropped without a word (diffpane.go:273 only checks the all-unshowable case). Critique accepted this as out of scope; listed so the person sees it
   note: TestUnshowableCommitIsDiffUnavailableNotNoChanges covers one missing sha only; the mixed case has no test
@@ -41,7 +38,7 @@ review-round: 7
 review-check: "1. cd /home/berkc/code/X_General/jaira-EH6Z0N && go test ./internal/tui -count=1 -run 'TestHeaderLineIsTheFirstHunkOfEachFile|TestUnshowableCommitIsDiffUnavailableNotNoChanges' -v  2. see both PASS  3. go build -o /tmp/jaira-eh ./cmd/jaira  4. make the terminal at least 140 columns wide and 20 rows tall  5. run /tmp/jaira-eh in this repo and open a ticket in signoff that has a feat/<handle> branch  6. see on the right: title 'Diff  feat/... → master' and 'file 1/N  +A −D' at its right end  7. see each file start with a grey bar (folder dim, name bold, '+a −d' on the right), an 'old new │' gutter, added rows on a green band and removed rows on a red band  8. press tab, then ]: the next file's bar moves to the top and the counter says file 2/N  9. press o on a file bar whose first hunk starts at line 1: VS Code opens that file at line 1, and the title says 'opened <path>:1'  10. open a ticket in signoff with no branch and no commits: the pane says 'No diff yet'"
 back-from: critique
 back-by: lane
-back-count: 1
+back-count: 2
 ---
 
 # In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code
@@ -161,3 +158,5 @@ internal/tui/model.go:1288 case diffOpenedMsg checks only m.mode==modeDetail, so
 Left standing: no openWait deadline (note 2026-11-26 00:35), mouse capture only while the diff is shown, tab still focuses the diff (note 2026-11-25 23:07)
 - **2026-11-26 00:38 · Berk** — Worker on critique finding 1: main's brief asked for a '- ! ' release line because ] and [ go away, so the line stays '- ! '; the fix is to remove its overlap with line 1: line 1 says what the diff pane is, line 3 only says which keys now work (no ] [; up/down/enter/left/right, mouse drag, o reports errors). Finding 2 (diffOpenedMsg carries the ticket id) to be done as the critique says.
 - **2026-11-26 00:41 · Berk** — Worker in-progress (critique send-back, 2026-11-26): (1) diffOpenedMsg gets id; openDiffRow sets it from m.detail.ID (non-nil at its only call site, diffPaneShown guards it); model.go applies diffOpenedMsg only when modeDetail, detail non-nil and detail.ID == msg.id. Test TestDiffOpenedForAnotherTicketLeavesDiffOpenedUnchanged. (2) release note EH6Z0N.md: line 1 now states the pane and tab only; line 3 '- !' names only up/down, enter opens and closes, left/right scroll, mouse divider drag, o shows IDE failure. ] and [ left out of the note (never shipped). Line 3 kept as '- !' per the brief; critique's 'delete line 3' not applied. gofmt -l empty, go vet clean, go test -run 'TestOKey|TestOpenInCode|TestDiff|TestEnter' green.
+- **2026-11-26 00:42 · Berk** — critique (pass 2, a6afdb51f + 4f032083f, standing on critique 2026-11-26 00:38 and worker notes 00:38/00:41): finding 2 addressed - diffOpenedMsg carries id from openDiffRow, model.go:1289 applies it only when detail.ID == msg.id, TestDiffOpenedForAnotherTicketLeavesDiffOpenedUnchanged green. Finding 1: overlap with line 1 removed and '- ! ' kept per main's brief - accepted. New in 4f032083f: core/release/notes/EH6Z0N.md:3 (commit 4f032083f) now tells users '] and [ are gone', but no user ever had them: no diffpane.go and no EH6Z0N commit in v0.6.8 or origin/master (checked 2026-11-26) - drop the clause '] and [ are gone:' and keep the rest of the line, '- ! ' included as main's brief wants (worker note 2026-11-26 00:38)
+- **2026-11-26 00:43 · Berk** — Worker: critique pass 2 finding applied myself (one clause): '] and [ are gone' dropped from the release line, since no released build ever had them. Critique has sent back twice (the variant-b cap), so the ticket goes on to optimize without a third critique pass; nothing else was open.
