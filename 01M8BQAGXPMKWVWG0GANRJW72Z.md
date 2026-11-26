@@ -20,7 +20,7 @@ related: []
 follows: 01M5ZJ555685ZXARWNEF5QR36R
 commits: []
 created-at: 2026-11-26T10:44:50Z
-updated-at: 2026-11-26T10:50:30Z
+updated-at: 2026-11-26T10:50:33Z
 updated-by: BeMuCa
 claimed-by: worker-rjw72z
 claimed-at: 2026-11-26T10:46:49Z
@@ -36,7 +36,8 @@ claimed-at: 2026-11-26T10:46:49Z
   proof: core/role/builtin/jaira-role-interreview/SKILL.md section Present: ticket shape (Machine: line above Check:, Prepare, numbered steps with →) and the seven rules below it
 - [x] Ein Beispiel fuer ein Ticket im neuen Format steht in SKILL.md
   proof: core/role/builtin/jaira-role-interreview/SKILL.md section Present: 'An example - a ticket in signoff' (A3K9QP)
-- [ ] Gegengelesen von Fable: die Check-Vorgabe ist fuer jemanden ohne Vorwissen verstaendlich (Notiz am Ticket)
+- [x] Gegengelesen von Fable: die Check-Vorgabe ist fuer jemanden ohne Vorwissen verstaendlich (Notiz am Ticket)
+  proof: note 'Gegengelesen (Fable, 26.11.)' on this ticket
 
 ## Options
 
