@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T09:10:32Z
+updated-at: 2026-11-26T09:10:34Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T09:00:14Z
@@ -30,14 +30,14 @@ outcome-resolves: "Person's signoff feedback of 2026-11-25 (DoD 7-11)."
 review-summary: "none"
 round: 11
 review-gaps: "bbdb7837c: dropped the ideCommand argv check in TestDiffArgKeepsAnOptionLikeNameOutOfTheFlags (TestOKeyGivesTheIDEADotSlashForAnOptionLikeName proves the same argv end to end). Considered, kept: sidePath/closingQuote/splitDiffGit have no twin in the repo (no other diff-header or C-quote parser; core/gitrepo reads paths with core.quotePath=false -z instead); isBehindOrigin repeats a rev-parse Base already did but runs once per diff open, not hot; its local==origin check is needed since a commit is its own ancestor; no dead code or orphaned imports."
-test-verdict: "fail: DoD 5 proof names two tests that do not exist (TestGutterShowsOldAndNewNumbersOnTheirSides, TestBlankRowSeparatesFilesAndJumpsStillLandOnHeaders); gates green (RC=0, tui and gitrepo ok); DoD 7-11 proofs all exist and pass"
+test-verdict: "pass: go test ./internal/tui ./core/gitrepo -count=1 (skip the three hangers) RC=0 at bf730d6dd, no FAIL, tui 74s; all 31 DoD proof test names exist once each in the tree and pass in that run; DoD 1-11 checked against the tree (DoD 1 note, DoD 4 release note format ok); DoD 11 real VS Code run is the worker note of 09:00, not repeated here (would open a window); behaviour exercised in tmux on a scratch board: file list from root incl. \"my file.txt\", q\"uote.txt, +plus.txt; enter opens/closes; left/right scroll; o ran ./+plus.txt:1 and shows opened; a failing IDE (exit 3) shows its stderr in the title and not opened; diff is read-only, two-writer check n/a; divider drag only by TestDragTheDividerResizesTheSplit; the two triage-added tests pass; root-checkout fallback and develop/trunk base left as notes for the person"
 review-verdict: "Pass. 68dc5cf8 fixes both blockers in the right place with minimal changes, and adds nothing new: seenHunk resets per file, and the all-unavailable check reuses Repo.Diff's second return value. Each fix has a test that fails without it. The rest of the branch is unchanged since the review that accepted it. go test ./core/gitrepo ./internal/tui -count=1 is green; gofmt and vet are clean."
 review-round: 7
 review-check: "1. cd /home/berkc/code/X_General/jaira-EH6Z0N && go test ./internal/tui -count=1 -run 'TestHeaderLineIsTheFirstHunkOfEachFile|TestUnshowableCommitIsDiffUnavailableNotNoChanges' -v  2. see both PASS  3. go build -o /tmp/jaira-eh ./cmd/jaira  4. make the terminal at least 140 columns wide and 20 rows tall  5. run /tmp/jaira-eh in this repo and open a ticket in signoff that has a feat/<handle> branch  6. see on the right: title 'Diff  feat/... → master' and 'file 1/N  +A −D' at its right end  7. see each file start with a grey bar (folder dim, name bold, '+a −d' on the right), an 'old new │' gutter, added rows on a green band and removed rows on a red band  8. press tab, then ]: the next file's bar moves to the top and the counter says file 2/N  9. press o on a file bar whose first hunk starts at line 1: VS Code opens that file at line 1, and the title says 'opened <path>:1'  10. open a ticket in signoff with no branch and no commits: the pane says 'No diff yet'"
 back-from: testing
 back-by: lane
 back-count: 1
-hunt-verdict: "fail: bughunt done at 16e7bd669, 5 change blockers (path parsing of quoted/space names, stale local master as base, branch not in a worktree, branch file name passed to editor without --, develop base)"
+hunt-verdict: "pass: bughunt done at bf730d6dd, 0 change blocker, 2 change edge (notes on ticket: diverged local base; non-UTF-8 quoted path), 0 pre-existing"
 ---
 
 # In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code
