@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:20:38Z
+updated-at: 2026-11-26T08:21:04Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -103,3 +103,4 @@ review-check: "1. cd into this worktree  2. go test ./core/role -run TestHerdrHc
 - **2026-11-26 08:17 · Sascha** — testing: note: edge: JAIRA_HC_TIMEOUT mit mehr Ziffern als 64 Bit (9223372036854775807) laeuft in $(( )) ueber - Exit 1 ohne hc-Aufruf oder 1 s Budget; Fix waere eine Ziffernkappe (>6 Ziffern -> Exit 2); kein Blocker, niemand setzt solche Werte, Ergebnis bleibt 'Tabs unbekannt'.
 - **2026-11-26 08:17 · Sascha** — waiting: review (fresh agent, run-lane.sh tab) since 09:17
 - **2026-11-26 08:20 · Sascha** — review: done at 5e9dfcf82
+- **2026-11-26 08:21 · Sascha** — report: herdr-hc.sh: ein Budget (JAIRA_HC_TIMEOUT, 5 s, dezimal) fuer jeden Aufruf, bash-Watchdog um hc ls/get in 'tab list' und den Space-Lookup; ungueltiger Wert -> Exit 2; Tests, Release-Note, Manifest | signoff, context unknown | offen: Abnahme durch Alex; Review: 1 edge (Ueberlauf >18 Ziffern), 4 limits; tab get/pane get erst nach 0TREV1; Branch nicht gepusht
