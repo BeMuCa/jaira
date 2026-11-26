@@ -11,9 +11,11 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T07:54:29Z
+updated-at: 2026-11-26T07:54:32Z
 assignee: Sascha
 updated-by: Sascha
+claimed-by: DESKTOP-RFTCH11-35248
+claimed-at: 2026-11-26T07:54:32Z
 ---
 
 # reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only…
