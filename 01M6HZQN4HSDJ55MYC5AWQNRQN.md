@@ -17,10 +17,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:54:34Z
+updated-at: 2026-11-26T09:55:07Z
 updated-by: Berk
 claimed-by: w-wqnrqn
-claimed-at: 2026-11-26T09:54:27Z
+claimed-at: 2026-11-26T09:55:07Z
 question: ""
 outcome-what: "The board reads what waits for you (core/inbox): a banner above the lanes, a ✉ mark on cards, an i list where enter opens or reads and x acks; a plain pull makes a worktree only from a handover, and take makes the guessed one."
 outcome-why: "An assignment or message from a teammate must stay visible until the person looks at it, and a plain pull must not create worktrees nobody asked for."
