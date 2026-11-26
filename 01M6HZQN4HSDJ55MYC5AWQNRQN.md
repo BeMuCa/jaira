@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: Berk
@@ -17,14 +17,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:17:02Z
+updated-at: 2026-11-26T10:18:07Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T09:58:12Z
 question: ""
-outcome-what: "The board reads what waits for you (core/inbox): a banner above the lanes, a ✉ mark on cards, an i list where enter opens or reads and x acks; a plain pull makes a worktree only from a handover, and take makes the guessed one."
-outcome-why: "An assignment or message from a teammate must stay visible until the person looks at it, and a plain pull must not create worktrees nobody asked for."
-outcome-resolves: "DoD 2, 6, 15, 17 and 19 are ticked with the tests that prove them (internal/tui/inbox_test.go, internal/cli/msg_test.go, core/inbox); the pull and take worktree rules are covered by TestPlainPullMakesNoWorktreeFromAHandleNamedBranch and TestTakeMakesTheWorktreeFromAHandleNamedBranch; DoD 20 stays open for a person."
+outcome-what: "Fixes (a) take on a stale file checks the ref; (b) handover to the current holder records an entry; (c) a holder's pull keeps assigned-by; (h1) inbox refs carry a hash of the name (inbox.Slug); (h2) a send whose push landed is success; (h3) msg refuses a person name neither on the people list nor active here (exit 3, nothing written); (h4) msg help and release note say messages are readable by anyone with the repository"
+outcome-why: "Testing round 2 and bughunt found: take printed 'already yours' for a ticket the ref had given away; a re-handover to the current holder left no inbox entry; a pull rewrote assigned-by; 'Zoë' and 'Zo' shared one inbox; a send reported failed after the message landed; mail to a misspelt name was stored in an inbox nobody opens"
+outcome-resolves: "testing round 2 send-back items (a), (b), (c) and bughunt blockers slug collision, double send, unknown-name mail; the readable-inbox edge is documented, not changed"
 review-summary: none
 round: 3
 back-from: testing
