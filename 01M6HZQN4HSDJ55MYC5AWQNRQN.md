@@ -17,10 +17,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:36:01Z
+updated-at: 2026-11-26T14:36:47Z
 updated-by: Berk
 claimed-by: w-wqnrqn
-claimed-at: 2026-11-26T14:35:53Z
+claimed-at: 2026-11-26T14:36:47Z
 question: ""
 outcome-what: "Seen is nil until a fetch writes it, so a zero-ticket fetch no longer looks like a first fetch and an ack-only inbox no longer looks fetched; first-fetch baseline decided from that Seen plus refs-seen"
 outcome-why: "optimize send-back: len(Seen)>0 broke a new worktree's first-fetch assignment (miss is worse than duplicate); an ack before the first fetch replayed every assignment"
