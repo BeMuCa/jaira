@@ -21,7 +21,7 @@ related: []
 commits:
   - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-26T00:25:19Z
+updated-at: 2026-11-26T00:25:34Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-26T00:08:22Z
@@ -35,6 +35,7 @@ back-from: critique
 back-by: lane
 back-count: 1
 review-gaps: "none removed: worker/dispatcher duplicated ask-main paragraph left (existing pattern, round-1 critique let it stand); teamlead SKILL.md:90-94 slight overlap with the next sentence left because it names the return route; no dead code (skill text only)"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 2 (skill text, shipped hashes and release note only; no locking or parser)"
 ---
 
 # Ein Worker ohne Herdr schickt seine Fragen per SendMessage an main und arbeitet weiter, statt mit der Frage im Bericht stehen zu bleiben
