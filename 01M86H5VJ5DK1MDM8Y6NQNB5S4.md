@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:20:25Z
+updated-at: 2026-11-26T08:20:28Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -46,6 +46,7 @@ review-verdict-gaps: |-
   note: limit: an invalid JAIRA_HC_TIMEOUT now stops every herdr-hc.sh command with exit 2, tab create and pane run included, not only tab list; the release note says so
   note: limit: the watchdog kills hc alone, not processes hc started; a real hc is one binary, and whether kill -KILL stops a native hc.exe under Git Bash was not checked (no Windows here)
   note: elsewhere: tab get, pane get, tab close, pane run and send-keys in herdr-hc.sh:157-188 still call hc without a limit and are reached from reap.sh:418-419 under its lock; deliberately left until 0TREV1 lands (ticket note 08:02)
+review-check: "1. cd into this worktree  2. go test ./core/role -run TestHerdrHc -count=1 -v  3. you see one_hangs, all_hang, hangs_and_mute, five_hang and ls_hangs PASS, each in about 3 s or less, and TestHerdrHcRefusesATimeoutThatIsNoSeconds PASS for abc, 0, 00, -1, 1.5 and ' 3'  4. in Herdr App, with one worker tab frozen: open the cockpit worker list - it comes back within about 6 s instead of hanging 15 s, and the frozen terminal is reported as not answering  5. JAIRA_HC_TIMEOUT=abc bash core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh tab list prints 'JAIRA_HC_TIMEOUT must be seconds above 0' and exit code 2"
 ---
 
 # herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangs…
