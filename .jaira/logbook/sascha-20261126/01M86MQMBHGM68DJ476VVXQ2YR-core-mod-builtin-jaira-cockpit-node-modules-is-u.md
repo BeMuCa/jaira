@@ -1,7 +1,7 @@
 ---
 id: 01M86MQMBHGM68DJ476VVXQ2YR
 title: Cockpit-Testlauf hinterlaesst node_modules/ - weder gitignored noch von der Mod-Installation ausgenommen
-status: critique
+status: done
 ready: true
 creator: Sascha
 context: |-
@@ -13,9 +13,11 @@ tags: []
 blocked-by: []
 related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
-commits: []
+commits:
+  - e9ba2b87485f704f0f1f59aed65651e3ced35cbd
+  - d0291e0ffd6a985a3fb6341dd191ed905d6fe727
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T08:02:15Z
+updated-at: 2026-11-26T09:30:22Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -24,15 +26,23 @@ goal: "Ein Testlauf des jaira-cockpit-Mods hinterlaesst nichts, was git als neue
 outcome-what: "Root-.gitignore ignoriert core/mod/builtin/*/node_modules/; mod.Builtins() laesst node_modules/ eines Mods aus (Walk ueber fs.FS via builtinsIn, damit testbar)"
 outcome-why: "Ein Cockpit-Testlauf hinterliess node_modules/.vite als ?? in jedem worktree_diff, und ein danach gebautes Binary haette es eingebettet und installiert"
 outcome-resolves: "DoD 1-2; go test ./... gruen, go vet, shipped-history --check"
-review-summary: "no findings: builtinsIn is the one indirection, needed because go:embed is fixed at compile time and the filter can only be tested over a stand-in fs.FS; testCache sits beside generatedTypes/generatedConfig in the same walk (core/mod/mod.go), same pattern; gitignore line sits beside the tsconfig.json line for the same folder pattern"
-review-gaps: "none: 3 files, nothing duplicated elsewhere (core/web/ui/.gitignore covers only core/web/ui), every new symbol has a caller"
-test-verdict: "pass: go test ./... green (exit 0), go test -race -count=1 ./core/mod ok, go vet, shipped-history --check ok; DoD 1: git check-ignore matches .gitignore:43 for node_modules/.vite/vitest/results.json; DoD 2: TestBuiltinsLeaveATestRunsCacheOut ok; function: in a git-archive copy with a real node_modules/.vite/vitest/results.json, the file is in the embedded FS but in no Mod.Files, so it is not installed"
-hunt-verdict: "change: mod.go/.gitignore text says node_modules stays out of the binary; go:embed all: still embeds it, only the install skips it - fix the wording (go:embed cannot exclude a subdirectory; release builds run on a clean checkout)"
+review-summary: "Die Root-.gitignore ignoriert jetzt /core/mod/builtin/*/node_modules/, sodass der vitest-Cache (node_modules/.vite) nach einem Mod-Testlauf nicht mehr in git status auftaucht. mod.Builtins() ueberspringt node_modules/ auf oberster Ebene eines Mods (neben tests/ und den generierten Typen), damit 'jaira roles install' den Cache nie mitinstalliert; dafuer wurde der Walk in builtinsIn(fs.FS) ausgelagert, den ein neuer Test mit fstest.MapFS prueft - inklusive dass ein tieferes hooks/node_modules erhalten bleibt. Kommentare sagen ehrlich, dass go:embed all: den Cache in einen lokalen Build weiter einbettet."
+review-gaps: |-
+  note: limit: ein lokal nach einem Testlauf gebautes Binary traegt die node_modules-Bytes weiter (go:embed all: kann kein Unterverzeichnis auslassen); installiert werden sie nicht, Release-Builds laufen auf frischem Checkout - so in mod.go:49-54 und .gitignore:41-44 dokumentiert
+  note: limit: nur node_modules/ direkt im Mod-Ordner wird uebersprungen, tiefere (hooks/node_modules) bewusst nicht - der Test haelt das fest
+test-verdict: "pass round 2: go test ./core/mod ok, gofmt clean; DoD 1-2 unchanged by the comment-only fix, proofs still point at .gitignore:43 (node_modules line) and TestBuiltinsLeaveATestRunsCacheOut"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 2"
 round: 2
 back-from: testing
 back-by: lane
 back-count: 1
 stop-after-fix: "true"
+review-verdict: "accept: beide DoD-Punkte erfuellt (.gitignore:44 greift laut git check-ignore, TestBuiltinsLeaveATestRunsCacheOut gruen); kein Defekt in core/mod/mod.go oder dem Install-Pfad core/role/install.go gefunden"
+review-round: 2
+review-verdict-gaps: |-
+  note: limit: ein lokal nach einem Testlauf gebautes Binary traegt die node_modules-Bytes weiter (go:embed all: kann kein Unterverzeichnis auslassen); installiert werden sie nicht, Release-Builds laufen auf frischem Checkout - so in mod.go:49-54 und .gitignore:41-44 dokumentiert
+  note: limit: nur node_modules/ direkt im Mod-Ordner wird uebersprungen, tiefere (hooks/node_modules) bewusst nicht - der Test haelt das fest
+review-check: "1. mkdir -p core/mod/builtin/jaira-cockpit/node_modules/.vite/vitest && touch core/mod/builtin/jaira-cockpit/node_modules/.vite/vitest/results.json  2. git status --short -> keine Zeile mit node_modules  3. go test ./core/mod -run TestBuiltinsLeaveATestRunsCacheOut -> ok  4. go run ./cmd/jaira roles install --into /tmp/vx && ls -a /tmp/vx/jaira-cockpit -> kein node_modules  5. rm -rf core/mod/builtin/jaira-cockpit/node_modules /tmp/vx"
 ---
 
 # core/mod/builtin/jaira-cockpit/node_modules/ is untracked and not gitig…
@@ -40,7 +50,7 @@ stop-after-fix: "true"
 ## Definition of Done
 
 - [x] core/mod/builtin/*/node_modules/ ist in der Root-.gitignore: git status zeigt nach einem Testlauf im Mod-Ordner nichts unter node_modules
-  proof: .gitignore:43; git check-ignore on node_modules/.vite/vitest/results.json matches it
+  proof: .gitignore:44; git check-ignore on node_modules/.vite/vitest/results.json matches it
 - [x] mod.Builtins() laesst node_modules/ eines Mods aus, wie schon tests/ und tsconfig.json; Go-Test in core/mod deckt das ab
   proof: core/mod/mod.go testCache + builtinsIn; core/mod/mod_test.go TestBuiltinsLeaveATestRunsCacheOut
 
@@ -61,3 +71,10 @@ stop-after-fix: "true"
 - **2026-11-26 08:01 · Sascha** — hunt report: 1 finding, 1 change (edge, not a blocker), as a note on VXQ2YR | read whole: core/mod/mod.go, core/mod/mod_test.go, .gitignore hunk, plus caller core/role/install.go (mod install loop); go test ./core/mod ./core/role pass | not checked: what 'claude plugin test' really writes into the mod folder beyond node_modules/.vite (no run of it here); a dangling symlink in node_modules/.bin was tried and does not break go build
 - **2026-11-26 08:01 · Sascha** — bughunt: done at e9ba2b874 - 1 finding (1 change, 0 pre-existing) in 1 module, first hunt; concurrency, error paths, input, permissions checked; files: .gitignore core/mod/mod.go core/mod/mod_test.go
 - **2026-11-26 08:02 · Sascha** — bughunt fix: wording only - go:embed all: cannot exclude a subdirectory, so a local build still carries node_modules bytes; mod.go and .gitignore now say install, not binary; goal and title reworded. stop-after-fix=true set by me (comments only, no lock, no parser). The commit subject of e9ba2b874 says 'binary' and stays: no amend after a move.
+- **2026-11-26 08:03 · Sascha** — waiting: review (fresh agent via run-lane.sh) since 09:03
+- **2026-11-26 08:04 · Sascha** — review: done at d0291e0ff
+- **2026-11-26 08:05 · Sascha** — report: root .gitignore ignores core/mod/builtin/*/node_modules/; mod.Builtins() skips a mod's node_modules/ so it is never installed (a local build still embeds the bytes - documented) | signoff, context unknown | open: person accepts; review 2 notes are limits, no blockers; branch not pushed
+- **2026-11-26 09:25 · Sascha** — Accepted from signoff: angenommen:
+- note: limit: ein lokal nach einem Testlauf gebautes Binary traegt die node_modules-Bytes weiter (go:embed all: kann kein Unterverzeichnis auslassen); installiert werden sie nicht, Release-Builds laufen auf frischem Checkout - so in mod.go:49-54 und .gitignore:41-44 dokumentiert
+- note: limit: nur node_modules/ direkt im Mod-Ordner wird uebersprungen, tiefere (hooks/node_modules) bewusst nicht - der Test haelt das fest
+- **2026-11-26 09:25 · Sascha** — cockpit: accepted by the person, signoff -> done
