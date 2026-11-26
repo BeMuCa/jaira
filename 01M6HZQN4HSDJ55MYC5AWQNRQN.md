@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:41:05Z
+updated-at: 2026-11-26T10:41:08Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T10:27:37Z
@@ -227,3 +227,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 10:34 · Berk** — testing: fail: DoD item 3 is [-] (doing) though its proof exists (core/release/notes/WQNRQN.md, one unwrapped line; DoD 10 covers the same). Unmet item = blocker under blocker_rule. Fix at the cause: either tick item 3 with --done --proof core/release/notes/WQNRQN.md, or remove the duplicate item; do not leave [-].
 - **2026-11-26 10:39 · Berk** — Decision by the person (via main session, 26.11.2026): message privacy = option 1 — messages on refs/jaira/inbox/* are open to everyone with the repository, stated clearly in 'jaira msg --help' and the release note. Encryption may come later as its own ticket; not built here.
 - **2026-11-26 10:41 · Berk** — bughunt: change: blocker: core/gitrepo/git.go:517-523 AddWorktree - class: an existing local branch is reused as it is, so a local copy behind the remote is checked out and reported as success; example: local feat at 11e6573, remote feat handed over at 270da6e, the new worktree sits at 11e6573 and pull.go:169 reports it as checked out; ran: scratch Go test in core/gitrepo (push to bare remote, local branch left behind, AddWorktree, compare HEAD), HEAD 11e6573 != 270da6e, FAIL; scratch file deleted
+- **2026-11-26 10:41 · Berk** — bughunt: change: blocker: core/gitrepo/git.go:476-481 CommitAll and internal/cli/handover.go:66-74 - class: git add -A stages every untracked file that git does not ignore, then the handover pushes that commit with the branch; example: an untracked scratch-credentials.txt in the worktree lands in the wip commit and on the remote next to the tracked change; ran: scratch Go test in core/gitrepo, CommitAll on a repo with tracked.txt changed and an untracked scratch-credentials.txt, HEAD lists both files, FAIL; scratch file deleted. Blocker because it exposes unrelated files and secrets to the remote; downgrade only if a board policy says otherwise
