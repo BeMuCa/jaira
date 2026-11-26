@@ -1,7 +1,7 @@
 ---
 id: 01M8BQAGXPMKWVWG0GANRJW72Z
 title: Interreview geht die Tickets einzeln mit der Person durch und beschreibt den Check als Schrittliste
-status: critique
+status: in-progress
 ready: true
 creator: Berk
 assignee: BeMuCa
@@ -20,7 +20,7 @@ related: []
 follows: 01M5ZJ555685ZXARWNEF5QR36R
 commits: []
 created-at: 2026-11-26T10:44:50Z
-updated-at: 2026-11-26T10:51:30Z
+updated-at: 2026-11-26T10:51:39Z
 updated-by: BeMuCa
 claimed-by: worker-rjw72z
 claimed-at: 2026-11-26T10:46:49Z
@@ -32,6 +32,7 @@ review-summary: |-
   core/role/builtin/jaira-role-interreview/SKILL.md section Record: the record is written only at the end; one ticket per message over 51 tickets is a long session, and a killed one leaves no record - append each ticket's line when its answer is carried out
   README.md:849 the changed line is 130 characters in a 80-column paragraph - rewrap
   Let stand (note 'decisions (worker...)'): next, all, accept-all narrowing, per-ticket gather.
+round: 2
 ---
 
 # Interreview geht die Tickets einzeln mit der Person durch und beschreibt den Check als Schrittliste
