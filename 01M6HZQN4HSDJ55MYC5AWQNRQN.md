@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:42:25Z
+updated-at: 2026-11-26T10:42:27Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T10:27:37Z
@@ -31,7 +31,7 @@ back-from: critique
 back-by: lane
 back-count: 1
 review-gaps: "round 2: folded inbox.Send's two success returns into one (err == nil || commit != \"\"); msg.go computes listed once and uses people.List.Same instead of a local EqualFold closure; left the double s.Load in take (second read is after refs.Pull, needed); peopleList repeat calls are cached; no other inbox caller still uses identity.Slug"
-hunt-verdict: "fail: bughunt done at 58e157861 (partial coverage, first hunt): 3 change blockers (identity slug collision, msg send double-delivery after push, msg to an unknown name goes to an unread inbox) and 1 edge (every clone fetches all inboxes); the hunter's claims were not run by testing"
+hunt-verdict: "fail: bughunt done at aa08d9806, 4 change blockers: handover pushes untracked files (verified by run), AckAll acks unseen entries, AddWorktree reuses a stale local branch, first-fetch baseline per worktree drops assignments (last three by reading; hunter ran tests)"
 test-verdict: "fail: DoD item 3 is [-] with its proof present (core/release/notes/WQNRQN.md, one unwrapped line); gates green; items 1-19 verified, 20 left for the person"
 ---
 
