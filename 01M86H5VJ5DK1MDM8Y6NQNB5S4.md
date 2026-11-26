@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:08:54Z
+updated-at: 2026-11-26T08:08:58Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -72,3 +72,4 @@ back-count: 1
 - **2026-11-26 08:05 · Sascha** — hunt report: 3 findings (2 change - neither a blocker, 1 pre-existing), all as notes on QNB5S4 | read whole: herdr-hc.sh, the herdr-hc part of role_test.go, release note QNB5S4.md, shipped.sha256 line; callers read along: reap.sh, close-tab.sh, cockpit register.tsx run()/tab list | not checked: whether bash kill -KILL stops a native Windows hc.exe under Git Bash (no Windows here); whether the test's JAIRA_HC_TIMEOUT=1 kills a healthy stub hc on a slow CI runner and makes 'all answer' fail (not reproduced)
 - **2026-11-26 08:05 · Sascha** — bughunt: done at 21d6e7e89 - 3 findings (2 change, 1 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/QNB5S4.md core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh core/role/role_test.go core/shipped/shipped.sha256
 - **2026-11-26 08:05 · Sascha** — testing: class: Frist gilt je hc-Aufruf, nicht fuer die ganze Liste; example: 5 haengende Terminals -> 15,15 s, das Cockpit (register.tsx:212, 15 s) laeuft trotzdem in seinen Timeout - genau das sollte das Ticket beenden; fix: eine Gesamtfrist fuer 'tab list' (Rest der Frist an jedes get, abgelaufen -> restliche Terminals stumm ohne zu fragen), Test mit mehreren haengenden Terminals unter der Cockpit-Grenze. Mit dabei: JAIRA_HC_TIMEOUT wie reap.sh:154 pruefen (leer/nicht numerisch/0 -> Standard oder Exit 2), Test ueber abc/0/-1.
+- **2026-11-26 08:08 · Sascha** — Runde 2: Budget gilt jetzt fuer den ganzen Aufruf (5 s), nicht je hc. Folge: nach einem Haenger werden die restlichen Terminals nicht mehr gefragt und zaehlen als stumm. Bewusst so statt paralleler hc get: alle Aufrufer verwerfen stdout bei Exit != 0 (register.tsx:358 agentsOf, :1992 refreshBoard, :1825 Give back, reap.sh:133), also liest niemand, was sie gesagt haetten - parallel waere mehr Code fuer nichts. Gemessen: 5 haengende von 6 -> 5,1 s, keine Prozessreste. Ungueltiges JAIRA_HC_TIMEOUT -> Exit 2 wie reap.sh:154 (statt still alles stumm und tab create ohne herdr.space).
