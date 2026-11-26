@@ -13,12 +13,13 @@ context: |-
   Zu klaeren: Ersteller nur im Frontmatter oder auch als Ordner (Ordner und Feld koennen auseinanderlaufen); was ein Umbenennen des Erstellers bedeutet; Zusammenhang mit MMY2CS (Herkunft merken).
 definition-of-done: "Ein Board traegt creator: wie eine Lane; publish stempelt ihn, adopt behaelt ihn"
 tags: []
-blocked-by: []
+blocked-by:
+  - 01M8BQFBMS778FE9WK6YDAW7WP
 related: []
 follows: 01M5GFAV1C3DV9NWZFXC4G07X9
 commits: []
 created-at: 2026-11-26T10:52:46Z
-updated-at: 2026-11-26T10:52:57Z
+updated-at: 2026-11-26T10:52:59Z
 updated-by: Berk
 ---
 
