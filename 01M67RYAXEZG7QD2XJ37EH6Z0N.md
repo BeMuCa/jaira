@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: critique
+status: in-progress
 ready: true
 creator: berkc
 assignee: Berk
@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:38:31Z
+updated-at: 2026-11-26T00:38:34Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T00:35:07Z
@@ -31,7 +31,7 @@ review-summary: |-
   core/release/notes/EH6Z0N.md:3 marks the new keys "- !" (must act) and repeats line 1, but nothing of this diff ever shipped (no EH6Z0N in 0.6.x, ]/[ never released - your own note 2026-11-25 23:07): fold enter-closes, left/right scroll, divider drag and the IDE error in the title into lines 1-2 and delete line 3
   internal/tui/model.go:1288 case diffOpenedMsg checks only m.mode==modeDetail, so an IDE result that arrives 5-46 s later (the WSL wrapper delay in note 2026-11-26 00:35) lands in the title of whatever ticket is open by then: carry the ticket id in diffOpenedMsg (set in diffpane.go openDiffRow) and drop the message when it != m.diffScrollFor
   Left standing: no openWait deadline (note 2026-11-26 00:35), mouse capture only while the diff is shown, tab still focuses the diff (note 2026-11-25 23:07)
-round: 8
+round: 9
 review-gaps: |-
   note: if only some fallback commits cannot be shown, they are still dropped without a word (diffpane.go:273 only checks the all-unshowable case). Critique accepted this as out of scope; listed so the person sees it
   note: TestUnshowableCommitIsDiffUnavailableNotNoChanges covers one missing sha only; the mixed case has no test
@@ -39,8 +39,8 @@ test-verdict: "pass: scoped suites green (go test ./core/gitrepo ./internal/tui 
 review-verdict: "Pass. 68dc5cf8 fixes both blockers in the right place with minimal changes, and adds nothing new: seenHunk resets per file, and the all-unavailable check reuses Repo.Diff's second return value. Each fix has a test that fails without it. The rest of the branch is unchanged since the review that accepted it. go test ./core/gitrepo ./internal/tui -count=1 is green; gofmt and vet are clean."
 review-round: 7
 review-check: "1. cd /home/berkc/code/X_General/jaira-EH6Z0N && go test ./internal/tui -count=1 -run 'TestHeaderLineIsTheFirstHunkOfEachFile|TestUnshowableCommitIsDiffUnavailableNotNoChanges' -v  2. see both PASS  3. go build -o /tmp/jaira-eh ./cmd/jaira  4. make the terminal at least 140 columns wide and 20 rows tall  5. run /tmp/jaira-eh in this repo and open a ticket in signoff that has a feat/<handle> branch  6. see on the right: title 'Diff  feat/... → master' and 'file 1/N  +A −D' at its right end  7. see each file start with a grey bar (folder dim, name bold, '+a −d' on the right), an 'old new │' gutter, added rows on a green band and removed rows on a red band  8. press tab, then ]: the next file's bar moves to the top and the counter says file 2/N  9. press o on a file bar whose first hunk starts at line 1: VS Code opens that file at line 1, and the title says 'opened <path>:1'  10. open a ticket in signoff with no branch and no commits: the pane says 'No diff yet'"
-back-from: signoff
-back-by: person
+back-from: critique
+back-by: lane
 back-count: 1
 ---
 
