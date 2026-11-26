@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T08:09:59Z
+updated-at: 2026-11-26T08:10:03Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -32,7 +32,10 @@ round: 3
 back-from: testing
 back-by: lane
 back-count: 1
-review-gaps: "none: round 2 fix (mktemp/tr guard in close-tab.sh ask(), one test case) read in one pass with critique - nothing duplicated, dead or hot"
+review-gaps: |-
+  note: elsewhere: close-tab.sh:150 park() - a failing grep or mv inside the function ends the script with exit 1 and no kept line (the ERR trap does not reach functions); there before this change, reap.sh calls it with || true
+  note: elsewhere: run-lane.sh:153 says the tab is already gone when herdr pane get times out (message only, the tab stays open); same class, other script
+  note: limit: how old (non-hc) herdr answers tab get for a gone tab is unknown (no binary here); if not pane_not_found, a pane closed between pane get and tab get keeps the ticket for one extra round, nothing is lost
 test-verdict: "pass: round 2 - go vet ./role, go test ./role ./shipped green (RC=0); DoD 1-4 re-verified, new case TestCloseTabKeepsAWorkerThatIsNotFinished/no_temp_directory: TMPDIR missing -> 'kept AB12CD: mktemp failed ...', exit 0, tab not closed; round 1 full suite green; no new writer"
 hunt-verdict: "pass: bughunt done at 40c8324fd, 0 change, 0 pre-existing; round 1's change finding fixed in 40c8324fd"
 ---
