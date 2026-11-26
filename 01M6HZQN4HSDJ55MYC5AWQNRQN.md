@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: Berk
@@ -17,14 +17,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:34:06Z
+updated-at: 2026-11-26T14:34:09Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T14:31:37Z
 question: ""
-outcome-what: "core/refsync Incoming takes the baseline from inbox.json, else from this worktree's refs-seen; core/inbox Load moves an unparseable inbox.json to inbox.json.corrupt"
-outcome-why: "testing round 3: a clone with refs-seen but no inbox.json dropped every assignment since its last fetch, and one unparseable inbox.json failed every fetch"
-outcome-resolves: "tests in core/refsync/inbox_test.go (refs-seen without inbox, inbox without refs-seen, neither, unreadable inbox moved aside) and core/inbox TestALoadOfAnUnreadableInboxMovesItAsideAndReplacesAnOlderOne"
+outcome-what: "Seen is nil until a fetch writes it, so a zero-ticket fetch no longer looks like a first fetch and an ack-only inbox no longer looks fetched; first-fetch baseline decided from that Seen plus refs-seen"
+outcome-why: "optimize send-back: len(Seen)>0 broke a new worktree's first-fetch assignment (miss is worse than duplicate); an ack before the first fetch replayed every assignment"
+outcome-resolves: "optimize finding 1 (baseline decision, second inbox.Exists), finding 4 (ack before first fetch test), noteSeen writing Seen into an ack-only inbox"
 review-summary: |-
   core/refsync/refsync.go:1308-1316 decides inboxBefore by calling inbox.Exists a second time after Load, because Load may have moved the file aside; another process can write a fresh inbox.json between Load and that check, and then prev is the empty Seen of the moved file. Simpler: drop the second Exists and set inboxBefore = len(st.Seen) > 0. A moved-aside file and an inbox.json made by an offline ack before any fetch both land on the refs-seen/baseline path. Today the ack case takes prev={} and records every current assignment as news (a flood of repeats, not a miss).
   core/inbox/inbox.go:107 throws away the json error (errUnreadable), and nothing tells the user that inbox.json was moved aside, so the unacked entries it held disappear from the board without a word. Testing note 14:22 asked to report the corruption once. Return the parse error wrapped in errUnreadable and print one line on stderr in the fetch caller (or keep a Recovered flag on State).
