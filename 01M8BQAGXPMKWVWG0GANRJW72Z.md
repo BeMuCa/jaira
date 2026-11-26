@@ -4,7 +4,7 @@ title: Interreview geht die Tickets einzeln mit der Person durch und beschreibt 
 status: backlog
 ready: true
 creator: Berk
-assignee: Berk
+assignee: BeMuCa
 goal: "Die Abnahme im Chat zeigt ein Ticket nach dem anderen (oder so viele auf einmal, wie die Person sagt), und unter Check steht der Pruefweg als nummerierte Schritte, die jemand ohne Vorwissen nachmachen kann."
 context: |-
   Was falsch ist: /jaira-role-interreview zeigt alle Tickets in einer Nachricht. Am 24.11. waren das 51 Tickets in signoff, eine Nachricht von rund 27 KB - nicht abzuarbeiten.
@@ -20,7 +20,8 @@ related: []
 follows: 01M5ZJ555685ZXARWNEF5QR36R
 commits: []
 created-at: 2026-11-26T10:44:50Z
-updated-at: 2026-11-26T10:44:50Z
+updated-at: 2026-11-26T10:46:43Z
+updated-by: BeMuCa
 ---
 
 # Interreview geht die Tickets einzeln mit der Person durch und beschreibt den Check als Schrittliste
