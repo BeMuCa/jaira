@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:08:23Z
+updated-at: 2026-11-26T14:08:25Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T14:08:20Z
@@ -256,3 +256,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 14:06 · Berk** — worker w-wqnrqn, found while testing: Seen alone broke TestTakeTellsThePreviousHolderAfterTheirFetch. Pull and take are own writes, not fetches, so the previous holder was judged against her pre-pull state. noteSeen now also merges its sha into Seen, but only when inbox.json already exists (otherwise the clone's first fetch stops being a baseline). Its failure is silent, as saveSeen already is, so a failed inbox write falls back to the last fetch.
 - **2026-11-26 14:06 · Berk** — worker w-wqnrqn, caveat, not changed: an inbox.json written by a build before this change has no Seen. Its next fetch classifies every ticket against nothing, so assignments to me by others that were already reported replay once. The feature is unreleased, so I did not add a legacy baseline. Say if you want one.
 - **2026-11-26 14:06 · Berk** — worker w-wqnrqn, unrelated: gofmt -l flags core/refsync/inbox_test.go, which this change does not touch; left as it is.
+- **2026-11-26 14:08 · Berk** — critique round 7 (delta 4fdbf8f9a..b0f65206a, budget spent, moved forward): the Seen map fixes the late-pushed miss. No wrong result, data loss or security hole introduced. Open, non-blocking: (1) Pull's noteSeen marks an unclassified incoming assignment as seen clone-wide (refsync.go:1471/1893), pre-existing per-worktree; (2) RecordFetch Seen merge is last-writer-wins, so a stale fetch causes a replay, never a miss; (3) Seen keeps ids of vanished refs, so it grows unbounded; Incoming could replace instead of merge. For optimize/review to weigh.
