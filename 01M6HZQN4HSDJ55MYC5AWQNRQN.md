@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:43:26Z
+updated-at: 2026-11-26T09:43:28Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T09:43:26Z
@@ -25,6 +25,12 @@ question: ""
 outcome-what: "The board reads what waits for you (core/inbox): a banner above the lanes, a ✉ mark on cards, an i list where enter opens or reads and x acks; a plain pull makes a worktree only from a handover, and take makes the guessed one."
 outcome-why: "An assignment or message from a teammate must stay visible until the person looks at it, and a plain pull must not create worktrees nobody asked for."
 outcome-resolves: "DoD 2, 6, 15, 17 and 19 are ticked with the tests that prove them (internal/tui/inbox_test.go, internal/cli/msg_test.go, core/inbox); the pull and take worktree rules are covered by TestPlainPullMakesNoWorktreeFromAHandleNamedBranch and TestTakeMakesTheWorktreeFromAHandleNamedBranch; DoD 20 stays open for a person."
+review-summary: |-
+  core/refsync/refsync.go:1200 messageEntries re-reads the whole inbox ref on every fetch and core/inbox/inbox.go:29 forgets acked keys after 30 days, so every acked message comes back a month later (breaks DoD 16) - record messages only when the inbox ref tip moved since the last fetch (keep its sha in refs-seen like ticket refs), as Incoming already does for tickets
+  internal/tui/refs.go:181-188 announceArrivals still raises the desktop notification and the "is yours" flash on any ref move of a ticket of mine (the bug the brainstorm named: a colleague note re-announces) beside the new banner - drive both from the Assigned entries this fetch recorded, or drop them for the banner
+  internal/tui/inbox.go inboxGroups and inboxLine copy internal/cli/inbox.go inboxGroups, printInboxRow and verbFor by hand (the comment says so) - move the milestone/epic group map and the one-line row text into core/inbox (e.g. inbox.Groups(milestones, epics), inbox.Line(row, name)) and call it from both
+  core/inbox/inbox.go:155-163 retries ticket.LockFile 5x on top of its own timeout (up to 5x the wait) only to pass an 8-writer in-process test (note 2026-11-25 23:59) - drop the loop and shrink TestConcurrentRecordLosesNothing to the 2-3 processes that really contend
+  Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/take worktree rule per note 2026-11-26 09:23; first-fetch baseline per note 00:27.
 ---
 
 # Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht
