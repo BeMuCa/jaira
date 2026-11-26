@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T08:02:08Z
+updated-at: 2026-11-26T08:02:13Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -61,3 +61,4 @@ back-count: 1
 - **2026-11-26 07:56 · Sascha** — decision: keine offenen Entscheidungen. Unbekannter Fehlschlag von pane get -> 'kept <t>: herdr gave no answer for pane <p>' und die ganze Runde fuer das Ticket bleibt stehen (wie 'closing failed'). Erkennung per grep auf not_found im kombinierten stdout+stderr: deckt hc (kind not_found) und altes herdr (pane_not_found) ab, ohne den Stream des alten herdr zu kennen. close-tab.sh:159 bleibt draussen (entfernt nichts).
 - **2026-11-26 07:59 · Sascha** — gefunden: altes herdr.exe-Format nur aus strings bekannt (pane_not_found), Stream und Exit-Code unbekannt - darum grep auf stdout+stderr. Geschwister ohne Schaden gelassen: run-lane.sh:153 sagt 'already gone' auch bei Timeout (nur Text, Tab bleibt offen), spawn.sh:475 meldet ohnehin einen Fehler. Bestehender Test 'herdr not reachable' erwartet jetzt 'herdr gave no answer' statt 'does not know pane' - richtiger. Vier Kategorien: Nebenlaeufigkeit - reap.lock unveraendert; Fehlerpfad - jeder Nicht-not_found-Fehler haelt die Runde an (failed=1); Eingabe - leere Fehlermeldung -> 'exit N, no message'; Rechte - nichts Neues von aussen.
 - **2026-11-26 08:00 · Sascha** — critique: (1) *not_found* zu weit - herdr kennt command_not_found/plugin_not_found/agent_not_found; nur die gequoteten Codes "not_found" und "pane_not_found" zaehlen, Test mit command_not_found. (2) hget Rueckgabe 1 ungenutzt - wie ask(): 0 mit leerem hout.
+- **2026-11-26 08:02 · Sascha** — critique Runde 2: nichts mehr. Zwei Kopien des Helfers (reap.sh hget, close-tab.sh ask) bewusst stehen gelassen: die Skripte teilen keine Bibliothek, und eine gesourcte Datei braeuchte Install- und Manifest-Aenderungen fuer 10 Zeilen.
