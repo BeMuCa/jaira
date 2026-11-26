@@ -1,0 +1,1 @@
+- ! Expect your teammates' waiting tickets to be gone from the cockpit band; turn on the jaira-cockpit setting showTeammates to get their line back.
