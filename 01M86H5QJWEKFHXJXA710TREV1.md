@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T08:07:27Z
+updated-at: 2026-11-26T08:07:41Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -33,7 +33,7 @@ back-from: testing
 back-by: lane
 back-count: 1
 review-gaps: "none: round 2 fix (mktemp/tr guard in close-tab.sh ask(), one test case) read in one pass with critique - nothing duplicated, dead or hot"
-test-verdict: "pass: go vet ./... and go test ./... green (RC=0), shipped-history --check ok; DoD 1-4 verified in the tree (TestReapReadsOnlyNotFoundAsAClosedTab 7 cases, close-tab cases); hget against real hc: unknown terminal -> treated as closed, own terminal -> tab id, timing-out hc stub -> rc 1 with its message; failure path: worktree, branch and records stay (test); the change adds no writer - reap.lock and park's mv unchanged"
+test-verdict: "pass: round 2 - go vet ./role, go test ./role ./shipped green (RC=0); DoD 1-4 re-verified, new case TestCloseTabKeepsAWorkerThatIsNotFinished/no_temp_directory: TMPDIR missing -> 'kept AB12CD: mktemp failed ...', exit 0, tab not closed; round 1 full suite green; no new writer"
 hunt-verdict: "fail: bughunt done at 4899c2218, 1 change (close-tab.sh ask(): mktemp/tr fail outside the ERR trap -> exit 1 without kept), 0 pre-existing"
 ---
 
