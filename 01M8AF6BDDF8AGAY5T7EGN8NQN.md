@@ -1,7 +1,7 @@
 ---
 id: 01M8AF6BDDF8AGAY5T7EGN8NQN
 title: "Ein Worker ohne Herdr schickt seine Fragen per SendMessage an main und arbeitet weiter, statt mit der Frage im Bericht stehen zu bleiben"
-status: review
+status: signoff
 ready: true
 creator: Berk
 assignee: Berk
@@ -21,7 +21,7 @@ related: []
 commits:
   - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-26T09:02:45Z
+updated-at: 2026-11-26T09:02:49Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-26T09:02:29Z
