@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: critique
+status: testing
 ready: true
 creator: berkc
 assignee: Berk
@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T09:01:57Z
+updated-at: 2026-11-26T09:05:15Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T09:00:14Z
@@ -29,7 +29,7 @@ outcome-why: "The person found ]/[ awkward, long lines were cut off, the double 
 outcome-resolves: "Person's signoff feedback of 2026-11-25 (DoD 7-11)."
 review-summary: "none"
 round: 11
-review-gaps: "round 88e9617d9..HEAD: folded the '-' row shows old line rule (in diffGutter and diffLine) into diffRow.shown(); dropped diffLine's num() blank branch (no '+'/'-'/context row has line 0, parseDiff guarantees >=1); dropped redundant r.to>r.from guard (to>from implies it); openDiffRow's reply closure is one diffOpenedMsg with err: wait(). Left: diffPan/left-right keys, clampDiffLeft in diffLeft (needed after resize), stderr last-line in openInCode (no existing helper; linklines.go LastIndex is unrelated), diffFileWidth per render (bounded to one file). Not cleanup, left for review: toggleDiffFile does not reset diffHScroll, so the sideways offset carries into the next opened file (clamped to its width)."
+review-gaps: "bbdb7837c: dropped the ideCommand argv check in TestDiffArgKeepsAnOptionLikeNameOutOfTheFlags (TestOKeyGivesTheIDEADotSlashForAnOptionLikeName proves the same argv end to end). Considered, kept: sidePath/closingQuote/splitDiffGit have no twin in the repo (no other diff-header or C-quote parser; core/gitrepo reads paths with core.quotePath=false -z instead); isBehindOrigin repeats a rev-parse Base already did but runs once per diff open, not hot; its local==origin check is needed since a commit is its own ancestor; no dead code or orphaned imports."
 test-verdict: "fail: DoD 5 proof names two tests that do not exist (TestGutterShowsOldAndNewNumbersOnTheirSides, TestBlankRowSeparatesFilesAndJumpsStillLandOnHeaders); gates green (RC=0, tui and gitrepo ok); DoD 7-11 proofs all exist and pass"
 review-verdict: "Pass. 68dc5cf8 fixes both blockers in the right place with minimal changes, and adds nothing new: seenHunk resets per file, and the all-unavailable check reuses Repo.Diff's second return value. Each fix has a test that fails without it. The rest of the branch is unchanged since the review that accepted it. go test ./core/gitrepo ./internal/tui -count=1 is green; gofmt and vet are clean."
 review-round: 7
@@ -172,3 +172,4 @@ Left standing: no openWait deadline (note 2026-11-26 00:35), mouse capture only 
 - **2026-11-26 00:54 · Berk** — Worker triage of the testing send-back (2026-11-26): FIX now: (a) DoD 5 proof names + wording (one narrow gutter since DoD 9), blank-row test; (b) parseDiff path forms: strip the trailing TAB git writes after a path with a space, and unquote C-quoted "b/..." paths (strconv.Unquote) in both the +++ line and splitDiffGit; (c) a path starting with '-' or '+' goes to the IDE/editor as ./<path>; (d) Base(): when origin/<base> exists and the local <base> is its ancestor (behind), use origin/<base>. LEAVE as notes for the person (round-1 review already let them stand): o falls back to the root checkout when the branch has no worktree; repos whose base is neither master nor main (develop/trunk) show no branch diff.
 - **2026-11-26 09:00 · Berk** — DoD 11 real launch, worker 2026-11-26 10:0x, after main repaired ~/.vscode-server (code --version 1.148.0): the exact argv openInCode runs ('code -g README.md:3', Dir = this worktree, stderr captured, real HOME) exits 0 in 3.9s -> the title says 'opened'. Before the repair the same call exited 127 with '.../remote-cli/code: not found', which the title now shows instead of 'opened'. Whether the VS Code window landed on the right line was not seen by me (no screen); exit 0 from the remote CLI means it handed the file to VS Code.
 - **2026-11-26 09:01 · Berk** — testing send-back fixes (worker w-eh6z0n): (a) DoD 5 reworded to one narrow line-number column and re-ticked with proofs that all exist (grep-checked); new test TestDownNeverStopsOnTheBlankRowBetweenFiles. (b) parseDiff +++ line and splitDiffGit now go through sidePath: trailing TAB dropped, C-quoted token unquoted before a/ b/ is trimmed; splitDiffGit also handles a quoted old side and a quoted new side after a space. Tests TestParseDiffReadsPathsGitWritesInOtherForms (my file.txt, q"uote.txt). (c) diffArg: a path starting - or + goes to ideCommand and the editor fallback as ./path; tests TestDiffArgKeepsAnOptionLikeNameOutOfTheFlags, TestOKeyGivesTheIDEADotSlashForAnOptionLikeName. Not tested: the editor fallback argv (tea.ExecProcess returns an opaque Cmd; only the IDE argv is observable), it shares the same file variable. (d) Base(): local master/main that is an ancestor of origin/<name> and differs gives origin/<name>; isBehindOrigin helper; test TestBaseIsOriginWhenTheLocalBaseIsBehindIt (clone, teammate commit, BranchDiff shows only mine.txt). Checks: gofmt -l clean, go vet ./internal/tui ./core/gitrepo clean, go test ./core/gitrepo and the tui filter ok. Left as the triage said: o falls back to root checkout when the branch has no worktree; develop/trunk base gives no branch diff.
+- **2026-11-26 09:03 · Berk** — critique (pass on bbdb7837c, testing send-back): read only the bughunt 00:52 findings, the 00:54 triage and bbdb7837c. (b) quoted/tab paths: sidePath in parseDiff +++ and splitDiffGit - addressed in the callee that reads the header; no existing git C-unquote helper in core (BranchDiff already passes core.quotePath=false, which still quotes " \\ and control bytes, so unquoting is needed). (c) option-like names: diffArg applied once in openDiffRow to both IDE and editor argv - addressed, ./ rather than -- fits since IDE templates vary. (d) Base(): behind-origin check lives in Base, the one place every caller reads the base from - addressed. Left as triage decided (person's call, round-1 review let stand): root-checkout fallback for a branch without worktree; develop/trunk base. Nothing new. 212 lines changed, so optimize stays its own lane. review-summary=none.

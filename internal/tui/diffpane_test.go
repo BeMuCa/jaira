@@ -947,9 +947,6 @@ func TestDiffArgKeepsAnOptionLikeNameOutOfTheFlags(t *testing.T) {
 			t.Errorf("diffArg(%q) = %q, want %q", path, got, want)
 		}
 	}
-	if got := ideCommand("code -g {file}:{line}", diffArg("-rf.txt"), 4); !slices.Equal(got, []string{"code", "-g", "./-rf.txt:4"}) {
-		t.Errorf("IDE argv for -rf.txt = %q", got)
-	}
 }
 
 // Opening a file whose name starts with - hands the IDE ./name, not the bare name.
