@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:38:57Z
+updated-at: 2026-11-26T00:41:03Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T00:35:07Z
@@ -160,3 +160,4 @@ Let stand: hunk header indented 2*nw+4 with no │ (aligns @@ with the sign colu
 internal/tui/model.go:1288 case diffOpenedMsg checks only m.mode==modeDetail, so an IDE result that arrives 5-46 s later (the WSL wrapper delay in note 2026-11-26 00:35) lands in the title of whatever ticket is open by then: carry the ticket id in diffOpenedMsg (set in diffpane.go openDiffRow) and drop the message when it != m.diffScrollFor
 Left standing: no openWait deadline (note 2026-11-26 00:35), mouse capture only while the diff is shown, tab still focuses the diff (note 2026-11-25 23:07)
 - **2026-11-26 00:38 · Berk** — Worker on critique finding 1: main's brief asked for a '- ! ' release line because ] and [ go away, so the line stays '- ! '; the fix is to remove its overlap with line 1: line 1 says what the diff pane is, line 3 only says which keys now work (no ] [; up/down/enter/left/right, mouse drag, o reports errors). Finding 2 (diffOpenedMsg carries the ticket id) to be done as the critique says.
+- **2026-11-26 00:41 · Berk** — Worker in-progress (critique send-back, 2026-11-26): (1) diffOpenedMsg gets id; openDiffRow sets it from m.detail.ID (non-nil at its only call site, diffPaneShown guards it); model.go applies diffOpenedMsg only when modeDetail, detail non-nil and detail.ID == msg.id. Test TestDiffOpenedForAnotherTicketLeavesDiffOpenedUnchanged. (2) release note EH6Z0N.md: line 1 now states the pane and tab only; line 3 '- !' names only up/down, enter opens and closes, left/right scroll, mouse divider drag, o shows IDE failure. ] and [ left out of the note (never shipped). Line 3 kept as '- !' per the brief; critique's 'delete line 3' not applied. gofmt -l empty, go vet clean, go test -run 'TestOKey|TestOpenInCode|TestDiff|TestEnter' green.
