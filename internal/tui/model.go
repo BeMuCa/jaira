@@ -318,7 +318,8 @@ type Model struct {
 	fullAt time.Time
 
 	// thinEmpty is whether lanes holding no tickets are drawn thin on the
-	// multi-column board. Session-only, reset on every launch: nothing about
+	// multi-column board. On by default; z turns it off for the session.
+	// Session-only, reset on every launch: nothing about
 	// the board's *view* is persisted today — the filter, the cursor and the
 	// per-lane scroll all start fresh — and the only saved per-user state
 	// (lane.SaveDefaultBoard) is a workflow definition rather than a view
@@ -388,7 +389,7 @@ func New(s *ticket.Store) (*Model, error) {
 	// its 1-9 binding work from the very first frame — a board that has to be
 	// opened once with 'p' before it knows its own neighbours is the bug this
 	// exists to fix.
-	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), projectRoot: project.Board(s.Root), darkBG: true, anim: true, animStart: time.Now()}
+	m := &Model{store: s, scroll: map[string]int{}, projects: project.Load(), projectRoot: project.Board(s.Root), darkBG: true, anim: true, thinEmpty: true, animStart: time.Now()}
 	m.versionLine, m.releasePill = versionLine()
 	m.versionAt = time.Now()
 	// Mutations from the board record who made them, the same as the CLI's.
@@ -1819,9 +1820,9 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// milestone layer, and an h left meaning "lane left" beside them would
 	// be half of a pair whose other half now does something else.
 	case "left":
-		m.moveLane(-1)
+		m.stepLane(-1)
 	case "right":
-		m.moveLane(1)
+		m.stepLane(1)
 	case "j", "down":
 		m.moveCard(1)
 	case "k", "up":
@@ -1934,9 +1935,34 @@ func (m *Model) moveLane(d int) {
 	m.clampCursor()
 }
 
+// stepLane is the board's ←/→. With thinEmpty on, it steps over the lanes drawn
+// thin (the ones holding no tickets) and lands on the next lane that holds one.
+// If only the current lane has tickets, the cursor stays. Lane focus keeps
+// moveLane, which steps onto every lane.
+func (m *Model) stepLane(d int) {
+	if !m.thinEmpty || len(m.cols) == 0 {
+		m.moveLane(d)
+		return
+	}
+	n := len(m.cols)
+	for i := 1; i < n; i++ {
+		j := ((m.laneIdx+d*i)%n + n) % n
+		if len(m.cols[j].tickets) > 0 {
+			m.laneIdx = j
+			m.cardIdx = 0
+			m.clampCursor()
+			return
+		}
+	}
+	// Every lane is empty (e.g. a filter matches nothing): step one lane as before.
+	if len(m.cols[m.laneIdx].tickets) == 0 {
+		m.moveLane(d)
+	}
+}
+
 // toggleEmptyLanes flips whether lanes holding no tickets are drawn thin.
-// Nothing else changes: a thin lane is still on the board, so the cursor may
-// sit on it and h/l step onto it like any other.
+// A thin lane is still on the board, so the cursor may sit on it. The board's
+// ←/→ step over thin lanes (stepLane); lane focus is unaffected.
 func (m *Model) toggleEmptyLanes() {
 	m.thinEmpty = !m.thinEmpty
 }

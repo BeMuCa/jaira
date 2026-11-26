@@ -243,6 +243,7 @@ func TestUnlinkedCardDrawsNothing(t *testing.T) {
 // counts it — while the legend names only the families that were drawn.
 func TestLinkWithoutACardOnScreenIsCounted(t *testing.T) {
 	m := newTestModel(t, 200, 40)
+	m.key(key("z")) // z is on by default; these checks were written against full-width lanes
 	nowhere := ticket.NewID(time.Unix(0, 0))
 	id := addTicket(t, m, "Card with a dangling blocker", "backlog", time.Now().Add(time.Hour), nil,
 		map[string][]string{
