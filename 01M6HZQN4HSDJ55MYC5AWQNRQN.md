@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:51:59Z
+updated-at: 2026-11-26T09:52:06Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T09:44:16Z
@@ -201,3 +201,4 @@ internal/tui/refs.go:181-188 announceArrivals still raises the desktop notificat
 internal/tui/inbox.go inboxGroups and inboxLine copy internal/cli/inbox.go inboxGroups, printInboxRow and verbFor by hand (the comment says so) - move the milestone/epic group map and the one-line row text into core/inbox (e.g. inbox.Groups(milestones, epics), inbox.Line(row, name)) and call it from both
 core/inbox/inbox.go:155-163 retries ticket.LockFile 5x on top of its own timeout (up to 5x the wait) only to pass an 8-writer in-process test (note 2026-11-25 23:59) - drop the loop and shrink TestConcurrentRecordLosesNothing to the 2-3 processes that really contend
 Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/take worktree rule per note 2026-11-26 09:23; first-fetch baseline per note 00:27.
+- **2026-11-26 09:52 · Berk** — in-progress send-back fixes (worker w-wqnrqn): (1) messages: refsync.messageEntries now keeps the last-seen inbox commit per slug in refs-seen as inbox:<slug>; a fetch returns only lines absent from the commit it last saw (keyed by line content), so a pruned ack does not come back; a first sight still records all lines. Old commit unreadable => every line counts as new (rare; history gc'd). (2) notifications: inbox.RecordNew returns what a fetch added; Arrival.Recorded marks an assigned entry that this fetch recorded. TUI announceArrivals and the CLI jaira fetch announceArrivals both notify only on Recorded; the TUI flash is gone (the banner replaces it). The CLI copy had the same bug as the TUI copy, so it is fixed in the same change. (3) grouping and row text: inbox.Groups and inbox.Line in core/inbox/rows.go; TUI and CLI call them. (4) lock: update takes ticket.LockFile once; TestConcurrentRecordLosesNothing is 3x5. Mutation check: disabling both tip guards makes TestAnAckedMessageDoesNotComeBackAfterPrune fail.
