@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:10:44Z
+updated-at: 2026-11-26T08:10:48Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -43,6 +43,7 @@ review-verdict-gaps: |-
   note: limit: ein lokales Ref-Lock laenger als 1 s nach angenommenem Push (stehengebliebene .lock eines abgestuerzten git) meldet weiter Failed, der Eintrag verliert die naechste Runde gegen die eigene Schreibung - laut, wie vor dem Ticket, vom Teamlead so entschieden
   note: edge: die Lock-Tests (gitref_test.go holdRefLock, outbox_test.go) haben 700 ms Abstand zwischen 300 ms Halten und 1 s Wartezeit - auf einem sehr langsamen Windows-Runner kann das flackern; falls ja, Haltezeit auf 200 ms senken
   note: elsewhere: core/gitref/gitref.go:998 stuft jede Server-Ablehnung mit 'rejected' (pre-receive hook, geschuetzter Ref) als ErrRaceLost ein, outbox.Flush raeumt den Eintrag dann weg - vorbestehend, neues Ticket
+review-check: "1. cd in den Worktree feat/98kfjp  2. go test -count=1 -race ./core/gitref/ -run 'TestAWriteWaitsOutABrieflyLockedLocalRef|TestALocalRefThatStaysLockedIsStillAnError' -v  3. erwartet: vier Subtests ticket/milestone/migration/epic PASS und der Dauer-Lock-Test PASS  4. go test -count=1 ./core/outbox/ -run TestABrieflyLockedLocalRefNeitherFailsTheFlushNorTheNextWrite -v  5. erwartet: PASS (Flush Sent, Outbox leer, zweite Schreibung Sent)  6. Gegenprobe: in core/gitref/gitref.go:555 die Zeichenkette core.filesRefLockTimeout=1000 auf =100 setzen, Schritt 2 wiederholen - die vier Subtests werden rot; danach zuruecksetzen"
 ---
 
 # gitref.go:548 publish - schlaegt update-ref nach erfolgreichem Push feh…
