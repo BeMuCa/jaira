@@ -1036,15 +1036,15 @@ func TestHerdrHcTabListSaysWhichTerminalDidNotAnswer(t *testing.T) {
 		{"removed and mute", "t1 t2 t3", "t3", "t1", "", false, []string{"t2"}},
 		// QNB5S4: an hc get that never returns counts as mute once
 		// JAIRA_HC_TIMEOUT runs out; it hung the list and every caller before.
-		// Once a hang has spent the budget, the terminals after it are not
-		// asked and count as mute too: every caller drops a list that
-		// exits 3, so what they would have said is read by nobody.
-		{"one hangs", "t1 t2 t3", "", "", "t2", false, []string{"t1"}},
+		// What the budget leaves after a hang decides whether the terminals
+		// after it are still asked: each one either lands in the list or is
+		// named as mute. Every caller drops a list that exits 3 anyway.
+		{"one hangs", "t1 t2 t3", "", "", "t2", false, []string{"t1", "t3"}},
 		{"all hang", "t1 t2", "", "", "t1 t2", false, nil},
 		{"hangs and mute", "t1 t2 t3", "t1", "", "t3", false, []string{"t2"}},
 		// The budget is the whole list's: five mute terminals at a deadline
 		// each took the cockpit's 15 s again.
-		{"five hang", "t1 t2 t3 t4 t5 t6", "", "", "t1 t2 t3 t4 t5", false, nil},
+		{"five hang", "t1 t2 t3 t4 t5 t6", "", "", "t1 t2 t3 t4 t5", false, []string{"t6"}},
 		{"ls hangs", "t1", "", "", "", true, nil},
 	} {
 		t.Run(c.name, func(t *testing.T) {
@@ -1108,8 +1108,20 @@ fi
 					t.Errorf("tab %s: label %q", tab.TabID, tab.Label)
 				}
 			}
-			if !slices.Equal(ids, c.listed) {
+			if c.hang == "" && !slices.Equal(ids, c.listed) {
 				t.Errorf("listed %q, want %q", ids, c.listed)
+			}
+			if c.hang != "" {
+				for _, id := range ids {
+					if !slices.Contains(c.listed, id) {
+						t.Errorf("listed %s, which never answers: %q", id, ids)
+					}
+				}
+				for _, want := range c.listed {
+					if !slices.Contains(ids, want) && !strings.Contains(stderr.String(), " "+want) {
+						t.Errorf("%s is neither listed nor named as mute: %q, stderr %q", want, ids, stderr.String())
+					}
+				}
 			}
 			for _, m := range mute {
 				if !strings.Contains(stderr.String(), " "+m) {
@@ -1144,7 +1156,7 @@ func TestHerdrHcRefusesATimeoutThatIsNoSeconds(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(bin, "hc"), []byte(hc), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	for _, v := range []string{"abc", "0", "-1", "1.5", " 3"} {
+	for _, v := range []string{"abc", "0", "00", "-1", "1.5", " 3"} {
 		t.Run(v, func(t *testing.T) {
 			cmd := exec.Command(bash, script, "tab", "list")
 			cmd.Env = append(os.Environ(), "HC_TERMINAL_ID=", "HC_BIN=", "JAIRA_HC_TIMEOUT="+v, "PATH="+bin+string(os.PathListSeparator)+path)

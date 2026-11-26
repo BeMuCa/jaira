@@ -33,13 +33,21 @@ js() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
 # timeout.exe first (see reap.sh). hc writes into files, not into the caller's
 # pipes: what a killed hc left running would hold those open, and the caller
 # would wait for it all the same.
+# 10#: $(( )) reads a leading 0 as octal, and 08 is no number there. The +1:
+# SECONDS counts whole seconds, and without it the budget fell up to a second
+# short of secs; one hc still waits no longer than secs, the call at most secs+1.
 secs="${JAIRA_HC_TIMEOUT:-5}"
 case "$secs" in
-  ''|*[!0-9]*|0) echo "herdr-hc.sh: JAIRA_HC_TIMEOUT must be seconds above 0, not '$secs'" >&2; exit 2 ;;
+  ''|*[!0-9]*) secs=0 ;;
+  *) secs=$((10#$secs)) ;;
 esac
-end=$((SECONDS + secs))
+if [ "$secs" -eq 0 ]; then
+  echo "herdr-hc.sh: JAIRA_HC_TIMEOUT must be seconds above 0, not '${JAIRA_HC_TIMEOUT:-}'" >&2; exit 2
+fi
+end=$((SECONDS + secs + 1))
 bounded() {
   local o e p w rc=0 left=$((end - SECONDS))
+  [ "$left" -le "$secs" ] || left=$secs
   if [ "$left" -le 0 ]; then
     echo "herdr-hc.sh: hc $1 not asked: the ${secs}s were up" >&2
     return 1
