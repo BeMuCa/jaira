@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: testing
+status: in-progress
 ready: true
 creator: berkc
 assignee: Berk
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:22:25Z
+updated-at: 2026-11-26T14:22:38Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T14:13:29Z
@@ -29,8 +29,8 @@ review-summary: |-
   core/refsync/refsync.go:1471 noteSeen now merges the pulled sha into the shared inbox Seen, so a pull that is itself the first read of an assignment by someone else marks it seen without an entry, now in every worktree, not only the one that pulled (pre-existing per-worktree, the delta widens it; non-blocking because whoever pulls already knows) - classify in Pull via assignmentEntries(id, prev[id], content, readSHA, ...) before noteSeen, or leave the ref sha unseen and let the next Incoming classify it
   core/inbox/inbox.go:101 RecordFetch overwrites Seen[id] last-writer-wins: a slow fetch that read an older sha can rewind a newer one written by another worktree; the result is a replayed entry (deduped by key/acked), never a miss, so acceptable under the repeat-over-miss rule - keep as is, note only
   core/inbox/inbox.go:63 Seen never drops ids whose ref is gone (logbooked or rejected tickets), so inbox.json grows with the board history - prune ids absent from ids in Incoming (ticketSeen is already the full current set: replace instead of merge when it is a full fetch)
-round: 7
-back-from: critique
+round: 8
+back-from: testing
 back-by: lane
 back-count: 1
 review-gaps: "Seen is replaced per fetch, not merged: vanished refs drop out (critique finding 3); noteSeen uses new inbox.NoteSeen for its one-id merge; test TestRecordFetchWritesEntriesAndSeenTogether updated. Left: pull.go:158 CheckedOut (not redundant, silent vs message); critique findings 1-2 (behaviour, not cleanup); pre-existing gofmt drift in core/refsync/inbox_test.go; handover/gitrepo delta has no duplication or dead code."
