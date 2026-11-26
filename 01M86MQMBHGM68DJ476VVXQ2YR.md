@@ -1,7 +1,7 @@
 ---
 id: 01M86MQMBHGM68DJ476VVXQ2YR
 title: Cockpit-Testlauf hinterlaesst node_modules/ - weder gitignored noch aus dem Binary gefiltert
-status: critique
+status: optimize
 ready: true
 creator: Sascha
 context: |-
@@ -15,7 +15,7 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T07:59:10Z
+updated-at: 2026-11-26T07:59:27Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -25,6 +25,7 @@ outcome-what: "Root-.gitignore ignoriert core/mod/builtin/*/node_modules/; mod.B
 outcome-why: "Ein Cockpit-Testlauf hinterliess node_modules/.vite als ?? in jedem worktree_diff, und ein danach gebautes Binary haette es eingebettet und installiert"
 outcome-resolves: "DoD 1-2; go test ./... gruen, go vet, shipped-history --check"
 review-summary: "no findings: builtinsIn is the one indirection, needed because go:embed is fixed at compile time and the filter can only be tested over a stand-in fs.FS; testCache sits beside generatedTypes/generatedConfig in the same walk (core/mod/mod.go), same pattern; gitignore line sits beside the tsconfig.json line for the same folder pattern"
+review-gaps: "none: 3 files, nothing duplicated elsewhere (core/web/ui/.gitignore covers only core/web/ui), every new symbol has a caller"
 ---
 
 # core/mod/builtin/jaira-cockpit/node_modules/ is untracked and not gitig…
