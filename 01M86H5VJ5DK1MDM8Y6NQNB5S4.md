@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:05:06Z
+updated-at: 2026-11-26T08:05:10Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -63,3 +63,4 @@ test-verdict: "pass: go vet + go test -race ./... nach go clean -testcache gruen
 - **2026-11-26 08:04 · Sascha** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:33 - class: JAIRA_HC_TIMEOUT is not checked; any value sleep refuses kills every hc call at once; example: JAIRA_HC_TIMEOUT=0 (a person may read it as 'no limit'), abc or -1 -> sleep fails at once, the watchdog kills hc, tab list exits 137 with 'hc ls gave no answer within 0s', and tab create quietly loses the herdr.space label so the new tab lands outside the space; reap.sh:154 already checks JAIRA_TEARDOWN_TIMEOUT with case ''|*[!0-9]*|0 -> exit 2; ran: JAIRA_HC_TIMEOUT=abc|0|-1 herdr-hc.sh tab list with an hc that answers in 0.3 s -> rc=137 each, 0.5 -> rc=0
 - **2026-11-26 08:05 · Sascha** — bughunt: pre-existing: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:138,151 (tab get, pane get), also tab close 143-148, pane run 161, send-keys 167 - class: hc calls with no time limit that are still reached while reap.sh holds its lock; example: a terminal answers tab list, then stops answering while reap.sh waits on gh or worktree-teardown (up to 300 s), and reap.sh:418-419 'pane get'/'tab get' hang forever, the lock stays held and no later reap runs - the same hang this ticket fixed for tab list; close-tab.sh:159-162 is reached the same way from reap.sh:142; blame: 655874a6b9 (2026-11-11, before the ticket); ran: herdr-hc.sh pane get on a hung stub terminal under timeout 8 -> rc=124
 - **2026-11-26 08:05 · Sascha** — hunt report: 3 findings (2 change - neither a blocker, 1 pre-existing), all as notes on QNB5S4 | read whole: herdr-hc.sh, the herdr-hc part of role_test.go, release note QNB5S4.md, shipped.sha256 line; callers read along: reap.sh, close-tab.sh, cockpit register.tsx run()/tab list | not checked: whether bash kill -KILL stops a native Windows hc.exe under Git Bash (no Windows here); whether the test's JAIRA_HC_TIMEOUT=1 kills a healthy stub hc on a slow CI runner and makes 'all answer' fail (not reproduced)
+- **2026-11-26 08:05 · Sascha** — bughunt: done at 21d6e7e89 - 3 findings (2 change, 1 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/QNB5S4.md core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh core/role/role_test.go core/shipped/shipped.sha256
