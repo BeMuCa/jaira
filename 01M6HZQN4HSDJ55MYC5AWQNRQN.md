@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T00:48:45Z
+updated-at: 2026-11-26T00:48:58Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -38,7 +38,7 @@ question: ""
   proof: core/refsync/inbox_test.go TestAnAssignmentByAnotherRecordsAnEntry (a second syncer on the same clone still sees the entry) and TestAnAckedAssignmentDoesNotComeBack; entries are in inbox.json in the repo state dir
 - [ ] TUI: Banner, Kartenmarker und Liste (i); Oeffnen oder x quittiert; TUI-Test
 - [x] 'jaira inbox [--json] [--ack <id>|--all]' fuer Agenten
-  proof: x
+  proof: internal/cli/inbox_test.go TestInboxShowsAnAssignmentUntilItIsAcknowledged
 - [x] Ein Befehl weist alle offenen Tickets eines Milestones einer Person zu (jaira milestone assign <name> <person>); mehrere Zuweisungen aus einem Milestone/Epic in einem Fetch sind ein Eintrag; Test
   proof: internal/cli/milestone_assign_test.go TestMilestoneAssignGivesTheReceiverOneInboxRow
 - [ ] Das Ticket zeigt, wer es wem zugewiesen hat ('alex -> berkc') in Detail und show; Test
