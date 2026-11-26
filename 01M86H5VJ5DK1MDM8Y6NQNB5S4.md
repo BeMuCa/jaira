@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:20:28Z
+updated-at: 2026-11-26T08:20:32Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -102,3 +102,4 @@ review-check: "1. cd into this worktree  2. go test ./core/role -run TestHerdrHc
 - **2026-11-26 08:16 · Sascha** — bughunt: done at 5e9dfcf82 - 1 finding (1 change, 0 pre-existing) in 4 modules, follow-up hunt since ff4b72ae3; concurrency, error paths, input, permissions checked; files: core/release/notes/QNB5S4.md core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh core/role/role_test.go core/shipped/shipped.sha256
 - **2026-11-26 08:17 · Sascha** — testing: note: edge: JAIRA_HC_TIMEOUT mit mehr Ziffern als 64 Bit (9223372036854775807) laeuft in $(( )) ueber - Exit 1 ohne hc-Aufruf oder 1 s Budget; Fix waere eine Ziffernkappe (>6 Ziffern -> Exit 2); kein Blocker, niemand setzt solche Werte, Ergebnis bleibt 'Tabs unbekannt'.
 - **2026-11-26 08:17 · Sascha** — waiting: review (fresh agent, run-lane.sh tab) since 09:17
+- **2026-11-26 08:20 · Sascha** — review: done at 5e9dfcf82
