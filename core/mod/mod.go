@@ -47,8 +47,10 @@ type Mod struct {
 }
 
 // What a test run in a mod folder leaves behind: vitest writes its cache to
-// node_modules/.vite. Ignored by git, but go:embed reads the disk, so a build
-// made after such a run would install it with the mod.
+// node_modules/.vite. Ignored by git, but go:embed reads the disk and cannot
+// leave a subdirectory out, so a local build made after such a run carries it;
+// it is skipped here so that it is never installed with the mod. Release
+// builds run on a clean checkout and carry none.
 const testCache = "node_modules"
 
 // Builtins returns every embedded mod, sorted by id.

@@ -39,7 +39,8 @@ Thumbs.db
 /core/mod/builtin/*/tsconfig.json
 
 # A test run in a mod folder ('claude plugin test', vitest) leaves its cache in
-# node_modules/.vite there. core/mod leaves it out of the binary too.
+# node_modules/.vite there. A local build still embeds it (go:embed reads the
+# disk); core/mod leaves it out of what is installed.
 /core/mod/builtin/*/node_modules/
 
 # Milestones travel on refs/jaira/milestones; the files under .jaira/milestones/ are
