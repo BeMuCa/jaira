@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T00:39:12Z
+updated-at: 2026-11-26T00:41:52Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -157,3 +157,4 @@ I) people: 'jaira people' gains 'active' (assignees + creators of board tickets,
 - **2026-11-26 00:32 · Berk** — worker: P1-P4 verified by worker (ticket, inbox -count=3, gitref, refsync all ok; build+vet clean). Decision on Entry.Batch: one value per Incoming run (the fetch time), not updated-at per minute — DoD 8 says 'in one fetch', and a minute boundary would split a milestone assign. P5 agent changes refsync.go:1181 accordingly.
 - **2026-11-26 00:33 · Berk** — waiting: in-progress P5-P7 (haiku subagent #2) since 01:33
 - **2026-11-26 00:39 · Berk** — P5-P7 worker: step 0 done. Batch is one time.Now() per Incoming run (RFC3339 UTC), passed to assignmentEntries; the old updated-at-per-minute batch split a milestone assign crossing a minute. Test: TestOneFetchGivesItsEntriesOneBatch. Design A-I read from ticket lines 142-150; C = display-time bundling by batch+from+milestone/epic, so core/inbox gets a Rows grouping.
+- **2026-11-26 00:41 · Berk** — worker: TestAFinishedTicketThatNeverLandedIsReported failed once (refsync_test.go:831 'a finished ticket that never landed was not reported: []') on a full-package run at cc5f791ad while other agents loaded the machine; then green 5/5 alone and 2/2 full package. Treated as flaky under load, not caused by this ticket; testing lane should re-run it.
