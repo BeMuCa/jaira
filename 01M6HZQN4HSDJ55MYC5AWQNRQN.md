@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:06:25Z
+updated-at: 2026-11-26T10:08:11Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T09:58:12Z
@@ -214,3 +214,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 10:05 · Berk** — testing: class: a receiver's pull rewrites assigned-by, so the record of who handed the ticket over is lost; example: remote history for 01M8BMY85V1ERGYSGVW96FM3JP: acabbe4 (alice) has assignee bob, assigned-by alice; 7dddf77 (bob, his pull) has assignee bob, assigned-by bob, updated-by bob; the assignee did not change, so store.go:1606-1610 should not have restamped it; cause not traced; fix at the cause: the pull path must not change assigned-by unless the assignee changes; test over the class: pull and any other write that leaves the assignee as it was keeps assigned-by unchanged, checked on the ref after the write
 - **2026-11-26 10:05 · Berk** — testing: class: DoD item 3 stays [-] (doing) although its proof exists; example: core/release/notes/WQNRQN.md is present with one '- ' line per change, unwrapped; fix: tick item 3 with --done and proof core/release/notes/WQNRQN.md once the round passes (no code change needed)
 - **2026-11-26 10:06 · Berk** — worker triage of testing round (send-back 1 of 2): fix (a) take on stale file must check the ref; (b) entry also when assignee stays me but handover-commit changed and sender is not me; (c) refsync.Pull stamps assigned-by only when the assignee changes; hunt 1 slug collision -> inbox slug = Slug(name)+'-'+8 hex of sha1(lowercased trimmed name), same on send and read; hunt 2 Send counts a push that landed as success even if local update-ref failed; hunt 3 msg to a name neither on the people list nor among active names is refused (exit 3), a ticket id always resolves to its assignee. hunt 4 (every clone can read every inbox) is inherent to git-only refs, not fixed: msg --help and the release note say messages are readable by everyone with the repository; person may decide otherwise at signoff. DoD 3 '[-]' is the dropped duplicate of DoD 10, left.
+- **2026-11-26 10:08 · Berk** — worker (w-wqnrqn, round 3): fix (a) done. take now runs refs.Pull first when a local file exists (refresh brings a stale file up to its ref; fetch inside), then judges already-yours on the file it just refreshed. ReadOnly tickets skip the refresh so the steal path still reports TakenFrom. Test TestTakeOnAStaleFileChecksTheRefNotTheFile failed before (said 'MY8SRZ is already yours'), passes after; Handover|Take|Pull group green.
