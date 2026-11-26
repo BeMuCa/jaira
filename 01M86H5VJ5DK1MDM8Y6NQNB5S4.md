@@ -1,7 +1,7 @@
 ---
 id: 01M86H5VJ5DK1MDM8Y6NQNB5S4
 title: "herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangs…"
-status: testing
+status: in-progress
 ready: true
 creator: Sascha
 context: |-
@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:05:39Z
+updated-at: 2026-11-26T08:05:43Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -29,6 +29,10 @@ review-summary: none
 review-gaps: "none: nichts entfernt. Geprueft: Duplikat - reap.sh:389 timeout(1)-Probe tut Aehnliches, bleibt getrennt (siehe critique-Note); tote Pfade - keine, alle drei bounded-Aufrufer laufen; Kosten - je hc-Aufruf 2 mktemp + Watchdog-Subshell + sleep, bei N Terminals ~4N Forks mehr pro 'tab list', gemessen 1 s Lauf mit 2 Terminals inkl. 1 s Frist, also unkritisch; gelassen."
 test-verdict: "pass: go vet + go test -race ./... nach go clean -testcache gruen (RC=0); shipped-history --check ok; DoD 1-4 im Baum geprueft (TestHerdrHcTabListSaysWhichTerminalDidNotAnswer inkl. one_hangs/all_hang/hangs_and_mute/ls_hangs). Funktion mit hc-Stub: t2 haengt -> nach 3,08 s Liste mit t1, stderr nennt t2, Exit 3; zwei 'tab list' parallel -> beide Exit 3, keine tmp-Reste; JAIRA_HC_TIMEOUT=x -> sofort Exit 137 (sicherer Fehler). Schreibt nichts ausser eigenen mktemp-Dateien."
 hunt-verdict: "fail: bughunt done at 21d6e7e89, 2 change (keine Gesamtfrist fuer 'tab list'; JAIRA_HC_TIMEOUT ungeprueft), 1 pre-existing (tab get/pane get ohne Frist - gleiches Thema, Note fuer die Person, deckt sich mit der 0TREV1-Note)"
+round: 2
+back-from: testing
+back-by: lane
+back-count: 1
 ---
 
 # herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangs…
