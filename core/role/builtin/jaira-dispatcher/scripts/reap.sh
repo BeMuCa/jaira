@@ -137,7 +137,7 @@ field() { sed -n "s/^$1=//p" "$2" | head -1; }
 # Asks herdr about one pane or tab: 'hget pane get <id>'. Its answer lands in
 # $hout, empty when herdr says the id does not exist - "not_found" is hc's
 # kind, "pane_not_found" old herdr's code; not command_not_found and the like,
-# which old herdr also has. Returns 2 on any other failure, with its last line
+# which old herdr also has. Fails on any other failure, with its last line
 # in $herr: a timeout or a restart says nothing about the tab, and read as
 # closed it would cost the worktree of a worker still in it.
 hget() {
@@ -149,7 +149,7 @@ hget() {
   case "$hout $herr" in *'"not_found"'*|*'"pane_not_found"'*) hout=""; return 0 ;; esac
   herr="$(printf '%s\n%s' "$hout" "$herr" | sed '/^$/d' | tail -1)"
   [ -n "$herr" ] || herr="exit $rc, no message"
-  return 2
+  return 1
 }
 
 # A worker's tab parked in a person's lane (close-tab.sh wrote parked= into
@@ -434,13 +434,11 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     # a restart: a tab not labelled as spawn.sh labelled ours is somebody
     # else's, and ours is gone. Only herdr's own not_found says so: a herdr
     # that gave no answer keeps everything for the next round.
-    rc=0; hget pane get "$pane" || rc=$?
-    if [ "$rc" = 2 ]; then echo "kept $t: herdr gave no answer for pane $pane ($herr)"; failed=1; break; fi
+    if ! hget pane get "$pane"; then echo "kept $t: herdr gave no answer for pane $pane ($herr)"; failed=1; break; fi
     tab="$(jaira json get result.pane.tab_id --default "" <<<"$hout" 2>/dev/null || true)"
     label=""
     if [ -n "$tab" ]; then
-      rc=0; hget tab get "$tab" || rc=$?
-      if [ "$rc" = 2 ]; then echo "kept $t: herdr gave no answer for tab $tab ($herr)"; failed=1; break; fi
+      if ! hget tab get "$tab"; then echo "kept $t: herdr gave no answer for tab $tab ($herr)"; failed=1; break; fi
       label="$(jaira json get result.tab.label --default "" <<<"$hout" 2>/dev/null || true)"
     fi
     if [ -n "$tab" ] && [ "$label" = "$(field ticket "$f")/$lane" ]; then
