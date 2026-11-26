@@ -176,7 +176,7 @@ func (m *Model) editBody(w, height int) string {
 	}
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "%s  %s\n", styHandle.Render(ticket.Handle(id)),
+	fmt.Fprintf(&b, "%s  %s\n", m.handleStyle().Render(ticket.Handle(id)),
 		styLaneTitle.Render(truncate(title, max(1, w-10))))
 	b.WriteString(styBar.Render(strings.Repeat("─", w)) + "\n")
 

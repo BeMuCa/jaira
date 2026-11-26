@@ -1,0 +1,1 @@
+- The ticket ID on board cards and in ticket headers is easy to read on dark terminals, including on the selected card, where it used to fade into the background.

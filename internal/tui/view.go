@@ -39,6 +39,12 @@ const (
 
 	selBgDark  = "239"
 	selBgLight = "250"
+
+	// The ticket handle is not colFaint: on the dark selection fill (239)
+	// colFaint is ten levels away and disappears. 248 rather than 250 keeps it
+	// calmer than the title; light keeps 240, which already reads on 250.
+	handleDark  = "248"
+	handleLight = "240"
 )
 
 var (
@@ -61,7 +67,6 @@ var (
 
 	styLaneTitle = lipgloss.NewStyle().Bold(true)
 	styLaneCount = lipgloss.NewStyle().Foreground(colFaint)
-	styHandle    = lipgloss.NewStyle().Foreground(colFaint)
 	styMeta      = lipgloss.NewStyle().Foreground(colDim)
 	stySelected  = lipgloss.NewStyle().Foreground(colAccent).Bold(true)
 	styWarn      = lipgloss.NewStyle().Foreground(colWarn)
@@ -372,7 +377,7 @@ func (m *Model) renderSessions() string {
 		}
 		line := style.Render(marker + " " + truncate(x.Focus, max(20, m.width/2)))
 		if x.TicketID != "" {
-			line += styHandle.Render(" " + ticket.Handle(x.TicketID))
+			line += m.handleStyle().Render(" " + ticket.Handle(x.TicketID))
 		}
 		if x.Model != "" {
 			line += styAgentic.Render(" " + x.Model)
@@ -695,6 +700,15 @@ func (m *Model) renderCardBlock(t *ticket.Ticket, w int, selected, alt bool) str
 	return b.String()
 }
 
+// handleStyle is the tone of a ticket handle beside its title, picked for the
+// terminal's background (see handleDark).
+func (m *Model) handleStyle() lipgloss.Style {
+	if m.darkBG {
+		return lipgloss.NewStyle().Foreground(lipgloss.Color(handleDark))
+	}
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(handleLight))
+}
+
 // laneShade is the background of an unselected card. alt alternates down the
 // lane, which is the whole of what tells two stacked cards apart now that
 // neither has a frame.
@@ -832,7 +846,7 @@ func (m *Model) renderCard(t *ticket.Ticket, w int, selected bool) string {
 		flags = append(flags, styAgentic.Render(truncate(t.ExecutedBy, 8)))
 	}
 
-	meta := styHandle.Render(ticket.Handle(t.ID))
+	meta := m.handleStyle().Render(ticket.Handle(t.ID))
 	if t.Assignee != "" {
 		// Someone else's ticket is marked, not merely named: after a pull the
 		// board can hold teammates' claims, and whose lane a card sits in is
@@ -1316,7 +1330,7 @@ func wrapField(v string, width, indent int) string {
 // rendering serves the full screen and one half of the split follow-up view.
 func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s  %s\n", styHandle.Render(ticket.Handle(t.ID)), styleLines(styLaneTitle, wrap(t.Title, max(10, width-8), 8)))
+	fmt.Fprintf(&b, "%s  %s\n", m.handleStyle().Render(ticket.Handle(t.ID)), styleLines(styLaneTitle, wrap(t.Title, max(10, width-8), 8)))
 	b.WriteString(styBar.Render(strings.Repeat("─", max(1, width))) + "\n")
 
 	row := func(k, v string) {
