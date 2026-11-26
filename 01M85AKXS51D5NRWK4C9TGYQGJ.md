@@ -24,14 +24,13 @@ tags:
   - ci
   - docs
 blocked-by:
-  - 3DWPW6
-  - 01M85APT0AZR3XRMFNVJHR3ZK3
+  - 01M8BQFBMS778FE9WK6YDAW7WP
 related:
   - 01M59MQ7PT0S3NYN5J7AWFZ4EY
 commits: []
 created-at: 2026-11-23T23:07:20Z
-updated-at: 2026-11-23T23:09:45Z
-updated-by: BeMuCa
+updated-at: 2026-11-26T10:50:48Z
+updated-by: Berk
 ---
 
 # Das Katalog-Repo steht: Aufbau, README zum Einreichen, CI mit lint und index
