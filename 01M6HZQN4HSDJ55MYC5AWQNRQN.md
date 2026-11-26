@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:12:10Z
+updated-at: 2026-11-26T09:12:13Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -54,7 +54,8 @@ question: ""
 - [x] two processes recording into inbox.json at once lose no entry, and an acked entry does not come back from a second worktree's fetch; Test core/inbox
   proof: core/inbox/inbox_test.go TestConcurrentRecordLosesNothing and TestAnAckedKeyDoesNotComeBack (lock removal makes the first fail)
 - [ ] message text with newlines, tabs, ANSI escapes and control characters is shown stripped in TUI and text output, kept verbatim in --json; empty text is refused; Test
-- [ ] handover whose push fails leaves the assignee unchanged and exits non-zero; msg/handover with no reachable remote write nothing; Test
+- [x] handover whose push fails leaves the assignee unchanged and exits non-zero; msg/handover with no reachable remote write nothing; Test
+  proof: internal/cli/handover_test.go TestHandoverWhoseBranchDoesNotReachTheRemoteChangesNothing and TestHandoverWithNoRemoteWritesNothing; msg: TestMsgWithNoReachableRemoteWritesNothing
 - [ ] acceptance rule: an assignment by someone else that never shows is worse than one shown twice
 - [ ] seen by a person: banner, card marker and the i-list on the board in a real terminal
 
