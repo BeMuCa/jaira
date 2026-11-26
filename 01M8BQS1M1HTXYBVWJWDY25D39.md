@@ -18,7 +18,8 @@ related: []
 follows: 01M5GFAV1C3DV9NWZFXC4G07X9
 commits: []
 created-at: 2026-11-26T10:52:46Z
-updated-at: 2026-11-26T10:52:46Z
+updated-at: 2026-11-26T10:52:57Z
+updated-by: Berk
 ---
 
 # Ein uebernommenes Board traegt seinen Ersteller und liegt getrennt von den eigenen
