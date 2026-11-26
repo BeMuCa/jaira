@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:01:49Z
+updated-at: 2026-11-26T08:02:06Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -25,6 +25,7 @@ goal: "herdr-hc.sh 'tab list' endet in begrenzter Zeit, auch wenn hc get (oder h
 outcome-what: "herdr-hc.sh: bounded() gibt hc ls und jedem hc get in 'tab list' (und dem Space-Lookup in 'tab create') JAIRA_HC_TIMEOUT Sekunden (3), dann kill; Ausgabe ueber Dateien. Test um haengende get/ls erweitert, Manifest und Release-Note."
 outcome-why: "Ein Terminal, dessen hc get nie antwortete, liess 'tab list' und damit reap.sh (unter reap.lock), Give back und die Worker-Liste des Cockpits haengen."
 outcome-resolves: "DoD 1-4: haengendes get -> stumm, Exit 3; haengendes ls -> Exit !=0; reines bash ohne Prozessreste; Release-Note."
+review-summary: none
 ---
 
 # herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangs…
