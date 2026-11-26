@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T07:55:55Z
+updated-at: 2026-11-26T07:56:04Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -45,3 +45,4 @@ goal: "reap.sh liest ein gescheitertes 'herdr pane get' nur dann als geschlossen
 
 ## Progress
 - **2026-11-26 07:54 · Sascha** — parent session: uds:/run/user/1000/cc-socks/62036.sock
+- **2026-11-26 07:56 · Sascha** — decision: keine offenen Entscheidungen. Unbekannter Fehlschlag von pane get -> 'kept <t>: herdr gave no answer for pane <p>' und die ganze Runde fuer das Ticket bleibt stehen (wie 'closing failed'). Erkennung per grep auf not_found im kombinierten stdout+stderr: deckt hc (kind not_found) und altes herdr (pane_not_found) ab, ohne den Stream des alten herdr zu kennen. close-tab.sh:159 bleibt draussen (entfernt nichts).
