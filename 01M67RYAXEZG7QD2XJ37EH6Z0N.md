@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: review
+status: signoff
 ready: true
 creator: berkc
 assignee: Berk
@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T09:17:55Z
+updated-at: 2026-11-26T09:18:24Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T09:00:14Z
@@ -38,13 +38,21 @@ review-gaps: |-
   note: limit: o falls back to the root checkout when the branch has no worktree, and a repo whose base is neither master nor main gets no branch diff (triage 00:54, person's call)
   note: elsewhere: the branch carries 4BN68F's commits (aaa868c01..43633f49e: settings editor/IDE, modeSettings typing) - the pull request for feat/EH6Z0N-diff-view ships that ticket too
 test-verdict: "pass: go test ./internal/tui ./core/gitrepo -count=1 (skip the three hangers) RC=0 at bf730d6dd, no FAIL, tui 74s; all 31 DoD proof test names exist once each in the tree and pass in that run; DoD 1-11 checked against the tree (DoD 1 note, DoD 4 release note format ok); DoD 11 real VS Code run is the worker note of 09:00, not repeated here (would open a window); behaviour exercised in tmux on a scratch board: file list from root incl. \"my file.txt\", q\"uote.txt, +plus.txt; enter opens/closes; left/right scroll; o ran ./+plus.txt:1 and shows opened; a failing IDE (exit 3) shows its stderr in the title and not opened; diff is read-only, two-writer check n/a; divider drag only by TestDragTheDividerResizesTheSplit; the two triage-added tests pass; root-checkout fallback and develop/trunk base left as notes for the person"
-review-verdict: "Pass. 68dc5cf8 fixes both blockers in the right place with minimal changes, and adds nothing new: seenHunk resets per file, and the all-unavailable check reuses Repo.Diff's second return value. Each fix has a test that fails without it. The rest of the branch is unchanged since the review that accepted it. go test ./core/gitrepo ./internal/tui -count=1 is green; gofmt and vet are clean."
-review-round: 7
-review-check: "1. cd /home/berkc/code/X_General/jaira-EH6Z0N && go test ./internal/tui -count=1 -run 'TestHeaderLineIsTheFirstHunkOfEachFile|TestUnshowableCommitIsDiffUnavailableNotNoChanges' -v  2. see both PASS  3. go build -o /tmp/jaira-eh ./cmd/jaira  4. make the terminal at least 140 columns wide and 20 rows tall  5. run /tmp/jaira-eh in this repo and open a ticket in signoff that has a feat/<handle> branch  6. see on the right: title 'Diff  feat/... → master' and 'file 1/N  +A −D' at its right end  7. see each file start with a grey bar (folder dim, name bold, '+a −d' on the right), an 'old new │' gutter, added rows on a green band and removed rows on a red band  8. press tab, then ]: the next file's bar moves to the top and the counter says file 2/N  9. press o on a file bar whose first hunk starts at line 1: VS Code opens that file at line 1, and the title says 'opened <path>:1'  10. open a ticket in signoff with no branch and no commits: the pane says 'No diff yet'"
+review-verdict: "accept: DoD 1-11 met in the diff with tests; go test ./core/gitrepo ./internal/tui ./core/settings green, gofmt and vet clean; no blocker - three edges (diverged base, non-UTF-8 quoted path, git in View) are narrow and for the person to ticket or not"
+review-round: 11
+review-check: "1. cd /home/berkc/code/X_General/jaira-EH6Z0N && go build -o /tmp/jaira-eh ./cmd/jaira  2. make the terminal at least 140 columns wide and 20 rows tall  3. run /tmp/jaira-eh in /home/berkc/code/X_General/jaira-EH6Z0N and open ticket EH6Z0N (it sits in signoff)  4. see a right pane titled 'Diff  feat/EH6Z0N-diff-view → master' (or origin/master) with 'file 1/N +A −D' at the right, and below it one row per file, path from the repo root, '+a −d' at the row's end  5. press tab: the right pane's border turns accent; press down twice: the highlight moves to file 3 and the title says file 3/N  6. press enter: that file's rows appear under its bar, added rows on a green band, removed on a red band, one narrow line-number column; down scrolls the rows; right moves the code 8 columns left and long lines become readable; enter again closes it back to the list  7. drag the vertical gap between the two panes with the mouse: both panes resize; leave and reopen the ticket: the width stays  8. open a file, scroll to a row, press o: VS Code opens that file at that line and the title says 'opened <path>:<line>'; with a broken 'code' (e.g. settings ide set to 'nonexistent-ide') the editor opens instead, and with a failing command the title shows its error in red  9. make the terminal narrower than 140: the ticket shows as a single column again"
 back-from: testing
 back-by: lane
 back-count: 1
 hunt-verdict: "pass: bughunt done at bf730d6dd, 0 change blocker, 2 change edge (notes on ticket: diverged local base; non-UTF-8 quoted path), 0 pre-existing"
+review-verdict-gaps: |-
+  note: edge: core/gitrepo/branchdiff.go:42-65 Base() - a local master that is diverged from origin/master (unpushed commits and behind) still wins, so commits pulled since the fork show as the ticket's own; fix by taking origin/<base> when merge-base(origin/<base>, branch) is newer than merge-base(<base>, branch) (bughunt 09:09, verified by reading)
+  note: edge: internal/tui/diffpane.go:295-303 sidePath - strconv.Unquote turns a raw non-UTF-8 byte inside a C-quoted path into U+FFFD (probed: "b/lat\xe4\"q.txt" -> lat\uFFFD"q.txt), so o opens a non-existent file for that narrow latin-1 case; needs a byte-preserving C-unquote
+  note: edge: internal/tui/diffpane.go:408 loadDiff runs up to ~8 git processes synchronously inside View after every reload clears diffFor (model.go reload) - noted in round 1 and let stand; a slow repo stalls the sign-off screen
+  note: limit: DoD 11 - the WSL2 run proved exit 0 / exit 127 with stderr shown, but nobody saw VS Code land on the line; the person checks that in step 8 of review-check
+  note: limit: mouse capture is on while the diff pane shows, so terminal text selection and wheel scroll do not work on that screen (view.go:106, deliberate)
+  note: limit: o falls back to the root checkout when the branch has no worktree, and a repo whose base is neither master nor main gets no branch diff (triage 00:54, person's call)
+  note: elsewhere: the branch carries 4BN68F's commits (aaa868c01..43633f49e: settings editor/IDE, modeSettings typing) - the pull request for feat/EH6Z0N-diff-view ships that ticket too
 ---
 
 # In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code
@@ -185,3 +193,4 @@ Left standing: no openWait deadline (note 2026-11-26 00:35), mouse capture only 
 - **2026-11-26 09:09 · Berk** — hunt report: 2 findings, both change, neither blocker; notes on EH6Z0N | read as diff since 16e7bd669: core/gitrepo/branchdiff.go internal/tui/diffpane.go (plus surrounding parseDiff/ideCommand/openDiffRow/BranchDiff/ticketDiff); tests branchdiff_test.go diffpane_test.go skimmed via stat only; verified quoted, backslash, tab, binary-quoted, -dash, +plus, '--' names parse and get ./ correctly | could not check: real IDE/editor launch with ./-name (exec not run), rename with quoted names (git did not detect a rename in the scratch repo)
 - **2026-11-26 09:09 · Berk** — bughunt: done at bf730d6dd - 2 findings (2 change, 0 pre-existing) in 2 modules, follow-up hunt since 16e7bd669; concurrency, error paths, input, permissions checked; files: core/gitrepo/branchdiff.go core/gitrepo/branchdiff_test.go internal/tui/diffpane.go internal/tui/diffpane_test.go
 - **2026-11-26 09:10 · Berk** — testing: pass 2 on bf730d6dd (judged by testing, not a blocker): bughunt follow-up found two change edges, both written as notes by the hunter. (1) core/gitrepo/branchdiff.go Base()/isBehindOrigin: only a strictly-behind local base falls back to origin; a diverged local base (unpushed commits and behind origin) still wins, so pulled commits show as ticket changes. Same symptom as the 00:52 base blocker, but the input is narrower and was equally wrong before this change, so it rides as a note for review. (2) internal/tui/diffpane.go sidePath: a C-quoted path with non-UTF-8 bytes becomes U+FFFD, so o opens an empty buffer for that file; narrow latin-1 subset. Person to decide whether either gets its own ticket.
+- **2026-11-26 09:18 · Berk** — review: done at bf730d6dd
