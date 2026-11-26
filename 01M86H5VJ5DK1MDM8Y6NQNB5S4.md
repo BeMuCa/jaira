@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:15:41Z
+updated-at: 2026-11-26T08:15:44Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -26,7 +26,7 @@ outcome-what: "herdr-hc.sh: bounded() gibt hc ls und jedem hc get in 'tab list' 
 outcome-why: "Ein Terminal, dessen hc get nie antwortete, liess 'tab list' und damit reap.sh (unter reap.lock), Give back und die Worker-Liste des Cockpits haengen."
 outcome-resolves: "DoD 1-4: haengendes get -> stumm, Exit 3; haengendes ls -> Exit !=0; reines bash ohne Prozessreste; Release-Note."
 review-summary: none
-review-gaps: "none: Runde 2 nichts entfernt; bounded() ohne Budget kehrt ohne Fork zurueck, eine extra break-Logik in 'tab list' waere Code fuer nichts; das eigene install() im neuen Test folgt dem Muster der Nachbartests, gelassen."
+review-gaps: "none: Runde 3 nichts entfernt (siehe Runden 1-2)"
 test-verdict: "pass: Runde 2 - go vet + go test -race ./... gruen (RC=0) auf dem Stand von ff4b72ae3; DoD 1-5 im Baum geprueft (five_hang, ls_hangs, TestHerdrHcRefusesATimeoutThatIsNoSeconds). Funktion: 6 Terminals, 5 haengen -> 5,1 s, t1 gelistet, t2-t6 auf stderr, Exit 3, keine Prozessreste; testing-Note Runde 1 (Gesamtfrist) mit Nachbar geprueft: 1 und 5 haengende enden beide im Budget. Schreibt nichts ausser eigenen mktemp-Dateien."
 hunt-verdict: "fail: bughunt done at ff4b72ae3, 2 change: JAIRA_HC_TIMEOUT=08/09/00 bricht DoD 5 (Exit 1 statt 2, Oktal); Budget um bis zu 1 s zu kurz (SECONDS-Takt)"
 round: 3
