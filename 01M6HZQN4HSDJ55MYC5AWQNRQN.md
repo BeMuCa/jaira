@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T00:08:53Z
+updated-at: 2026-11-26T00:30:01Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -32,7 +32,8 @@ question: ""
   proof: Notiz 04.11.2026 Entscheidung berkc Option 1 + B1
 - [ ] Nach einer Zuweisung durch jemand anderen zeigt das Board die Nachricht bis zum Gesehen; Test
 - [-] Release-Notiz unter core/release/notes/
-- [ ] Eintrag nur bei Assignee-Wechsel auf mich durch jemand anderen; Notizen und eigene Zuweisung erzeugen keinen; Test core/refsync
+- [x] Eintrag nur bei Assignee-Wechsel auf mich durch jemand anderen; Notizen und eigene Zuweisung erzeugen keinen; Test core/refsync
+  proof: core/refsync/inbox_test.go TestAnAssignmentByAnotherRecordsAnEntry, TestAReassignmentAwayRecordsATakenEntry, TestNotesAndSelfAssignmentsRecordNothing, TestTheFirstFetchIsABaseline
 - [ ] Eintrag ueberlebt 'jaira fetch' aus einer anderen Session und einen Board-Neustart, bis gesehen; Test
 - [ ] TUI: Banner, Kartenmarker und Liste (i); Oeffnen oder x quittiert; TUI-Test
 - [ ] 'jaira inbox [--json] [--ack <id>|--all]' fuer Agenten
@@ -151,3 +152,4 @@ I) people: 'jaira people' gains 'active' (assignees + creators of board tickets,
 - **2026-11-25 23:48 · Berk** — P2 core/inbox: Ack records the key as acked even when no entry is there, so a later Record of that key is refused. Clean turns newline/tab into a space and drops other control chars after stripping ANSI; stored text stays verbatim. Lock file is inbox.lock beside inbox.json in the repo state dir (ticket.LockFile needs the dir to exist, so update() MkdirAlls first).
 - **2026-11-25 23:57 · Berk** — P2 fix: TestConcurrentRecordLosesNothing timed out on the ticket lock (5s wait) under load: load avg 12.9 on 8 cores made each fsync in WriteAtomic slow, and a writer that just released re-takes the O_EXCL lock before queued waiters poll, so one waiter ran out of its wait. Decision: update() retries LockFile up to lockAttempts=5 instead of failing the write; the test is not shrunk. Lock release is already on every path (defer unlock). Commit 294aa5dea landed with this test failing: my pipe hid the go test exit code. Fixed here in a new commit.
 - **2026-11-25 23:59 · Berk** — worker: inbox lock fix b12eb5542 retries ticket.LockFile 5x. Cause was starvation, not a leak: 8 in-process hot writers x 10 records with fsync'd WriteAtomic on WSL, and LockFile's backoff grows to 100ms so a waiter loses to fresh grabbers past its 5s. Real contention is 2-3 processes. Verified go test ./core/inbox -count=3 green. Critique may prefer a smaller test over the retry loop.
+- **2026-11-26 00:27 · Berk** — P4 refsync.Incoming: decisions. (1) The baseline is refs-seen.json existing before the fetch; a clone's first fetch records no assignment entries but still records messages. (2) Entry.Batch is not in the design: set to updated-at truncated to the minute (RFC3339, UTC), so P5 bundles by batch+from, but a milestone assign that crosses a minute boundary splits. P7 may want an explicit batch. (3) Inbox entries are recorded before refs-seen is saved; a failed record returns an error so the next fetch repeats it. (4) Me is set from identity.Aliases in cli/refs.go attachRefs and tui/refs.go newSyncer. (5) The old ticket state is read with the new gitref.Repo.ReadAt(id, sha) from the last seen commit.
