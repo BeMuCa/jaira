@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:06:11Z
+updated-at: 2026-11-26T14:06:14Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T13:59:50Z
@@ -255,3 +255,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 14:06 · Berk** — worker w-wqnrqn, critique round 6 (14:00 decision): last_fetch cutoff removed from refsync.assignmentEntries. inbox State.LastFetch and the time argument of RecordFetch are gone. State.Seen (ticket id -> ref sha) is the classification baseline; RecordFetch(dir, seen, entries...) merges seen and records entries in one locked write and returns the added entries. Per-worktree refs-seen.json unchanged for departures and Changed. New red-first tests in core/refsync/worktree_baseline_test.go: TestASecondWorktreesFirstFetchReplaysNothingAnEarlierWorktreeSaw (failed before: replayed the assignment under a new sha) and TestAnAssignmentWhoseTicketArrivesAfterTheLastFetchIsRecorded (failed before: recorded nothing). Plus TestRecordFetchWritesEntriesAndSeenTogether in core/inbox.
 - **2026-11-26 14:06 · Berk** — worker w-wqnrqn, found while testing: Seen alone broke TestTakeTellsThePreviousHolderAfterTheirFetch. Pull and take are own writes, not fetches, so the previous holder was judged against her pre-pull state. noteSeen now also merges its sha into Seen, but only when inbox.json already exists (otherwise the clone's first fetch stops being a baseline). Its failure is silent, as saveSeen already is, so a failed inbox write falls back to the last fetch.
 - **2026-11-26 14:06 · Berk** — worker w-wqnrqn, caveat, not changed: an inbox.json written by a build before this change has no Seen. Its next fetch classifies every ticket against nothing, so assignments to me by others that were already reported replay once. The feature is unreleased, so I did not add a legacy baseline. Say if you want one.
+- **2026-11-26 14:06 · Berk** — worker w-wqnrqn, unrelated: gofmt -l flags core/refsync/inbox_test.go, which this change does not touch; left as it is.
