@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:00:03Z
+updated-at: 2026-11-26T08:00:09Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -55,3 +55,4 @@ review-gaps: "none: publish nutzt jetzt dasselbe r.run-Muster wie Delete/PushBra
 - **2026-11-26 07:58 · Sascha** — Geschwister geprueft: Delete (update-ref -d) und PushBranch ignorieren das lokale update-ref schon; publish war der einzige Schreibpfad, der es als Fehler meldete. Bekannte Grenze: bleibt der lokale Ref wegen des Locks stehen, liest eine Schreibung derselben Session vor dem naechsten Fetch die alte SHA als Lease und verliert - das war vorher genauso, nur kommt jetzt die erste Schreibung nicht mehr als Failed zurueck. Testweg: ein .lock-File neben dem Ref unter .git/ laesst update-ref scheitern, ohne den Push zu stoeren.
 - **2026-11-26 07:58 · Sascha** — critique: nichts. Fix sitzt im Callee (publish), alle vier Schreibpfade laufen hindurch; Muster wie Delete/PushBranch in gitref.go. Kein einfacherer Schnitt.
 - **2026-11-26 08:00 · Sascha** — testing: note: edge: lokaler Ref bleibt nach Lock stehen; Beispiel: Scratch-Board, .lock auf den Ticket-Ref, 'jaira set' -> exit 0, Remote neu, lokal alt; Lock weg, naechstes 'jaira set' -> 'was not sent: ada wrote it first' (gemeldet, Datei unveraendert, kein Datenverlust). Vorbestehend (vorher landete die erste Schreibung als Failed in der Outbox und verlor genauso). Fix waere: Lease nach einem Rejected gegen den Remote-Tip pruefen, ob der eigene Inhalt schon dort liegt - neue Regel, nicht dieses Ticket.
+- **2026-11-26 08:00 · Sascha** — waiting: bughunt (Subagent) und go test -race ./... since 09:00
