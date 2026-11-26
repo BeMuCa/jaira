@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:44:08Z
+updated-at: 2026-11-26T00:46:07Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T00:35:07Z
@@ -29,9 +29,7 @@ outcome-why: "The person found ]/[ awkward, long lines were cut off, the double 
 outcome-resolves: "Person's signoff feedback of 2026-11-25 (DoD 7-11)."
 review-summary: "none"
 round: 10
-review-gaps: |-
-  note: if only some fallback commits cannot be shown, they are still dropped without a word (diffpane.go:273 only checks the all-unshowable case). Critique accepted this as out of scope; listed so the person sees it
-  note: TestUnshowableCommitIsDiffUnavailableNotNoChanges covers one missing sha only; the mixed case has no test
+review-gaps: "round 88e9617d9..HEAD: folded the '-' row shows old line rule (in diffGutter and diffLine) into diffRow.shown(); dropped diffLine's num() blank branch (no '+'/'-'/context row has line 0, parseDiff guarantees >=1); dropped redundant r.to>r.from guard (to>from implies it); openDiffRow's reply closure is one diffOpenedMsg with err: wait(). Left: diffPan/left-right keys, clampDiffLeft in diffLeft (needed after resize), stderr last-line in openInCode (no existing helper; linklines.go LastIndex is unrelated), diffFileWidth per render (bounded to one file). Not cleanup, left for review: toggleDiffFile does not reset diffHScroll, so the sideways offset carries into the next opened file (clamped to its width)."
 test-verdict: "pass: scoped suites green (go test ./core/gitrepo ./internal/tui RC=0; ./internal/cli -run Create|Follows|Branch RC=0), DoD 1-6 proof names all exist in the tree, the two named tests PASS verbosely; full suite not run (scoped by orchestrator), behaviour in tmux taken from the worker's check on build 68dc5cf8"
 review-verdict: "Pass. 68dc5cf8 fixes both blockers in the right place with minimal changes, and adds nothing new: seenHunk resets per file, and the all-unavailable check reuses Repo.Diff's second return value. Each fix has a test that fails without it. The rest of the branch is unchanged since the review that accepted it. go test ./core/gitrepo ./internal/tui -count=1 is green; gofmt and vet are clean."
 review-round: 7
