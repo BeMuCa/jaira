@@ -103,8 +103,10 @@ func ideCommand(template, file string, line int) []string {
 type diffEditorDoneMsg struct{ err error }
 
 // diffOpenedMsg reports how the IDE returned from opening text: err is nil when
-// it exited cleanly.
+// it exited cleanly. id is the ticket the open was started from, so a reply that
+// arrives after another ticket is open does not write into that ticket's title.
 type diffOpenedMsg struct {
+	id   string
 	text string
 	err  error
 }
@@ -553,11 +555,12 @@ func (m *Model) openDiffRow() tea.Cmd {
 		return nil
 	}
 	m.diffOpened, m.diffOpenErr = "opening "+where+"…", false
+	id := m.detail.ID
 	return func() tea.Msg {
 		if err := wait(); err != nil {
-			return diffOpenedMsg{text: "opened " + where, err: err}
+			return diffOpenedMsg{id: id, text: "opened " + where, err: err}
 		}
-		return diffOpenedMsg{text: "opened " + where}
+		return diffOpenedMsg{id: id, text: "opened " + where}
 	}
 }
 

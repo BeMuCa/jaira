@@ -317,6 +317,17 @@ func TestOKeyShowsTheIDEsFailureInTheTitle(t *testing.T) {
 	}
 }
 
+// An IDE reply for another ticket must not write into the open ticket's title.
+func TestDiffOpenedForAnotherTicketLeavesDiffOpenedUnchanged(t *testing.T) {
+	m := diffModel(t, 160, "signoff")
+	m.render()
+	m.diffOpened, m.diffOpenErr = "opening internal/a.go:10…", false
+	m.Update(diffOpenedMsg{id: "ZZZZZZ", text: "opened internal/a.go:10"})
+	if m.diffOpened != "opening internal/a.go:10…" || m.diffOpenErr {
+		t.Errorf("diffOpened = %q err=%v after another ticket's reply, want it unchanged", m.diffOpened, m.diffOpenErr)
+	}
+}
+
 // A command that cannot be started at all, for a reason other than a missing
 // program, is reported in the title as well.
 func TestOKeyShowsALaunchErrorInTheTitle(t *testing.T) {

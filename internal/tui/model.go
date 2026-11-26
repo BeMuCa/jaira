@@ -1286,7 +1286,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case diffOpenedMsg:
-		if m.mode == modeDetail {
+		if m.mode == modeDetail && m.detail != nil && m.detail.ID == msg.id {
 			m.diffOpened, m.diffOpenErr = msg.text, msg.err != nil
 			if msg.err != nil {
 				m.diffOpened = msg.err.Error()
