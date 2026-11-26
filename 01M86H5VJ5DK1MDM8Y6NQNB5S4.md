@@ -11,9 +11,11 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T07:54:37Z
+updated-at: 2026-11-26T07:54:46Z
 assignee: Sascha
 updated-by: Sascha
+claimed-by: DESKTOP-RFTCH11-36559
+claimed-at: 2026-11-26T07:54:46Z
 ---
 
 # herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangs…
