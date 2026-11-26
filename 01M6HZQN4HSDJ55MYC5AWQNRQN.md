@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:42:20Z
+updated-at: 2026-11-26T10:42:23Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T10:27:37Z
@@ -237,3 +237,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 10:42 · Berk** — testing: class: an acknowledge by selector acks every entry in the store at write time, not the entries that were read (core/inbox/inbox.go:118-182 AckTicket, AckAll, ackWhere under update's lock); example: an entry recorded between 'inbox --all' reading the list and the ack is acked unseen (hunter ran a scratch Go test, FAIL; mechanism confirmed by reading, not reproduced here); fix: ack exactly the keys that were read and reported, as AckKeys does, and test an entry recorded between read and ack survives
 - **2026-11-26 10:42 · Berk** — testing: class: a pull's AddWorktree reuses an existing local branch as it is, so a branch behind its remote is checked out as success (core/gitrepo/git.go:517-523; file unchanged since 58e157861); example: local feat at 11e6573, remote handed over at 270da6e, the new worktree sits at 11e6573 and pull reports it checked out (hunter ran a scratch test, FAIL; read, not reproduced here); fix: fast-forward or refuse a local branch that is behind the remote the handover named, with a test over a behind-local-branch case
 - **2026-11-26 10:42 · Berk** — testing: class: the first-fetch baseline is decided per worktree (seen file under StateDir, core/refsync/refsync.go:142 and 1140) while the inbox is shared per clone (RepoStateDir, refsync.go:1364), so a worktree that never fetched drops assignments made since the clone last fetched; example: main clone fetched, ada assigned X to grace, a new grace worktree's first fetch records 0 entries, the main clone records 1 (hunter ran a scratch test, FAIL; read, not reproduced here); fix: one baseline per clone, or record entries when the worktree's seen state is new, with a test over a second worktree
+- **2026-11-26 10:42 · Berk** — testing: edge: milestone assign stops at the first failing Mutate and leaves the earlier tickets assigned, with the error naming none (internal/cli/milestones.go:575); example: a behind-ref ticket in the middle; rerun is safe; fix: name the tickets assigned before the failure, or pre-check behind-ref tickets
