@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:08:11Z
+updated-at: 2026-11-26T10:09:24Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T09:58:12Z
@@ -215,3 +215,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 10:05 · Berk** — testing: class: DoD item 3 stays [-] (doing) although its proof exists; example: core/release/notes/WQNRQN.md is present with one '- ' line per change, unwrapped; fix: tick item 3 with --done and proof core/release/notes/WQNRQN.md once the round passes (no code change needed)
 - **2026-11-26 10:06 · Berk** — worker triage of testing round (send-back 1 of 2): fix (a) take on stale file must check the ref; (b) entry also when assignee stays me but handover-commit changed and sender is not me; (c) refsync.Pull stamps assigned-by only when the assignee changes; hunt 1 slug collision -> inbox slug = Slug(name)+'-'+8 hex of sha1(lowercased trimmed name), same on send and read; hunt 2 Send counts a push that landed as success even if local update-ref failed; hunt 3 msg to a name neither on the people list nor among active names is refused (exit 3), a ticket id always resolves to its assignee. hunt 4 (every clone can read every inbox) is inherent to git-only refs, not fixed: msg --help and the release note say messages are readable by everyone with the repository; person may decide otherwise at signoff. DoD 3 '[-]' is the dropped duplicate of DoD 10, left.
 - **2026-11-26 10:08 · Berk** — worker (w-wqnrqn, round 3): fix (a) done. take now runs refs.Pull first when a local file exists (refresh brings a stale file up to its ref; fetch inside), then judges already-yours on the file it just refreshed. ReadOnly tickets skip the refresh so the steal path still reports TakenFrom. Test TestTakeOnAStaleFileChecksTheRefNotTheFile failed before (said 'MY8SRZ is already yours'), passes after; Handover|Take|Pull group green.
+- **2026-11-26 10:09 · Berk** — worker (w-wqnrqn, round 3): fix (b) done. assignmentEntries also emits Assigned when the assignee stays me and HandoverCommit differs from the last-seen commit (sender check already returns early for my own writes). Test TestAHandoverToTheSameHolderRecordsAnEntry red before (only the first assignment entry), green after; core/refsync full package green. Not covered: a re-handover whose commit is byte-identical to the last-seen one, when the ticket moved away and back; no entry then. Kept to the spec; flagged for critique.
