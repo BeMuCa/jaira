@@ -20,14 +20,14 @@ related: []
 follows: 01M5ZJ555685ZXARWNEF5QR36R
 commits: []
 created-at: 2026-11-26T10:44:50Z
-updated-at: 2026-11-26T10:54:33Z
+updated-at: 2026-11-26T10:56:10Z
 updated-by: BeMuCa
 claimed-by: worker-rjw72z
 claimed-at: 2026-11-26T10:46:49Z
 outcome-what: "The chat interview shows one ticket per message and waits; a number from the person sets how many come at once, 'all' the rest, 'next' leaves a ticket open. Check is a list: Machine line, Prepare, numbered steps with what is seen afterwards, Wrong if. One example ticket in that format. 'accept all' covers only shown tickets. README line and release note follow."
 outcome-why: "51 tickets in one 27 KB message could not be worked through, and a one-line Check was not understood."
 outcome-resolves: "Present, Gather and Answers of jaira-role-interreview SKILL.md rewritten; page path untouched"
-review-summary: none
+review-summary: "Only the chat path of core/role/builtin/jaira-role-interreview/SKILL.md changed; the page path (--page) is untouched. Present now shows one ticket per message and waits; a number from the person (\"3 at once\") sets how many come per message, 'all' shows the rest, 'next' leaves the shown ticket open. Each ticket gets a header with '(n of total)', a What line, a separate Machine line (what each already-run check tests, in words, command in brackets, pass/fail), then Check as Prepare (one line per thing, done by the role where a build or temp copy suffices) + numbered steps 'action -> what you see' + 'Wrong if:', then Recommend. Seven writing rules and one full example ticket (A3K9QP) sit below the shape. Gather now orders the tickets once by the page path's block grouping and runs show + machine checks per ticket just before it is shown. 'accept all' now covers only tickets already shown. The record report.md gets its header before the first ticket and one line per ticket as its answer is carried out, plus 'open' and 'not shown' lines. Also: frontmatter description, README paragraph rewrapped, release note core/release/notes/RJW72Z.md with 3 lines, and both new SKILL.md hashes appended to core/shipped/shipped.sha256 (current file hash 43cf1088... is listed; go test ./core/shipped passes)."
 round: 2
 review-gaps: "nothing removed. Left on purpose: the Check rules in section Present repeat 'one action per step, expect concretely' from 'Write one scenario per block' (page path) - the chat format has other parts (Machine, Prepare, Wrong if) and a reader of Present should not have to jump to the page section for the rule the ticket is about. No code, nothing dead."
 test-verdict: "pass: go build and go vet (core/role, core/shipped) RC=0; go test -count=1 ./core/role ./core/shipped ./core/release and ./core/lane -run 'Shipped|Refresh' all ok (RC=0); DoD 1-3 read in the tree at the named sections, DoD 4 note present; branch binary installed the roles into a scratch folder - installed SKILL.md is byte-identical, and 'jaira update' on a scratch board prints the three new note lines. NOT run: the full race suite (house rule: main session before the PR), a live interview with the new text, the bug hunt (no executable code changed; no subagents allowed in this run)."
