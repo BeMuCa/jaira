@@ -4,7 +4,7 @@ title: "Landet ein Ticket in einer Lane, die einen Menschen braucht, wird der Me
 status: backlog
 ready: true
 creator: berkc
-assignee: berkc
+assignee: Berk
 goal: "Fragt ein Agent etwas (HITL) oder wartet Arbeit auf Abnahme (Human Review), erfaehrt der Mensch es sofort, ohne aufs Board zu schauen."
 context: |-
   Heute: 6TCTFV lag im HITL mit einer Frage, berkc hat es nicht gemerkt. Der Agent schreibt die Frage nur aufs Ticket (Karte zeigt '▲ asks').
@@ -18,7 +18,8 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-10-19T08:33:49Z
-updated-at: 2026-10-19T08:33:49Z
+updated-at: 2026-11-25T23:02:17Z
+updated-by: Berk
 ---
 
 # Landet ein Ticket in einer Lane, die einen Menschen braucht, wird der Mensch aktiv benachrichtigt

@@ -1,7 +1,7 @@
 ---
 id: 01M86NG5EY79JY4ERRXPE3MBCB
 title: "Epic wird Mission mit eigenen Lanes: spec, tickets, knowledge - Spec-Bestaetigung durch den Menschen"
-status: backlog
+status: ideas
 ready: true
 creator: Sascha
 assignee: Sascha
@@ -19,7 +19,12 @@ related: []
 follows: 01M86NFX4NQF351XWAXZ7YQ1JC
 commits: []
 created-at: 2026-11-24T11:36:46Z
-updated-at: 2026-11-24T11:36:46Z
+updated-at: 2026-11-26T07:59:39Z
+updated-by: Sascha
+round: 2
+back-from: backlog
+back-by: person
+back-count: 1
 ---
 
 # Epic wird Mission mit eigenen Lanes: spec, tickets, knowledge - Spec-Bestaetigung durch den Menschen
@@ -41,4 +46,4 @@ updated-at: 2026-11-24T11:36:46Z
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-26 07:59 · Sascha** — Alex 26.11.2026: back to ideas - not to be worked until the Epic->Mission decision (ADR) is settled by both
