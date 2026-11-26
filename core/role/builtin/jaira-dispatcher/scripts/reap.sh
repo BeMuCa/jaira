@@ -134,6 +134,24 @@ herdr_up=""; "$herdr" tab list >/dev/null 2>&1 && herdr_up=1
 
 field() { sed -n "s/^$1=//p" "$2" | head -1; }
 
+# Asks herdr about one pane or tab: 'hget pane get <id>'. Its answer lands in
+# $hout, empty when herdr says the id does not exist - "not_found" is hc's
+# kind, "pane_not_found" old herdr's code; not command_not_found and the like,
+# which old herdr also has. Fails on any other failure, with its last line
+# in $herr: a timeout or a restart says nothing about the tab, and read as
+# closed it would cost the worktree of a worker still in it.
+hget() {
+  local e rc=0
+  e="$(mktemp)"
+  hout="$("$herdr" "$@" 2>"$e")" || rc=$?
+  herr="$(tr -d '\r' <"$e")"; rm -f "$e"
+  [ "$rc" != 0 ] || return 0
+  case "$hout $herr" in *'"not_found"'*|*'"pane_not_found"'*) hout=""; return 0 ;; esac
+  herr="$(printf '%s\n%s' "$hout" "$herr" | sed '/^$/d' | tail -1)"
+  [ -n "$herr" ] || herr="exit $rc, no message"
+  return 1
+}
+
 # A worker's tab parked in a person's lane (close-tab.sh wrote parked= into
 # its record) stays while its prompt cache is warm, so a give-back reaches it.
 # close-tab.sh --reap holds the rule when it closes: once the ticket is done or
@@ -414,10 +432,16 @@ for t in $(for f in "$panes"/*; do [ -f "$f" ] && ticket_of "$f"; done | sort -u
     # The person may have closed the tab already; that is the job done. A
     # record outlives its tab by days, and herdr hands its ids out again after
     # a restart: a tab not labelled as spawn.sh labelled ours is somebody
-    # else's, and ours is gone.
-    tab="$("$herdr" pane get "$pane" 2>/dev/null | jaira json get result.pane.tab_id 2>/dev/null || true)"
-    if [ -n "$tab" ] && [ "$("$herdr" tab get "$tab" 2>/dev/null | jaira json get result.tab.label 2>/dev/null || true)" \
-      = "$(field ticket "$f")/$lane" ]; then
+    # else's, and ours is gone. Only herdr's own not_found says so: a herdr
+    # that gave no answer keeps everything for the next round.
+    if ! hget pane get "$pane"; then echo "kept $t: herdr gave no answer for pane $pane ($herr)"; failed=1; break; fi
+    tab="$(jaira json get result.pane.tab_id --default "" <<<"$hout" 2>/dev/null || true)"
+    label=""
+    if [ -n "$tab" ]; then
+      if ! hget tab get "$tab"; then echo "kept $t: herdr gave no answer for tab $tab ($herr)"; failed=1; break; fi
+      label="$(jaira json get result.tab.label --default "" <<<"$hout" 2>/dev/null || true)"
+    fi
+    if [ -n "$tab" ] && [ "$label" = "$(field ticket "$f")/$lane" ]; then
       if [ -n "$dry" ]; then echo "would close $t/$lane $pane"; continue; fi
       if ! "$herdr" tab close "$tab" >/dev/null 2>&1; then
         echo "kept $t: closing $pane failed"; failed=1; break

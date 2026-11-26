@@ -156,10 +156,28 @@ park() {
 # A parked tab that is gone — closed by the person, or its id handed out
 # again after a restart — is not asked about again on the next round.
 gone() { [ -z "$reap" ] || park; kept "$@"; }
-paned="$("$herdr" pane get "$pane" 2>/dev/null || true)"
+# Only herdr's own "not_found" (hc's kind) or "pane_not_found" (old herdr's
+# code) says the tab is gone - not its command_not_found and the like. A
+# herdr that gave no answer keeps the park: read as gone, the record would
+# lose it and no later round would close the tab.
+# The ERR trap does not reach into a function (no set -E, which would also
+# fire inside every command substitution): what can fail here says so itself.
+ask() {
+  local e rc=0
+  e="$(mktemp 2>/dev/null)" || kept "mktemp failed: cannot ask herdr about $1 $3"
+  out="$("$herdr" "$@" 2>"$e")" || rc=$?
+  err="$(tr -d '\r' <"$e")" || err=""; rm -f "$e"
+  [ "$rc" != 0 ] || return 0
+  case "$out $err" in *'"not_found"'*|*'"pane_not_found"'*) out=""; return 0 ;; esac
+  err="$(printf '%s\n%s' "$out" "$err" | sed '/^$/d' | tail -1)"
+  kept "herdr gave no answer for $1 $3: ${err:-exit $rc, no message}"
+}
+ask pane get "$pane"
+paned="$out"
 tab="$(jaira json get result.pane.tab_id --default "" <<<"$paned" 2>/dev/null || true)"
 [ -n "$tab" ] || gone "herdr does not know pane $pane"
-label="$("$herdr" tab get "$tab" 2>/dev/null | jaira json get result.tab.label 2>/dev/null || true)"
+ask tab get "$tab"
+label="$(jaira json get result.tab.label --default "" <<<"$out" 2>/dev/null || true)"
 # spawn.sh labels the tab with the id as it was handed in: a handle or a slug.
 case "$(printf '%s' "$label" | tr '[:lower:]' '[:upper:]')" in
   "$t"/*) ;;
