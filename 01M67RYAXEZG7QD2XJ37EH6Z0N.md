@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T09:03:32Z
+updated-at: 2026-11-26T09:05:07Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T09:00:14Z
@@ -29,7 +29,7 @@ outcome-why: "The person found ]/[ awkward, long lines were cut off, the double 
 outcome-resolves: "Person's signoff feedback of 2026-11-25 (DoD 7-11)."
 review-summary: "none"
 round: 11
-review-gaps: "round 88e9617d9..HEAD: folded the '-' row shows old line rule (in diffGutter and diffLine) into diffRow.shown(); dropped diffLine's num() blank branch (no '+'/'-'/context row has line 0, parseDiff guarantees >=1); dropped redundant r.to>r.from guard (to>from implies it); openDiffRow's reply closure is one diffOpenedMsg with err: wait(). Left: diffPan/left-right keys, clampDiffLeft in diffLeft (needed after resize), stderr last-line in openInCode (no existing helper; linklines.go LastIndex is unrelated), diffFileWidth per render (bounded to one file). Not cleanup, left for review: toggleDiffFile does not reset diffHScroll, so the sideways offset carries into the next opened file (clamped to its width)."
+review-gaps: "bbdb7837c: dropped the ideCommand argv check in TestDiffArgKeepsAnOptionLikeNameOutOfTheFlags (TestOKeyGivesTheIDEADotSlashForAnOptionLikeName proves the same argv end to end). Considered, kept: sidePath/closingQuote/splitDiffGit have no twin in the repo (no other diff-header or C-quote parser; core/gitrepo reads paths with core.quotePath=false -z instead); isBehindOrigin repeats a rev-parse Base already did but runs once per diff open, not hot; its local==origin check is needed since a commit is its own ancestor; no dead code or orphaned imports."
 test-verdict: "fail: DoD 5 proof names two tests that do not exist (TestGutterShowsOldAndNewNumbersOnTheirSides, TestBlankRowSeparatesFilesAndJumpsStillLandOnHeaders); gates green (RC=0, tui and gitrepo ok); DoD 7-11 proofs all exist and pass"
 review-verdict: "Pass. 68dc5cf8 fixes both blockers in the right place with minimal changes, and adds nothing new: seenHunk resets per file, and the all-unavailable check reuses Repo.Diff's second return value. Each fix has a test that fails without it. The rest of the branch is unchanged since the review that accepted it. go test ./core/gitrepo ./internal/tui -count=1 is green; gofmt and vet are clean."
 review-round: 7
