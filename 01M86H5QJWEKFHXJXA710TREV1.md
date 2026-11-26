@@ -22,7 +22,7 @@ commits:
   - 4899c2218f69a255af6a32ffe51b863b46351d96
   - 40c8324fd133f5996d9b75d4db5a81ebabec1ece
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T09:24:13Z
+updated-at: 2026-11-26T09:24:30Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -94,3 +94,4 @@ review-check: "1. cd core && go test ./role/ -run 'TestReapReadsOnlyNotFoundAsAC
 - note: limit: how old (non-hc) herdr answers tab get for a gone tab is unknown (no binary here); if not pane_not_found, a pane closed between pane get and tab get keeps the ticket for one extra round, nothing is lost
 - note: elsewhere: close-tab.sh:150 park() - a failing grep or mv inside the function ends the script with exit 1 and no kept line (the ERR trap does not reach functions); there before this change, reap.sh calls it with || true
 - note: elsewhere: run-lane.sh:153 says the tab is already gone when herdr pane get times out (message only, the tab stays open); same class, other script
+- **2026-11-26 09:24 · Sascha** — cockpit: accepted by the person, signoff -> done
