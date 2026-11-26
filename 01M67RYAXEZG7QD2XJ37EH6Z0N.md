@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T09:00:15Z
+updated-at: 2026-11-26T09:00:53Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T09:00:14Z
@@ -170,3 +170,4 @@ Left standing: no openWait deadline (note 2026-11-26 00:35), mouse capture only 
 - **2026-11-26 00:53 · Berk** — testing: class: proof lines that name tests not in the tree; example: DoD 5 proof names TestGutterShowsOldAndNewNumbersOnTheirSides and TestBlankRowSeparatesFilesAndJumpsStillLandOnHeaders, grep finds neither in internal/tui or core/gitrepo; fix: point each DoD proof at a test that exists and run it with -run. DoD 5 still says old/new gutter, which DoD 9 replaced with one narrow number column: reword DoD 5 to match. Add a test that the blank row above a file header is skipped by up/down file selection. hunt: the five bughunt change notes at 16e7bd669 are the brief for the path, base, worktree and editor-argument faults
 - **2026-11-26 00:53 · Berk** — testing: note: edge: diffHScroll carries over between files in one ticket (optimize note); judged not to break DoD 8, since left and right still reach every column of every file
 - **2026-11-26 00:54 · Berk** — Worker triage of the testing send-back (2026-11-26): FIX now: (a) DoD 5 proof names + wording (one narrow gutter since DoD 9), blank-row test; (b) parseDiff path forms: strip the trailing TAB git writes after a path with a space, and unquote C-quoted "b/..." paths (strconv.Unquote) in both the +++ line and splitDiffGit; (c) a path starting with '-' or '+' goes to the IDE/editor as ./<path>; (d) Base(): when origin/<base> exists and the local <base> is its ancestor (behind), use origin/<base>. LEAVE as notes for the person (round-1 review already let them stand): o falls back to the root checkout when the branch has no worktree; repos whose base is neither master nor main (develop/trunk) show no branch diff.
+- **2026-11-26 09:00 · Berk** — DoD 11 real launch, worker 2026-11-26 10:0x, after main repaired ~/.vscode-server (code --version 1.148.0): the exact argv openInCode runs ('code -g README.md:3', Dir = this worktree, stderr captured, real HOME) exits 0 in 3.9s -> the title says 'opened'. Before the repair the same call exited 127 with '.../remote-cli/code: not found', which the title now shows instead of 'opened'. Whether the VS Code window landed on the right line was not seen by me (no screen); exit 0 from the remote CLI means it handed the file to VS Code.
