@@ -38,6 +38,10 @@ Thumbs.db
 # there by a .gitignore of its own). core/mod leaves both out of the binary.
 /core/mod/builtin/*/tsconfig.json
 
+# A test run in a mod folder ('claude plugin test', vitest) leaves its cache in
+# node_modules/.vite there. core/mod leaves it out of the binary too.
+/core/mod/builtin/*/node_modules/
+
 # Milestones travel on refs/jaira/milestones; the files under .jaira/milestones/ are
 # local working copies and never ride in a commit.
 /.jaira/milestones/
