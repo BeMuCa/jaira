@@ -24,12 +24,12 @@ definition-of-done: "docs/MARKET.md beschreibt Repo-Aufbau, index.json mit jedem
 tags:
   - docs
 blocked-by:
-  - 01M85APT0AZR3XRMFNVJHR3ZK3
+  - 01M8BQFBMS778FE9WK6YDAW7WP
 related: []
 commits: []
 created-at: 2026-11-23T23:06:22Z
-updated-at: 2026-11-23T23:09:40Z
-updated-by: BeMuCa
+updated-at: 2026-11-26T10:50:44Z
+updated-by: Berk
 ---
 
 # docs/MARKET.md haelt fest, wie der Katalog fuer Lanes und Boards aufgebaut ist
