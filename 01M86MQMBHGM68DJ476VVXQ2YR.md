@@ -15,12 +15,12 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T08:01:44Z
+updated-at: 2026-11-26T08:01:55Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
 claimed-at: 2026-11-26T07:55:02Z
-goal: "Ein Testlauf des jaira-cockpit-Mods hinterlaesst nichts, was git als neue Datei zeigt oder was ein danach gebautes jaira-Binary einbettet und installiert."
+goal: "Ein Testlauf des jaira-cockpit-Mods hinterlaesst nichts, was git als neue Datei zeigt oder was ein danach lokal gebautes jaira-Binary mit dem Mod installiert."
 outcome-what: "Root-.gitignore ignoriert core/mod/builtin/*/node_modules/; mod.Builtins() laesst node_modules/ eines Mods aus (Walk ueber fs.FS via builtinsIn, damit testbar)"
 outcome-why: "Ein Cockpit-Testlauf hinterliess node_modules/.vite als ?? in jedem worktree_diff, und ein danach gebautes Binary haette es eingebettet und installiert"
 outcome-resolves: "DoD 1-2; go test ./... gruen, go vet, shipped-history --check"
