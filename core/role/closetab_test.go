@@ -283,10 +283,14 @@ func TestCloseTabKeepsAWorkerThatIsNotFinished(t *testing.T) {
 			r.write(t, filepath.Join(r.labels, "tp1.fails"), "exit 1\n")
 		}, "p1", "", "herdr gave no answer for tab tp1: exit 1, no message"},
 		// A step of its own that fails keeps the tab with a kept line too,
-		// not an exit 1 the ERR trap never sees inside a function.
+		// not an exit 1 the ERR trap never sees inside a function. A mktemp
+		// first on PATH fails: macOS' own ignores a TMPDIR that is missing.
 		"no temp directory": {func(t *testing.T, r *reapRig) {
 			r.write(t, r.shown, `{"status":"signoff","question":""}`)
-			r.env = append(r.env, "TMPDIR="+filepath.Join(r.wt, "no-tmp"))
+			r.write(t, filepath.Join(filepath.Dir(r.closed), "bin", "mktemp"), "#!/usr/bin/env bash\nexit 1\n")
+			if err := os.Chmod(filepath.Join(filepath.Dir(r.closed), "bin", "mktemp"), 0o755); err != nil {
+				t.Fatal(err)
+			}
 		}, "p1", "", "mktemp failed: cannot ask herdr about pane p1"},
 		"pane unknown to hc": {func(t *testing.T, r *reapRig) {
 			r.write(t, r.shown, `{"status":"signoff","question":""}`)
