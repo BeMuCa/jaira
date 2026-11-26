@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:09:28Z
+updated-at: 2026-11-26T08:09:38Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -78,3 +78,4 @@ question: ""
 - **2026-11-26 08:08 · Sascha** — waiting: Antwort des Parents (uds:/run/user/1000/cc-socks/62036.sock) zur Lock-Frage since 09:08
 - **2026-11-26 08:09 · Sascha** — decision (teamlead 2026-11-26): Option 1 - Runde 2 bleibt. Kurzes Lock (paralleler fetch) geloest; langes Lock bleibt laut wie vor dem Ticket. Kein ErrLocalRefBehind, keine neue Regel.
 - **2026-11-26 08:09 · Sascha** — testing: note: limit: lokales Ref-Lock laenger als 1 s nach angenommenem Push (Fall: ein abgestuerztes git hinterliess eine .lock-Datei) - Write meldet den git-Fehler, Flush Failed, der Eintrag bleibt mit alter Lease und verliert in der naechsten Runde gegen die eigene Schreibung; Verhalten wie vor dem Ticket, laut. Bughunt r2 gitref.go:555. Entschieden vom Teamlead, Option 1.
+- **2026-11-26 08:09 · Sascha** — waiting: review (fresh agent, Herdr-Tab via run-lane.sh) since 09:09
