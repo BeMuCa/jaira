@@ -23,7 +23,7 @@ related:
   - 01M58G28438KJJD3YDGM2B4KC9
 commits: []
 created-at: 2026-11-23T22:17:22Z
-updated-at: 2026-11-26T10:57:17Z
+updated-at: 2026-11-26T10:57:20Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-wfhpzt
@@ -73,3 +73,4 @@ Schnitt in baubare Teile: 1. Folgeticket 'Loops und Besetzung anzeigen' (nur Ans
 - **2026-11-26 10:54 · BeMuCa** — critique: internal/tui/pipeline.go tuneLane: the callbacks hand back a 'what' string and stepAgents returns early at the ends, so - on a lane without agent step does nothing while + on it is refused, and the line under the graph says what was asked for, not what the file says. Instead: callbacks return only the error, tuneLane reloads and writes the line from the reloaded lane (tier and agents), and says nothing when neither changed; stepAgents always calls lane.SetAgents with the clamped number.
 - **2026-11-26 10:54 · BeMuCa** — critique, second pass: the one finding is answered in c485a0cf0 (tuneLane reads tier and agents back from the reloaded lane; stepAgents always asks lane.SetAgents). Left standing on the worker note of 2026-11-26: keys t/+/-, tier list from the board's own files, key removed at 1, catalogue write-through as E, update --lanes skipping a lane set this way.
 - **2026-11-26 10:56 · BeMuCa** — testing: two writers lose a write. Two jaira boards open on one scratch board, + in one and t in the other sent at the same moment: review.md ended with 'model-tier: cheap' and no agents line - the + was gone, nothing said so. core/lane/tune.go reads, changes and writes without a lock; the atomic write keeps the file whole but not the other writer's line. Fix: take ticket.LockFile(<lane file>.lock) around the read-modify-write, as core/settings/settings.go does for its file. Passed before that: build, vet, gofmt clean; targeted -race tests of core/lane and internal/tui green; normal case (2×cheap, line names the file), + then - restores the bytes, unwritable lane directory shows REFUSED and leaves the file and no temp file.
+- **2026-11-26 10:57 · BeMuCa** — critique, after the testing return: read only the lock in core/lane/tune.go and its test. It is ticket.LockFile, the helper core/settings/settings.go and core/board/gitignore.go already use for a file two jaira processes write - no new pattern. Nothing to change. Not covered, by design of those tools: an editor (E, or by hand) takes no lock.
