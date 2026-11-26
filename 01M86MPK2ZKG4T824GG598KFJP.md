@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:10:41Z
+updated-at: 2026-11-26T08:10:44Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -37,6 +37,12 @@ back-from: testing
 back-by: lane
 back-count: 1
 question: ""
+review-verdict: "accept: DoD 1-3 erfuellt; gits eigene Lock-Wartezeit statt Fehler schlucken, Fehlerpfad bleibt laut; go test -race gitref/outbox/refsync gruen"
+review-round: 2
+review-verdict-gaps: |-
+  note: limit: ein lokales Ref-Lock laenger als 1 s nach angenommenem Push (stehengebliebene .lock eines abgestuerzten git) meldet weiter Failed, der Eintrag verliert die naechste Runde gegen die eigene Schreibung - laut, wie vor dem Ticket, vom Teamlead so entschieden
+  note: edge: die Lock-Tests (gitref_test.go holdRefLock, outbox_test.go) haben 700 ms Abstand zwischen 300 ms Halten und 1 s Wartezeit - auf einem sehr langsamen Windows-Runner kann das flackern; falls ja, Haltezeit auf 200 ms senken
+  note: elsewhere: core/gitref/gitref.go:998 stuft jede Server-Ablehnung mit 'rejected' (pre-receive hook, geschuetzter Ref) als ErrRaceLost ein, outbox.Flush raeumt den Eintrag dann weg - vorbestehend, neues Ticket
 ---
 
 # gitref.go:548 publish - schlaegt update-ref nach erfolgreichem Push feh…
