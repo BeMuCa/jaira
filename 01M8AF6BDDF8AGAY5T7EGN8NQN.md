@@ -21,7 +21,7 @@ related: []
 commits:
   - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-26T09:02:35Z
+updated-at: 2026-11-26T09:02:38Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-26T09:02:29Z
@@ -40,6 +40,12 @@ review-gaps: |-
   note: limit: whether SendMessage to=main is refused in a foreground subagent was not verifiable here; if it is accepted, the run-out-of-work path still puts the options into the report, so the question is not lost
 hunt-verdict: "pass: stop-after-fix, no hunt in round 2 (skill text, shipped hashes and release note only; no locking or parser)"
 test-verdict: "pass: go test ./core/shipped ./core/role ./core/release -count=1 RC=0 (run 2; run 1 red RC=1 on TestSpawnOffsetLock under load avg ~21, passes alone RC=0, rerun green); DoD 1-4 checked in the tree: worker/dispatcher ask-main text, teamlead SendMessage clause, three shipped hashes match sha256sum of current files, release note one '- ' line; function not exercisable beyond go:embed + shipped test (LLM-read skill text); no code written, no commit"
+review-verdict: "accept: all four DoD items met (worker :363-373/381, dispatcher :199-211, teamlead :90-94, shipped hashes match files, go test ./core/role -run Shipped|Installed ok, release note one line); no defect, one plain edge about a doubled question"
+review-round: 2
+review-verdict-gaps: |-
+  note: edge: when a background subagent runs out of work it both sent the options to main via SendMessage and ends its turn with the same options above the status line, so main receives one question twice; jaira-teamlead SKILL.md:90-94 does not say the report's options are the already-sent question - add one sentence there (or mark the report options as already sent) so the person is not asked twice
+  note: limit: jaira-role-lane and jaira-role-pr unchanged on purpose (plan note 23:06 decisions 2 and 3) - lane agents still ask via the question field and exit 5
+  note: limit: whether SendMessage to=main is refused in a foreground subagent was not verifiable here; if it is accepted, the run-out-of-work path still puts the options into the report, so the question is not lost
 ---
 
 # Ein Worker ohne Herdr schickt seine Fragen per SendMessage an main und arbeitet weiter, statt mit der Frage im Bericht stehen zu bleiben
