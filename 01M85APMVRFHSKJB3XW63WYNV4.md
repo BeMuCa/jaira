@@ -21,11 +21,11 @@ definition-of-done: Die Seite ist unter der Pages-Adresse erreichbar und listet 
 tags:
   - web
 blocked-by:
-  - TGYQGJ
+  - 01M8BQFBMS778FE9WK6YDAW7WP
 related: []
 commits: []
 created-at: 2026-11-23T23:08:49Z
-updated-at: 2026-11-26T10:51:47Z
+updated-at: 2026-11-26T10:51:49Z
 updated-by: Berk
 ---
 
