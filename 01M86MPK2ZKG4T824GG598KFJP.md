@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T07:58:57Z
+updated-at: 2026-11-26T07:59:08Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -26,6 +26,7 @@ outcome-what: "gitref publish meldet nach angenommenem Push keinen Fehler mehr, 
 outcome-why: "Der Remote ist die Wahrheit; ein Fehler liess die Outbox eine angekommene Schreibung mit alter Lease behalten und erneut senden, wo sie gegen sich selbst verlor. Delete und PushBranch behandeln update-ref schon so."
 outcome-resolves: "DoD 1-3: gitref_test TestAnAcceptedPushIsAWriteEvenWhenTheLocalRefIsLocked, outbox_test TestAnAcceptedPushIsSentEvenWhenTheLocalRefIsLocked, Release-Note."
 review-summary: none
+review-gaps: "none: publish nutzt jetzt dasselbe r.run-Muster wie Delete/PushBranch; das Anlegen des .lock steht in gitref_test und outbox_test doppelt - zwei Pakete, ein gemeinsamer Helfer waere ein Testpaket fuer 6 Zeilen, gelassen"
 ---
 
 # gitref.go:548 publish - schlaegt update-ref nach erfolgreichem Push feh…
