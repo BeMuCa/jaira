@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:17:03Z
+updated-at: 2026-11-26T08:17:07Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -28,7 +28,7 @@ outcome-resolves: "DoD 1-4: haengendes get -> stumm, Exit 3; haengendes ls -> Ex
 review-summary: none
 review-gaps: "none: Runde 3 nichts entfernt (siehe Runden 1-2)"
 test-verdict: "pass: Runde 3 - go vet + go test -race ./... gruen (RC=0) auf 5e9dfcf82, TestHerdrHc* 3x hintereinander gruen; shipped-history --check ok. DoD 1-5 im Baum: 08 -> Exit 0 (8 s), 00/0/abc/-1/1.5/' 3' -> Exit 2 ohne hc-Aufruf; 1 haengendes Terminal bei secs=1/5 -> 1,06 s/5,06 s, Exit 3, stderr nennt es; Nachbar der Runde-2-Note (010) geprueft: 10 s, nicht 8."
-hunt-verdict: "fail: bughunt done at ff4b72ae3, 2 change: JAIRA_HC_TIMEOUT=08/09/00 bricht DoD 5 (Exit 1 statt 2, Oktal); Budget um bis zu 1 s zu kurz (SECONDS-Takt)"
+hunt-verdict: "pass: bughunt done at 5e9dfcf82, 0 Blocker, 1 change-edge (Ueberlauf bei >18 Ziffern in JAIRA_HC_TIMEOUT, Note fuer Review/Person)"
 round: 3
 back-from: testing
 back-by: lane
