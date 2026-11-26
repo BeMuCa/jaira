@@ -1,7 +1,7 @@
 ---
 id: 01M86MPK2ZKG4T824GG598KFJP
 title: "gitref.go:548 publish - schlaegt update-ref nach erfolgreichem Push feh…"
-status: backlog
+status: todo
 ready: true
 creator: Sascha
 context: |-
@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T07:56:08Z
+updated-at: 2026-11-26T07:56:20Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
