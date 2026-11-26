@@ -1,7 +1,7 @@
 ---
 id: 01M86MPK2ZKG4T824GG598KFJP
 title: "gitref.go:548 publish - schlaegt update-ref nach erfolgreichem Push feh…"
-status: in-progress
+status: critique
 ready: true
 creator: Sascha
 context: |-
@@ -16,15 +16,15 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:05:45Z
+updated-at: 2026-11-26T08:05:49Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
 claimed-at: 2026-11-26T07:54:51Z
 goal: "Haelt ein anderer git-Prozess das lokale Ref-Lock kurz, waehrend eine Schreibung pusht, gilt die angenommene Schreibung als gesendet (Flush meldet Sent, der Eintrag verschwindet) und der lokale Ref steht danach auf dem Remote-Stand, sodass die naechste Schreibung nicht gegen die eigene verliert."
-outcome-what: "gitref publish meldet nach angenommenem Push keinen Fehler mehr, wenn das lokale update-ref scheitert; der lokale Ref wird beim naechsten Fetch nachgezogen."
-outcome-why: "Der Remote ist die Wahrheit; ein Fehler liess die Outbox eine angekommene Schreibung mit alter Lease behalten und erneut senden, wo sie gegen sich selbst verlor. Delete und PushBranch behandeln update-ref schon so."
-outcome-resolves: "DoD 1-3: gitref_test TestAnAcceptedPushIsAWriteEvenWhenTheLocalRefIsLocked, outbox_test TestAnAcceptedPushIsSentEvenWhenTheLocalRefIsLocked, Release-Note."
+outcome-what: "gitref publish laesst update-ref nach angenommenem Push bis zu 1 s auf ein fremdes Ref-Lock warten (core.filesRefLockTimeout=1000 statt gits 100 ms); ein dauerhaft unbeschreibbarer Ref bleibt ein Fehler."
+outcome-why: "Ein kurz gesperrter lokaler Ref liess Flush Failed melden und den Eintrag behalten; den Fehler zu schlucken (Runde 1) liess den lokalen Ref hinter dem Remote, und die naechste Schreibung verlor gegen die eigene. Warten haelt den lokalen Ref aktuell."
+outcome-resolves: "DoD 1-3: TestAWriteWaitsOutABrieflyLockedLocalRef, TestALocalRefThatStaysLockedIsStillAnError, TestABrieflyLockedLocalRefNeitherFailsTheFlushNorTheNextWrite, Release-Note."
 review-summary: none
 review-gaps: "none: publish nutzt jetzt dasselbe r.run-Muster wie Delete/PushBranch; das Anlegen des .lock steht in gitref_test und outbox_test doppelt - zwei Pakete, ein gemeinsamer Helfer waere ein Testpaket fuer 6 Zeilen, gelassen"
 test-verdict: "fail: bughunt change blocker - nach geschlucktem update-ref liest die naechste Schreibung den veralteten lokalen Ref als Lease und verliert gegen sich selbst"
