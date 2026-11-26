@@ -15,7 +15,7 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T08:03:02Z
+updated-at: 2026-11-26T08:04:28Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -24,9 +24,7 @@ goal: "Ein Testlauf des jaira-cockpit-Mods hinterlaesst nichts, was git als neue
 outcome-what: "Root-.gitignore ignoriert core/mod/builtin/*/node_modules/; mod.Builtins() laesst node_modules/ eines Mods aus (Walk ueber fs.FS via builtinsIn, damit testbar)"
 outcome-why: "Ein Cockpit-Testlauf hinterliess node_modules/.vite als ?? in jedem worktree_diff, und ein danach gebautes Binary haette es eingebettet und installiert"
 outcome-resolves: "DoD 1-2; go test ./... gruen, go vet, shipped-history --check"
-review-summary: |-
-  no findings: builtinsIn is the one indirection, needed because go:embed is fixed at compile time and the filter can only be tested over a stand-in fs.FS; testCache sits beside generatedTypes/generatedConfig in the same walk (core/mod/mod.go), same pattern; gitignore line sits beside the tsconfig.json line for the same folder pattern
-  round 2 (stop-after-fix, critique+optimize in one pass): comment-only fix in core/mod/mod.go and .gitignore, no findings
+review-summary: "Die Root-.gitignore ignoriert jetzt /core/mod/builtin/*/node_modules/, sodass der vitest-Cache (node_modules/.vite) nach einem Mod-Testlauf nicht mehr in git status auftaucht. mod.Builtins() ueberspringt node_modules/ auf oberster Ebene eines Mods (neben tests/ und den generierten Typen), damit 'jaira roles install' den Cache nie mitinstalliert; dafuer wurde der Walk in builtinsIn(fs.FS) ausgelagert, den ein neuer Test mit fstest.MapFS prueft - inklusive dass ein tieferes hooks/node_modules erhalten bleibt. Kommentare sagen ehrlich, dass go:embed all: den Cache in einen lokalen Build weiter einbettet."
 review-gaps: |-
   none: 3 files, nothing duplicated elsewhere (core/web/ui/.gitignore covers only core/web/ui), every new symbol has a caller
   round 2: none, comments only
