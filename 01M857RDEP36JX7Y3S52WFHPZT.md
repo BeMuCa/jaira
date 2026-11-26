@@ -23,7 +23,7 @@ related:
   - 01M58G28438KJJD3YDGM2B4KC9
 commits: []
 created-at: 2026-11-23T22:17:22Z
-updated-at: 2026-11-26T10:58:51Z
+updated-at: 2026-11-26T10:58:53Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-wfhpzt
@@ -75,3 +75,4 @@ Schnitt in baubare Teile: 1. Folgeticket 'Loops und Besetzung anzeigen' (nur Ans
 - **2026-11-26 10:56 · BeMuCa** — testing: two writers lose a write. Two jaira boards open on one scratch board, + in one and t in the other sent at the same moment: review.md ended with 'model-tier: cheap' and no agents line - the + was gone, nothing said so. core/lane/tune.go reads, changes and writes without a lock; the atomic write keeps the file whole but not the other writer's line. Fix: take ticket.LockFile(<lane file>.lock) around the read-modify-write, as core/settings/settings.go does for its file. Passed before that: build, vet, gofmt clean; targeted -race tests of core/lane and internal/tui green; normal case (2×cheap, line names the file), + then - restores the bytes, unwritable lane directory shows REFUSED and leaves the file and no temp file.
 - **2026-11-26 10:57 · BeMuCa** — critique, after the testing return: read only the lock in core/lane/tune.go and its test. It is ticket.LockFile, the helper core/settings/settings.go and core/board/gitignore.go already use for a file two jaira processes write - no new pattern. Nothing to change. Not covered, by design of those tools: an editor (E, or by hand) takes no lock.
 - **2026-11-26 10:58 · BeMuCa** — bughunt: change: internal/tui/pipeline.go renderStep puts the planned agent count in front of whoever runs the lane, agent step or not. A lane file may carry 'agents: 2' without 'agentic: true' (core/lane/lane.go refuses it only beside outcome-what or plan), and a person's lane then reads '2×Person' while the line under the graph and the keys treat it as having no agents to set. Draw the count only where the lane has an agent step. (Hunt run by the worker itself, reading core/lane/tune.go and the compact view whole: the brief forbids a second agent on this machine.)
+- **2026-11-26 10:58 · BeMuCa** — bughunt: done at 045d34d9b
