@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:15:13Z
+updated-at: 2026-11-26T08:15:17Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -48,7 +48,7 @@ back-count: 2
 - [x] Release-Note in core/release/notes/QNB5S4.md
   proof: core/release/notes/QNB5S4.md
 - [x] Ein JAIRA_HC_TIMEOUT, das keine ganzen Sekunden ueber 0 sind, wird mit Exit 2 abgelehnt, bevor hc gefragt wird; Test
-  proof: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:37-39; TestHerdrHcRefusesATimeoutThatIsNoSeconds (abc, 0, -1, 1.5, ' 3')
+  proof: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:39-46 (10#, 0 abgelehnt); TestHerdrHcRefusesATimeoutThatIsNoSeconds (abc, 0, 00, -1, 1.5, ' 3'); 08 -> Exit 0, von Hand
 
 ## Options
 
