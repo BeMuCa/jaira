@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:05:43Z
+updated-at: 2026-11-26T08:08:33Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -39,7 +39,7 @@ back-count: 1
 
 ## Definition of Done
 
-- [x] herdr-hc.sh 'tab list' bricht jedes hc get nach einer Frist ab (Standard 3 s, JAIRA_HC_TIMEOUT); ein haengendes Terminal steht danach als stumm auf stderr und die Liste endet mit Exit 3; Test mit einem hc-Stub, dessen get schlaeft
+- [x] herdr-hc.sh 'tab list' endet innerhalb eines Budgets fuer den ganzen Aufruf (Standard 5 s, JAIRA_HC_TIMEOUT), auch wenn mehrere hc get haengen; jedes nicht gehoerte Terminal steht als stumm auf stderr und die Liste endet mit Exit 3; Test mit einem hc-Stub, dessen get schlaeft
   proof: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:25-50 (bounded), :123; TestHerdrHcTabListSaysWhichTerminalDidNotAnswer/one_hangs, all_hang, hangs_and_mute (core/role/role_test.go)
 - [x] Ein haengendes hc ls laesst 'tab list' nach derselben Frist mit Exit ungleich 0 enden; Test
   proof: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:118; TestHerdrHcTabListSaysWhichTerminalDidNotAnswer/ls_hangs
