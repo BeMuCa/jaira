@@ -1,7 +1,7 @@
 ---
 id: 01M86H5VJ5DK1MDM8Y6NQNB5S4
 title: "herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangs…"
-status: signoff
+status: done
 ready: true
 creator: Sascha
 context: |-
@@ -14,9 +14,12 @@ tags: []
 blocked-by: []
 related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
-commits: []
+commits:
+  - 21d6e7e89f4107c2dd795739df33fdd32f8dd46a
+  - ff4b72ae3fd900b4401433f263178b4afa16f2d2
+  - 5e9dfcf8281b07421c566533b6068b8c3364cba8
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:21:04Z
+updated-at: 2026-11-26T09:24:12Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
