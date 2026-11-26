@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:08:20Z
+updated-at: 2026-11-26T14:08:23Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T14:08:20Z
@@ -26,9 +26,9 @@ outcome-what: "The inbox classifies a ticket ref change against a shared per-clo
 outcome-why: "Critique round 6 found that the last_fetch cutoff dropped a never-seen assignment to me whenever its updated-at predated the clone's last fetch (late push, clock skew). The cutoff existed only to stop a new worktree replaying old assignments; the shared SHA map does that without a time gate."
 outcome-resolves: "round 6 finding: the since gate in refsync.assignmentEntries silently dropped an assignment to me whose ticket arrived after the clone's last fetch"
 review-summary: |-
-  core/refsync/refsync.go:1167 the since gate (prevSHA=="" && updated-at < last_fetch -> no entry) applies in EVERY worktree, not only one without refs-seen: a never-seen ticket assigned to me whose updated-at predates the clone last fetch (created offline and pushed later via the queued push, push latency of a second, or a teammate clock behind mine) is silently never reported - a missed assignment, introduced by 4fdbf8f9a (at 7966b6c5d it was recorded). Reproduced with a scratch test in core/refsync: established worktree, last_fetch set 1 min ahead, ada creates+assigns to grace, grace fetches -> 0 entries, want 1; same flow at 7966b6c5d -> 1. Do instead: apply the gate only when this worktree has no seen-state (y.seenExists() false, refsync.go:1140), as note 13:52 designed, and add that test.
-  core/gitrepo/git.go:537 AddWorktree CheckedOut refusal: finding 2 of round 5 addressed, right place; internal/cli/pull.go:158 keeps its own CheckedOut branch - let optimize judge whether it is now redundant.
-  Residual even after F1 fix, for the person, not a send-back: in a fresh worktree the same skew/late-push can still drop one assignment; over-report would need refs-seen seeding instead of a time floor.
+  core/refsync/refsync.go:1471 noteSeen now merges the pulled sha into the shared inbox Seen, so a pull that is itself the first read of an assignment by someone else marks it seen without an entry, now in every worktree, not only the one that pulled (pre-existing per-worktree, the delta widens it; non-blocking because whoever pulls already knows) - classify in Pull via assignmentEntries(id, prev[id], content, readSHA, ...) before noteSeen, or leave the ref sha unseen and let the next Incoming classify it
+  core/inbox/inbox.go:101 RecordFetch overwrites Seen[id] last-writer-wins: a slow fetch that read an older sha can rewind a newer one written by another worktree; the result is a replayed entry (deduped by key/acked), never a miss, so acceptable under the repeat-over-miss rule - keep as is, note only
+  core/inbox/inbox.go:63 Seen never drops ids whose ref is gone (logbooked or rejected tickets), so inbox.json grows with the board history - prune ids absent from ids in Incoming (ticketSeen is already the full current set: replace instead of merge when it is a full fetch)
 round: 7
 back-from: critique
 back-by: lane
