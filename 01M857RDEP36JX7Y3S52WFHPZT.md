@@ -23,7 +23,7 @@ related:
   - 01M58G28438KJJD3YDGM2B4KC9
 commits: []
 created-at: 2026-11-23T22:17:22Z
-updated-at: 2026-11-26T10:53:05Z
+updated-at: 2026-11-26T10:53:08Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-wfhpzt
@@ -38,7 +38,8 @@ claimed-at: 2026-11-26T10:46:36Z
   proof: Notiz 'Brainstorm (Teamlead, 2026-11-23)' am Ticket; Folgetickets R68J0X, FSPJP9, 3ADC5S
 - [x] Der Graph zeigt jede Lane als Knoten und jeden Uebergang und Loop als Kante, Loops mit ihrer Grenze
   proof: internal/tui/pipeline.go renderPipeline (arrows between steps, loop legend with limit, from R68J0X) and renderStep (planned agents in front of the tier); tests TestPipelineShowsEveryStepInOrder, TestPipelineSetsTierAndAgentsInTheLaneFile ('3×cheap')
-- [ ] Je Lane lassen sich Agent bzw. Modell und Anzahl Agenten einstellen; die Einstellung steht danach in der Lane-Datei
+- [x] Je Lane lassen sich Agent bzw. Modell und Anzahl Agenten einstellen; die Einstellung steht danach in der Lane-Datei
+  proof: core/lane/tune.go SetTier/SetAgents, internal/tui/pipeline.go pipelineKey (t, +, -) and tuneLane; tests TestTuneWritesOnlyItsOwnLine, TestTuneRefusesAndLeavesTheFileAlone, TestPipelineSetsTierAndAgentsInTheLaneFile, TestPipelineRefusedSettingSaysWhy, TestPipelineSettingReachesTheCatalogueTwin
 - [ ] Release-Notiz in core/release/notes/<ID>.md
 
 ## Options
