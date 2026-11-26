@@ -1,7 +1,7 @@
 ---
 id: 01M86MQMBHGM68DJ476VVXQ2YR
 title: Cockpit-Testlauf hinterlaesst node_modules/ - weder gitignored noch von der Mod-Installation ausgenommen
-status: in-progress
+status: critique
 ready: true
 creator: Sascha
 context: |-
@@ -15,7 +15,7 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T08:02:05Z
+updated-at: 2026-11-26T08:02:15Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -60,3 +60,4 @@ stop-after-fix: "true"
 - **2026-11-26 08:01 · Sascha** — bughunt: change: core/mod/mod.go:23 (with mod.go:49-52, .gitignore:42, commit subject e9ba2b874) - class: a skip in builtinsIn only keeps a file off the install, while go:embed all:builtin still compiles every file on disk into the binary, so text that says 'out of the binary' is wrong for node_modules (and for the generated types/tsconfig.json beside it); example: core/mod/builtin/jaira-cockpit/node_modules/.vite/vitest/results.json present at build time is in the binary's bytes, and a full npm install there would add its whole size to every release binary; not a blocker by itself (nothing wrong is installed), unless this ticket's definition of done asks for it to be out of the binary; ran: mkdir node_modules/.vite/vitest + marker file, go build ./cmd/jaira, grep -a marker in binary (exit 0, found), install path list does not carry it
 - **2026-11-26 08:01 · Sascha** — hunt report: 1 finding, 1 change (edge, not a blocker), as a note on VXQ2YR | read whole: core/mod/mod.go, core/mod/mod_test.go, .gitignore hunk, plus caller core/role/install.go (mod install loop); go test ./core/mod ./core/role pass | not checked: what 'claude plugin test' really writes into the mod folder beyond node_modules/.vite (no run of it here); a dangling symlink in node_modules/.bin was tried and does not break go build
 - **2026-11-26 08:01 · Sascha** — bughunt: done at e9ba2b874 - 1 finding (1 change, 0 pre-existing) in 1 module, first hunt; concurrency, error paths, input, permissions checked; files: .gitignore core/mod/mod.go core/mod/mod_test.go
+- **2026-11-26 08:02 · Sascha** — bughunt fix: wording only - go:embed all: cannot exclude a subdirectory, so a local build still carries node_modules bytes; mod.go and .gitignore now say install, not binary; goal and title reworded. stop-after-fix=true set by me (comments only, no lock, no parser). The commit subject of e9ba2b874 says 'binary' and stays: no amend after a move.
