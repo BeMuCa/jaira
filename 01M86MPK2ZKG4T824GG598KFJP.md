@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:03:39Z
+updated-at: 2026-11-26T08:05:00Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -39,7 +39,7 @@ back-count: 1
 
 ## Definition of Done
 
-- [x] Ein Test haelt den lokalen Ref mit einem .lock fest: Write liefert nach angenommenem Push die SHA ohne Fehler, und der Remote traegt den Inhalt
+- [x] Ein Test haelt den lokalen Ref kurz (300 ms, laenger als gits 100 ms) gesperrt, waehrend Write pusht: Write liefert die SHA ohne Fehler, lokaler Ref und Remote tragen sie - fuer Ticket, Milestone, Migration, Epic; ein dauerhaft gesperrter Ref bleibt ein Fehler
   proof: core/gitref/gitref_test.go TestAnAcceptedPushIsAWriteEvenWhenTheLocalRefIsLocked (ticket/milestone/migration/epic; rot ohne Fix)
 - [x] Ein Outbox-Test: Flush meldet in diesem Fall Sent und der Eintrag ist danach nicht mehr in der Outbox
   proof: core/outbox/outbox_test.go TestAnAcceptedPushIsSentEvenWhenTheLocalRefIsLocked (rot ohne Fix)
