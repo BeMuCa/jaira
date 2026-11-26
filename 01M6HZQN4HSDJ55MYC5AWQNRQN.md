@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:27:08Z
+updated-at: 2026-11-26T14:28:48Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T14:13:29Z
@@ -26,9 +26,11 @@ outcome-what: "core/refsync Incoming takes the baseline from inbox.json, else fr
 outcome-why: "testing round 3: a clone with refs-seen but no inbox.json dropped every assignment since its last fetch, and one unparseable inbox.json failed every fetch"
 outcome-resolves: "tests in core/refsync/inbox_test.go (refs-seen without inbox, inbox without refs-seen, neither, unreadable inbox moved aside) and core/inbox TestALoadOfAnUnreadableInboxMovesItAsideAndReplacesAnOlderOne"
 review-summary: |-
-  core/refsync/refsync.go:1471 noteSeen now merges the pulled sha into the shared inbox Seen, so a pull that is itself the first read of an assignment by someone else marks it seen without an entry, now in every worktree, not only the one that pulled (pre-existing per-worktree, the delta widens it; non-blocking because whoever pulls already knows) - classify in Pull via assignmentEntries(id, prev[id], content, readSHA, ...) before noteSeen, or leave the ref sha unseen and let the next Incoming classify it
-  core/inbox/inbox.go:101 RecordFetch overwrites Seen[id] last-writer-wins: a slow fetch that read an older sha can rewind a newer one written by another worktree; the result is a replayed entry (deduped by key/acked), never a miss, so acceptable under the repeat-over-miss rule - keep as is, note only
-  core/inbox/inbox.go:63 Seen never drops ids whose ref is gone (logbooked or rejected tickets), so inbox.json grows with the board history - prune ids absent from ids in Incoming (ticketSeen is already the full current set: replace instead of merge when it is a full fetch)
+  core/refsync/refsync.go:1308-1316 decides inboxBefore by calling inbox.Exists a second time after Load, because Load may have moved the file aside; another process can write a fresh inbox.json between Load and that check, and then prev is the empty Seen of the moved file. Simpler: drop the second Exists and set inboxBefore = len(st.Seen) > 0. A moved-aside file and an inbox.json made by an offline ack before any fetch both land on the refs-seen/baseline path. Today the ack case takes prev={} and records every current assignment as news (a flood of repeats, not a miss).
+  core/inbox/inbox.go:107 throws away the json error (errUnreadable), and nothing tells the user that inbox.json was moved aside, so the unacked entries it held disappear from the board without a word. Testing note 14:22 asked to report the corruption once. Return the parse error wrapped in errUnreadable and print one line on stderr in the fetch caller (or keep a Recovered flag on State).
+  core/inbox/inbox.go:91 renames over any older inbox.json.corrupt; a second corruption deletes the first one. Minor: keep it as is, or name the file inbox.json.corrupt-<unix time>.
+  core/refsync/inbox_test.go: testing note 14:2x listed four cases; the offline-ack-before-first-fetch case has no test. Add it next to TestWithNeitherFileTheFetchIsABaseline.
+  Left alone: the RecordFetch lost-update edge (triage note 14:23 accepted it: worst case is a repeat). Delta is 200 lines, so critique and optimize stay separate lanes. Send-back budget is spent; no blocker in this delta.
 round: 8
 back-from: testing
 back-by: lane
