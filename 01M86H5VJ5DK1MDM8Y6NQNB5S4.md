@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:09:35Z
+updated-at: 2026-11-26T08:09:43Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -27,7 +27,7 @@ outcome-why: "Ein Terminal, dessen hc get nie antwortete, liess 'tab list' und d
 outcome-resolves: "DoD 1-4: haengendes get -> stumm, Exit 3; haengendes ls -> Exit !=0; reines bash ohne Prozessreste; Release-Note."
 review-summary: none
 review-gaps: "none: Runde 2 nichts entfernt; bounded() ohne Budget kehrt ohne Fork zurueck, eine extra break-Logik in 'tab list' waere Code fuer nichts; das eigene install() im neuen Test folgt dem Muster der Nachbartests, gelassen."
-test-verdict: "pass: go vet + go test -race ./... nach go clean -testcache gruen (RC=0); shipped-history --check ok; DoD 1-4 im Baum geprueft (TestHerdrHcTabListSaysWhichTerminalDidNotAnswer inkl. one_hangs/all_hang/hangs_and_mute/ls_hangs). Funktion mit hc-Stub: t2 haengt -> nach 3,08 s Liste mit t1, stderr nennt t2, Exit 3; zwei 'tab list' parallel -> beide Exit 3, keine tmp-Reste; JAIRA_HC_TIMEOUT=x -> sofort Exit 137 (sicherer Fehler). Schreibt nichts ausser eigenen mktemp-Dateien."
+test-verdict: "pass: Runde 2 - go vet + go test -race ./... gruen (RC=0) auf dem Stand von ff4b72ae3; DoD 1-5 im Baum geprueft (five_hang, ls_hangs, TestHerdrHcRefusesATimeoutThatIsNoSeconds). Funktion: 6 Terminals, 5 haengen -> 5,1 s, t1 gelistet, t2-t6 auf stderr, Exit 3, keine Prozessreste; testing-Note Runde 1 (Gesamtfrist) mit Nachbar geprueft: 1 und 5 haengende enden beide im Budget. Schreibt nichts ausser eigenen mktemp-Dateien."
 hunt-verdict: "fail: bughunt done at 21d6e7e89, 2 change (keine Gesamtfrist fuer 'tab list'; JAIRA_HC_TIMEOUT ungeprueft), 1 pre-existing (tab get/pane get ohne Frist - gleiches Thema, Note fuer die Person, deckt sich mit der 0TREV1-Note)"
 round: 2
 back-from: testing
