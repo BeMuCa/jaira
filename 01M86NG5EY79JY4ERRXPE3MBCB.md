@@ -19,7 +19,8 @@ related: []
 follows: 01M86NFX4NQF351XWAXZ7YQ1JC
 commits: []
 created-at: 2026-11-24T11:36:46Z
-updated-at: 2026-11-24T11:36:46Z
+updated-at: 2026-11-26T07:59:26Z
+updated-by: Sascha
 ---
 
 # Epic wird Mission mit eigenen Lanes: spec, tickets, knowledge - Spec-Bestaetigung durch den Menschen
