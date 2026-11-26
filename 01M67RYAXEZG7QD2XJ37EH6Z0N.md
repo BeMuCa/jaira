@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:35:07Z
+updated-at: 2026-11-26T00:35:12Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T00:35:07Z
@@ -151,3 +151,4 @@ Let stand: hunk header indented 2*nw+4 with no │ (aligns @@ with the sign colu
 - **2026-11-25 23:06 · Berk** — Worker 2026-11-26: o does nothing on this WSL2 machine because ~/.vscode-server/bin/69047191fc.../ lacks bin/ (the complete server sits nested in .../69047191fc...-1795647297/); 'code -g README.md:3' exits 127 after ~4.5s with 'remote-cli/code: not found' on stderr. The Windows wrapper already handles WSL (wslCode.sh, wsl+$WSL_DISTRO_NAME), so no --remote/wslpath is needed in jaira. jaira's bug: Start() only, stderr dropped, 'opened' shown. Asked main: repair the server dir (1, recommended) / person repairs (2) / leave (3).
 - **2026-11-25 23:07 · Berk** — Plan decisions 2026-11-26 (worker): tab still gives the diff the keys (arrows scroll the ticket otherwise, the person did not ask to drop that); an open file pins its header and hides the files above it so its rows get the pane; mouse capture only while the diff pane is shown, because capture switches off terminal text selection; o waits for the IDE asynchronously (the WSL code wrapper took 4.5s to fail here), so the TUI never blocks. Release note line 1 rewritten rather than appended: ]/[ never shipped in a release.
 - **2026-11-25 23:07 · Berk** — waiting: in-progress Haiku implementer (subagent) and main's answer on the VS Code server repair, since 00:07
+- **2026-11-26 00:35 · Berk** — DoD 11 checked on this WSL2 machine (worker 2026-11-26). (a) Failure path: the real argv 'code -g README.md:3' via exec, as openInCode runs it, exits 127 after 8-46s with stderr '.../remote-cli/code: not found' (broken ~/.vscode-server); openInCode now returns that as 'exit status 127: <stderr line>' for the title. (b) Success path: openInCode run from go test, whose HOME is an empty temp dir (internal/testhome), made the wrapper download a fresh server (~115s) and exit 0 twice -> 'opened'. So with an intact server the plain 'code -g' launch works under WSL; no --remote/wslpath needed. Side effect: two VS Code windows were opened on the person's desktop by those probes. Changed after the implementer: dropped the 10s openWait deadline (it reported a still-running 46s failure as 'opened'); the wait runs in a tea.Cmd, so the screen never blocks. The person's own ~/.vscode-server/bin/69047191fc... is still broken (repair asked of main, no answer yet).
