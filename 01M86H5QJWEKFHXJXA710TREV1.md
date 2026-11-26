@@ -2,20 +2,28 @@
 id: 01M86H5QJWEKFHXJXA710TREV1
 title: "reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only…"
 status: backlog
-ready: false
+ready: true
 creator: Sascha
-context: "note: elsewhere: reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only an unknown pane - before this ticket (5c5207ba67); exit 3 now keeps reap off it for hc timeouts only"
-tags: []
+context: |-
+  Was falsch ist: core/role/builtin/jaira-dispatcher/scripts/reap.sh:418 - schlaegt 'herdr pane get <pane>' fehl, bleibt tab leer, und reap.sh behandelt den Tab als schon geschlossen.
+  Folge: hat herdr nur einen Moment nicht geantwortet (Timeout, Neustart), entfernt reap.sh Worktree und Branch, obwohl claude im Tab noch darin arbeitet.
+  Der Check herdr_up (reap.sh:133, 'tab list') laeuft einmal am Anfang der Runde; ein Ausfall danach faellt nicht auf.
+  8NWE4P (24.11.) hat nur den Fall 'hc get antwortet bei tab list nicht' abgefangen (Exit 3 -> reap behaelt alles).
+  Fehlerformate: Herdr App (hc) schreibt {"error":{"kind":"not_found"}} auf stderr, Exit 3; altes herdr.exe kennt den Code pane_not_found (aus strings herdr.exe).
+  Gleiches Muster, nicht dieses Ticket: close-tab.sh:159 (dort parkt es nur aus, entfernt nichts).
+tags:
+  - cockpit
 blocked-by: []
 related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T07:54:36Z
+updated-at: 2026-11-26T07:55:47Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
 claimed-at: 2026-11-26T07:54:32Z
+goal: "reap.sh liest ein gescheitertes 'herdr pane get' nur dann als geschlossenen Tab, wenn herdr den Pane nicht kennt (not_found); jede andere Fehlschlag (Timeout, herdr weg) behaelt Tab, Worktree und Record fuer die naechste Runde."
 ---
 
 # reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only…
