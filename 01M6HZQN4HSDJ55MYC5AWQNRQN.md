@@ -17,10 +17,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T13:57:58Z
+updated-at: 2026-11-26T13:59:50Z
 updated-by: Berk
 claimed-by: w-wqnrqn
-claimed-at: 2026-11-26T10:27:37Z
+claimed-at: 2026-11-26T13:59:50Z
 question: ""
 outcome-what: "Core inbox state records when the clone last fetched; a worktree's first fetch records an assignment only when made after that fetch. gitrepo.AddWorktree refuses a branch checked out in a worktree before any ref moves."
 outcome-why: "Critique round 5 finding (1): a new worktree's first fetch replayed every old unacked assignment as new (wrong result, spurious inbox rows). Finding (2): AddWorktree relied on its caller for the checked-out guard, so a caller could move a checked-out branch."
