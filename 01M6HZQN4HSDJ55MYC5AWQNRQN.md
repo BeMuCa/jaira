@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:41:08Z
+updated-at: 2026-11-26T10:41:10Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T10:27:37Z
@@ -228,3 +228,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 10:39 · Berk** — Decision by the person (via main session, 26.11.2026): message privacy = option 1 — messages on refs/jaira/inbox/* are open to everyone with the repository, stated clearly in 'jaira msg --help' and the release note. Encryption may come later as its own ticket; not built here.
 - **2026-11-26 10:41 · Berk** — bughunt: change: blocker: core/gitrepo/git.go:517-523 AddWorktree - class: an existing local branch is reused as it is, so a local copy behind the remote is checked out and reported as success; example: local feat at 11e6573, remote feat handed over at 270da6e, the new worktree sits at 11e6573 and pull.go:169 reports it as checked out; ran: scratch Go test in core/gitrepo (push to bare remote, local branch left behind, AddWorktree, compare HEAD), HEAD 11e6573 != 270da6e, FAIL; scratch file deleted
 - **2026-11-26 10:41 · Berk** — bughunt: change: blocker: core/gitrepo/git.go:476-481 CommitAll and internal/cli/handover.go:66-74 - class: git add -A stages every untracked file that git does not ignore, then the handover pushes that commit with the branch; example: an untracked scratch-credentials.txt in the worktree lands in the wip commit and on the remote next to the tracked change; ran: scratch Go test in core/gitrepo, CommitAll on a repo with tracked.txt changed and an untracked scratch-credentials.txt, HEAD lists both files, FAIL; scratch file deleted. Blocker because it exposes unrelated files and secrets to the remote; downgrade only if a board policy says otherwise
+- **2026-11-26 10:41 · Berk** — bughunt: change: blocker: internal/cli/inbox.go:59-63 (--all) with core/inbox/inbox.go:130-135 AckAll - class: an acknowledge by selector acks every entry present when the update runs, not the list that was read and counted; AckTicket (inbox.go:123, cli inbox.go:145) has the same shape; example: jaira inbox --all loads the list, a detached jaira fetch records msg:late in the gap of a few milliseconds, AckAll acks msg:late unseen and the report counts only the earlier entries; ran: scratch Go test in core/inbox with Load, Record, AckAll in that order, msg:late acked=true and never shown, FAIL; scratch file deleted. The window is short, the fetch that fills it is spawned by afterCommand (internal/cli/refs.go:197)
