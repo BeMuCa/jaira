@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:08:47Z
+updated-at: 2026-11-26T08:08:51Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -47,7 +47,8 @@ back-count: 1
   proof: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:41-63 sleep+kill-Watchdog, kein timeout(1), Ausgabe ueber Dateien; Stub ohne exec in role_test.go, Test misst die Dauer
 - [x] Release-Note in core/release/notes/QNB5S4.md
   proof: core/release/notes/QNB5S4.md
-- [ ] Ein JAIRA_HC_TIMEOUT, das keine ganzen Sekunden ueber 0 sind, wird mit Exit 2 abgelehnt, bevor hc gefragt wird; Test
+- [x] Ein JAIRA_HC_TIMEOUT, das keine ganzen Sekunden ueber 0 sind, wird mit Exit 2 abgelehnt, bevor hc gefragt wird; Test
+  proof: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:37-39; TestHerdrHcRefusesATimeoutThatIsNoSeconds (abc, 0, -1, 1.5, ' 3')
 
 ## Options
 
