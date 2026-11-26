@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T09:18:24Z
+updated-at: 2026-11-26T09:19:22Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T09:00:14Z
@@ -194,3 +194,4 @@ Left standing: no openWait deadline (note 2026-11-26 00:35), mouse capture only 
 - **2026-11-26 09:09 · Berk** — bughunt: done at bf730d6dd - 2 findings (2 change, 0 pre-existing) in 2 modules, follow-up hunt since 16e7bd669; concurrency, error paths, input, permissions checked; files: core/gitrepo/branchdiff.go core/gitrepo/branchdiff_test.go internal/tui/diffpane.go internal/tui/diffpane_test.go
 - **2026-11-26 09:10 · Berk** — testing: pass 2 on bf730d6dd (judged by testing, not a blocker): bughunt follow-up found two change edges, both written as notes by the hunter. (1) core/gitrepo/branchdiff.go Base()/isBehindOrigin: only a strictly-behind local base falls back to origin; a diverged local base (unpushed commits and behind origin) still wins, so pulled commits show as ticket changes. Same symptom as the 00:52 base blocker, but the input is narrower and was equally wrong before this change, so it rides as a note for review. (2) internal/tui/diffpane.go sidePath: a C-quoted path with non-UTF-8 bytes becomes U+FFFD, so o opens an empty buffer for that file; narrow latin-1 subset. Person to decide whether either gets its own ticket.
 - **2026-11-26 09:18 · Berk** — review: done at bf730d6dd
+- **2026-11-26 09:19 · Berk** — worker done 2026-11-26: in signoff, branch feat/EH6Z0N-diff-view pushed at bf730d6dd, no PR opened. Ticket file left modified in the worktree (lanes with no code). For the person: root-checkout fallback for o, develop/trunk base, and the review's three edges (diverged local base, non-UTF-8 quoted path, git calls on each reload); the TUI landing on the right line in VS Code was not watched on screen.
