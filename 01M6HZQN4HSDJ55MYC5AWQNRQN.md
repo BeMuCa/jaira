@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:29:21Z
+updated-at: 2026-11-26T09:36:48Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -177,3 +177,4 @@ I) people: 'jaira people' gains 'active' (assignees + creators of board tickets,
 - **2026-11-26 09:17 · Berk** — Open for the human: DoD 2 6 17 20 and the TUI inbox (P11-P13) are not touched here; DoD 15 and 19 not ticked.
 - **2026-11-26 09:23 · Berk** — worker: P8-P10 verified (build+vet ok; go test ./internal/cli -run 'Handover|Take|Pull|Show|Inbox|People|Msg|Milestone|TestEveryCommandIsDocumented' ok 164s). Fix ordered for P11 agent: plain 'jaira pull' must NOT guess a worktree from remote branch names — agents pull constantly and would get surprise sibling worktrees (also under --json). Worktree only when the ticket carries handover-branch; the handle-named-branch guess only inside 'jaira take'.
 - **2026-11-26 09:29 · Berk** — worker (w-wqnrqn, 26.11.) step 0: pullWorktree(s, id, guess bool). Plain pull passes false (handover-branch only). take passes true: take had no worktree call before, so it now makes the guessed one itself, and prints it unless --json. Dead end: the guess test needs 'git fetch' in the receiving clone first; jaira fetch only brings refs/jaira/*, so RemoteBranches is empty without it.
+- **2026-11-26 09:36 · Berk** — worker (w-wqnrqn, 26.11.) P11 TUI decisions: enter on a message acks and shows its cleaned text; enter on a bundle row acks the whole row and lists its tickets (no single ticket to open); enter on a single ticket opens detail via showDetail, which acks. ackTicket writes only when the last reload showed an entry for that id. Epics are read (local for-each-ref) only while something waits. Help line added; TestHelpExplainsEveryCardMark needed 61 rows instead of 60 (the help grew one row, the card marks sit at row 59). Footer hint not added: the banner says 'i open'.
