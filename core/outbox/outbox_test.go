@@ -426,3 +426,56 @@ func mustList(t *testing.T, b *outbox.Box) []outbox.Entry {
 	}
 	return l
 }
+
+// A push the remote accepted is sent, even when moving the local ref fails
+// afterwards — here another process holds its lock. Before, the flush reported
+// Failed and kept the entry with its old lease, and the next flush sent it again
+// and lost against its own write. One entry per kind of ref.
+func TestAnAcceptedPushIsSentEvenWhenTheLocalRefIsLocked(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	root := t.TempDir()
+	bare := filepath.Join(root, "board.git")
+	run(t, root, "git", "init", "--bare", "--quiet", bare)
+	clone := filepath.Join(root, "ada")
+	run(t, root, "git", "clone", "--quiet", bare, clone)
+	repo := &gitref.Repo{Dir: clone, Remote: "origin", AuthorName: "ada", AuthorEmail: "ada@example.test"}
+	b := box(t)
+
+	content := []byte("---\nid: 01AAA\n---\n\n# x\n")
+	if err := b.Queue("01AAA", outbox.OpWrite, content, "", "ada"); err != nil {
+		t.Fatal(err)
+	}
+	if err := b.QueueMilestone("01MS", "q4-01MS.md", outbox.OpWrite, content, "", "ada"); err != nil {
+		t.Fatal(err)
+	}
+	if err := b.QueueEpic("sdd", content, "", "ada"); err != nil {
+		t.Fatal(err)
+	}
+	for _, ref := range []string{gitref.RefName("01AAA"), gitref.MilestoneRefName("01MS"), gitref.EpicRefName("sdd")} {
+		lock := filepath.Join(clone, ".git", filepath.FromSlash(ref)+".lock")
+		if err := os.MkdirAll(filepath.Dir(lock), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(lock, nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	res, err := b.Flush(repo)
+	if err != nil {
+		t.Fatalf("flush: %v", err)
+	}
+	if len(res) != 3 {
+		t.Fatalf("want three results, got %+v", res)
+	}
+	for _, r := range res {
+		if r.Outcome != outbox.Sent {
+			t.Errorf("%s %s: outcome %v (%v), want sent", r.Kind, r.ID, r.Outcome, r.Err)
+		}
+	}
+	if left := mustList(t, b); len(left) != 0 {
+		t.Errorf("sent entries are still queued: %+v", left)
+	}
+}

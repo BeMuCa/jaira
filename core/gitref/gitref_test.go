@@ -2,6 +2,7 @@ package gitref_test
 
 import (
 	"errors"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -343,5 +344,51 @@ func TestNoGitRepoIsStillNoRepo(t *testing.T) {
 	ada.Remote = "nowhere"
 	if err := ada.Usable(); errors.Is(err, gitref.ErrNoGitRepo) {
 		t.Errorf("a repository with a missing remote must not read as having no repository: %v", err)
+	}
+}
+
+// A write the remote accepted is a write that happened, even when moving the
+// local copy of the ref fails afterwards — here another process holds its lock.
+// Reporting it as an error made the outbox keep it and send it again with the
+// old lease, where it lost against itself. One case per write path that goes
+// through the same publish step.
+func TestAnAcceptedPushIsAWriteEvenWhenTheLocalRefIsLocked(t *testing.T) {
+	cases := []struct {
+		name  string
+		ref   string
+		write func(r *gitref.Repo, content []byte) (string, error)
+	}{
+		{"ticket", gitref.RefName("01TEST"), func(r *gitref.Repo, c []byte) (string, error) { return r.Write("01TEST", c, "") }},
+		{"milestone", gitref.MilestoneRefName("01MS"), func(r *gitref.Repo, c []byte) (string, error) {
+			return r.WriteMilestone("01MS", "q4-01MS.md", c, "")
+		}},
+		{"migration", gitref.MilestoneRefName("01MS"), func(r *gitref.Repo, c []byte) (string, error) {
+			return r.WriteMigration("01MS", "q4.md", c, "none", "q4.md", c)
+		}},
+		{"epic", gitref.EpicRefName("sdd"), func(r *gitref.Repo, c []byte) (string, error) { return r.WriteEpic("sdd", c, "") }},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ada, grace := twoClones(t)
+			lock := filepath.Join(ada.Dir, ".git", filepath.FromSlash(tc.ref)+".lock")
+			if err := os.MkdirAll(filepath.Dir(lock), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(lock, nil, 0o644); err != nil {
+				t.Fatal(err)
+			}
+
+			sha, err := tc.write(ada, []byte(ticket))
+			if err != nil {
+				t.Fatalf("an accepted push came back as an error: %v", err)
+			}
+			if sha == "" {
+				t.Fatal("an accepted push came back without its sha")
+			}
+			remote := strings.Fields(git(t, grace.Dir, "ls-remote", "origin", tc.ref))
+			if len(remote) == 0 || remote[0] != sha {
+				t.Errorf("remote has %v for %s, want %s", remote, tc.ref, sha)
+			}
+		})
 	}
 }

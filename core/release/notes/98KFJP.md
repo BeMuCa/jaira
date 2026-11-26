@@ -1,0 +1,1 @@
+- A ticket, milestone or epic write the remote accepted is now reported as sent even when the local ref is locked at that moment; the next sync no longer reports it as a lost race against your own write.
