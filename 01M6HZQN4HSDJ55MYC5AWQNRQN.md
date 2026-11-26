@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:12:29Z
+updated-at: 2026-11-26T14:12:32Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T14:12:29Z
@@ -257,3 +257,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 14:06 · Berk** — worker w-wqnrqn, caveat, not changed: an inbox.json written by a build before this change has no Seen. Its next fetch classifies every ticket against nothing, so assignments to me by others that were already reported replay once. The feature is unreleased, so I did not add a legacy baseline. Say if you want one.
 - **2026-11-26 14:06 · Berk** — worker w-wqnrqn, unrelated: gofmt -l flags core/refsync/inbox_test.go, which this change does not touch; left as it is.
 - **2026-11-26 14:08 · Berk** — critique round 7 (delta 4fdbf8f9a..b0f65206a, budget spent, moved forward): the Seen map fixes the late-pushed miss. No wrong result, data loss or security hole introduced. Open, non-blocking: (1) Pull's noteSeen marks an unclassified incoming assignment as seen clone-wide (refsync.go:1471/1893), pre-existing per-worktree; (2) RecordFetch Seen merge is last-writer-wins, so a stale fetch causes a replay, never a miss; (3) Seen keeps ids of vanished refs, so it grows unbounded; Incoming could replace instead of merge. For optimize/review to weigh.
+- **2026-11-26 14:12 · Berk** — optimize round 7 (delta aa08d9806..b0f65206a): critique finding 3 taken. inbox.RecordFetch now REPLACES Seen with the refs the fetch listed (a gone ref leaves it), instead of merging; unreadable-but-listed refs keep their previous sha (refsync Incoming) so they are not re-classified against nothing. noteSeen's single-id merge moved to a new inbox.NoteSeen, since a replace there would wipe the map. Side effect, accepted: a ticket ref that vanishes and comes back (restore) is classified against nothing, i.e. an assignment to me by another is reported once more - matches the 'unseen ticket' rule. Left: internal/cli/pull.go:158 CheckedOut check is NOT redundant with AddWorktree's refusal - pull returns silently there, AddWorktree would print a 'could not make a worktree' line. Findings 1 and 2 (pull marking seen clone-wide, last-writer-wins) are behaviour, not cleanup; left for review.
