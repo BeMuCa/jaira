@@ -4,7 +4,7 @@ title: "Eine Lane kann von mehreren Agenten gleichzeitig bearbeitet werden (Schw
 status: ideas
 ready: true
 creator: berkc
-assignee: berkc
+assignee: Berk
 goal: "Eine Lane laesst sich mit N Agenten eines Modells besetzen (z.B. 5x Haiku in critique), deren Ergebnisse zusammengefuehrt werden, damit ein guenstiges Modell durch Menge an Qualitaet gewinnt."
 context: |-
   Idee von berkc am 31.10.2026 (Punkt 7): 'if i set haiku as agent for my critique lane, it should be possible to instead call 5 haikus to run the lane ... Maybe even make it so they run in parallel if the ram allows it, but runs them back to back if not enough ram.'
@@ -18,7 +18,8 @@ related:
   - 01M658C7SP4V29E95574CXH98W
 commits: []
 created-at: 2026-10-30T23:44:42Z
-updated-at: 2026-10-30T23:44:42Z
+updated-at: 2026-11-26T10:46:20Z
+updated-by: Berk
 ---
 
 # Eine Lane kann von mehreren Agenten gleichzeitig bearbeitet werden (Schwarm), parallel wenn der Speicher reicht, sonst nacheinander
