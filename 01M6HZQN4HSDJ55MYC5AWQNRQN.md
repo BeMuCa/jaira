@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T00:49:00Z
+updated-at: 2026-11-26T00:51:26Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -164,3 +164,4 @@ I) people: 'jaira people' gains 'active' (assignees + creators of board tickets,
 - **2026-11-26 00:42 · Berk** — P5 inbox: rows come from inbox.Rows (core/inbox/rows.go) bundling by batch+sender+milestone/epic (design C); milestone name before epic. --all acks everything (assumption: --all with no --ack clears the inbox, --ack with --all is exit 2). --ack by row key acks the whole row, by ticket id only that ticket's entries. Message rows are not bundled. Release note line in core/release/notes/WQNRQN.md.
 - **2026-11-26 00:46 · Berk** — P6 msg: target is a ticket id when s.Load finds one (its assignee, message carries the ticket id), else a person name; canonical via people list, slug via core/identity.Slug. Empty text refused exit 2. Ticket without assignee exit 3. Offline/unreachable remote: inbox.Send returns error, nothing written (TestMsgWithNoReachableRemoteWritesNothing). Not ticked: DoD 15 (agent half is behaviour, not code), 17 (TUI half), 18 (handover half).
 - **2026-11-26 00:49 · Berk** — P7 milestone assign: loads the milestone, skips done (terminal lane of the ticket's board) and already-assigned tickets, refuses ref-only members before writing anything (exit 3, pull first), then s.Mutate SetScalar(assignee) per ticket. Receiver test: one inbox row, three tickets (TestMilestoneAssignGivesTheReceiverOneInboxRow). Unticked: DoD 9 and onward. Note: a stray dod call overwrote DoD 7 proof with 'x' for a moment; restored to the inbox test.
+- **2026-11-26 00:51 · Berk** — worker: P5-P7 verified (go test ./internal/cli -run 'Milestone|Msg|Inbox|TestEveryCommandIsDocumented' ok, build+vet clean). Kept: 'inbox --all' alone acks everything, with --ack it is exit 2 (matches DoD wording '--ack <id>|--all'); a CLI test for --all is still missing -> P8-P10 agent adds it.
