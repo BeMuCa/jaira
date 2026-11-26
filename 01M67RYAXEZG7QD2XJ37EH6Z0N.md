@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:01:45Z
+updated-at: 2026-11-26T00:01:55Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-25T23:39:47Z
@@ -63,7 +63,8 @@ back-count: 1
   proof: internal/tui/diffpane.go:diffShown,diffPan,diffTargetRow,diffLine; model.go modeDetail case left/right; tests TestDownScrollsTheOpenFileAndStopsAtItsLastRow, TestFilesAfterTheOpenOneShowBelowIt, TestLeftAndRightScrollTheCodeSideways, TestOKeyOpensTheTopRowOfTheOpenFile
 - [x] Die Zeilennummern-Spalte ist schmal: nur so breit wie die groesste Nummer der Datei verlangt, nicht fest alt+neu nebeneinander in voller Breite; Test
   proof: internal/tui/diffpane.go:diffGutter,renderDiffPane,diffLine; tests TestGutterShowsOneNumberOnTheRowsSide, TestGutterIsOneDigitForAShortFile
-- [ ] Der Spalt zwischen Ticket-Text und Diff laesst sich mit der Maus nach links/rechts ziehen, die Breite bleibt fuer die Sitzung; Test
+- [x] Der Spalt zwischen Ticket-Text und Diff laesst sich mit der Maus nach links/rechts ziehen, die Breite bleibt fuer die Sitzung; Test
+  proof: internal/tui/model.go Update tea.MouseClickMsg/MouseMotionMsg/MouseReleaseMsg; diffpane.go diffLeft, clampDiffLeft, onDiffDivider; view.go View MouseMode; tests TestDragTheDividerResizesTheSplit, TestMouseIsLeftToTheTerminalOffTheDiffPane
 - [ ] o oeffnet die Datei wirklich: unter WSL2 mit VS Code auf Windows getestet; schlaegt der Start fehl, steht der Fehler sichtbar in der Titelzeile statt nichts zu passieren; Test
 
 ## Options
