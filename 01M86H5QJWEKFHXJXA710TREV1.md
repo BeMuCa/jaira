@@ -1,7 +1,7 @@
 ---
 id: 01M86H5QJWEKFHXJXA710TREV1
 title: "reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only…"
-status: signoff
+status: done
 ready: true
 creator: Sascha
 context: |-
@@ -16,9 +16,13 @@ tags:
 blocked-by: []
 related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
-commits: []
+commits:
+  - 2fc5359c9da14e4a5d6bc2aef6e18f95a4d44de9
+  - 3cec3741f079c09b35e0702bcc192c3b6a748fcb
+  - 4899c2218f69a255af6a32ffe51b863b46351d96
+  - 40c8324fd133f5996d9b75d4db5a81ebabec1ece
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T08:10:53Z
+updated-at: 2026-11-26T09:24:10Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
