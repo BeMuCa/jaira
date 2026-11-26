@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T07:58:09Z
+updated-at: 2026-11-26T07:58:13Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -32,7 +32,8 @@ goal: "Ein Push, den der Remote angenommen hat, gilt als gesendet, auch wenn dan
   proof: core/gitref/gitref_test.go TestAnAcceptedPushIsAWriteEvenWhenTheLocalRefIsLocked (ticket/milestone/migration/epic; rot ohne Fix)
 - [x] Ein Outbox-Test: Flush meldet in diesem Fall Sent und der Eintrag ist danach nicht mehr in der Outbox
   proof: core/outbox/outbox_test.go TestAnAcceptedPushIsSentEvenWhenTheLocalRefIsLocked (rot ohne Fix)
-- [ ] Release-Note in core/release/notes/98KFJP.md
+- [x] Release-Note in core/release/notes/98KFJP.md
+  proof: core/release/notes/98KFJP.md
 
 ## Options
 
