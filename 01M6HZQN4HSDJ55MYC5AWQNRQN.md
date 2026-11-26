@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: testing
+status: in-progress
 ready: true
 creator: berkc
 assignee: Berk
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:05:16Z
+updated-at: 2026-11-26T10:05:19Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T09:58:12Z
@@ -26,8 +26,8 @@ outcome-what: "The board reads what waits for you (core/inbox): a banner above t
 outcome-why: "An assignment or message from a teammate must stay visible until the person looks at it, and a plain pull must not create worktrees nobody asked for."
 outcome-resolves: "DoD 2, 6, 15, 17 and 19 are ticked with the tests that prove them (internal/tui/inbox_test.go, internal/cli/msg_test.go, core/inbox); the pull and take worktree rules are covered by TestPlainPullMakesNoWorktreeFromAHandleNamedBranch and TestTakeMakesTheWorktreeFromAHandleNamedBranch; DoD 20 stays open for a person."
 review-summary: none
-round: 2
-back-from: critique
+round: 3
+back-from: testing
 back-by: lane
 back-count: 1
 review-gaps: "removed internal/cli/handover.go shortSHA (copy of core/gitrepo shortSHA, now exported as gitrepo.ShortSHA); folded inbox.Record (forwarder with only test callers) and RecordNew into one Record returning what it added. Left: refsync decodeTicket (small, mirrors inline ParseDoc+Decode already repeated in refsync), inbox --all loading the file before AckAll and building groups it does not need (rare command, not a hot path), Arrival.Mine/Changed (still in fetch --json output), gitrepo CheckedOut vs core/board/gitignore.go:334 worktree list (different question), people active, milestone assign (peopleList is cached)"
