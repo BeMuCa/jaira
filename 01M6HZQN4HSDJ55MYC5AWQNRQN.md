@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:22:16Z
+updated-at: 2026-11-26T14:22:23Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T14:13:29Z
@@ -35,7 +35,7 @@ back-by: lane
 back-count: 1
 review-gaps: "Seen is replaced per fetch, not merged: vanished refs drop out (critique finding 3); noteSeen uses new inbox.NoteSeen for its one-id merge; test TestRecordFetchWritesEntriesAndSeenTogether updated. Left: pull.go:158 CheckedOut (not redundant, silent vs message); critique findings 1-2 (behaviour, not cleanup); pre-existing gofmt drift in core/refsync/inbox_test.go; handover/gitrepo delta has no duplication or dead code."
 hunt-verdict: "fail: bughunt done at aa08d9806, 4 change blockers: handover pushes untracked files (verified by run), AckAll acks unseen entries, AddWorktree reuses a stale local branch, first-fetch baseline per worktree drops assignments (last three by reading; hunter ran tests)"
-test-verdict: "fail: DoD item 3 is [-] with its proof present (core/release/notes/WQNRQN.md, one unwrapped line); gates green; items 1-19 verified, 20 left for the person"
+test-verdict: "fail: first fetch on a clone with snapshot.json but no inbox.json drops an assignment made since (by hand: ZV24NM assigned to alex, fetch rc=0, inbox entries []); gates green: go test -race -count=1 core packages RC=0 and internal/tui+internal/cli RC=0 with the three hangers skipped; DoD 1-19 proof test names exist in tree; DoD 20 left for the person; by hand: new worktree after ack replays nothing, late assignment J98HY7 recorded, two parallel msg writes both landed, unreachable remote msg exits 1 and sends nothing, missing ticket set exits 5"
 ---
 
 # Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht
