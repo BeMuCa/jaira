@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:36:48Z
+updated-at: 2026-11-26T09:40:23Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -30,7 +30,8 @@ question: ""
 
 - [x] Brainstorm hat Form, Verschwinden und Speicherort festgelegt
   proof: Notiz 04.11.2026 Entscheidung berkc Option 1 + B1
-- [ ] Nach einer Zuweisung durch jemand anderen zeigt das Board die Nachricht bis zum Gesehen; Test
+- [x] Nach einer Zuweisung durch jemand anderen zeigt das Board die Nachricht bis zum Gesehen; Test
+  proof: internal/tui/inbox_test.go TestInboxBannerAndCardMarkerShowWhatWaits (banner and card mark after a reload; nothing marked before); TestOpeningATicketsDetailAcksItsEntries; the entry survives a reload from disk in core/inbox TestRecordThenLoadKeepsTheEntry
 - [-] Release-Notiz unter core/release/notes/
 - [x] Eintrag nur bei Assignee-Wechsel auf mich durch jemand anderen; Notizen und eigene Zuweisung erzeugen keinen; Test core/refsync
   proof: core/refsync/inbox_test.go TestAnAssignmentByAnotherRecordsAnEntry, TestAReassignmentAwayRecordsATakenEntry, TestNotesAndSelfAssignmentsRecordNothing, TestTheFirstFetchIsABaseline
