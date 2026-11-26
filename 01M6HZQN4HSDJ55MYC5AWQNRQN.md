@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: Berk
@@ -17,14 +17,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:06:14Z
+updated-at: 2026-11-26T14:06:20Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T13:59:50Z
 question: ""
-outcome-what: "Core inbox state records when the clone last fetched; a worktree's first fetch records an assignment only when made after that fetch. gitrepo.AddWorktree refuses a branch checked out in a worktree before any ref moves."
-outcome-why: "Critique round 5 finding (1): a new worktree's first fetch replayed every old unacked assignment as new (wrong result, spurious inbox rows). Finding (2): AddWorktree relied on its caller for the checked-out guard, so a caller could move a checked-out branch."
-outcome-resolves: "Finding (1): refsync.Incoming baseline uses inbox last_fetch; test TestASecondWorktreesFirstFetchDoesNotReplayAnAssignmentBeforeTheLastFetch. Finding (2): TestAddWorktreeRefusesABranchCheckedOutElsewhere (red first, green in b3df104f7)."
+outcome-what: "The inbox classifies a ticket ref change against a shared per-clone map of ticket SHAs (inbox.json seen), not against a time cutoff; a new worktree's first fetch replays nothing an earlier one saw, and an assignment whose ticket arrives late is recorded."
+outcome-why: "Critique round 6 found that the last_fetch cutoff dropped a never-seen assignment to me whenever its updated-at predated the clone's last fetch (late push, clock skew). The cutoff existed only to stop a new worktree replaying old assignments; the shared SHA map does that without a time gate."
+outcome-resolves: "round 6 finding: the since gate in refsync.assignmentEntries silently dropped an assignment to me whose ticket arrived after the clone's last fetch"
 review-summary: |-
   core/refsync/refsync.go:1167 the since gate (prevSHA=="" && updated-at < last_fetch -> no entry) applies in EVERY worktree, not only one without refs-seen: a never-seen ticket assigned to me whose updated-at predates the clone last fetch (created offline and pushed later via the queued push, push latency of a second, or a teammate clock behind mine) is silently never reported - a missed assignment, introduced by 4fdbf8f9a (at 7966b6c5d it was recorded). Reproduced with a scratch test in core/refsync: established worktree, last_fetch set 1 min ahead, ada creates+assigns to grace, grace fetches -> 0 entries, want 1; same flow at 7966b6c5d -> 1. Do instead: apply the gate only when this worktree has no seen-state (y.seenExists() false, refsync.go:1140), as note 13:52 designed, and add that test.
   core/gitrepo/git.go:537 AddWorktree CheckedOut refusal: finding 2 of round 5 addressed, right place; internal/cli/pull.go:158 keeps its own CheckedOut branch - let optimize judge whether it is now redundant.
