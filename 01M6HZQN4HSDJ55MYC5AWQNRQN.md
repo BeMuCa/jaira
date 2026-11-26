@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: Berk
@@ -17,14 +17,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:27:01Z
+updated-at: 2026-11-26T14:27:08Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T14:13:29Z
 question: ""
-outcome-what: "The inbox classifies a ticket ref change against a shared per-clone map of ticket SHAs (inbox.json seen), not against a time cutoff; a new worktree's first fetch replays nothing an earlier one saw, and an assignment whose ticket arrives late is recorded."
-outcome-why: "Critique round 6 found that the last_fetch cutoff dropped a never-seen assignment to me whenever its updated-at predated the clone's last fetch (late push, clock skew). The cutoff existed only to stop a new worktree replaying old assignments; the shared SHA map does that without a time gate."
-outcome-resolves: "round 6 finding: the since gate in refsync.assignmentEntries silently dropped an assignment to me whose ticket arrived after the clone's last fetch"
+outcome-what: "core/refsync Incoming takes the baseline from inbox.json, else from this worktree's refs-seen; core/inbox Load moves an unparseable inbox.json to inbox.json.corrupt"
+outcome-why: "testing round 3: a clone with refs-seen but no inbox.json dropped every assignment since its last fetch, and one unparseable inbox.json failed every fetch"
+outcome-resolves: "tests in core/refsync/inbox_test.go (refs-seen without inbox, inbox without refs-seen, neither, unreadable inbox moved aside) and core/inbox TestALoadOfAnUnreadableInboxMovesItAsideAndReplacesAnOlderOne"
 review-summary: |-
   core/refsync/refsync.go:1471 noteSeen now merges the pulled sha into the shared inbox Seen, so a pull that is itself the first read of an assignment by someone else marks it seen without an entry, now in every worktree, not only the one that pulled (pre-existing per-worktree, the delta widens it; non-blocking because whoever pulls already knows) - classify in Pull via assignmentEntries(id, prev[id], content, readSHA, ...) before noteSeen, or leave the ref sha unseen and let the next Incoming classify it
   core/inbox/inbox.go:101 RecordFetch overwrites Seen[id] last-writer-wins: a slow fetch that read an older sha can rewind a newer one written by another worktree; the result is a replayed entry (deduped by key/acked), never a miss, so acceptable under the repeat-over-miss rule - keep as is, note only
