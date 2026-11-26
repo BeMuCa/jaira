@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:08:36Z
+updated-at: 2026-11-26T08:08:40Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -42,7 +42,7 @@ back-count: 1
 - [x] herdr-hc.sh 'tab list' endet innerhalb eines Budgets fuer den ganzen Aufruf (Standard 5 s, JAIRA_HC_TIMEOUT), auch wenn mehrere hc get haengen; jedes nicht gehoerte Terminal steht als stumm auf stderr und die Liste endet mit Exit 3; Test mit einem hc-Stub, dessen get schlaeft
   proof: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:36-63 (Budget end=SECONDS+secs, bounded), :133; TestHerdrHcTabListSaysWhichTerminalDidNotAnswer/one_hangs, all_hang, hangs_and_mute, five_hang (<5 s bei 2 s Budget)
 - [x] Ein haengendes hc ls laesst 'tab list' nach derselben Frist mit Exit ungleich 0 enden; Test
-  proof: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:118; TestHerdrHcTabListSaysWhichTerminalDidNotAnswer/ls_hangs
+  proof: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:130; TestHerdrHcTabListSaysWhichTerminalDidNotAnswer/ls_hangs
 - [x] Ohne timeout(1): die Frist laeuft in reinem bash (bash 3.2 tauglich), ohne liegengebliebene Prozesse
   proof: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:34-50 sleep+kill watchdog, kein timeout(1); Stub ohne exec in role_test.go: Test misst <10 s, also haelt nichts die Pipes
 - [x] Release-Note in core/release/notes/QNB5S4.md
