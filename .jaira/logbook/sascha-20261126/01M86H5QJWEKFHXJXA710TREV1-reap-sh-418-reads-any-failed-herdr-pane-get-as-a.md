@@ -1,7 +1,7 @@
 ---
 id: 01M86H5QJWEKFHXJXA710TREV1
 title: "reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only…"
-status: critique
+status: done
 ready: true
 creator: Sascha
 context: |-
@@ -16,9 +16,13 @@ tags:
 blocked-by: []
 related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
-commits: []
+commits:
+  - 2fc5359c9da14e4a5d6bc2aef6e18f95a4d44de9
+  - 3cec3741f079c09b35e0702bcc192c3b6a748fcb
+  - 4899c2218f69a255af6a32ffe51b863b46351d96
+  - 40c8324fd133f5996d9b75d4db5a81ebabec1ece
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T08:07:07Z
+updated-at: 2026-11-26T09:28:37Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -27,14 +31,24 @@ goal: "reap.sh liest ein gescheitertes 'herdr pane get' nur dann als geschlossen
 outcome-what: "reap.sh: pane get/tab get ueber hget(); nur not_found (hc) bzw. pane_not_found (altes herdr) gilt als geschlossener Tab, jeder andere Fehlschlag -> 'kept <t>: herdr gave no answer ...', Runde fuer das Ticket haelt an. close-tab.sh: gleiche Regel, ein stummes herdr hebt den Park nicht auf. Tests: reap 6 Faelle, close-tab 5 Faelle."
 outcome-why: "reap.sh las jeden Fehlschlag von 'herdr pane get' als geschlossenen Tab und entfernte Worktree und Branch, auch wenn herdr nur kurz nicht antwortete und claude noch im Tab sass."
 outcome-resolves: Ein Timeout oder Neustart von herdr kostet keinen Worktree mehr; nur herdr selbst kann einen Tab fuer geschlossen erklaeren.
-review-summary: none
+review-summary: "reap.sh and close-tab.sh now ask herdr about a pane and its tab through one small helper each (hget, ask) that keeps herdr's stderr and exit code. Only the quoted codes \"not_found\" (hc) and \"pane_not_found\" (old herdr) count as a closed tab; any other failure - timeout, herdr gone, a silent exit, command_not_found, mktemp failing - prints 'kept <ticket>: herdr gave no answer for pane|tab <id> (...)' and the ticket's worktree, branch and records (reap.sh), or the park (close-tab.sh --reap), stay for the next round. Before, any failed 'pane get' read as a closed tab and the worktree of a possibly still-open worker was removed. Full review at 40c8324fd; tests in reap_test.go and closetab_test.go cover timeout, silent failure, command_not_found, and not_found from both herdr kinds."
 round: 3
 back-from: testing
 back-by: lane
 back-count: 1
-review-gaps: "reap.sh hget(): fails with 1 instead of returning 2, callers use 'if ! hget' (rc bookkeeping gone); left the twin helper close-tab.sh ask() - no shared library between the scripts; herdr-hc.sh 'tab list' keeps its own grep for \"not_found\" (different loop, stderr file already open); mktemp per call is per record, not hot"
-test-verdict: "pass: go vet ./... and go test ./... green (RC=0), shipped-history --check ok; DoD 1-4 verified in the tree (TestReapReadsOnlyNotFoundAsAClosedTab 7 cases, close-tab cases); hget against real hc: unknown terminal -> treated as closed, own terminal -> tab id, timing-out hc stub -> rc 1 with its message; failure path: worktree, branch and records stay (test); the change adds no writer - reap.lock and park's mv unchanged"
-hunt-verdict: "fail: bughunt done at 4899c2218, 1 change (close-tab.sh ask(): mktemp/tr fail outside the ERR trap -> exit 1 without kept), 0 pre-existing"
+review-gaps: |-
+  note: elsewhere: close-tab.sh:150 park() - a failing grep or mv inside the function ends the script with exit 1 and no kept line (the ERR trap does not reach functions); there before this change, reap.sh calls it with || true
+  note: elsewhere: run-lane.sh:153 says the tab is already gone when herdr pane get times out (message only, the tab stays open); same class, other script
+  note: limit: how old (non-hc) herdr answers tab get for a gone tab is unknown (no binary here); if not pane_not_found, a pane closed between pane get and tab get keeps the ticket for one extra round, nothing is lost
+test-verdict: "pass: round 2 - go vet ./role, go test ./role ./shipped green (RC=0); DoD 1-4 re-verified, new case TestCloseTabKeepsAWorkerThatIsNotFinished/no_temp_directory: TMPDIR missing -> 'kept AB12CD: mktemp failed ...', exit 0, tab not closed; round 1 full suite green; no new writer"
+hunt-verdict: "pass: bughunt done at 40c8324fd, 0 change, 0 pre-existing; round 1's change finding fixed in 40c8324fd"
+review-verdict: "accept: all four DoD items are met by the diff and its tests; no defect found in reap.sh or close-tab.sh along concurrency, error paths, input or permissions"
+review-round: 3
+review-verdict-gaps: |-
+  note: elsewhere: close-tab.sh:150 park() - a failing grep or mv inside the function ends the script with exit 1 and no kept line (the ERR trap does not reach functions); there before this change, reap.sh calls it with || true
+  note: elsewhere: run-lane.sh:153 says the tab is already gone when herdr pane get times out (message only, the tab stays open); same class, other script
+  note: limit: how old (non-hc) herdr answers tab get for a gone tab is unknown (no binary here); if not pane_not_found, a pane closed between pane get and tab get keeps the ticket for one extra round, nothing is lost
+review-check: "1. cd core && go test ./role/ -run 'TestReapReadsOnlyNotFoundAsAClosedTab|TestCloseTabKeepsAWorkerThatIsNotFinished|TestReapClosesAParkedTabOnceItsCacheIsCold' -v  2. see PASS for 'pane get times out', 'pane get fails silently', 'herdr without pane get' (kept, worktree stays) and 'pane unknown to hc' / 'pane unknown to the old herdr' (removed)  3. live, optional: in an hc terminal run 'core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh pane get t99999; echo $?' - it prints an error containing \"not_found\", which reap.sh reads as a closed tab"
 ---
 
 # reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only…
@@ -70,3 +84,14 @@ hunt-verdict: "fail: bughunt done at 4899c2218, 1 change (close-tab.sh ask(): mk
 - **2026-11-26 08:05 · Sascha** — hunt report: 1 finding, 1 change (an edge, not a blocker), as a note on 0TREV1 | read whole: reap.sh, close-tab.sh (plus herdr-hc.sh, which both call), reap_test.go and closetab_test.go fakes, release note, shipped.sha256 (both script hashes are present) | could not check how old (non-hc) herdr answers 'tab get' for a gone tab (tab_not_found?): no herdr binary on this machine. If it answers that way, the pane-to-tab race is read as 'no answer' and kept for one round only. hc's not_found (exit 3) and unavailable (exit 5) were confirmed live
 - **2026-11-26 08:05 · Sascha** — bughunt: done at 4899c2218 - 1 finding (1 change, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/0TREV1.md core/role/builtin/jaira-dispatcher/scripts/close-tab.sh core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/closetab_test.go core/role/reap_test.go core/shipped/shipped.sha256
 - **2026-11-26 08:06 · Sascha** — bughunt-Fix: ask() prueft mktemp und tr selbst (kept-Zeile). set -E verworfen: dann feuert die ERR-Falle auch in jeder $(...)-Substitution, und ein ungeschuetztes x="$(cmd)" bekaeme die kept-Zeile als Wert statt die Runde zu beenden. park() (close-tab.sh:153) hat dieselbe Luecke seit vorher - nicht angefasst, Notiz fuer die Person. Altes herdr: strings herdr.exe kennt kein tab_not_found, also kein weiterer Code noetig.
+- **2026-11-26 08:07 · Sascha** — waiting: bughunt Runde 2 (Hintergrund-Agent) seit 09:07
+- **2026-11-26 08:08 · Sascha** — hunt report: 0 findings, nothing written beyond this report | read as a diff since 4899c2218: close-tab.sh (ask), closetab_test.go, shipped.sha256; no file new to the change; reap.sh, reap_test.go, release note unchanged since that round | could not check: a real herdr/hc that fails mid-call - checked with the test rig's fake herdr and a bash reproduction of mktemp failing under set -e with an ERR trap (kept, exit 0)
+- **2026-11-26 08:08 · Sascha** — bughunt: done at 40c8324fd - 0 findings (0 change, 0 pre-existing) in 6 modules, follow-up hunt since 4899c2218; concurrency, error paths, input, permissions checked; files: core/release/notes/0TREV1.md core/role/builtin/jaira-dispatcher/scripts/close-tab.sh core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/closetab_test.go core/role/reap_test.go core/shipped/shipped.sha256
+- **2026-11-26 08:08 · Sascha** — waiting: review (frischer Agent via run-lane.sh, eigener Tab) seit 09:08
+- **2026-11-26 08:10 · Sascha** — review: done at 40c8324fd
+- **2026-11-26 08:10 · Sascha** — report: reap.sh und close-tab.sh lesen nur herdrs not_found/pane_not_found als geschlossenen Tab; Timeout/stummes herdr -> kept, Worktree/Branch/Park bleiben; Tests + Release-Note | signoff, context 170k of 1000k, cache warm 60 min | offen: Annahme durch die Person; 3 note:-Zeilen (park() alte Luecke, run-lane.sh-Text, altes herdr tab get unbekannt); Branch nicht gepusht
+- **2026-11-26 09:24 · Sascha** — Accepted from signoff: angenommen:
+- note: limit: how old (non-hc) herdr answers tab get for a gone tab is unknown (no binary here); if not pane_not_found, a pane closed between pane get and tab get keeps the ticket for one extra round, nothing is lost
+- note: elsewhere: close-tab.sh:150 park() - a failing grep or mv inside the function ends the script with exit 1 and no kept line (the ERR trap does not reach functions); there before this change, reap.sh calls it with || true
+- note: elsewhere: run-lane.sh:153 says the tab is already gone when herdr pane get times out (message only, the tab stays open); same class, other script
+- **2026-11-26 09:24 · Sascha** — cockpit: accepted by the person, signoff -> done
