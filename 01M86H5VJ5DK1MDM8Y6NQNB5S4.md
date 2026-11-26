@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:09:43Z
+updated-at: 2026-11-26T08:10:43Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -75,3 +75,4 @@ back-count: 1
 - **2026-11-26 08:08 · Sascha** — Runde 2: Budget gilt jetzt fuer den ganzen Aufruf (5 s), nicht je hc. Folge: nach einem Haenger werden die restlichen Terminals nicht mehr gefragt und zaehlen als stumm. Bewusst so statt paralleler hc get: alle Aufrufer verwerfen stdout bei Exit != 0 (register.tsx:358 agentsOf, :1992 refreshBoard, :1825 Give back, reap.sh:133), also liest niemand, was sie gesagt haetten - parallel waere mehr Code fuer nichts. Gemessen: 5 haengende von 6 -> 5,1 s, keine Prozessreste. Ungueltiges JAIRA_HC_TIMEOUT -> Exit 2 wie reap.sh:154 (statt still alles stumm und tab create ohne herdr.space).
 - **2026-11-26 08:09 · Sascha** — critique (Runde 2): nichts. Ganzes Budget statt Parallel-get ist die kleinere Form (siehe Runde-2-Note); Pruefung von JAIRA_HC_TIMEOUT folgt dem Muster reap.sh:154.
 - **2026-11-26 08:09 · Sascha** — waiting: bughunt Runde 2 (background agent) since 09:09
+- **2026-11-26 08:10 · Sascha** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:37-40 - class: JAIRA_HC_TIMEOUT with leading zeros passes the digits-only guard, but $((SECONDS + secs)) reads it as octal; examples: 08/09 -> bash 'value too great for base' + 'end: unbound variable', exit 1 instead of the promised exit 2 (release note '- !' line says any other value is refused with exit 2); 00 -> passes the guard, budget 0, 'hc ls not asked', exit 1; 010 -> silently 8 s instead of 10; ran: JAIRA_HC_TIMEOUT=<v> bash herdr-hc.sh tab list with a stub hc (rc 1/1/1/0, stub asked nothing for 08/09/00); not a blocker - every caller still reads the failure as tabs unknown; fix: strip leading zeros or use 10#$secs and refuse a result of 0
