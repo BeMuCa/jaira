@@ -160,11 +160,13 @@ gone() { [ -z "$reap" ] || park; kept "$@"; }
 # code) says the tab is gone - not its command_not_found and the like. A
 # herdr that gave no answer keeps the park: read as gone, the record would
 # lose it and no later round would close the tab.
+# The ERR trap does not reach into a function (no set -E, which would also
+# fire inside every command substitution): what can fail here says so itself.
 ask() {
   local e rc=0
-  e="$(mktemp)"
+  e="$(mktemp 2>/dev/null)" || kept "mktemp failed: cannot ask herdr about $1 $3"
   out="$("$herdr" "$@" 2>"$e")" || rc=$?
-  err="$(tr -d '\r' <"$e")"; rm -f "$e"
+  err="$(tr -d '\r' <"$e")" || err=""; rm -f "$e"
   [ "$rc" != 0 ] || return 0
   case "$out $err" in *'"not_found"'*|*'"pane_not_found"'*) out=""; return 0 ;; esac
   err="$(printf '%s\n%s' "$out" "$err" | sed '/^$/d' | tail -1)"
