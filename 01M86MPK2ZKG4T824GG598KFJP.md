@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T07:58:48Z
+updated-at: 2026-11-26T07:58:53Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -52,3 +52,4 @@ review-summary: none
 - **2026-11-26 07:55 · Sascha** — parent session: uds:/run/user/1000/cc-socks/62036.sock
 - **2026-11-26 07:56 · Sascha** — decision: publish gibt nach angenommenem Push nil zurueck statt den update-ref-Fehler - wie Delete es mit update-ref -d schon tut. Kein Retry: der lokale Ref ist nur ein Cache des Remote, der naechste Fetch zieht ihn nach. Offene Entscheidungen fuer die Person: keine.
 - **2026-11-26 07:58 · Sascha** — Geschwister geprueft: Delete (update-ref -d) und PushBranch ignorieren das lokale update-ref schon; publish war der einzige Schreibpfad, der es als Fehler meldete. Bekannte Grenze: bleibt der lokale Ref wegen des Locks stehen, liest eine Schreibung derselben Session vor dem naechsten Fetch die alte SHA als Lease und verliert - das war vorher genauso, nur kommt jetzt die erste Schreibung nicht mehr als Failed zurueck. Testweg: ein .lock-File neben dem Ref unter .git/ laesst update-ref scheitern, ohne den Push zu stoeren.
+- **2026-11-26 07:58 · Sascha** — critique: nichts. Fix sitzt im Callee (publish), alle vier Schreibpfade laufen hindurch; Muster wie Delete/PushBranch in gitref.go. Kein einfacherer Schnitt.
