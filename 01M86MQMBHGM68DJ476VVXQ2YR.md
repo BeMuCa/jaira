@@ -15,7 +15,7 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T07:55:51Z
+updated-at: 2026-11-26T07:55:56Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -27,7 +27,7 @@ goal: "Ein Testlauf des jaira-cockpit-Mods hinterlaesst nichts, was git als neue
 
 ## Definition of Done
 
-- [ ] <A checkable statement, readable by someone who was not here>
+- [ ] core/mod/builtin/*/node_modules/ ist in der Root-.gitignore: git status zeigt nach einem Testlauf im Mod-Ordner nichts unter node_modules
 
 ## Options
 
