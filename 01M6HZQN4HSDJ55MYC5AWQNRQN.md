@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T00:33:20Z
+updated-at: 2026-11-26T00:39:12Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -156,3 +156,4 @@ I) people: 'jaira people' gains 'active' (assignees + creators of board tickets,
 - **2026-11-26 00:27 · Berk** — P4 refsync.Incoming: decisions. (1) The baseline is refs-seen.json existing before the fetch; a clone's first fetch records no assignment entries but still records messages. (2) Entry.Batch is not in the design: set to updated-at truncated to the minute (RFC3339, UTC), so P5 bundles by batch+from, but a milestone assign that crosses a minute boundary splits. P7 may want an explicit batch. (3) Inbox entries are recorded before refs-seen is saved; a failed record returns an error so the next fetch repeats it. (4) Me is set from identity.Aliases in cli/refs.go attachRefs and tui/refs.go newSyncer. (5) The old ticket state is read with the new gitref.Repo.ReadAt(id, sha) from the last seen commit.
 - **2026-11-26 00:32 · Berk** — worker: P1-P4 verified by worker (ticket, inbox -count=3, gitref, refsync all ok; build+vet clean). Decision on Entry.Batch: one value per Incoming run (the fetch time), not updated-at per minute — DoD 8 says 'in one fetch', and a minute boundary would split a milestone assign. P5 agent changes refsync.go:1181 accordingly.
 - **2026-11-26 00:33 · Berk** — waiting: in-progress P5-P7 (haiku subagent #2) since 01:33
+- **2026-11-26 00:39 · Berk** — P5-P7 worker: step 0 done. Batch is one time.Now() per Incoming run (RFC3339 UTC), passed to assignmentEntries; the old updated-at-per-minute batch split a milestone assign crossing a minute. Test: TestOneFetchGivesItsEntriesOneBatch. Design A-I read from ticket lines 142-150; C = display-time bundling by batch+from+milestone/epic, so core/inbox gets a Rows grouping.
