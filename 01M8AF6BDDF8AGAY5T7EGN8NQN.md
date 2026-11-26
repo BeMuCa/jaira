@@ -21,10 +21,10 @@ related: []
 commits:
   - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-26T00:26:16Z
+updated-at: 2026-11-26T09:02:29Z
 updated-by: Berk
 claimed-by: w-gn8nqn
-claimed-at: 2026-11-26T00:08:22Z
+claimed-at: 2026-11-26T09:02:29Z
 stop-after-fix: "true"
 outcome-what: "one ask-main order in worker and dispatcher (note and question field first, then SendMessage to main); dispatcher clears the question field after the answer"
 outcome-why: "critique round 1 found two gaps: stale question field on dispatcher, and a send-note-send-again reading of the ask-main step"
