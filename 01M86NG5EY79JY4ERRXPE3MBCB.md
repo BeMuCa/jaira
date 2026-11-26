@@ -19,7 +19,7 @@ related: []
 follows: 01M86NFX4NQF351XWAXZ7YQ1JC
 commits: []
 created-at: 2026-11-24T11:36:46Z
-updated-at: 2026-11-26T07:59:34Z
+updated-at: 2026-11-26T07:59:39Z
 updated-by: Sascha
 round: 2
 back-from: backlog
@@ -46,4 +46,4 @@ back-count: 1
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-26 07:59 · Sascha** — Alex 26.11.2026: back to ideas - not to be worked until the Epic->Mission decision (ADR) is settled by both
