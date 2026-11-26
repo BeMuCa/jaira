@@ -1,7 +1,7 @@
 ---
 id: 01M86MPK2ZKG4T824GG598KFJP
 title: "gitref.go:548 publish - schlaegt update-ref nach erfolgreichem Push feh…"
-status: testing
+status: done
 ready: true
 creator: Sascha
 context: |-
@@ -14,9 +14,12 @@ tags: []
 blocked-by: []
 related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
-commits: []
+commits:
+  - 9870084bee4fe5690f15af36471ea5d1d92a2e85
+  - b70a95f7c15dd4fc85a73e07dfc7dd183486692a
+  - a6c795086ddcc99194a09de2933e23b862a8c448
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:06:29Z
+updated-at: 2026-11-26T09:29:19Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -25,14 +28,25 @@ goal: "Haelt ein anderer git-Prozess das lokale Ref-Lock kurz, waehrend eine Sch
 outcome-what: "gitref publish laesst update-ref nach angenommenem Push bis zu 1 s auf ein fremdes Ref-Lock warten (core.filesRefLockTimeout=1000 statt gits 100 ms); ein dauerhaft unbeschreibbarer Ref bleibt ein Fehler."
 outcome-why: "Ein kurz gesperrter lokaler Ref liess Flush Failed melden und den Eintrag behalten; den Fehler zu schlucken (Runde 1) liess den lokalen Ref hinter dem Remote, und die naechste Schreibung verlor gegen die eigene. Warten haelt den lokalen Ref aktuell."
 outcome-resolves: "DoD 1-3: TestAWriteWaitsOutABrieflyLockedLocalRef, TestALocalRefThatStaysLockedIsStillAnError, TestABrieflyLockedLocalRefNeitherFailsTheFlushNorTheNextWrite, Release-Note."
-review-summary: none
-review-gaps: "lockRef in gitref_test herausgezogen (Lock-Datei stand in holdRefLock und im Dauer-Lock-Test doppelt); gelassen: dieselben 6 Zeilen in outbox_test - anderes Paket, ein Testhilfspaket dafuer waere mehr als es spart"
-test-verdict: "fail: bughunt change blocker - nach geschlucktem update-ref liest die naechste Schreibung den veralteten lokalen Ref als Lease und verliert gegen sich selbst"
-hunt-verdict: "fail: 1 change blocker (gitref.go:554 lokaler Ref bleibt hinter dem Remote), 1 pre-existing (gitref.go:998 jede Server-Ablehnung gilt als ErrRaceLost) - Note fuer die Person"
+review-summary: "publish (core/gitref/gitref.go:555) laesst das lokale update-ref nach einem vom Remote angenommenen Push jetzt mit -c core.filesRefLockTimeout=1000 bis zu 1 s auf ein fremdes Ref-Lock warten statt nach gits 100 ms zu scheitern. Damit endet ein kurz von einem parallelen fetch gesperrter Ref auf dem Remote-Stand: Write liefert die SHA, Flush meldet Sent, die naechste Schreibung least auf dem richtigen Ref. Bleibt das Lock laenger, kommt der Fehler wie vorher. Alle vier Schreibpfade (Ticket, Milestone, Migration, Epic) laufen durch publish; Tests fuer alle vier, fuer das Dauer-Lock und fuer den Outbox-Fall End-to-End, plus Release-Note."
+review-gaps: |-
+  note: limit: ein lokales Ref-Lock laenger als 1 s nach angenommenem Push (stehengebliebene .lock eines abgestuerzten git) meldet weiter Failed, der Eintrag verliert die naechste Runde gegen die eigene Schreibung - laut, wie vor dem Ticket, vom Teamlead so entschieden
+  note: edge: die Lock-Tests (gitref_test.go holdRefLock, outbox_test.go) haben 700 ms Abstand zwischen 300 ms Halten und 1 s Wartezeit - auf einem sehr langsamen Windows-Runner kann das flackern; falls ja, Haltezeit auf 200 ms senken
+  note: elsewhere: core/gitref/gitref.go:998 stuft jede Server-Ablehnung mit 'rejected' (pre-receive hook, geschuetzter Ref) als ErrRaceLost ein, outbox.Flush raeumt den Eintrag dann weg - vorbestehend, neues Ticket
+test-verdict: "pass: r2 go test -race gitref/outbox/refsync gruen (RC=0), vet/build ok; DoD 1-3 im Baum, Tests rot gegen master-gitref.go; Scratch-Board: Lock 400 ms -> 'jaira set' exit 0, lokal = Remote, naechstes set geht durch; Dauer-Lock -> 'could not be sent' mit git-Meldung (laut), danach verliert die naechste Schreibung gemeldet (vorbestehend, Repo kaputt); zwei parallele Schreiber: einer landet, der andere 'was not sent' klar abgewiesen"
+hunt-verdict: "pass: bughunt done at a6c795086 - 0 change nach Entscheidung (r2-Befund langes Lock -> note limit, Teamlead Option 1), 1 pre-existing aus r1 (gitref.go:998 Server-Ablehnung = ErrRaceLost) als note fuer die Person"
 round: 2
 back-from: testing
 back-by: lane
 back-count: 1
+question: ""
+review-verdict: "accept: DoD 1-3 erfuellt; gits eigene Lock-Wartezeit statt Fehler schlucken, Fehlerpfad bleibt laut; go test -race gitref/outbox/refsync gruen"
+review-round: 2
+review-verdict-gaps: |-
+  note: limit: ein lokales Ref-Lock laenger als 1 s nach angenommenem Push (stehengebliebene .lock eines abgestuerzten git) meldet weiter Failed, der Eintrag verliert die naechste Runde gegen die eigene Schreibung - laut, wie vor dem Ticket, vom Teamlead so entschieden
+  note: edge: die Lock-Tests (gitref_test.go holdRefLock, outbox_test.go) haben 700 ms Abstand zwischen 300 ms Halten und 1 s Wartezeit - auf einem sehr langsamen Windows-Runner kann das flackern; falls ja, Haltezeit auf 200 ms senken
+  note: elsewhere: core/gitref/gitref.go:998 stuft jede Server-Ablehnung mit 'rejected' (pre-receive hook, geschuetzter Ref) als ErrRaceLost ein, outbox.Flush raeumt den Eintrag dann weg - vorbestehend, neues Ticket
+review-check: "1. cd in den Worktree feat/98kfjp  2. go test -count=1 -race ./core/gitref/ -run 'TestAWriteWaitsOutABrieflyLockedLocalRef|TestALocalRefThatStaysLockedIsStillAnError' -v  3. erwartet: vier Subtests ticket/milestone/migration/epic PASS und der Dauer-Lock-Test PASS  4. go test -count=1 ./core/outbox/ -run TestABrieflyLockedLocalRefNeitherFailsTheFlushNorTheNextWrite -v  5. erwartet: PASS (Flush Sent, Outbox leer, zweite Schreibung Sent)  6. Gegenprobe: in core/gitref/gitref.go:555 die Zeichenkette core.filesRefLockTimeout=1000 auf =100 setzen, Schritt 2 wiederholen - die vier Subtests werden rot; danach zuruecksetzen"
 ---
 
 # gitref.go:548 publish - schlaegt update-ref nach erfolgreichem Push feh…
@@ -69,3 +83,20 @@ back-count: 1
 - **2026-11-26 08:03 · Sascha** — decision: kleinerer Entwurf statt Fehler schlucken. publish laesst update-ref mit -c core.filesRefLockTimeout=1000 auf ein fremdes Lock warten (git-Default 100 ms): der realistische Fall - ein paralleler fetch haelt das Ref-Lock kurz - endet mit aktuellem lokalem Ref, also ohne Selbst-Rennen bei der naechsten Schreibung. Ein dauerhaft unbeschreibbarer lokaler Ref (Rechte, volle Platte) bleibt ein Fehler (Failed, laut), wie vor dem Ticket - ihn zu schlucken liess jede folgende Schreibung ohne sichtbare Ursache verlieren (Bughunt-Befund). Damit gilt das Ziel fuer das voruebergehende Lock; DoD 1-2 entsprechend umformuliert.
 - **2026-11-26 08:05 · Sascha** — round 2: Bughunt-Blocker (lokaler Ref hinter Remote -> naechste Schreibung verliert gegen sich selbst) behoben, indem update-ref auf das Lock wartet statt den Fehler zu schlucken; Test-Edge von Runde 1 (veralteter lokaler Ref) damit fuer das kurze Lock erledigt. Tests halten das Lock 300 ms nach dem angenommenen Push - mit gits 100 ms rot (8/8), mit 1000 ms gruen. Pre-existing gitref.go:998 (jede Server-Ablehnung = ErrRaceLost) bleibt Note fuer die Person: anderes Thema als das Ziel.
 - **2026-11-26 08:06 · Sascha** — critique r2: nichts. gits eigene Lock-Wartezeit (core.filesRefLockTimeout) statt einer Retry-Schleife in Go ist der kleinste Schnitt; Fehlerpfad wie vor dem Ticket.
+- **2026-11-26 08:07 · Sascha** — waiting: bughunt r2 (Subagent) since 09:07
+- **2026-11-26 08:08 · Sascha** — bughunt: change: blocker: core/gitref/gitref.go:555 - class: a push the remote accepted is still returned as an error whenever the local ref lock outlasts the 1 s filesRefLockTimeout (a stale .lock left by a crashed git, a fetch slower than 1 s); every caller reads that error as 'not written': outbox.Flush (core/outbox/outbox.go:589 default case) reports Failed and keeps the entry with its old lease, and its next round is refused as ErrRaceLost and, for a ticket, settled away as Rejected; refsync claim (core/refsync/refsync.go:1659) fails without writing the local file. example: lock refs/jaira/... in the clone, Write -> error, remote holds the commit, local ref absent; the next Write leased on repo.SHA() is refused 'the ticket moved since it was read' - against its own first write. ran: scratch test in core/gitref (lockRef, Write, remove lock, SHA, Write) -> second write errors.Is ErrRaceLost=true. Unclear mark: for locks over 1 s this is the same behaviour the code had before 9870084be (update-ref error returned); b70a95f7c narrowed the window but rewrote these lines, so it is marked change - a fix needs the error to carry 'remote has it' (e.g. return the sha with a distinct error the outbox settles on) rather than 'failed'
+- **2026-11-26 08:08 · Sascha** — hunt report: 1 finding, 1 change (blocker), note on 98KFJP | read as a diff since 9870084be: core/gitref/gitref.go core/gitref/gitref_test.go core/outbox/outbox_test.go core/release/notes/98KFJP.md; no new files | not checked: behaviour of the new lock-timeout tests on a slow Windows runner (holdRefLock polls the bare repo's loose ref file and would wait 30 s if refs were packed) - not reproducible here
+- **2026-11-26 08:08 · Sascha** — bughunt: done at a6c795086 - 1 finding (1 change, 0 pre-existing) in 4 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: core/gitref/gitref.go core/gitref/gitref_test.go core/outbox/outbox_test.go core/release/notes/98KFJP.md
+- **2026-11-26 08:08 · Sascha** — question: 98KFJP: lokaler Ref-Lock laenger als 1 s nach angenommenem Push - wie melden? Runde 1 schluckte den Fehler (Hunt: blocker, still, naechste Schreibung verliert ohne Ursache); Runde 2 wartet 1 s und meldet danach Failed wie vor dem Ticket (Hunt: blocker, Eintrag bleibt mit alter Lease). 1) (Recommended) So lassen: kurzes Lock (paralleler fetch) ist geloest, langes Lock (abgestuerztes git, .lock liegt) bleibt laut wie vor dem Ticket - Repo ist kaputt, Meldung zeigt git-Text; Hunt-Befund als note fuer die Person. 2) Eigener Fehler ErrLocalRefBehind: Flush meldet Sent mit Warnung und entfernt den Eintrag, refsync claim schreibt trotzdem - +~40 Zeilen in outbox/refsync, naechste Schreibung verliert trotzdem bis zum naechsten Fetch. 3) Wie 2 und zusaetzlich die Lease kuenftiger Schreibungen gegen den Remote-Tip korrigieren - neue Regel, eigenes Ticket.
+- **2026-11-26 08:08 · Sascha** — waiting: Antwort des Parents (uds:/run/user/1000/cc-socks/62036.sock) zur Lock-Frage since 09:08
+- **2026-11-26 08:09 · Sascha** — decision (teamlead 2026-11-26): Option 1 - Runde 2 bleibt. Kurzes Lock (paralleler fetch) geloest; langes Lock bleibt laut wie vor dem Ticket. Kein ErrLocalRefBehind, keine neue Regel.
+- **2026-11-26 08:09 · Sascha** — testing: note: limit: lokales Ref-Lock laenger als 1 s nach angenommenem Push (Fall: ein abgestuerztes git hinterliess eine .lock-Datei) - Write meldet den git-Fehler, Flush Failed, der Eintrag bleibt mit alter Lease und verliert in der naechsten Runde gegen die eigene Schreibung; Verhalten wie vor dem Ticket, laut. Bughunt r2 gitref.go:555. Entschieden vom Teamlead, Option 1.
+- **2026-11-26 08:09 · Sascha** — waiting: review (fresh agent, Herdr-Tab via run-lane.sh) since 09:09
+- **2026-11-26 08:10 · Sascha** — review: done at a6c795086
+- **2026-11-26 08:11 · Sascha** — report: publish laesst update-ref nach angenommenem Push bis 1 s auf ein fremdes Ref-Lock warten (core.filesRefLockTimeout=1000); langes Lock bleibt laut (Teamlead Option 1); 3 Tests, Release-Note | signoff, context 154k of 1000k, cache warm 60 min | offen: Annahme durch eine Person; 3 notes (limit langes Lock, edge Testtiming Windows, elsewhere gitref.go:998); Branch nicht gepusht, Ticketdatei uncommitted bis zum Logbook-Commit
+- **2026-11-26 09:25 · Sascha** — Accepted from signoff: Folge-Ticket:
+- QYXC2H: note: elsewhere: core/gitref/gitref.go:998 stuft jede Server-Ablehnung mit 'rejected' (pre-receive hook, geschuetzter Ref) als ErrRaceLost ein, outbox.Flush raeumt den Eintrag dann weg - vorbestehend, neues Ticket
+angenommen:
+- note: edge: die Lock-Tests (gitref_test.go holdRefLock, outbox_test.go) haben 700 ms Abstand zwischen 300 ms Halten und 1 s Wartezeit - auf einem sehr langsamen Windows-Runner kann das flackern; falls ja, Haltezeit auf 200 ms senken
+- note: limit: ein lokales Ref-Lock laenger als 1 s nach angenommenem Push (stehengebliebene .lock eines abgestuerzten git) meldet weiter Failed, der Eintrag verliert die naechste Runde gegen die eigene Schreibung - laut, wie vor dem Ticket, vom Teamlead so entschieden
+- **2026-11-26 09:25 · Sascha** — cockpit: accepted by the person, signoff -> done
