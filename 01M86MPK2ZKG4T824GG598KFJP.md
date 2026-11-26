@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:07:13Z
+updated-at: 2026-11-26T08:08:05Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -70,3 +70,4 @@ back-count: 1
 - **2026-11-26 08:05 · Sascha** — round 2: Bughunt-Blocker (lokaler Ref hinter Remote -> naechste Schreibung verliert gegen sich selbst) behoben, indem update-ref auf das Lock wartet statt den Fehler zu schlucken; Test-Edge von Runde 1 (veralteter lokaler Ref) damit fuer das kurze Lock erledigt. Tests halten das Lock 300 ms nach dem angenommenen Push - mit gits 100 ms rot (8/8), mit 1000 ms gruen. Pre-existing gitref.go:998 (jede Server-Ablehnung = ErrRaceLost) bleibt Note fuer die Person: anderes Thema als das Ziel.
 - **2026-11-26 08:06 · Sascha** — critique r2: nichts. gits eigene Lock-Wartezeit (core.filesRefLockTimeout) statt einer Retry-Schleife in Go ist der kleinste Schnitt; Fehlerpfad wie vor dem Ticket.
 - **2026-11-26 08:07 · Sascha** — waiting: bughunt r2 (Subagent) since 09:07
+- **2026-11-26 08:08 · Sascha** — bughunt: change: blocker: core/gitref/gitref.go:555 - class: a push the remote accepted is still returned as an error whenever the local ref lock outlasts the 1 s filesRefLockTimeout (a stale .lock left by a crashed git, a fetch slower than 1 s); every caller reads that error as 'not written': outbox.Flush (core/outbox/outbox.go:589 default case) reports Failed and keeps the entry with its old lease, and its next round is refused as ErrRaceLost and, for a ticket, settled away as Rejected; refsync claim (core/refsync/refsync.go:1659) fails without writing the local file. example: lock refs/jaira/... in the clone, Write -> error, remote holds the commit, local ref absent; the next Write leased on repo.SHA() is refused 'the ticket moved since it was read' - against its own first write. ran: scratch test in core/gitref (lockRef, Write, remove lock, SHA, Write) -> second write errors.Is ErrRaceLost=true. Unclear mark: for locks over 1 s this is the same behaviour the code had before 9870084be (update-ref error returned); b70a95f7c narrowed the window but rewrote these lines, so it is marked change - a fix needs the error to carry 'remote has it' (e.g. return the sha with a distinct error the outbox settles on) rather than 'failed'
