@@ -21,11 +21,11 @@ definition-of-done: jaira lanes market listet aus index.json mit genau einer Anf
 tags:
   - cli
 blocked-by:
-  - TGYQGJ
+  - 01M8BQFBMS778FE9WK6YDAW7WP
 related: []
 commits: []
 created-at: 2026-11-23T23:07:23Z
-updated-at: 2026-11-26T10:51:01Z
+updated-at: 2026-11-26T10:51:03Z
 updated-by: Berk
 ---
 
