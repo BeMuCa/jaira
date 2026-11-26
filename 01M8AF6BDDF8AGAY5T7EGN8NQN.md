@@ -21,7 +21,7 @@ related: []
 commits:
   - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-26T09:02:38Z
+updated-at: 2026-11-26T09:02:42Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-26T09:02:29Z
@@ -46,6 +46,7 @@ review-verdict-gaps: |-
   note: edge: when a background subagent runs out of work it both sent the options to main via SendMessage and ends its turn with the same options above the status line, so main receives one question twice; jaira-teamlead SKILL.md:90-94 does not say the report's options are the already-sent question - add one sentence there (or mark the report options as already sent) so the person is not asked twice
   note: limit: jaira-role-lane and jaira-role-pr unchanged on purpose (plan note 23:06 decisions 2 and 3) - lane agents still ask via the question field and exit 5
   note: limit: whether SendMessage to=main is refused in a foreground subagent was not verifiable here; if it is accepted, the run-out-of-work path still puts the options into the report, so the question is not lost
+review-check: "1. cd into the GN8NQN worktree and run: git diff origin/HEAD...HEAD -- core/role  2. read core/role/builtin/jaira-worker/SKILL.md section 'How you ask', third bullet: it says note + question field first, then SendMessage to=\"main\", keep working; refused/no tool = old report way  3. same in core/role/builtin/jaira-dispatcher/SKILL.md 'Where the question goes', plus the line 'An answer from main comes back as a message ... jaira set <id> question='  4. core/role/builtin/jaira-teamlead/SKILL.md point 4 'When to stop' says a background subagent's SendMessage question is put with AskUserQuestion and answered back by SendMessage  5. run: go test ./core/role -count=1 -run 'Shipped|Installed' - expect ok  6. live check: from a main session start /jaira-worker <some-id> as a background Agent with no --parent on a ticket with an open decision; expect a message from the worker in main with numbered options, the worker still running, and a jaira note + question field on the ticket"
 ---
 
 # Ein Worker ohne Herdr schickt seine Fragen per SendMessage an main und arbeitet weiter, statt mit der Frage im Bericht stehen zu bleiben
