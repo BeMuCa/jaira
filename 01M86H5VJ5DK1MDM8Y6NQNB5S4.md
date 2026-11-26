@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:16:49Z
+updated-at: 2026-11-26T08:17:03Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -86,3 +86,4 @@ back-count: 2
 - **2026-11-26 08:16 · Sascha** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:41-47 - class: JAIRA_HC_TIMEOUT digits beyond bash's 64-bit range pass the [!0-9] check and wrap silently in $((10#$secs)) and in end=$((SECONDS + secs + 1)); example: 9223372036854775807 makes end negative, so 'tab list' exits 1 with 'hc ls not asked: the 9223372036854775807s were up' without asking hc; 18446744073709551617 wraps to a 1 s budget, not refused; ran: JAIRA_HC_TIMEOUT=<v> herdr-hc.sh tab list against a stub hc (exit 1 / exit 0). Edge, not a blocker: nobody sets such a value, but a digit-count cap (e.g. more than 6 digits refused) would close the class
 - **2026-11-26 08:16 · Sascha** — hunt report: 1 finding (1 change, edge, not a blocker) as a note on QNB5S4 | read as a diff since ff4b72ae3: herdr-hc.sh, role_test.go, shipped.sha256 (new hash matches the file); QNB5S4.md unchanged | not checked: real hc on Windows/Git Bash; SECONDS rounding was checked only by reading
 - **2026-11-26 08:16 · Sascha** — bughunt: done at 5e9dfcf82 - 1 finding (1 change, 0 pre-existing) in 4 modules, follow-up hunt since ff4b72ae3; concurrency, error paths, input, permissions checked; files: core/release/notes/QNB5S4.md core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-26 08:17 · Sascha** — testing: note: edge: JAIRA_HC_TIMEOUT mit mehr Ziffern als 64 Bit (9223372036854775807) laeuft in $(( )) ueber - Exit 1 ohne hc-Aufruf oder 1 s Budget; Fix waere eine Ziffernkappe (>6 Ziffern -> Exit 2); kein Blocker, niemand setzt solche Werte, Ergebnis bleibt 'Tabs unbekannt'.
