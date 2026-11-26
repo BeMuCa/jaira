@@ -16,12 +16,12 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:05:11Z
+updated-at: 2026-11-26T08:05:41Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
 claimed-at: 2026-11-26T07:54:51Z
-goal: "Ein Push, den der Remote angenommen hat, gilt als gesendet, auch wenn danach das lokale update-ref fehlschlaegt: Flush meldet Sent und der Outbox-Eintrag verschwindet."
+goal: "Haelt ein anderer git-Prozess das lokale Ref-Lock kurz, waehrend eine Schreibung pusht, gilt die angenommene Schreibung als gesendet (Flush meldet Sent, der Eintrag verschwindet) und der lokale Ref steht danach auf dem Remote-Stand, sodass die naechste Schreibung nicht gegen die eigene verliert."
 outcome-what: "gitref publish meldet nach angenommenem Push keinen Fehler mehr, wenn das lokale update-ref scheitert; der lokale Ref wird beim naechsten Fetch nachgezogen."
 outcome-why: "Der Remote ist die Wahrheit; ein Fehler liess die Outbox eine angekommene Schreibung mit alter Lease behalten und erneut senden, wo sie gegen sich selbst verlor. Delete und PushBranch behandeln update-ref schon so."
 outcome-resolves: "DoD 1-3: gitref_test TestAnAcceptedPushIsAWriteEvenWhenTheLocalRefIsLocked, outbox_test TestAnAcceptedPushIsSentEvenWhenTheLocalRefIsLocked, Release-Note."
