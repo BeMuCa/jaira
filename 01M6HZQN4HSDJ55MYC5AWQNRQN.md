@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:02:56Z
+updated-at: 2026-11-26T10:04:43Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T09:58:12Z
@@ -202,3 +202,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 09:57 · Berk** — optimize (w-wqnrqn, 26.11.): two behaviour-neutral cleanups, see review-gaps. Checked and kept: TUI flash removal left m.flash with other callers (refs.go:145, model.go:1124/1220), so nothing orphaned; peopleList() in the milestone-assign loop is cached (root.go:415). Tests: core/inbox gitrepo refsync full, cli -run Handover|Take|Pull|Inbox|Msg|Milestone|People|Show|Fetch|TestEveryCommandIsDocumented, tui -run Inbox|Handover|Arriv|Help|Detail all ok; build+vet clean.
 - **2026-11-26 09:58 · Berk** — testing: round 2 started at 58e157861; bug hunt started in background (haiku); running gates, then DoD demand and function passes
 - **2026-11-26 10:02 · Berk** — testing r2: go test -race -count=1 on core/ticket core/inbox core/gitref core/refsync core/people core/gitrepo core/shipped internal/tui internal/cli (3 skips): all 9 ok, exit 0; go build ./... and go vet on touched pkgs exit 0
+- **2026-11-26 10:04 · Berk** — bughunt: change: blocker: core/identity/identity.go:117 - class: two different people reduce to one inbox slug, so mail to one lands in the other's inbox; example: 'Zoë' and 'Zo' both slug to 'zo', and names with no a-z or 0-9 (e.g. '张伟' and '李娜') both slug to 'unnamed'; the reader opens the inbox of Slug of each of its own names (core/refsync/refsync.go:1217, names from internal/cli/refs.go:42), and the sender writes to the same slug (internal/cli/msg.go:55), so each reads the other's mail; blame: Slug is 018021475 (before the ticket), the route at msg.go:55 is 5886c6b14 (names WQNRQN); read only, no go toolchain here so not run
