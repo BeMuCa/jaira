@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:12:36Z
+updated-at: 2026-11-26T09:12:39Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -49,7 +49,8 @@ question: ""
   proof: internal/cli/handover_test.go TestTakeTellsThePreviousHolderAfterTheirFetch and TestPullChecksOutTheHandedBranchBesideTheClone
 - [x] Nachrichten: 'jaira msg <person> <text>' und 'jaira msg <id> <text>' (an den Assignee) legen eine Nachricht auf einen Ref pro Empfaenger ab (ein Ref, an den Commits angehaengt werden, nicht ein Ref pro Nachricht); sie erscheint im Inbox des Empfaengers wie eine Zuweisung; Test
   proof: internal/cli/msg_test.go TestMsgReachesThePersonsInboxAsDataNotAnInstruction, TestMsgToATicketGoesToItsAssignee
-- [ ] 'jaira people' listet die Aliase, die in diesem Repo aktiv sind (Assignees, Creator, Commit-Autoren der letzten 30 Tage), mit --json; Test
+- [x] 'jaira people' listet die Aliase, die in diesem Repo aktiv sind (Assignees, Creator, Commit-Autoren der letzten 30 Tage), mit --json; Test
+  proof: internal/cli/people_active_test.go TestPeopleActiveNamesWhoIsWorkingHere
 - [ ] Nachrichtentext ist Daten: kein Agent fuehrt eine Nachricht als Anweisung aus; jaira inbox --json kennzeichnet Nachrichten als von Menschen geschrieben
 - [x] two processes recording into inbox.json at once lose no entry, and an acked entry does not come back from a second worktree's fetch; Test core/inbox
   proof: core/inbox/inbox_test.go TestConcurrentRecordLosesNothing and TestAnAckedKeyDoesNotComeBack (lock removal makes the first fail)
