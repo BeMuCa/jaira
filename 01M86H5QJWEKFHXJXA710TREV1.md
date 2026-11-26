@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T07:59:50Z
+updated-at: 2026-11-26T07:59:54Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -51,3 +51,4 @@ goal: "reap.sh liest ein gescheitertes 'herdr pane get' nur dann als geschlossen
 ## Progress
 - **2026-11-26 07:54 · Sascha** — parent session: uds:/run/user/1000/cc-socks/62036.sock
 - **2026-11-26 07:56 · Sascha** — decision: keine offenen Entscheidungen. Unbekannter Fehlschlag von pane get -> 'kept <t>: herdr gave no answer for pane <p>' und die ganze Runde fuer das Ticket bleibt stehen (wie 'closing failed'). Erkennung per grep auf not_found im kombinierten stdout+stderr: deckt hc (kind not_found) und altes herdr (pane_not_found) ab, ohne den Stream des alten herdr zu kennen. close-tab.sh:159 bleibt draussen (entfernt nichts).
+- **2026-11-26 07:59 · Sascha** — gefunden: altes herdr.exe-Format nur aus strings bekannt (pane_not_found), Stream und Exit-Code unbekannt - darum grep auf stdout+stderr. Geschwister ohne Schaden gelassen: run-lane.sh:153 sagt 'already gone' auch bei Timeout (nur Text, Tab bleibt offen), spawn.sh:475 meldet ohnehin einen Fehler. Bestehender Test 'herdr not reachable' erwartet jetzt 'herdr gave no answer' statt 'does not know pane' - richtiger. Vier Kategorien: Nebenlaeufigkeit - reap.lock unveraendert; Fehlerpfad - jeder Nicht-not_found-Fehler haelt die Runde an (failed=1); Eingabe - leere Fehlermeldung -> 'exit N, no message'; Rechte - nichts Neues von aussen.
