@@ -1,7 +1,7 @@
 ---
 id: 01M86MQMBHGM68DJ476VVXQ2YR
 title: Cockpit-Testlauf hinterlaesst node_modules/ - weder gitignored noch aus dem Binary gefiltert
-status: testing
+status: in-progress
 ready: true
 creator: Sascha
 context: |-
@@ -15,7 +15,7 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T08:01:39Z
+updated-at: 2026-11-26T08:01:44Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -28,6 +28,10 @@ review-summary: "no findings: builtinsIn is the one indirection, needed because 
 review-gaps: "none: 3 files, nothing duplicated elsewhere (core/web/ui/.gitignore covers only core/web/ui), every new symbol has a caller"
 test-verdict: "pass: go test ./... green (exit 0), go test -race -count=1 ./core/mod ok, go vet, shipped-history --check ok; DoD 1: git check-ignore matches .gitignore:43 for node_modules/.vite/vitest/results.json; DoD 2: TestBuiltinsLeaveATestRunsCacheOut ok; function: in a git-archive copy with a real node_modules/.vite/vitest/results.json, the file is in the embedded FS but in no Mod.Files, so it is not installed"
 hunt-verdict: "change: mod.go/.gitignore text says node_modules stays out of the binary; go:embed all: still embeds it, only the install skips it - fix the wording (go:embed cannot exclude a subdirectory; release builds run on a clean checkout)"
+round: 2
+back-from: testing
+back-by: lane
+back-count: 1
 ---
 
 # core/mod/builtin/jaira-cockpit/node_modules/ is untracked and not gitig…
