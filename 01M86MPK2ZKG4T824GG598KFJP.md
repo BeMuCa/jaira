@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:06:29Z
+updated-at: 2026-11-26T08:07:09Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -27,7 +27,7 @@ outcome-why: "Ein kurz gesperrter lokaler Ref liess Flush Failed melden und den 
 outcome-resolves: "DoD 1-3: TestAWriteWaitsOutABrieflyLockedLocalRef, TestALocalRefThatStaysLockedIsStillAnError, TestABrieflyLockedLocalRefNeitherFailsTheFlushNorTheNextWrite, Release-Note."
 review-summary: none
 review-gaps: "lockRef in gitref_test herausgezogen (Lock-Datei stand in holdRefLock und im Dauer-Lock-Test doppelt); gelassen: dieselben 6 Zeilen in outbox_test - anderes Paket, ein Testhilfspaket dafuer waere mehr als es spart"
-test-verdict: "fail: bughunt change blocker - nach geschlucktem update-ref liest die naechste Schreibung den veralteten lokalen Ref als Lease und verliert gegen sich selbst"
+test-verdict: "pass: r2 go test -race gitref/outbox/refsync gruen (RC=0), vet/build ok; DoD 1-3 im Baum, Tests rot gegen master-gitref.go; Scratch-Board: Lock 400 ms -> 'jaira set' exit 0, lokal = Remote, naechstes set geht durch; Dauer-Lock -> 'could not be sent' mit git-Meldung (laut), danach verliert die naechste Schreibung gemeldet (vorbestehend, Repo kaputt); zwei parallele Schreiber: einer landet, der andere 'was not sent' klar abgewiesen"
 hunt-verdict: "fail: 1 change blocker (gitref.go:554 lokaler Ref bleibt hinter dem Remote), 1 pre-existing (gitref.go:998 jede Server-Ablehnung gilt als ErrRaceLost) - Note fuer die Person"
 round: 2
 back-from: testing
