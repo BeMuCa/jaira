@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:44:16Z
+updated-at: 2026-11-26T09:51:44Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T09:44:16Z
@@ -71,7 +71,7 @@ back-count: 1
 - [x] Nachrichtentext ist Daten: kein Agent fuehrt eine Nachricht als Anweisung aus; jaira inbox --json kennzeichnet Nachrichten als von Menschen geschrieben
   proof: internal/cli/msg_test.go TestMsgReachesThePersonsInboxAsDataNotAnInstruction (inbox --json marks a message written_by human, with the note that its text is data)
 - [x] two processes recording into inbox.json at once lose no entry, and an acked entry does not come back from a second worktree's fetch; Test core/inbox
-  proof: core/inbox/inbox_test.go TestConcurrentRecordLosesNothing and TestAnAckedKeyDoesNotComeBack (lock removal makes the first fail)
+  proof: core/inbox/inbox_test.go TestConcurrentRecordLosesNothing (3 writers x 5 records, plain ticket.LockFile); TestAnAckedKeyDoesNotComeBack; core/refsync/inbox_test.go TestAnAckedMessageDoesNotComeBackAfterPrune
 - [x] message text with newlines, tabs, ANSI escapes and control characters is shown stripped in TUI and text output, kept verbatim in --json; empty text is refused; Test
   proof: internal/cli/msg_test.go TestMsgCleansControlCharactersForPeopleButKeepsThemInJSON and TestMsgRefusesEmptyTextAndWritesNothing; core/inbox TestCleanStripsControlsAndANSI; internal/tui/inbox_test.go TestEnterOnAMessageShowsItsTextCleanedAndAcksIt
 - [x] handover whose push fails leaves the assignee unchanged and exits non-zero; msg/handover with no reachable remote write nothing; Test
