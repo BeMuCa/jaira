@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:15:59Z
+updated-at: 2026-11-26T08:16:42Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -83,3 +83,4 @@ back-count: 2
 - **2026-11-26 08:15 · Sascha** — Runde 3: 10#$secs gegen Oktal (08 gilt jetzt als 8 s, 00 -> Exit 2); end=SECONDS+secs+1, ein einzelnes hc wartet hoechstens secs - gemessen 1 haengendes bei secs=1/5: 1,06 s/5,06 s. Folge im Test: ob Terminals nach einem Haenger noch gefragt werden, haengt nun vom Rest-Budget ab; der Test verlangt fuer Haenger-Faelle nur noch 'gelistet oder als stumm genannt', 3x hintereinander gruen.
 - **2026-11-26 08:15 · Sascha** — critique+optimize (Runde 3, ein Durchgang, 39 Zeilen): nichts. 10# und die Kappung sind je eine Zeile an der einen Stelle, durch die jeder hc-Aufruf geht; keine Duplikate, nichts verwaist.
 - **2026-11-26 08:15 · Sascha** — waiting: bughunt Runde 3 (background agent) since 09:15
+- **2026-11-26 08:16 · Sascha** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:41-47 - class: JAIRA_HC_TIMEOUT digits beyond bash's 64-bit range pass the [!0-9] check and wrap silently in $((10#$secs)) and in end=$((SECONDS + secs + 1)); example: 9223372036854775807 makes end negative, so 'tab list' exits 1 with 'hc ls not asked: the 9223372036854775807s were up' without asking hc; 18446744073709551617 wraps to a 1 s budget, not refused; ran: JAIRA_HC_TIMEOUT=<v> herdr-hc.sh tab list against a stub hc (exit 1 / exit 0). Edge, not a blocker: nobody sets such a value, but a digit-count cap (e.g. more than 6 digits refused) would close the class
