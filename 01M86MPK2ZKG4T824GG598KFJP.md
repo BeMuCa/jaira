@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:08:08Z
+updated-at: 2026-11-26T08:08:12Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -72,3 +72,4 @@ back-count: 1
 - **2026-11-26 08:07 · Sascha** — waiting: bughunt r2 (Subagent) since 09:07
 - **2026-11-26 08:08 · Sascha** — bughunt: change: blocker: core/gitref/gitref.go:555 - class: a push the remote accepted is still returned as an error whenever the local ref lock outlasts the 1 s filesRefLockTimeout (a stale .lock left by a crashed git, a fetch slower than 1 s); every caller reads that error as 'not written': outbox.Flush (core/outbox/outbox.go:589 default case) reports Failed and keeps the entry with its old lease, and its next round is refused as ErrRaceLost and, for a ticket, settled away as Rejected; refsync claim (core/refsync/refsync.go:1659) fails without writing the local file. example: lock refs/jaira/... in the clone, Write -> error, remote holds the commit, local ref absent; the next Write leased on repo.SHA() is refused 'the ticket moved since it was read' - against its own first write. ran: scratch test in core/gitref (lockRef, Write, remove lock, SHA, Write) -> second write errors.Is ErrRaceLost=true. Unclear mark: for locks over 1 s this is the same behaviour the code had before 9870084be (update-ref error returned); b70a95f7c narrowed the window but rewrote these lines, so it is marked change - a fix needs the error to carry 'remote has it' (e.g. return the sha with a distinct error the outbox settles on) rather than 'failed'
 - **2026-11-26 08:08 · Sascha** — hunt report: 1 finding, 1 change (blocker), note on 98KFJP | read as a diff since 9870084be: core/gitref/gitref.go core/gitref/gitref_test.go core/outbox/outbox_test.go core/release/notes/98KFJP.md; no new files | not checked: behaviour of the new lock-timeout tests on a slow Windows runner (holdRefLock polls the bare repo's loose ref file and would wait 30 s if refs were packed) - not reproducible here
+- **2026-11-26 08:08 · Sascha** — bughunt: done at a6c795086 - 1 finding (1 change, 0 pre-existing) in 4 modules, follow-up hunt; concurrency, error paths, input, permissions checked; files: core/gitref/gitref.go core/gitref/gitref_test.go core/outbox/outbox_test.go core/release/notes/98KFJP.md
