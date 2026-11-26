@@ -1,0 +1,67 @@
+---
+id: 01M8490P1FX8KX226CX14QMKAF
+title: "TUI z-Modus: benachbarte leere Lanes werden zu einem schmalen Streifen zusammengefasst"
+status: critique
+ready: true
+creator: Alexander Sacharov
+goal: "Im z-Modus (leere Lanes schmal) belegen mehrere leere Lanes nebeneinander zusammen nur einen schmalen Streifen, sodass die Lanes mit Tickets mehr Breite für Text bekommen."
+context: |-
+  Was heute falsch ist: 'z' im TUI (internal/tui/model.go:1777, toggleEmptyLanes) zeichnet jede Lane ohne Tickets schmal - ein eigener Rahmen, der Name senkrecht Buchstabe für Buchstabe (internal/tui/view.go:83 thinColWidth).
+  Stehen viele leere Lanes nebeneinander (Screenshot des Maintainers 23.11.2026: Brainstorm, Todo, Pre-process, Implementing, Critique, Optimize - sechs Streifen in Folge), kostet jede einen Streifen samt Rahmen; zusammen ist das ein großer Teil der Bildschirmbreite.
+  Wunsch des Maintainers: benachbarte schmale Lanes zu einem Streifen zusammenfalten, damit mehr Platz für den Text der Karten bleibt.
+  Offen für den Worker: wie der eine Streifen sagt, welche Lanes er enthält (z.B. Anfangsbuchstaben oder Anzahl untereinander, oder der Name der ersten und '+N'); eine einzelne leere Lane zwischen zwei vollen bleibt ein eigener Streifen.
+  Ein Ticket, das in eine zusammengefaltete Lane wandert, macht diese Lane wieder breit - wie heute.
+definition-of-done: "Im z-Modus werden zwei oder mehr direkt benachbarte leere Lanes als ein einziger schmaler Streifen gezeichnet, nicht breiter als heute eine schmale Lane"
+tags:
+  - tui
+blocked-by: []
+related: []
+commits: []
+created-at: 2026-11-23T13:20:07Z
+updated-at: 2026-11-26T08:04:47Z
+assignee: Sascha
+updated-by: Sascha
+claimed-by: DESKTOP-RFTCH11-35091
+claimed-at: 2026-11-26T07:57:58Z
+round: 2
+back-from: backlog
+back-by: person
+back-count: 1
+outcome-what: "Under z, a run of neighbouring empty lanes (cursor lane excepted) is drawn as one thin strip naming its lanes; fitWindow budgets the run as one unit, so full lanes get the saved width."
+outcome-why: Six empty lanes in a row cost six bordered strips - a large part of the width cards need (maintainer screenshot 23.11.).
+outcome-resolves: "4QMKAF goal: several empty lanes side by side occupy one strip"
+---
+
+# TUI z-Modus: benachbarte leere Lanes werden zu einem schmalen Streifen zusammengefasst
+
+## Definition of Done
+
+- [x] Im z-Modus werden zwei oder mehr direkt benachbarte leere Lanes als ein einziger schmaler Streifen gezeichnet, nicht breiter als heute eine schmale Lane
+  proof: internal/tui/view.go:262; TestZFoldsNeighbouringEmptyLanesIntoOneStrip
+- [x] Der Streifen zeigt, welche Lanes er zusammenfasst (lesbar, z.B. Anfangsbuchstaben untereinander mit Trenner, oder Anzahl)
+  proof: internal/tui/view.go:515; TestFoldedStripNamesItsLanes
+- [x] Die frei werdende Breite geht an die Lanes mit Tickets
+  proof: internal/tui/view.go:267; TestFoldGivesItsWidthToFullLanes
+- [x] Eine einzelne leere Lane bleibt ein eigener Streifen; ohne z ändert sich nichts
+  proof: TestSingleEmptyLaneStaysItsOwnStrip, TestCursorLaneIsNotFolded
+- [x] Tests in internal/tui für: Zusammenfassen benachbarter Lanes, einzelne Lane, Breitengewinn
+  proof: internal/tui/lanefold_test.go
+- [ ] seen by a person: im z-Modus sieht der Maintainer einen Streifen statt sechs und breitere Karten
+- [x] Release-Note in core/release/notes/<ID>.md
+  proof: core/release/notes/4QMKAF.md:1
+
+## Options
+
+- [ ] brainstorm
+- [ ] planning
+
+## Plan
+
+<Steps, in order — filled in by the pre-process step, or by you.>
+
+## Progress
+- **2026-11-23 13:20 · Alexander Sacharov** — parent session: uds:/run/user/1000/cc-socks/6958.sock
+- **2026-11-23 13:21 · Alexander Sacharov** — open decisions: none for the person. Settled by worker: (1) strip label = the folded lanes' full names down the strip, separated by a '─' row, when they fit the column height; otherwise their initials, one per row - so a tall terminal reads names, a short one still shows every lane. (2) The lane holding the cursor is never folded: it stays its own thin strip, so h/l over empty lanes still shows where you are (a run of 6 with the cursor on the 3rd draws as fold(2) | cursor | fold(3)). (3) A folded run is one unit in fitWindow, so the window never starts or ends mid-run. Note: .jaira/lanes/*.md, CLAUDE.md, AGENTS.md were already modified in this worktree by a jaira regeneration (0.6.4 block) before I started - not this ticket's, not committed with it.
+- **2026-11-23 13:21 · Alexander Sacharov** — decision (Alex 23.11.2026): parked in ideas - Berk works a lot in internal/tui; start only after agreeing with him to avoid conflicts.
+- **2026-11-26 07:58 · Sascha** — parent session: uds:/run/user/1000/cc-socks/62036.sock
+- **2026-11-26 07:59 · Sascha** — plan (no planning lane ticked): boardFit (internal/tui/view.go) groups lanes into units - a maximal run of thin lanes not holding the cursor is one unit - and runs fitWindow over units; boardWindow gets fold map[from]to; renderThinColumn draws a run [from,to): names with a '─' row between, initials when they do not fit the height. Pre-condition: Alex's 23.11. note asked to agree with Berk first - teamlead dispatched this, so taken as agreed.
