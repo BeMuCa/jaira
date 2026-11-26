@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:40:23Z
+updated-at: 2026-11-26T09:40:25Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -37,7 +37,8 @@ question: ""
   proof: core/refsync/inbox_test.go TestAnAssignmentByAnotherRecordsAnEntry, TestAReassignmentAwayRecordsATakenEntry, TestNotesAndSelfAssignmentsRecordNothing, TestTheFirstFetchIsABaseline
 - [x] Eintrag ueberlebt 'jaira fetch' aus einer anderen Session und einen Board-Neustart, bis gesehen; Test
   proof: core/refsync/inbox_test.go TestAnAssignmentByAnotherRecordsAnEntry (a second syncer on the same clone still sees the entry) and TestAnAckedAssignmentDoesNotComeBack; entries are in inbox.json in the repo state dir
-- [ ] TUI: Banner, Kartenmarker und Liste (i); Oeffnen oder x quittiert; TUI-Test
+- [x] TUI: Banner, Kartenmarker und Liste (i); Oeffnen oder x quittiert; TUI-Test
+  proof: internal/tui/inbox_test.go TestInboxBannerAndCardMarkerShowWhatWaits (banner, card mark); TestIOpensTheInboxAndXAcksTheRow (i list, x acks, esc closes); TestEnterOnATicketRowOpensItAndAcksIt; TestOpeningATicketsDetailAcksItsEntries; TestEnterOnAMessageShowsItsTextCleanedAndAcksIt
 - [x] 'jaira inbox [--json] [--ack <id>|--all]' fuer Agenten
   proof: internal/cli/inbox_test.go TestInboxShowsAnAssignmentUntilItIsAcknowledged
 - [x] Ein Befehl weist alle offenen Tickets eines Milestones einer Person zu (jaira milestone assign <name> <person>); mehrere Zuweisungen aus einem Milestone/Epic in einem Fetch sind ein Eintrag; Test
