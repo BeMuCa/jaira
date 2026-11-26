@@ -20,14 +20,17 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:36:24Z
+updated-at: 2026-11-26T00:38:27Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T00:35:07Z
 outcome-what: "The diff beside a signoff/human ticket opens as a file list (paths from repo root, +/-): up/down select, enter opens a file inline and enter again closes it; inside it up/down scroll lines and left/right scroll sideways; one narrow line-number column; the divider drags with the mouse for the session; o waits for the IDE and shows its error in the diff title. ] and [ are gone."
 outcome-why: "The person found ]/[ awkward, long lines were cut off, the double gutter wasted room, the split was fixed, and o failed silently under WSL2 (the code wrapper exited 127 with stderr dropped while jaira printed 'opened')."
 outcome-resolves: "Person's signoff feedback of 2026-11-25 (DoD 7-11)."
-review-summary: "On a ticket in human or signoff, a wide TUI detail view shows the ticket's diff on the right: the feat/<handle> branch against the base's merge-base (.jaira excluded), or, when no branch exists, the commits that name the handle. Files get a header bar, hunk headers, an old/new number gutter, full-width +/- tint and word highlight; ] and [ jump between files, o opens the file at the row's line in VS Code and confirms in the title. 68dc5cf8 fixes the two blockers from the last review: parseDiff now sets a file header's line from its first @@ (seenHunk flag, reset at every diff --git), so a first hunk at +1 is no longer replaced by the second hunk's start. ticketDiff shows the red 'Diff unavailable' notice with the shas when git can show none of the fallback commits, not 'No changes'."
+review-summary: |-
+  core/release/notes/EH6Z0N.md:3 marks the new keys "- !" (must act) and repeats line 1, but nothing of this diff ever shipped (no EH6Z0N in 0.6.x, ]/[ never released - your own note 2026-11-25 23:07): fold enter-closes, left/right scroll, divider drag and the IDE error in the title into lines 1-2 and delete line 3
+  internal/tui/model.go:1288 case diffOpenedMsg checks only m.mode==modeDetail, so an IDE result that arrives 5-46 s later (the WSL wrapper delay in note 2026-11-26 00:35) lands in the title of whatever ticket is open by then: carry the ticket id in diffOpenedMsg (set in diffpane.go openDiffRow) and drop the message when it != m.diffScrollFor
+  Left standing: no openWait deadline (note 2026-11-26 00:35), mouse capture only while the diff is shown, tab still focuses the diff (note 2026-11-25 23:07)
 round: 8
 review-gaps: |-
   note: if only some fallback commits cannot be shown, they are still dropped without a word (diffpane.go:273 only checks the all-unshowable case). Critique accepted this as out of scope; listed so the person sees it
