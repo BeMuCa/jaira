@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: Berk
@@ -17,14 +17,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T13:57:02Z
+updated-at: 2026-11-26T13:57:15Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T10:27:37Z
 question: ""
-outcome-what: "Handover commits tracked changes only and lists untracked files as not handed over; a pull or take that finds a diverged local branch makes no worktree, and a behind one is fast-forwarded; the first-fetch baseline is per repository (inbox.json), so a second worktree's first fetch records assignments made after the clone's last fetch."
-outcome-why: "Testing round 2 showed handover pushing an untracked scratch-credentials.txt, a stale local branch checked out as success, and a new worktree dropping assignments made since the last fetch."
-outcome-resolves: "triage round 2 fixes (1), (3), (4). Left open for the person, per the triage: (2) ack of an entry recorded after the list was printed, take-back before fetch, a losing parallel take."
+outcome-what: "Core inbox state records when the clone last fetched; a worktree's first fetch records an assignment only when made after that fetch. gitrepo.AddWorktree refuses a branch checked out in a worktree before any ref moves."
+outcome-why: "Critique round 5 finding (1): a new worktree's first fetch replayed every old unacked assignment as new (wrong result, spurious inbox rows). Finding (2): AddWorktree relied on its caller for the checked-out guard, so a caller could move a checked-out branch."
+outcome-resolves: "Finding (1): refsync.Incoming baseline uses inbox last_fetch; test TestASecondWorktreesFirstFetchDoesNotReplayAnAssignmentBeforeTheLastFetch. Finding (2): TestAddWorktreeRefusesABranchCheckedOutElsewhere (red first, green in b3df104f7)."
 review-summary: |-
   core/refsync/refsync.go:1302 baseline now keys on repo inbox.json, but known=loadSeen() is still per worktree: a new worktree (inbox exists, no refs-seen) passes prevSHA="" to assignmentEntries (refsync.go:1163,1194) and records an Assigned entry for every ticket another person assigned to me long ago whose current sha was never acked (all baselined ones) - every pull/take worktree replays old assignments as news; do instead: when this worktree has no seen-state, seed known from a repo-level seen file (move refs-seen.json to RepoStateDir) or store a baseline time in inbox State at Start and skip tickets with UpdatedAt before it; add a test: baseline fetch in main clone with an existing assignment, then a new worktree first fetch records 0 for it
   core/gitrepo/git.go:538 AddWorktree runs update-ref on the local branch before worktree add; safe only because internal/cli/pull.go:158 checks CheckedOut first - move the CheckedOut refusal into AddWorktree/fastForward so the callee cannot move a branch another worktree has checked out
