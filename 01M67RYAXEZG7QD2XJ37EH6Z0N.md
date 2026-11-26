@@ -20,10 +20,10 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:54:09Z
+updated-at: 2026-11-26T09:00:15Z
 updated-by: Berk
 claimed-by: w-eh6z0n
-claimed-at: 2026-11-26T00:35:07Z
+claimed-at: 2026-11-26T09:00:14Z
 outcome-what: "The diff beside a signoff/human ticket opens as a file list (paths from repo root, +/-): up/down select, enter opens a file inline and enter again closes it; inside it up/down scroll lines and left/right scroll sideways; one narrow line-number column; the divider drags with the mouse for the session; o waits for the IDE and shows its error in the diff title. ] and [ are gone."
 outcome-why: "The person found ]/[ awkward, long lines were cut off, the double gutter wasted room, the split was fixed, and o failed silently under WSL2 (the code wrapper exited 127 with stderr dropped while jaira printed 'opened')."
 outcome-resolves: "Person's signoff feedback of 2026-11-25 (DoD 7-11)."
