@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:40:30Z
+updated-at: 2026-11-26T09:40:33Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -63,7 +63,8 @@ question: ""
   proof: internal/cli/msg_test.go TestMsgCleansControlCharactersForPeopleButKeepsThemInJSON and TestMsgRefusesEmptyTextAndWritesNothing; core/inbox TestCleanStripsControlsAndANSI; internal/tui/inbox_test.go TestEnterOnAMessageShowsItsTextCleanedAndAcksIt
 - [x] handover whose push fails leaves the assignee unchanged and exits non-zero; msg/handover with no reachable remote write nothing; Test
   proof: internal/cli/handover_test.go TestHandoverWhoseBranchDoesNotReachTheRemoteChangesNothing and TestHandoverWithNoRemoteWritesNothing; msg: TestMsgWithNoReachableRemoteWritesNothing
-- [ ] acceptance rule: an assignment by someone else that never shows is worse than one shown twice
+- [x] acceptance rule: an assignment by someone else that never shows is worse than one shown twice
+  proof: design B dedupe and acked map: core/inbox TestRecordDoesNotDuplicateAKey and TestAnAckedKeyDoesNotComeBack; an entry is shown until acked, not until fetched: internal/tui/inbox_test.go TestInboxBannerAndCardMarkerShowWhatWaits
 - [ ] seen by a person: banner, card marker and the i-list on the board in a real terminal
 
 ## Options
