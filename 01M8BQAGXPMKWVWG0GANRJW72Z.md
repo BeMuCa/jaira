@@ -20,18 +20,14 @@ related: []
 follows: 01M5ZJ555685ZXARWNEF5QR36R
 commits: []
 created-at: 2026-11-26T10:44:50Z
-updated-at: 2026-11-26T10:51:55Z
+updated-at: 2026-11-26T10:52:04Z
 updated-by: BeMuCa
 claimed-by: worker-rjw72z
 claimed-at: 2026-11-26T10:46:49Z
 outcome-what: "The chat interview shows one ticket per message and waits; a number from the person sets how many come at once, 'all' the rest, 'next' leaves a ticket open. Check is a list: Machine line, Prepare, numbered steps with what is seen afterwards, Wrong if. One example ticket in that format. 'accept all' covers only shown tickets. README line and release note follow."
 outcome-why: "51 tickets in one 27 KB message could not be worked through, and a one-line Check was not understood."
 outcome-resolves: "Present, Gather and Answers of jaira-role-interreview SKILL.md rewritten; page path untouched"
-review-summary: |-
-  core/role/builtin/jaira-role-interreview/SKILL.md section Answers: 'an answer other than explain' misses a fix that ended in a question of the role's own (asked) - say 'no shown ticket still waits on an explanation or on a question of yours'
-  core/role/builtin/jaira-role-interreview/SKILL.md section Record: the record is written only at the end; one ticket per message over 51 tickets is a long session, and a killed one leaves no record - append each ticket's line when its answer is carried out
-  README.md:849 the changed line is 130 characters in a 80-column paragraph - rewrap
-  Let stand (note 'decisions (worker...)'): next, all, accept-all narrowing, per-ticket gather.
+review-summary: none
 round: 2
 ---
 
