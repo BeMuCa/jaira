@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: optimize
+status: in-progress
 ready: true
 creator: berkc
 assignee: Berk
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:31:40Z
+updated-at: 2026-11-26T14:31:42Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T14:31:37Z
@@ -31,8 +31,8 @@ review-summary: |-
   core/inbox/inbox.go:91 renames over any older inbox.json.corrupt; a second corruption deletes the first one. Minor: keep it as is, or name the file inbox.json.corrupt-<unix time>.
   core/refsync/inbox_test.go: testing note 14:2x listed four cases; the offline-ack-before-first-fetch case has no test. Add it next to TestWithNeitherFileTheFetchIsABaseline.
   Left alone: the RecordFetch lost-update edge (triage note 14:23 accepted it: worst case is a repeat). Delta is 200 lines, so critique and optimize stay separate lanes. Send-back budget is spent; no blocker in this delta.
-round: 8
-back-from: testing
+round: 9
+back-from: optimize
 back-by: lane
 back-count: 1
 review-gaps: "Seen is replaced per fetch, not merged: vanished refs drop out (critique finding 3); noteSeen uses new inbox.NoteSeen for its one-id merge; test TestRecordFetchWritesEntriesAndSeenTogether updated. Left: pull.go:158 CheckedOut (not redundant, silent vs message); critique findings 1-2 (behaviour, not cleanup); pre-existing gofmt drift in core/refsync/inbox_test.go; handover/gitrepo delta has no duplication or dead code."
