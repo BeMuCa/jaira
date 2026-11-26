@@ -23,7 +23,7 @@ related:
   - 01M58G28438KJJD3YDGM2B4KC9
 commits: []
 created-at: 2026-11-23T22:17:22Z
-updated-at: 2026-11-26T11:03:34Z
+updated-at: 2026-11-26T11:03:37Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-wfhpzt
@@ -50,6 +50,20 @@ review-verdict-gaps: |-
   note: the lock guards jaira against jaira only; a hand edit or an E edit of the same lane file between the view's read and its write is overwritten (worker note 2026-11-26 says so) - acceptable, same as settings.go
   note: no test covers a named board (.jaira/boards/<name>/lanes); checked by hand on a scratch board: t wrote only boards/ops/lanes/in-progress.md and left .jaira/lanes alone
   note: pre-existing: internal/tui/lanes.go writeThrough writes the catalogue copy with os.WriteFile, not atomically and without a lock
+review-check: |-
+  1. cd /home/berk/git/.worktrees/jAIra-wfhpzt && go build -o /tmp/jr/jaira ./cmd/jaira
+  2. mkdir -p /tmp/jr/home /tmp/jr/repo && cd /tmp/jr/repo && git init -q && export HOME=/tmp/jr/home JAIRA_HOME=/tmp/jr/home/.jaira JAIRA_SESSION_ID=check && /tmp/jr/jaira init - you see .jaira/lanes/ with review.md, no remote
+  3. cp .jaira/lanes/review.md /tmp/jr/review.orig
+  4. /tmp/jr/jaira, press enter on the project, then v - the compact view with lane boxes in a snake
+  5. press d until the box Review is highlighted (second row, rightmost box) - its box reads strong
+  6. press t, then + twice - the box reads 3×cheap, under the graph: runs on tier cheap with 3 agent(s) at once and Review: tier cheap, 3 agent(s), written to .jaira/lanes/review.md
+  7. in a second terminal: diff /tmp/jr/review.orig /tmp/jr/repo/.jaira/lanes/review.md - exactly two changes: model-tier: strong -> cheap and a new line agents: 3; the prompt is untouched
+  8. back in jaira press t, then - three times - box reads strong again; cmp /tmp/jr/review.orig /tmp/jr/repo/.jaira/lanes/review.md prints nothing (byte-identical)
+  9. press d once (Human Review) and press + - a REFUSED box: lane signoff has no agent step; esc closes it; the file is unchanged
+  10. move to Implementing (first row, fifth box) and press + - REFUSED: agents above 1 refused where output-produces names outcome-what or plan
+  11. go back to Review, press + once, quit with q, run /tmp/jr/jaira update --lanes --dry-run - it prints skipped .../review.md (edited here; jaira lanes use review --force replaces it)
+  12. rm -rf /tmp/jr
+  Wrong if: any line other than model-tier/agents changes in step 7, step 8 is not byte-identical, a refused press changes the file, or a review.md.lock / .jaira-tmp-* file is left in .jaira/lanes
 ---
 
 # Der Lane-Verlauf eines Boards ist als Graph zu sehen und einzustellen: Lanes als Knoten, Uebergaenge und Loops als Kanten, je Lane Agent, Modell und Anzahl Agenten
