@@ -19,7 +19,7 @@ commits:
   - ff4b72ae3fd900b4401433f263178b4afa16f2d2
   - 5e9dfcf8281b07421c566533b6068b8c3364cba8
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T09:24:16Z
+updated-at: 2026-11-26T09:24:32Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -113,3 +113,4 @@ review-check: "1. cd into this worktree  2. go test ./core/role -run TestHerdrHc
 - note: limit: an invalid JAIRA_HC_TIMEOUT now stops every herdr-hc.sh command with exit 2, tab create and pane run included, not only tab list; the release note says so
 - note: limit: the watchdog kills hc alone, not processes hc started; a real hc is one binary, and whether kill -KILL stops a native hc.exe under Git Bash was not checked (no Windows here)
 - note: elsewhere: tab get, pane get, tab close, pane run and send-keys in herdr-hc.sh:157-188 still call hc without a limit and are reached from reap.sh:418-419 under its lock; deliberately left until 0TREV1 lands (ticket note 08:02)
+- **2026-11-26 09:24 · Sascha** — cockpit: accepted by the person, signoff -> done
