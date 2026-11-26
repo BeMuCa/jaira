@@ -1,7 +1,7 @@
 ---
 id: 01M86H5QJWEKFHXJXA710TREV1
 title: "reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only…"
-status: critique
+status: in-progress
 ready: true
 creator: Sascha
 context: |-
@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T08:00:42Z
+updated-at: 2026-11-26T08:00:47Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -30,6 +30,10 @@ outcome-resolves: Ein Timeout oder Neustart von herdr kostet keinen Worktree meh
 review-summary: |-
   reap.sh hget() / close-tab.sh ask(): '*not_found*' also matches herdr's command_not_found, plugin_not_found, agent_not_found (strings herdr.exe) - an old herdr without 'pane get' would read as a closed tab; match the quoted codes '"not_found"' and '"pane_not_found"' only, test with command_not_found
   reap.sh hget(): return 1 for not_found is never told apart from 0 by its only caller (rc=2 checked) - return 0 with an empty $hout, as close-tab.sh ask() does
+round: 2
+back-from: critique
+back-by: lane
+back-count: 1
 ---
 
 # reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only…
