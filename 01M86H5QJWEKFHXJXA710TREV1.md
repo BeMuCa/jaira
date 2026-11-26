@@ -1,7 +1,7 @@
 ---
 id: 01M86H5QJWEKFHXJXA710TREV1
 title: "reap.sh:418 reads any failed 'herdr pane get' as a closed tab, not only…"
-status: testing
+status: in-progress
 ready: true
 creator: Sascha
 context: |-
@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T08:05:39Z
+updated-at: 2026-11-26T08:05:43Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -28,8 +28,8 @@ outcome-what: "reap.sh: pane get/tab get ueber hget(); nur not_found (hc) bzw. p
 outcome-why: "reap.sh las jeden Fehlschlag von 'herdr pane get' als geschlossenen Tab und entfernte Worktree und Branch, auch wenn herdr nur kurz nicht antwortete und claude noch im Tab sass."
 outcome-resolves: Ein Timeout oder Neustart von herdr kostet keinen Worktree mehr; nur herdr selbst kann einen Tab fuer geschlossen erklaeren.
 review-summary: none
-round: 2
-back-from: critique
+round: 3
+back-from: testing
 back-by: lane
 back-count: 1
 review-gaps: "reap.sh hget(): fails with 1 instead of returning 2, callers use 'if ! hget' (rc bookkeeping gone); left the twin helper close-tab.sh ask() - no shared library between the scripts; herdr-hc.sh 'tab list' keeps its own grep for \"not_found\" (different loop, stderr file already open); mktemp per call is per record, not hot"
