@@ -15,7 +15,7 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T08:02:54Z
+updated-at: 2026-11-26T08:03:02Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -65,3 +65,4 @@ stop-after-fix: "true"
 - **2026-11-26 08:01 · Sascha** — hunt report: 1 finding, 1 change (edge, not a blocker), as a note on VXQ2YR | read whole: core/mod/mod.go, core/mod/mod_test.go, .gitignore hunk, plus caller core/role/install.go (mod install loop); go test ./core/mod ./core/role pass | not checked: what 'claude plugin test' really writes into the mod folder beyond node_modules/.vite (no run of it here); a dangling symlink in node_modules/.bin was tried and does not break go build
 - **2026-11-26 08:01 · Sascha** — bughunt: done at e9ba2b874 - 1 finding (1 change, 0 pre-existing) in 1 module, first hunt; concurrency, error paths, input, permissions checked; files: .gitignore core/mod/mod.go core/mod/mod_test.go
 - **2026-11-26 08:02 · Sascha** — bughunt fix: wording only - go:embed all: cannot exclude a subdirectory, so a local build still carries node_modules bytes; mod.go and .gitignore now say install, not binary; goal and title reworded. stop-after-fix=true set by me (comments only, no lock, no parser). The commit subject of e9ba2b874 says 'binary' and stays: no amend after a move.
+- **2026-11-26 08:03 · Sascha** — waiting: review (fresh agent via run-lane.sh) since 09:03
