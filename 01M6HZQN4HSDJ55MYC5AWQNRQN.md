@@ -17,10 +17,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:26:48Z
+updated-at: 2026-11-26T10:27:37Z
 updated-by: Berk
 claimed-by: w-wqnrqn
-claimed-at: 2026-11-26T10:23:32Z
+claimed-at: 2026-11-26T10:27:37Z
 question: ""
 outcome-what: "Fixes (a) take on a stale file checks the ref; (b) handover to the current holder records an entry; (c) a holder's pull keeps assigned-by; (h1) inbox refs carry a hash of the name (inbox.Slug); (h2) a send whose push landed is success; (h3) msg refuses a person name neither on the people list nor active here (exit 3, nothing written); (h4) msg help and release note say messages are readable by anyone with the repository"
 outcome-why: "Testing round 2 and bughunt found: take printed 'already yours' for a ticket the ref had given away; a re-handover to the current holder left no inbox entry; a pull rewrote assigned-by; 'Zoë' and 'Zo' shared one inbox; a send reported failed after the message landed; mail to a misspelt name was stored in an inbox nobody opens"
