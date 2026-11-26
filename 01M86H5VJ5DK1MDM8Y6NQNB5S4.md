@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:09:31Z
+updated-at: 2026-11-26T08:09:35Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -74,3 +74,4 @@ back-count: 1
 - **2026-11-26 08:05 · Sascha** — testing: class: Frist gilt je hc-Aufruf, nicht fuer die ganze Liste; example: 5 haengende Terminals -> 15,15 s, das Cockpit (register.tsx:212, 15 s) laeuft trotzdem in seinen Timeout - genau das sollte das Ticket beenden; fix: eine Gesamtfrist fuer 'tab list' (Rest der Frist an jedes get, abgelaufen -> restliche Terminals stumm ohne zu fragen), Test mit mehreren haengenden Terminals unter der Cockpit-Grenze. Mit dabei: JAIRA_HC_TIMEOUT wie reap.sh:154 pruefen (leer/nicht numerisch/0 -> Standard oder Exit 2), Test ueber abc/0/-1.
 - **2026-11-26 08:08 · Sascha** — Runde 2: Budget gilt jetzt fuer den ganzen Aufruf (5 s), nicht je hc. Folge: nach einem Haenger werden die restlichen Terminals nicht mehr gefragt und zaehlen als stumm. Bewusst so statt paralleler hc get: alle Aufrufer verwerfen stdout bei Exit != 0 (register.tsx:358 agentsOf, :1992 refreshBoard, :1825 Give back, reap.sh:133), also liest niemand, was sie gesagt haetten - parallel waere mehr Code fuer nichts. Gemessen: 5 haengende von 6 -> 5,1 s, keine Prozessreste. Ungueltiges JAIRA_HC_TIMEOUT -> Exit 2 wie reap.sh:154 (statt still alles stumm und tab create ohne herdr.space).
 - **2026-11-26 08:09 · Sascha** — critique (Runde 2): nichts. Ganzes Budget statt Parallel-get ist die kleinere Form (siehe Runde-2-Note); Pruefung von JAIRA_HC_TIMEOUT folgt dem Muster reap.sh:154.
+- **2026-11-26 08:09 · Sascha** — waiting: bughunt Runde 2 (background agent) since 09:09
