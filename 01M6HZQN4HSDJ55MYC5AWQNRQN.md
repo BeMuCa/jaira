@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T13:59:50Z
+updated-at: 2026-11-26T13:59:52Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T13:59:50Z
@@ -26,11 +26,9 @@ outcome-what: "Core inbox state records when the clone last fetched; a worktree'
 outcome-why: "Critique round 5 finding (1): a new worktree's first fetch replayed every old unacked assignment as new (wrong result, spurious inbox rows). Finding (2): AddWorktree relied on its caller for the checked-out guard, so a caller could move a checked-out branch."
 outcome-resolves: "Finding (1): refsync.Incoming baseline uses inbox last_fetch; test TestASecondWorktreesFirstFetchDoesNotReplayAnAssignmentBeforeTheLastFetch. Finding (2): TestAddWorktreeRefusesABranchCheckedOutElsewhere (red first, green in b3df104f7)."
 review-summary: |-
-  core/refsync/refsync.go:1302 baseline now keys on repo inbox.json, but known=loadSeen() is still per worktree: a new worktree (inbox exists, no refs-seen) passes prevSHA="" to assignmentEntries (refsync.go:1163,1194) and records an Assigned entry for every ticket another person assigned to me long ago whose current sha was never acked (all baselined ones) - every pull/take worktree replays old assignments as news; do instead: when this worktree has no seen-state, seed known from a repo-level seen file (move refs-seen.json to RepoStateDir) or store a baseline time in inbox State at Start and skip tickets with UpdatedAt before it; add a test: baseline fetch in main clone with an existing assignment, then a new worktree first fetch records 0 for it
-  core/gitrepo/git.go:538 AddWorktree runs update-ref on the local branch before worktree add; safe only because internal/cli/pull.go:158 checks CheckedOut first - move the CheckedOut refusal into AddWorktree/fastForward so the callee cannot move a branch another worktree has checked out
-  core/refsync/refsync.go:1378 inbox.Start failing returns after entries were recorded but before saveSeen, so the next fetch re-derives the same entries; minor, dedupe by key covers it - let stand
-  internal/cli/handover.go, core/gitrepo/git.go CommitTracked/Untracked/Dirty: right shape (git add -u, untracked listed) - no finding
-  Noted by worker, left open for the person: ack race (inbox --ack/--all), take-back before fetch, parallel take message, one extra baseline on upgrade
+  core/refsync/refsync.go:1167 the since gate (prevSHA=="" && updated-at < last_fetch -> no entry) applies in EVERY worktree, not only one without refs-seen: a never-seen ticket assigned to me whose updated-at predates the clone last fetch (created offline and pushed later via the queued push, push latency of a second, or a teammate clock behind mine) is silently never reported - a missed assignment, introduced by 4fdbf8f9a (at 7966b6c5d it was recorded). Reproduced with a scratch test in core/refsync: established worktree, last_fetch set 1 min ahead, ada creates+assigns to grace, grace fetches -> 0 entries, want 1; same flow at 7966b6c5d -> 1. Do instead: apply the gate only when this worktree has no seen-state (y.seenExists() false, refsync.go:1140), as note 13:52 designed, and add that test.
+  core/gitrepo/git.go:537 AddWorktree CheckedOut refusal: finding 2 of round 5 addressed, right place; internal/cli/pull.go:158 keeps its own CheckedOut branch - let optimize judge whether it is now redundant.
+  Residual even after F1 fix, for the person, not a send-back: in a fresh worktree the same skew/late-push can still drop one assignment; over-report would need refs-seen seeding instead of a time floor.
 round: 6
 back-from: optimize
 back-by: lane
