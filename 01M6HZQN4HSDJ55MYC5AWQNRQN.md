@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:44:26Z
+updated-at: 2026-11-26T14:44:28Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T14:38:22Z
@@ -31,7 +31,7 @@ back-from: optimize
 back-by: lane
 back-count: 1
 review-gaps: "added TestNoteSeenOnAnAckOnlyInboxKeepsSeenNil (gap named by critique); nothing removed: delta has no duplication or orphans, inbox.Exists guard in refsync noteSeen kept (stops a pull creating inbox.json)"
-hunt-verdict: "fail: bughunt done at 80d62463c, delta since aa08d9806 (haiku): 1 change blocker (core/refsync/refsync.go:1305 baseline keyed on inbox.json, reproduced by testing), 2 change edges (lost update in core/inbox RecordFetch, corrupt inbox.json fails every fetch), 0 pre-existing"
+hunt-verdict: "fail: 2 change blockers reproduced by hand at 7121fbb59: an acked message comes back after inbox.json is corrupt and refs-seen is removed; an assignment already baselined is recorded again after refs-seen is corrupt (baseline 0, then 1)"
 test-verdict: "pass: go build ./... RC=0; go test -race -count=1 RC=0 for core/ticket core/inbox core/gitref core/refsync core/people core/gitrepo core/identity core/shipped core/release internal/tui; internal/cli RC=0 with the three hangers skipped; DoD 1-19 proofs named in the ticket exist in the tree and their packages pass; DoD 20 'seen by a person' left for the person, unticked; function: msg to grace delivered and marked human, handover to dan on a reachable remote carries branch and commit, milestone assign gives one aggregated entry, ack --all clears; failure: empty msg exit 2 writes nothing, msg to unknown name exit 3 sends nothing, handover with unreachable remote exit 1 leaves assignee ada -> grace, pull of unknown id exit 1 (show exits 5); two parallel msg writers both land; the five re-verification checks by hand with wq-bin4 pass (refs-seen without inbox.json records; neither file records 0; ack before first fetch keeps baseline; new worktree replays nothing; corrupt inbox.json moved aside and fetch rc 0)"
 ---
 
