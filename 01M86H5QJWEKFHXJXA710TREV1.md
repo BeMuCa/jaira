@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T07:55:51Z
+updated-at: 2026-11-26T07:55:55Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -31,6 +31,8 @@ goal: "reap.sh liest ein gescheitertes 'herdr pane get' nur dann als geschlossen
 ## Definition of Done
 
 - [ ] reap.sh:418 schliesst nur bei not_found/pane_not_found auf einen geschlossenen Tab; jeder andere Fehlschlag von 'pane get' gibt 'kept <ticket>: ...' aus und laesst Worktree, Branch und Record stehen; Test in core/role/reap_test.go mit einem herdr-Stub, dessen pane get ohne not_found scheitert
+- [ ] Ein Pane, den herdr nicht kennt (not_found bzw. pane_not_found), wird wie bisher als geschlossen behandelt; Test
+- [ ] Release-Note in core/release/notes/0TREV1.md
 
 ## Options
 
