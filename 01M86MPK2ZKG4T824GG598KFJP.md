@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:07:09Z
+updated-at: 2026-11-26T08:07:13Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -69,3 +69,4 @@ back-count: 1
 - **2026-11-26 08:03 · Sascha** — decision: kleinerer Entwurf statt Fehler schlucken. publish laesst update-ref mit -c core.filesRefLockTimeout=1000 auf ein fremdes Lock warten (git-Default 100 ms): der realistische Fall - ein paralleler fetch haelt das Ref-Lock kurz - endet mit aktuellem lokalem Ref, also ohne Selbst-Rennen bei der naechsten Schreibung. Ein dauerhaft unbeschreibbarer lokaler Ref (Rechte, volle Platte) bleibt ein Fehler (Failed, laut), wie vor dem Ticket - ihn zu schlucken liess jede folgende Schreibung ohne sichtbare Ursache verlieren (Bughunt-Befund). Damit gilt das Ziel fuer das voruebergehende Lock; DoD 1-2 entsprechend umformuliert.
 - **2026-11-26 08:05 · Sascha** — round 2: Bughunt-Blocker (lokaler Ref hinter Remote -> naechste Schreibung verliert gegen sich selbst) behoben, indem update-ref auf das Lock wartet statt den Fehler zu schlucken; Test-Edge von Runde 1 (veralteter lokaler Ref) damit fuer das kurze Lock erledigt. Tests halten das Lock 300 ms nach dem angenommenen Push - mit gits 100 ms rot (8/8), mit 1000 ms gruen. Pre-existing gitref.go:998 (jede Server-Ablehnung = ErrRaceLost) bleibt Note fuer die Person: anderes Thema als das Ziel.
 - **2026-11-26 08:06 · Sascha** — critique r2: nichts. gits eigene Lock-Wartezeit (core.filesRefLockTimeout) statt einer Retry-Schleife in Go ist der kleinste Schnitt; Fehlerpfad wie vor dem Ticket.
+- **2026-11-26 08:07 · Sascha** — waiting: bughunt r2 (Subagent) since 09:07
