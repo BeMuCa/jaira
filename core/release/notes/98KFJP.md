@@ -1,0 +1,1 @@
+- A ticket, milestone or epic write no longer fails when another git process (a fetch running beside it) holds the local ref lock for a moment; the next write no longer loses against your own earlier one.
