@@ -15,7 +15,7 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T08:04:36Z
+updated-at: 2026-11-26T08:04:40Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -40,6 +40,7 @@ review-round: 2
 review-verdict-gaps: |-
   note: limit: ein lokal nach einem Testlauf gebautes Binary traegt die node_modules-Bytes weiter (go:embed all: kann kein Unterverzeichnis auslassen); installiert werden sie nicht, Release-Builds laufen auf frischem Checkout - so in mod.go:49-54 und .gitignore:41-44 dokumentiert
   note: limit: nur node_modules/ direkt im Mod-Ordner wird uebersprungen, tiefere (hooks/node_modules) bewusst nicht - der Test haelt das fest
+review-check: "1. mkdir -p core/mod/builtin/jaira-cockpit/node_modules/.vite/vitest && touch core/mod/builtin/jaira-cockpit/node_modules/.vite/vitest/results.json  2. git status --short -> keine Zeile mit node_modules  3. go test ./core/mod -run TestBuiltinsLeaveATestRunsCacheOut -> ok  4. go run ./cmd/jaira roles install --dry-run -> keine Zeile mit node_modules  5. rm -rf core/mod/builtin/jaira-cockpit/node_modules"
 ---
 
 # core/mod/builtin/jaira-cockpit/node_modules/ is untracked and not gitig…
