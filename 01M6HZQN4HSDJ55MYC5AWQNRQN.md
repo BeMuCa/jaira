@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:13:22Z
+updated-at: 2026-11-26T09:13:26Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -79,7 +79,7 @@ question: ""
 - [x] P7 cli 'jaira milestone assign <name> <person>': every open ticket of the milestone (not done/rejected) gets assignee=person in one command through the same write path as 'jaira set'; prints count; test that receiver gets ONE inbox row (DoD 8)
 - [x] P8 cli 'jaira handover <id> <person>' (design F) and 'jaira take <id>' (design G); 'jaira pull' worktree step for handover-branch; tests with a bare remote: push fails -> assignee unchanged; receiver entry carries branch+commit; take gives previous assignee a 'taken' entry (DoD 11, 12, 18)
 - [x] P9 cli 'jaira people': add active names (assignees, creators, git authors last 30 days, canonical) to text and --json 'active'; test (DoD 14)
-- [ ] P10 'alex -> berkc': printDetail and TUI detail row 'assignee' show '<assigned-by> -> <assignee>' when assigned-by is set and differs; show --json already carries the field; tests (DoD 9)
+- [x] P10 'alex -> berkc': printDetail and TUI detail row 'assignee' show '<assigned-by> -> <assignee>' when assigned-by is set and differs; show --json already carries the field; tests (DoD 9)
 - [ ] P11 TUI: load inbox on reload; banner line above lanes when entries exist ('✉ N new for you: ...  i open'); ✉ marker on cards with an entry; modeInbox list on 'i' (j/k, enter opens ticket or shows message stripped, x acks, esc); openDetail acks the ticket's entries; help text; TUI tests (DoD 2, 6)
 - [ ] P12 README '## Commands' + docs/COMMANDS.md entries for inbox, msg, handover, take, milestone assign; core/release/notes/WQNRQN.md one line per client-facing change (DoD 10)
 - [ ] P13 go vet + go test for touched packages (core/ticket core/inbox core/gitref core/refsync internal/cli internal/tui) and core/shipped; tick DoD with proofs; commit feat(WQNRQN)
