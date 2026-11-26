@@ -23,7 +23,7 @@ related:
   - 01M58G28438KJJD3YDGM2B4KC9
 commits: []
 created-at: 2026-11-23T22:17:22Z
-updated-at: 2026-11-26T11:03:33Z
+updated-at: 2026-11-26T11:03:34Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-wfhpzt
@@ -43,6 +43,13 @@ review-gaps: |-
   note: pre-existing: internal/tui/lanes.go writeThrough writes the catalogue copy with os.WriteFile, not atomically and without a lock
 test-verdict: "pass at b92876cf4, with a limit: go build ./... and go vet ./... RC=0, gofmt clean, targeted -race tests green (core/lane Tune|SetAgents|Parse; internal/tui Pipeline|NextTier|Catalogue|Help|Workers|LaneFocus; internal/cli Doc; core/release) - the full race suite was NOT run in this lane (house rule: the main session runs it before the PR). DoD 2-4 verified in the tree. Behaviour on a scratch board in a real terminal (tmux): t and + on Review wrote model-tier: cheap and agents: 2, step read 2×cheap, - and t restored the file byte for byte; unwritable lane directory shows REFUSED, file unchanged, no temp or lock file left; two boards pressing + and t at the same moment, three runs, both lines in the file each time (before the lock one was lost - sent back once for that)."
 hunt-verdict: "pass: bughunt done at b92876cf4, 1 change finding (count drawn on a lane without agent step) fixed in b92876cf4, 0 pre-existing. The hunt was run by the worker itself over core/lane/tune.go and the compact view, not by a second agent: no subagents on this machine by the brief - the fresh review is the first outside reader."
+review-verdict: "accept: every DoD item is met by the diff; tune writes one frontmatter line under a lock, parses before an atomic write, refuses non-agentic and built-in lanes, + then - restores the file byte for byte (checked by hand); targeted -race tests in core/lane and internal/tui green; the update skip is announced, not silent, so no blocker"
+review-round: 4
+review-verdict-gaps: |-
+  note: a shipped lane set here is skipped by 'jaira update --lanes' from then on, so later prompt fixes of that lane do not arrive; update reports the skip by name and keeps the setting (seen: 'skipped .../review.md (edited here; jaira lanes use review --force replaces it)'), so nothing is lost silently - carrying model-tier/agents over a shipped update would be the follow-up
+  note: the lock guards jaira against jaira only; a hand edit or an E edit of the same lane file between the view's read and its write is overwritten (worker note 2026-11-26 says so) - acceptable, same as settings.go
+  note: no test covers a named board (.jaira/boards/<name>/lanes); checked by hand on a scratch board: t wrote only boards/ops/lanes/in-progress.md and left .jaira/lanes alone
+  note: pre-existing: internal/tui/lanes.go writeThrough writes the catalogue copy with os.WriteFile, not atomically and without a lock
 ---
 
 # Der Lane-Verlauf eines Boards ist als Graph zu sehen und einzustellen: Lanes als Knoten, Uebergaenge und Loops als Kanten, je Lane Agent, Modell und Anzahl Agenten
