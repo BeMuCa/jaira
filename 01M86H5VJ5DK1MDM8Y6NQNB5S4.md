@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:20:17Z
+updated-at: 2026-11-26T08:20:21Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -26,7 +26,12 @@ outcome-what: "herdr-hc.sh: bounded() gibt hc ls und jedem hc get in 'tab list' 
 outcome-why: "Ein Terminal, dessen hc get nie antwortete, liess 'tab list' und damit reap.sh (unter reap.lock), Give back und die Worker-Liste des Cockpits haengen."
 outcome-resolves: "DoD 1-4: haengendes get -> stumm, Exit 3; haengendes ls -> Exit !=0; reines bash ohne Prozessreste; Release-Note."
 review-summary: "Full review (no earlier review) of 21d6e7e89..5e9dfcf82. herdr-hc.sh gets bounded(): every hc call in 'tab list' (hc ls, each hc get) and the herdr.space lookup in 'tab create' runs in the background with its output in temp files, and a plain-bash sleep+kill watchdog kills it once the call's single budget is spent. JAIRA_HC_TIMEOUT (default 5 s, read as decimal) is that budget for the whole herdr-hc.sh call, at most secs+1 s; a terminal not heard from in time, or not asked any more because the budget was spent, is named on stderr and the list exits 3 as since 8NWE4P; a hung hc ls fails the list. An invalid JAIRA_HC_TIMEOUT (empty, non-digits, 0) stops herdr-hc.sh with exit 2 before hc is asked. Test: hc stub with hanging get/ls, a 2 s budget, five hung terminals under 5 s; separate test for bad values. Release note and shipped.sha256 updated. Checked by hand: 3 hung terminals at 5 s -> 6.0 s, exit 3, no processes left; go test ./core/role ./core/shipped green."
-review-gaps: "none: Runde 3 nichts entfernt (siehe Runden 1-2)"
+review-gaps: |-
+  note: edge: JAIRA_HC_TIMEOUT longer than bash's 64-bit range passes the digit check and wraps in $((10#$secs)) - 99999999999999999999 becomes ~7.7e18 s, so a hung hc get waits without limit again; fix: refuse more than 6 digits in the case at herdr-hc.sh:40-43, plus one test value
+  note: limit: the budget is the whole call's - once it is spent the remaining terminals are not asked and are named as mute even when they would answer (checked: t3 answers, still named); every caller drops an exit-3 list, so nothing reads them (ticket note round 2)
+  note: limit: an invalid JAIRA_HC_TIMEOUT now stops every herdr-hc.sh command with exit 2, tab create and pane run included, not only tab list; the release note says so
+  note: limit: the watchdog kills hc alone, not processes hc started; a real hc is one binary, and whether kill -KILL stops a native hc.exe under Git Bash was not checked (no Windows here)
+  note: elsewhere: tab get, pane get, tab close, pane run and send-keys in herdr-hc.sh:157-188 still call hc without a limit and are reached from reap.sh:418-419 under its lock; deliberately left until 0TREV1 lands (ticket note 08:02)
 test-verdict: "pass: Runde 3 - go vet + go test -race ./... gruen (RC=0) auf 5e9dfcf82, TestHerdrHc* 3x hintereinander gruen; shipped-history --check ok. DoD 1-5 im Baum: 08 -> Exit 0 (8 s), 00/0/abc/-1/1.5/' 3' -> Exit 2 ohne hc-Aufruf; 1 haengendes Terminal bei secs=1/5 -> 1,06 s/5,06 s, Exit 3, stderr nennt es; Nachbar der Runde-2-Note (010) geprueft: 10 s, nicht 8."
 hunt-verdict: "pass: bughunt done at 5e9dfcf82, 0 Blocker, 1 change-edge (Ueberlauf bei >18 Ziffern in JAIRA_HC_TIMEOUT, Note fuer Review/Person)"
 round: 3
