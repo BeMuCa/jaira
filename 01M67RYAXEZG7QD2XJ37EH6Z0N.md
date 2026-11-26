@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: Berk
@@ -20,13 +20,13 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:36:00Z
+updated-at: 2026-11-26T00:36:24Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T00:35:07Z
-outcome-what: "The TUI diff pane (ticket view, sign-off/human lanes) shows each file's header at its first hunk's line, and a failed diff load shows 'Diff unavailable' instead of 'No changes'. Covered by new tests TestHeaderLineIsTheFirstHunkOfEachFile and TestUnshowableCommitIsDiffUnavailableNotNoChanges in internal/tui/diffpane_test.go; the rest of the ticket is unchanged from the earlier passes."
-outcome-why: "Review sent back two blockers: a header line taken from the second hunk when the first starts at line 1 makes 'o' open the wrong line; an unshowable commit list reported as 'No changes' hides a git problem (rule 8 of the spec)."
-outcome-resolves: "review 2026-11-05 09:31: diffpane.go:96 header line (blocker 1) and diffpane.go:271 fallback notice (blocker 2)"
+outcome-what: "The diff beside a signoff/human ticket opens as a file list (paths from repo root, +/-): up/down select, enter opens a file inline and enter again closes it; inside it up/down scroll lines and left/right scroll sideways; one narrow line-number column; the divider drags with the mouse for the session; o waits for the IDE and shows its error in the diff title. ] and [ are gone."
+outcome-why: "The person found ]/[ awkward, long lines were cut off, the double gutter wasted room, the split was fixed, and o failed silently under WSL2 (the code wrapper exited 127 with stderr dropped while jaira printed 'opened')."
+outcome-resolves: "Person's signoff feedback of 2026-11-25 (DoD 7-11)."
 review-summary: "On a ticket in human or signoff, a wide TUI detail view shows the ticket's diff on the right: the feat/<handle> branch against the base's merge-base (.jaira excluded), or, when no branch exists, the commits that name the handle. Files get a header bar, hunk headers, an old/new number gutter, full-width +/- tint and word highlight; ] and [ jump between files, o opens the file at the row's line in VS Code and confirms in the title. 68dc5cf8 fixes the two blockers from the last review: parseDiff now sets a file header's line from its first @@ (seenHunk flag, reset at every diff --git), so a first hunk at +1 is no longer replaced by the second hunk's start. ticketDiff shows the red 'Diff unavailable' notice with the shas when git can show none of the fallback commits, not 'No changes'."
 round: 8
 review-gaps: |-
