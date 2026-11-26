@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:46:14Z
+updated-at: 2026-11-26T10:48:12Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T10:27:37Z
@@ -240,3 +240,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 10:42 · Berk** — testing: edge: milestone assign stops at the first failing Mutate and leaves the earlier tickets assigned, with the error naming none (internal/cli/milestones.go:575); example: a behind-ref ticket in the middle; rerun is safe; fix: name the tickets assigned before the failure, or pre-check behind-ref tickets
 - **2026-11-26 10:43 · Berk** — worker triage of testing round 2 (send-back 2 of 2, the last): fix (1) handover WIP commit takes tracked changes only (git add -u), untracked files are listed as not handed over — reverses design F's 'git add -A', which pushed an untracked secret; (3) pull/take worktree: a local branch that is an ancestor of the remote one is fast-forwarded, a diverged one is refused with a message, never silently reused; (4) first-fetch baseline only when the repo has no inbox.json yet (repo-level), not per worktree refs-seen. Not fixed, noted for the person: (2) inbox --ack/--all can ack an entry a background fetch recorded after the list was printed; take-back before fetch gives the previous holder no 'taken' entry; a losing parallel take says 'already yours'. DoD 3 ticked with the notes file as proof.
 - **2026-11-26 10:46 · Berk** — fix(1) handover: Dirty ignores untracked files; CommitAll renamed CommitTracked and runs git add -u; new Untracked lists git ls-files --others --exclude-standard; handover prints 'not handed over: <files>' (text) and not_handed_over (json). Test TestHandoverLeavesUntrackedFilesOutOfTheWipCommit red first (scratch-credentials.txt in wip commit), green after. TestHandoverGivesTheReceiverTheBranchAndTheCommit now stages its change, since an untracked file is no longer a wip commit.
+- **2026-11-26 10:48 · Berk** — fix(3) AddWorktree: local branch behind remote is fast-forwarded with update-ref (old value guarded); ahead is used as is; diverged or unrelated history is refused before any worktree is made (error says diverged). Tests core/gitrepo/addworktree_test.go: both red first (stale feat checked out as success; diverged returned nil), green after. Pull doc and release line say so.
