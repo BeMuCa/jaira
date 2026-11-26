@@ -20,7 +20,7 @@ related: []
 follows: 01M5ZJ555685ZXARWNEF5QR36R
 commits: []
 created-at: 2026-11-26T10:44:50Z
-updated-at: 2026-11-26T10:56:19Z
+updated-at: 2026-11-26T10:56:21Z
 updated-by: BeMuCa
 claimed-by: worker-rjw72z
 claimed-at: 2026-11-26T10:46:49Z
@@ -36,6 +36,15 @@ review-gaps: |-
 test-verdict: "pass: go build and go vet (core/role, core/shipped) RC=0; go test -count=1 ./core/role ./core/shipped ./core/release and ./core/lane -run 'Shipped|Refresh' all ok (RC=0); DoD 1-3 read in the tree at the named sections, DoD 4 note present; branch binary installed the roles into a scratch folder - installed SKILL.md is byte-identical, and 'jaira update' on a scratch board prints the three new note lines. NOT run: the full race suite (house rule: main session before the PR), a live interview with the new text, the bug hunt (no executable code changed; no subagents allowed in this run)."
 review-verdict: "pass - all four DoD items are met in SKILL.md; the chat path is consistent with the page path (same machine/never-run rules, same block grouping, same record file) and with the rest of the role; the extra decisions (accept all = shown only, next, per-ticket gather, record per answer) are sound; release note is three unwrapped '- ' lines; no defects found"
 review-round: 2
+review-check: |-
+  1. In a terminal: cd /home/berk/git/.worktrees/jAIra-rjw72z && git diff 01563903e..HEAD -- core/role/builtin/jaira-role-interreview/SKILL.md -> only the sections Gather, Present, Answers and Record (chat path) plus the description line changed; nothing under '## The page (--page)'
+  2. Open core/role/builtin/jaira-role-interreview/SKILL.md, section '### Present' -> first sentence: 'Show ONE ticket per message, then wait for the answer.'; below it the shape with Machine:, Check:, Prepare:, numbered steps with an arrow, Wrong if:, and the example ticket A3K9QP
+  3. Read the example ticket A3K9QP as if you knew nothing -> you can say what to type, what to press and what you should see after each step without asking anyone
+  4. In a NEW Claude session in a repo with at least 3 tickets in signoff, install this build's roles (/home/berk/git/.worktrees/bin-rjw72z/jaira roles install --force) and type /jaira-role-interreview -> the first message shows a line 'N tickets wait, a number shows more at once' and exactly ONE ticket in the shape from step 2
+  5. Type 'next' -> the second ticket appears, the first stays where it was on the board
+  6. Type '2 at once' -> the next message shows two tickets
+  7. Type 'stop', then: cat ~/.claude/acceptance/<repo>/<name>/report.md -> a '## Interview <date>' section with one line per shown ticket marked open and one '- not shown: ...' line
+  Wrong if: step 4 shows all tickets in one message, or a Check is a single line without numbered steps
 ---
 
 # Interreview geht die Tickets einzeln mit der Person durch und beschreibt den Check als Schrittliste
