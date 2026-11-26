@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: testing
+status: in-progress
 ready: true
 creator: berkc
 assignee: Berk
@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:44:41Z
+updated-at: 2026-11-26T14:44:47Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T14:38:22Z
@@ -26,8 +26,8 @@ outcome-what: "Seen is nil until a fetch writes it, so a zero-ticket fetch no lo
 outcome-why: "optimize send-back: len(Seen)>0 broke a new worktree's first-fetch assignment (miss is worse than duplicate); an ack before the first fetch replayed every assignment"
 outcome-resolves: "optimize finding 1 (baseline decision, second inbox.Exists), finding 4 (ack before first fetch test), noteSeen writing Seen into an ack-only inbox"
 review-summary: "core/inbox/inbox.go:155 NoteSeen's new nil-guard (ack-only inbox stays unfetched) has no test of its own; add one in core/inbox/inbox_test.go: Ack, NoteSeen, Load -> Seen nil | core/refsync/refsync.go:1312-1320 shape is right (Seen==nil is the one 'has fetched' marker, second inbox.Exists gone); no blocker; earlier findings 2 and 3 (silent .corrupt move, .corrupt overwrite) still open for the person per optimize note 14:31"
-round: 9
-back-from: optimize
+round: 10
+back-from: testing
 back-by: lane
 back-count: 1
 review-gaps: "added TestNoteSeenOnAnAckOnlyInboxKeepsSeenNil (gap named by critique); nothing removed: delta has no duplication or orphans, inbox.Exists guard in refsync noteSeen kept (stops a pull creating inbox.json)"
