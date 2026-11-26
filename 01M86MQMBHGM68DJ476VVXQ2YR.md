@@ -15,7 +15,7 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T08:02:42Z
+updated-at: 2026-11-26T08:02:50Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -44,7 +44,7 @@ stop-after-fix: "true"
 ## Definition of Done
 
 - [x] core/mod/builtin/*/node_modules/ ist in der Root-.gitignore: git status zeigt nach einem Testlauf im Mod-Ordner nichts unter node_modules
-  proof: .gitignore:43; git check-ignore on node_modules/.vite/vitest/results.json matches it
+  proof: .gitignore:44; git check-ignore on node_modules/.vite/vitest/results.json matches it
 - [x] mod.Builtins() laesst node_modules/ eines Mods aus, wie schon tests/ und tsconfig.json; Go-Test in core/mod deckt das ab
   proof: core/mod/mod.go testCache + builtinsIn; core/mod/mod_test.go TestBuiltinsLeaveATestRunsCacheOut
 
