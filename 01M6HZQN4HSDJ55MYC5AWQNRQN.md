@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T00:32:51Z
+updated-at: 2026-11-26T00:33:20Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -155,3 +155,4 @@ I) people: 'jaira people' gains 'active' (assignees + creators of board tickets,
 - **2026-11-25 23:59 · Berk** — worker: inbox lock fix b12eb5542 retries ticket.LockFile 5x. Cause was starvation, not a leak: 8 in-process hot writers x 10 records with fsync'd WriteAtomic on WSL, and LockFile's backoff grows to 100ms so a waiter loses to fresh grabbers past its 5s. Real contention is 2-3 processes. Verified go test ./core/inbox -count=3 green. Critique may prefer a smaller test over the retry loop.
 - **2026-11-26 00:27 · Berk** — P4 refsync.Incoming: decisions. (1) The baseline is refs-seen.json existing before the fetch; a clone's first fetch records no assignment entries but still records messages. (2) Entry.Batch is not in the design: set to updated-at truncated to the minute (RFC3339, UTC), so P5 bundles by batch+from, but a milestone assign that crosses a minute boundary splits. P7 may want an explicit batch. (3) Inbox entries are recorded before refs-seen is saved; a failed record returns an error so the next fetch repeats it. (4) Me is set from identity.Aliases in cli/refs.go attachRefs and tui/refs.go newSyncer. (5) The old ticket state is read with the new gitref.Repo.ReadAt(id, sha) from the last seen commit.
 - **2026-11-26 00:32 · Berk** — worker: P1-P4 verified by worker (ticket, inbox -count=3, gitref, refsync all ok; build+vet clean). Decision on Entry.Batch: one value per Incoming run (the fetch time), not updated-at per minute — DoD 8 says 'in one fetch', and a minute boundary would split a milestone assign. P5 agent changes refsync.go:1181 accordingly.
+- **2026-11-26 00:33 · Berk** — waiting: in-progress P5-P7 (haiku subagent #2) since 01:33
