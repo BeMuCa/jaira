@@ -15,7 +15,7 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T08:04:40Z
+updated-at: 2026-11-26T08:04:43Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -70,3 +70,4 @@ review-check: "1. mkdir -p core/mod/builtin/jaira-cockpit/node_modules/.vite/vit
 - **2026-11-26 08:01 · Sascha** — bughunt: done at e9ba2b874 - 1 finding (1 change, 0 pre-existing) in 1 module, first hunt; concurrency, error paths, input, permissions checked; files: .gitignore core/mod/mod.go core/mod/mod_test.go
 - **2026-11-26 08:02 · Sascha** — bughunt fix: wording only - go:embed all: cannot exclude a subdirectory, so a local build still carries node_modules bytes; mod.go and .gitignore now say install, not binary; goal and title reworded. stop-after-fix=true set by me (comments only, no lock, no parser). The commit subject of e9ba2b874 says 'binary' and stays: no amend after a move.
 - **2026-11-26 08:03 · Sascha** — waiting: review (fresh agent via run-lane.sh) since 09:03
+- **2026-11-26 08:04 · Sascha** — review: done at d0291e0ff
