@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T08:07:45Z
+updated-at: 2026-11-26T08:08:26Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -71,3 +71,4 @@ hunt-verdict: "fail: bughunt done at 4899c2218, 1 change (close-tab.sh ask(): mk
 - **2026-11-26 08:05 · Sascha** — bughunt: done at 4899c2218 - 1 finding (1 change, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/0TREV1.md core/role/builtin/jaira-dispatcher/scripts/close-tab.sh core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/closetab_test.go core/role/reap_test.go core/shipped/shipped.sha256
 - **2026-11-26 08:06 · Sascha** — bughunt-Fix: ask() prueft mktemp und tr selbst (kept-Zeile). set -E verworfen: dann feuert die ERR-Falle auch in jeder $(...)-Substitution, und ein ungeschuetztes x="$(cmd)" bekaeme die kept-Zeile als Wert statt die Runde zu beenden. park() (close-tab.sh:153) hat dieselbe Luecke seit vorher - nicht angefasst, Notiz fuer die Person. Altes herdr: strings herdr.exe kennt kein tab_not_found, also kein weiterer Code noetig.
 - **2026-11-26 08:07 · Sascha** — waiting: bughunt Runde 2 (Hintergrund-Agent) seit 09:07
+- **2026-11-26 08:08 · Sascha** — hunt report: 0 findings, nothing written beyond this report | read as a diff since 4899c2218: close-tab.sh (ask), closetab_test.go, shipped.sha256; no file new to the change; reap.sh, reap_test.go, release note unchanged since that round | could not check: a real herdr/hc that fails mid-call - checked with the test rig's fake herdr and a bash reproduction of mktemp failing under set -e with an ERR trap (kept, exit 0)
