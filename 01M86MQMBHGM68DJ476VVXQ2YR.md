@@ -1,7 +1,7 @@
 ---
 id: 01M86MQMBHGM68DJ476VVXQ2YR
 title: Cockpit-Testlauf hinterlaesst node_modules/ - weder gitignored noch aus dem Binary gefiltert
-status: optimize
+status: testing
 ready: true
 creator: Sascha
 context: |-
@@ -15,7 +15,7 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T07:59:27Z
+updated-at: 2026-11-26T07:59:32Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
