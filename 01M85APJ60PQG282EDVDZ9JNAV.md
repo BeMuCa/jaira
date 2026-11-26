@@ -4,7 +4,7 @@ title: "Der Katalog nimmt keine Lane mit script: an, und adopt nennt skill: und 
 status: backlog
 ready: true
 creator: BeMuCa
-assignee: BeMuCa
+assignee: Berk
 goal: "Eine geteilte Lane kann niemanden unbemerkt ein Skript ausfuehren lassen: der oeffentliche Katalog lehnt script: ab, und beim Uebernehmen aus jeder anderen Quelle steht es gross da."
 context: |-
   ENCFVZ (Stand 24.11.2026: signoff, nicht gemerged) gibt Lanes drei neue Felder: skill:, script: und receipt:. script: nennt ein Skript im Repo, das der Agent in dieser Lane ausfuehrt.
@@ -28,7 +28,8 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-23T23:08:47Z
-updated-at: 2026-11-23T23:08:47Z
+updated-at: 2026-11-26T10:51:31Z
+updated-by: Berk
 ---
 
 # Der Katalog nimmt keine Lane mit script: an, und adopt nennt skill: und script: beim Namen
