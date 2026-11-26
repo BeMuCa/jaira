@@ -22,15 +22,78 @@ func TestSignOffScreenShowsTheCheck(t *testing.T) {
 
 	out := stripANSI(m.renderSignOff())
 
-	if !strings.Contains(out, "check") {
-		t.Errorf("the sign-off screen has no check row:\n%s", out)
+	if !strings.Contains(out, "try it") {
+		t.Errorf("the sign-off screen has no 'try it' row:\n%s", out)
 	}
 	if !strings.Contains(out, "go run ./cmd/app") {
 		t.Errorf("the check steps are not on the sign-off screen:\n%s", out)
 	}
-	// It comes after the account, because you read first and then go and look.
-	if i, j := strings.Index(out, "verdict"), strings.Index(out, "check"); i >= 0 && j >= 0 && j < i {
-		t.Error("the check is printed above the verdict; it belongs after the account")
+	// It comes first, before the problem and the verdict: the person tries it
+	// before they read the account.
+	i, j, k := strings.Index(out, "try it"), strings.Index(out, "stop the export hanging"), strings.Index(out, "matches the criteria")
+	if i < 0 || j < 0 || k < 0 || i > j || i > k {
+		t.Errorf("the 'try it' row is not above the problem and the verdict:\n%s", out)
+	}
+	if !strings.Contains(out, "\n             2. open /export\n") {
+		t.Errorf("the sign-off screen did not put one step per line:\n%s", out)
+	}
+}
+
+// On a ticket in a person's lane the detail pane opens with the same 'try it'
+// row, above the goal, and the Review group no longer repeats the check.
+func TestDetailPaneOpensWithTheCheckOnAHumanLane(t *testing.T) {
+	m := newTestModel(t, 140, 40)
+	tk := &ticket.Ticket{
+		ID: "01M0F84EW52Y5HGH84R74VEH6C", Title: "Fix the export", Status: "signoff",
+		Goal: "stop the export hanging", ReviewVerdict: "matches the criteria",
+		ReviewCheck: checkSteps,
+	}
+
+	out := stripANSI(m.detailBody(tk, 100))
+
+	i, j := strings.Index(out, "try it"), strings.Index(out, "stop the export hanging")
+	if i < 0 || j < 0 || i > j {
+		t.Errorf("the detail pane does not open with 'try it' above the goal:\n%s", out)
+	}
+	if strings.Count(out, "go run ./cmd/app") != 1 {
+		t.Errorf("the check is shown more than once on a human lane:\n%s", out)
+	}
+}
+
+// Off a person's lane the check stays where it was: in the Review group, after
+// the verdict, and not under 'try it'.
+func TestDetailPaneKeepsTheCheckInReviewOffAHumanLane(t *testing.T) {
+	m := newTestModel(t, 140, 40)
+	tk := &ticket.Ticket{
+		ID: "01M0F84EW52Y5HGH84R74VEH6C", Title: "Fix the export", Status: "review",
+		ReviewVerdict: "matches the criteria", ReviewCheck: checkSteps,
+	}
+
+	out := stripANSI(m.detailBody(tk, 100))
+
+	if strings.Contains(out, "try it") {
+		t.Errorf("a non-human lane shows a 'try it' row:\n%s", out)
+	}
+	i, j := strings.Index(out, "verdict"), strings.Index(out, "check")
+	if i < 0 || j < 0 || j < i {
+		t.Errorf("the check is not after the verdict in the Review group:\n%s", out)
+	}
+}
+
+func TestOneStepPerLine(t *testing.T) {
+	cases := map[string]string{
+		"1. a  2. b  3. c":           "1. a\n2. b\n3. c",
+		"1. a 2. b":                  "1. a\n2. b",
+		"1. build\n2. look":          "1. build\n2. look", // already lines: unchanged
+		"just prose, no steps":       "just prose, no steps",
+		"2. starts at two  3. three": "2. starts at two  3. three", // not step 1: unchanged
+		"1. only one step":           "1. only one step",
+		"  1. padded  2. steps  ":    "1. padded\n2. steps",
+	}
+	for in, want := range cases {
+		if got := oneStepPerLine(in); got != want {
+			t.Errorf("oneStepPerLine(%q) = %q, want %q", in, got, want)
+		}
 	}
 }
 

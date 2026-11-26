@@ -1326,6 +1326,31 @@ func wrapField(v string, width, indent int) string {
 	return strings.Join(out, "\n"+strings.Repeat(" ", indent))
 }
 
+// oneStepPerLine lays a review-check written inline ("1. a  2. b  3. c") out one
+// step per line. The stored field is not rewritten; this only changes how it is
+// shown. Text that already has line breaks, or does not start at step 1, is
+// returned as it is. A step is split where the next number in sequence follows
+// as " N. "; a step whose own text contains that is split there too, so such a
+// check has to be written one step per line.
+func oneStepPerLine(s string) string {
+	s = strings.TrimSpace(s)
+	if strings.Contains(s, "\n") || !strings.HasPrefix(s, "1. ") {
+		return s
+	}
+	var out []string
+	rest := s
+	for n := 2; ; n++ {
+		i := strings.Index(rest, fmt.Sprintf(" %d. ", n))
+		if i < 0 {
+			break
+		}
+		out = append(out, strings.TrimSpace(rest[:i]))
+		rest = rest[i+1:]
+	}
+	out = append(out, strings.TrimSpace(rest))
+	return strings.Join(out, "\n")
+}
+
 // detailBody builds an open ticket's content at a given width, so the same
 // rendering serves the full screen and one half of the split follow-up view.
 func (m *Model) detailBody(t *ticket.Ticket, width int) string {
@@ -1338,6 +1363,25 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 			return
 		}
 		fmt.Fprintf(&b, "%s %s\n", styMeta.Render(fmt.Sprintf("%-12s", k)), wrapField(v, max(10, width-14), 13))
+	}
+	owed := gate.OwedBy(m.lanes, t)
+	srcs := gate.DeclaredBy(m.lanes)
+	declared := func(f declaredField) {
+		if strings.TrimSpace(f.value) != "" {
+			row(f.label, sourced(srcs, f.field, f.value))
+			return
+		}
+		if l, ok := owed[f.field]; ok {
+			owedRow(&b, f.label, l, width)
+		}
+	}
+	// On a ticket waiting on a person, the check is what they do first, so it
+	// opens the pane, above the identity rows. Only there: on other lanes the
+	// check stays in the Review group after the verdict.
+	l, onHuman := m.lanes.Get(t.Status)
+	onHuman = onHuman && (l.RequiresQuestion || l.RequiresHumanExit)
+	if onHuman {
+		declared(declaredField{"try it", ticket.FieldReviewCheck, oneStepPerLine(t.ReviewCheck)})
 	}
 	if m.copied {
 		row("id", t.ID+styOK.Render("  copied"))
@@ -1385,8 +1429,6 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 	// Suppressing it made a ticket that reached review unworked look exactly
 	// like one that had been through every lane — nothing on the screen said
 	// what was owed, which is the first thing a reviewer needs to know.
-	owed := gate.OwedBy(m.lanes, t)
-	srcs := gate.DeclaredBy(m.lanes)
 	// A group appears when any of its fields carries something to show: a
 	// value, or a debt.
 	shown := func(fs []declaredField) bool {
@@ -1399,15 +1441,6 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 			}
 		}
 		return false
-	}
-	declared := func(f declaredField) {
-		if strings.TrimSpace(f.value) != "" {
-			row(f.label, sourced(srcs, f.field, f.value))
-			return
-		}
-		if l, ok := owed[f.field]; ok {
-			owedRow(&b, f.label, l, width)
-		}
 	}
 	// The same, in the prose rhythm: the blank line is written only when the
 	// row itself will be, or an unowed empty field leaves a gap behind.
@@ -1455,7 +1488,9 @@ func (m *Model) detailBody(t *ticket.Ticket, width int) string {
 		{"summary", ticket.FieldReviewSummary, t.ReviewSummary},
 		{"gaps", ticket.FieldReviewGaps, t.ReviewGaps},
 		{"verdict", ticket.FieldReviewVerdict, t.ReviewVerdict},
-		{"check", ticket.FieldReviewCheck, t.ReviewCheck},
+	}
+	if !onHuman {
+		review = append(review, declaredField{"check", ticket.FieldReviewCheck, t.ReviewCheck})
 	}
 	if shown(outcome) {
 		b.WriteString("\n" + styLaneTitle.Render("Outcome") + "\n")

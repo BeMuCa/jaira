@@ -224,7 +224,7 @@ func TestSignOffShowsOwedFieldsNamingTheLane(t *testing.T) {
 		"what         — owed by in-progress",
 		"resolves     — owed by in-progress",
 		"summary      — owed by review",
-		"check        — owed by review",
+		"try it       — owed by review",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("sign-off view is missing %q:\n%s", want, out)
@@ -333,7 +333,10 @@ func TestSignOffAppendsFieldsOnlyTheBoardDeclares(t *testing.T) {
 	if !strings.Contains(out, "secrets-status — owed by secrets-scan") {
 		t.Errorf("the sign-off screen hides a debt the gate enforces:\n%s", out)
 	}
-	if rowIndex(t, out, "check") > rowIndex(t, out, "secrets-status") {
+	if strings.Index(out, "try it") < 0 {
+		t.Errorf("the sign-off screen has no try-it row to order:\n%s", out)
+	}
+	if strings.Index(out, "try it") > strings.Index(out, "secrets-status") {
 		t.Errorf("the seven questions no longer come first:\n%s", out)
 	}
 }
