@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:18:07Z
+updated-at: 2026-11-26T10:18:28Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T09:58:12Z
@@ -218,3 +218,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 10:09 · Berk** — worker (w-wqnrqn, round 3): fix (b) done. assignmentEntries also emits Assigned when the assignee stays me and HandoverCommit differs from the last-seen commit (sender check already returns early for my own writes). Test TestAHandoverToTheSameHolderRecordsAnEntry red before (only the first assignment entry), green after; core/refsync full package green. Not covered: a re-handover whose commit is byte-identical to the last-seen one, when the ticket moved away and back; no entry then. Kept to the spec; flagged for critique.
 - **2026-11-26 10:10 · Berk** — worker (w-wqnrqn, round 3): fix (c) done. refsync.Pull sets assigned-by only when the stored holder differs from the actor; a holder's own pull keeps who handed it over. Test TestAPullByTheHolderKeepsWhoHandedItOver red before (assigned-by grace), green after; core/refsync full package green.
 - **2026-11-26 10:17 · Berk** — worker (w-wqnrqn, round 3): h1 cc8297e8d (inbox.Slug = identity.Slug + 8 hex of sha1 of lowered trimmed name; refsync reader and msg sender both use it; identity.Slug untouched because lane shared dirs use it), h2 b98428b02 (Send treats a WriteInbox return with a non-empty commit as sent), h3 this commit (msg refuses a person name not on the list and not in activePeople, exit 3, nothing written; ticket ids skip the check). Existing msg tests that sent to grace now call knowPerson (people alias) first; that is the new rule, not weakened. Tests: inbox, refsync, gitref, identity green; cli -run TestMsg|TestInbox|TestPeople green.
+- **2026-11-26 10:18 · Berk** — worker (w-wqnrqn, round 3) done, moved to critique at bc3cdd3ee. Open for critique/testing: (1) no client release-note line for the take/pull/assigned-by behaviour changes (a)(b)(c); only h4 line added, per scope. (2) a re-handover with a byte-identical handover commit gives no entry (edge of fix b). (3) msg now refuses a teammate who is neither on the people list nor active here; they must be added with 'jaira people alias' or make a commit first. (4) jaira board says 'run jaira update' (board format, not a release); not run, it is outside this lane. Gates: build, vet core+internal, core inbox/refsync/gitref/identity, cli Inbox|Msg|Handover|Take|Pull|Milestone|People|Show|Fetch|TestEveryCommandIsDocumented green, tui Inbox|Arriv|Help green.
