@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:09:17Z
+updated-at: 2026-11-26T08:09:21Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -77,3 +77,4 @@ question: "98KFJP: lokaler Ref-Lock laenger als 1 s nach angenommenem Push - wie
 - **2026-11-26 08:08 · Sascha** — question: 98KFJP: lokaler Ref-Lock laenger als 1 s nach angenommenem Push - wie melden? Runde 1 schluckte den Fehler (Hunt: blocker, still, naechste Schreibung verliert ohne Ursache); Runde 2 wartet 1 s und meldet danach Failed wie vor dem Ticket (Hunt: blocker, Eintrag bleibt mit alter Lease). 1) (Recommended) So lassen: kurzes Lock (paralleler fetch) ist geloest, langes Lock (abgestuerztes git, .lock liegt) bleibt laut wie vor dem Ticket - Repo ist kaputt, Meldung zeigt git-Text; Hunt-Befund als note fuer die Person. 2) Eigener Fehler ErrLocalRefBehind: Flush meldet Sent mit Warnung und entfernt den Eintrag, refsync claim schreibt trotzdem - +~40 Zeilen in outbox/refsync, naechste Schreibung verliert trotzdem bis zum naechsten Fetch. 3) Wie 2 und zusaetzlich die Lease kuenftiger Schreibungen gegen den Remote-Tip korrigieren - neue Regel, eigenes Ticket.
 - **2026-11-26 08:08 · Sascha** — waiting: Antwort des Parents (uds:/run/user/1000/cc-socks/62036.sock) zur Lock-Frage since 09:08
 - **2026-11-26 08:09 · Sascha** — decision (teamlead 2026-11-26): Option 1 - Runde 2 bleibt. Kurzes Lock (paralleler fetch) geloest; langes Lock bleibt laut wie vor dem Ticket. Kein ErrLocalRefBehind, keine neue Regel.
+- **2026-11-26 08:09 · Sascha** — testing: note: limit: lokales Ref-Lock laenger als 1 s nach angenommenem Push (Fall: ein abgestuerztes git hinterliess eine .lock-Datei) - Write meldet den git-Fehler, Flush Failed, der Eintrag bleibt mit alter Lease und verliert in der naechsten Runde gegen die eigene Schreibung; Verhalten wie vor dem Ticket, laut. Bughunt r2 gitref.go:555. Entschieden vom Teamlead, Option 1.
