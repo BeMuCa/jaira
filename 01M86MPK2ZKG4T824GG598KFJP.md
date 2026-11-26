@@ -11,9 +11,11 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T07:54:48Z
+updated-at: 2026-11-26T07:54:51Z
 assignee: Sascha
 updated-by: Sascha
+claimed-by: DESKTOP-RFTCH11-37950
+claimed-at: 2026-11-26T07:54:51Z
 ---
 
 # gitref.go:548 publish - schlaegt update-ref nach erfolgreichem Push feh…
