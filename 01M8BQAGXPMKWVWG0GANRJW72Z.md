@@ -20,7 +20,7 @@ related: []
 follows: 01M5ZJ555685ZXARWNEF5QR36R
 commits: []
 created-at: 2026-11-26T10:44:50Z
-updated-at: 2026-11-26T10:56:15Z
+updated-at: 2026-11-26T10:56:19Z
 updated-by: BeMuCa
 claimed-by: worker-rjw72z
 claimed-at: 2026-11-26T10:46:49Z
@@ -34,6 +34,8 @@ review-gaps: |-
   note: Record says append a line per ticket 'as soon as its answer is carried out'; explain <id> is also an answer but leaves the ticket open, so a model may write 'explained, open' and later a second line for the same ticket - say that explain writes no line until the ticket is decided or the interview ends
   note: nothing proves a model running the role follows the new shape (one ticket, Prepare, Wrong if) - only a real interview shows it; the worker says the same
 test-verdict: "pass: go build and go vet (core/role, core/shipped) RC=0; go test -count=1 ./core/role ./core/shipped ./core/release and ./core/lane -run 'Shipped|Refresh' all ok (RC=0); DoD 1-3 read in the tree at the named sections, DoD 4 note present; branch binary installed the roles into a scratch folder - installed SKILL.md is byte-identical, and 'jaira update' on a scratch board prints the three new note lines. NOT run: the full race suite (house rule: main session before the PR), a live interview with the new text, the bug hunt (no executable code changed; no subagents allowed in this run)."
+review-verdict: "pass - all four DoD items are met in SKILL.md; the chat path is consistent with the page path (same machine/never-run rules, same block grouping, same record file) and with the rest of the role; the extra decisions (accept all = shown only, next, per-ticket gather, record per answer) are sound; release note is three unwrapped '- ' lines; no defects found"
+review-round: 2
 ---
 
 # Interreview geht die Tickets einzeln mit der Person durch und beschreibt den Check als Schrittliste
