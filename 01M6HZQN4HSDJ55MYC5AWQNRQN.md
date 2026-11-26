@@ -17,10 +17,10 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:08:28Z
+updated-at: 2026-11-26T14:12:29Z
 updated-by: Berk
 claimed-by: w-wqnrqn
-claimed-at: 2026-11-26T14:08:20Z
+claimed-at: 2026-11-26T14:12:29Z
 question: ""
 outcome-what: "The inbox classifies a ticket ref change against a shared per-clone map of ticket SHAs (inbox.json seen), not against a time cutoff; a new worktree's first fetch replays nothing an earlier one saw, and an assignment whose ticket arrives late is recorded."
 outcome-why: "Critique round 6 found that the last_fetch cutoff dropped a never-seen assignment to me whenever its updated-at predated the clone's last fetch (late push, clock skew). The cutoff existed only to stop a new worktree replaying old assignments; the shared SHA map does that without a time gate."
