@@ -181,6 +181,10 @@ type Model struct {
 	diffOpen      int
 	diffScrollFor string
 	diffOpened    string
+	// diffLeftW is the ticket column's width once the divider has been dragged, and
+	// diffDrag says a drag is under way.
+	diffLeftW int
+	diffDrag  bool
 
 	// detail holds the fully loaded ticket, since the board only reads
 	// frontmatter for speed.
@@ -1181,6 +1185,22 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.ColorProfileMsg:
 		m.trueColor = msg.Profile == colorprofile.TrueColor
+		return m, nil
+
+	case tea.MouseClickMsg:
+		if msg.Button == tea.MouseLeft && m.mode == modeDetail && m.diffPaneShown() && m.onDiffDivider(msg.X) {
+			m.diffDrag = true
+		}
+		return m, nil
+
+	case tea.MouseMotionMsg:
+		if m.diffDrag {
+			m.diffLeftW = clampDiffLeft(msg.X-2, m.width)
+		}
+		return m, nil
+
+	case tea.MouseReleaseMsg:
+		m.diffDrag = false
 		return m, nil
 
 	case tickMsg:

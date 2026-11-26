@@ -345,6 +345,28 @@ func (m *Model) diffPaneShown() bool {
 	return ok && (l.RequiresHumanExit || l.RequiresQuestion)
 }
 
+// diffLeft is the width of the ticket column beside the diff: the width the
+// divider was dragged to this session, or diffLeftWidth until it is.
+func (m *Model) diffLeft() int {
+	if m.diffLeftW == 0 {
+		return diffLeftWidth
+	}
+	return clampDiffLeft(m.diffLeftW, m.width)
+}
+
+// clampDiffLeft keeps the ticket column at least 40 columns wide and the diff at
+// least 50.
+func clampDiffLeft(x, width int) int {
+	return min(max(x, 40), width-50)
+}
+
+// onDiffDivider reports whether column x is the divider or the column beside it.
+// The divider is the gap after the ticket's box, two columns past the width.
+func (m *Model) onDiffDivider(x int) bool {
+	d := x - (m.diffLeft() + 2)
+	return d >= -1 && d <= 1
+}
+
 // diffHeaders is the index into diffRows of each file's header row, in file order.
 func (m *Model) diffHeaders() []int {
 	var hdrs []int
@@ -751,9 +773,9 @@ func (m *Model) withDiff(left, hint string) string {
 	// A pane costs a row top and bottom for its box, and a column each side and
 	// the space between them.
 	rows := max(1, m.height-len(footer)-2)
-	leftPane, scroll := clipPane(left, diffLeftWidth, rows, m.detailScroll)
+	leftPane, scroll := clipPane(left, m.diffLeft(), rows, m.detailScroll)
 	m.detailScroll = scroll
-	right := m.renderDiffPane(m.width-diffLeftWidth-5, rows)
+	right := m.renderDiffPane(m.width-m.diffLeft()-5, rows)
 	// The live pane is the one the keys reach, marked by its accent border as in
 	// the follow-up split.
 	var b strings.Builder

@@ -759,3 +759,62 @@ func TestOKeyOpensTheTopRowOfTheOpenFile(t *testing.T) {
 		t.Errorf("o opened %q, want the top row internal/a.go:11", got)
 	}
 }
+
+// The divider between the ticket and the diff drags with the mouse, and the
+// width it is dragged to stays for the session. A click a column off the divider
+// still grabs it; a motion with no drag in progress moves nothing.
+func TestDragTheDividerResizesTheSplit(t *testing.T) {
+	m := diffModel(t, 160, "signoff")
+	m.render()
+	if m.View().MouseMode != tea.MouseModeCellMotion {
+		t.Error("the diff pane does not ask for mouse events, so the divider cannot be dragged")
+	}
+	// The divider is at column 80: the ticket's box is 78+2 wide, then a gap.
+	m.Update(tea.MouseClickMsg{X: 81, Y: 5, Button: tea.MouseLeft})
+	m.Update(tea.MouseMotionMsg{X: 100, Y: 5, Button: tea.MouseLeft})
+	if m.diffLeft() != 98 {
+		t.Fatalf("dragged to column 100: ticket column = %d, want 98", m.diffLeft())
+	}
+	m.Update(tea.MouseReleaseMsg{X: 100, Y: 5, Button: tea.MouseLeft})
+	m.Update(tea.MouseMotionMsg{X: 120, Y: 5, Button: tea.MouseLeft})
+	if m.diffLeft() != 98 {
+		t.Errorf("motion after the release moved the divider to %d", m.diffLeft())
+	}
+
+	// The drag keeps the ticket at least 40 columns and the diff at least 50.
+	m.Update(tea.MouseClickMsg{X: 100, Y: 5, Button: tea.MouseLeft})
+	m.Update(tea.MouseMotionMsg{X: 10, Y: 5, Button: tea.MouseLeft})
+	if m.diffLeft() != 40 {
+		t.Errorf("dragged left past the minimum: ticket column = %d, want 40", m.diffLeft())
+	}
+	m.Update(tea.MouseMotionMsg{X: 200, Y: 5, Button: tea.MouseLeft})
+	if m.diffLeft() != 110 {
+		t.Errorf("dragged right past the maximum: ticket column = %d, want 110", m.diffLeft())
+	}
+	m.Update(tea.MouseReleaseMsg{X: 200, Y: 5, Button: tea.MouseLeft})
+
+	// On screen the split follows the drag: the ticket's box is diffLeft()+2 wide,
+	// so its top-right corner sits at diffLeft()+1, and the diff's box starts two
+	// columns after that.
+	var top []rune
+	for _, l := range strings.Split(stripANSI(m.render()), "\n") {
+		if strings.Contains(l, "╭") {
+			top = []rune(l)
+			break
+		}
+	}
+	w := m.diffLeft()
+	if len(top) < w+4 || top[w+1] != '╮' || top[w+3] != '╭' {
+		t.Errorf("box corners are not at the dragged split (ticket column %d): %q", w, string(top))
+	}
+}
+
+// Without the diff pane on screen the mouse is left to the terminal, so text can
+// still be selected there.
+func TestMouseIsLeftToTheTerminalOffTheDiffPane(t *testing.T) {
+	m := newTestModel(t, 160, 40)
+	m.mode = modeBoard
+	if m.View().MouseMode != tea.MouseModeNone {
+		t.Error("the board asks for mouse events, which takes text selection away from the terminal")
+	}
+}

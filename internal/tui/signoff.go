@@ -27,7 +27,7 @@ func (m *Model) renderSignOff() string {
 	const hint = "a accept → done · m send back · f follow-up ticket · e edit · E editor · esc back"
 	if m.diffPaneShown() {
 		m.loadDiff(t)
-		return m.withDiff(m.signOffBody(diffLeftWidth), hint)
+		return m.withDiff(m.signOffBody(m.diffLeft()), hint)
 	}
 	return m.clipToWindow(m.signOffBody(max(20, m.width)), hint)
 }

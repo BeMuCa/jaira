@@ -103,6 +103,11 @@ func (m *Model) View() tea.View {
 		out = clampBlock(out, m.width, m.height)
 	}
 	v := tea.NewView(out)
+	// Mouse capture is on only while the diff divider can be dragged: it takes over
+	// the terminal's own text selection, so the rest of the screen keeps it.
+	if m.mode == modeDetail && m.diffPaneShown() {
+		v.MouseMode = tea.MouseModeCellMotion
+	}
 	// In v2 the alternate screen is declared on the view rather than requested
 	// with a command.
 	v.AltScreen = true
@@ -1144,7 +1149,7 @@ func (m *Model) renderDetail() string {
 	hint := m.detailHints(m.detail) + " · esc back"
 	if m.diffPaneShown() {
 		m.loadDiff(m.detail)
-		return m.withDiff(m.detailBody(m.detail, diffLeftWidth), hint)
+		return m.withDiff(m.detailBody(m.detail, m.diffLeft()), hint)
 	}
 	return m.clipToWindow(m.detailBody(m.detail, max(20, m.width)), hint)
 }
