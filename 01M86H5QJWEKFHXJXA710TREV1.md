@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T07:59:46Z
+updated-at: 2026-11-26T07:59:50Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -36,7 +36,8 @@ goal: "reap.sh liest ein gescheitertes 'herdr pane get' nur dann als geschlossen
   proof: TestReapReadsOnlyNotFoundAsAClosedTab cases 'pane unknown to hc', 'pane unknown to the old herdr', 'tab unknown to hc'
 - [x] Release-Note in core/release/notes/0TREV1.md
   proof: core/release/notes/0TREV1.md
-- [ ] Gleicher Fehler in close-tab.sh:159 (Geschwister): ein stummes herdr hebt den Park nicht mehr auf; Test
+- [x] Gleicher Fehler in close-tab.sh:159 (Geschwister): ein stummes herdr hebt den Park nicht mehr auf; Test
+  proof: close-tab.sh ask(); TestReapClosesAParkedTabOnceItsCacheIsCold/'herdr gives no answer', TestCloseTabKeepsAWorkerThatIsNotFinished timeout/not_found cases
 
 ## Options
 
