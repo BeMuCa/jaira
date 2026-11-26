@@ -41,13 +41,27 @@ type Mod struct {
 	ID string
 	// Files are paths relative to the mod's folder, sorted. Its tests are
 	// left out: they run here, with 'claude plugin test', not where it is
-	// installed. So is what Claude Code generated into the folder.
+	// installed. So is what Claude Code generated into the folder, and the
+	// cache a test run left in it.
 	Files []string
 }
 
+// What a test run in a mod folder leaves behind: vitest writes its cache to
+// node_modules/.vite. Ignored by git, but go:embed reads the disk and cannot
+// leave a subdirectory out, so a local build made after such a run carries it;
+// it is skipped here so that it is never installed with the mod. Release
+// builds run on a clean checkout and carry none.
+const testCache = "node_modules"
+
 // Builtins returns every embedded mod, sorted by id.
 func Builtins() ([]Mod, error) {
-	entries, err := fs.ReadDir(builtinFS, builtinDir)
+	return builtinsIn(builtinFS)
+}
+
+// builtinsIn reads the mods under builtinDir of fsys: the embedded tree, or a
+// test's stand-in for one.
+func builtinsIn(fsys fs.FS) ([]Mod, error) {
+	entries, err := fs.ReadDir(fsys, builtinDir)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +72,7 @@ func Builtins() ([]Mod, error) {
 		}
 		m := Mod{ID: e.Name()}
 		root := path.Join(builtinDir, e.Name())
-		err := fs.WalkDir(builtinFS, root, func(p string, d fs.DirEntry, err error) error {
+		err := fs.WalkDir(fsys, root, func(p string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
@@ -66,7 +80,7 @@ func Builtins() ([]Mod, error) {
 			//wintrap:ok
 			rel := strings.TrimPrefix(p, root+"/")
 			if d.IsDir() {
-				if rel == "tests" || rel == generatedTypes {
+				if rel == "tests" || rel == generatedTypes || rel == testCache {
 					return fs.SkipDir
 				}
 				return nil
