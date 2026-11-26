@@ -21,7 +21,7 @@ related: []
 commits:
   - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-26T09:02:29Z
+updated-at: 2026-11-26T09:02:32Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-26T09:02:29Z
@@ -29,7 +29,7 @@ stop-after-fix: "true"
 outcome-what: "one ask-main order in worker and dispatcher (note and question field first, then SendMessage to main); dispatcher clears the question field after the answer"
 outcome-why: "critique round 1 found two gaps: stale question field on dispatcher, and a send-note-send-again reading of the ask-main step"
 outcome-resolves: "critique round 1: dispatcher had no clear-the-field sentence; worker/dispatcher ask-main step read as send, note, send again"
-review-summary: none
+review-summary: "Full review (no earlier review note) of 93e7b219..bf15d840, skill text only. jaira-worker and jaira-dispatcher 'How you ask/Where the question goes': the old 'no AskUserQuestion -> options into report and stop' case becomes 'no AskUserQuestion and no parent': a background subagent notes the question with numbered options, sets the question field, then SendMessage to=main and keeps working on what does not depend on the answer; out of work it writes a waiting: note and ends its turn with the options above the status line. A refused SendMessage or no tool (foreground subagent, headless) keeps the old report-and-stop way. Both say the answer from main arrives as a message: note it, clear the question field, go on. Worker 'When you wait' also sends the waiting line to main. jaira-teamlead 'When to stop': a background subagent's SendMessage question is handled like a dispatcher's (AskUserQuestion with options unchanged, jaira note, SendMessage the answer back by name/id). shipped.sha256 gets 5 appended hashes (2 dispatcher, 2 worker, 1 teamlead; current files match 69bbb910/74f035fb/90844161), release note core/release/notes/GN8NQN.md is one '- ' line."
 round: 2
 back-from: critique
 back-by: lane
