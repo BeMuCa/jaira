@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:05:35Z
+updated-at: 2026-11-26T08:05:39Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -65,3 +65,4 @@ hunt-verdict: "fail: bughunt done at 21d6e7e89, 2 change (keine Gesamtfrist fuer
 - **2026-11-26 08:05 · Sascha** — bughunt: pre-existing: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:138,151 (tab get, pane get), also tab close 143-148, pane run 161, send-keys 167 - class: hc calls with no time limit that are still reached while reap.sh holds its lock; example: a terminal answers tab list, then stops answering while reap.sh waits on gh or worktree-teardown (up to 300 s), and reap.sh:418-419 'pane get'/'tab get' hang forever, the lock stays held and no later reap runs - the same hang this ticket fixed for tab list; close-tab.sh:159-162 is reached the same way from reap.sh:142; blame: 655874a6b9 (2026-11-11, before the ticket); ran: herdr-hc.sh pane get on a hung stub terminal under timeout 8 -> rc=124
 - **2026-11-26 08:05 · Sascha** — hunt report: 3 findings (2 change - neither a blocker, 1 pre-existing), all as notes on QNB5S4 | read whole: herdr-hc.sh, the herdr-hc part of role_test.go, release note QNB5S4.md, shipped.sha256 line; callers read along: reap.sh, close-tab.sh, cockpit register.tsx run()/tab list | not checked: whether bash kill -KILL stops a native Windows hc.exe under Git Bash (no Windows here); whether the test's JAIRA_HC_TIMEOUT=1 kills a healthy stub hc on a slow CI runner and makes 'all answer' fail (not reproduced)
 - **2026-11-26 08:05 · Sascha** — bughunt: done at 21d6e7e89 - 3 findings (2 change, 1 pre-existing) in 4 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/QNB5S4.md core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-26 08:05 · Sascha** — testing: class: Frist gilt je hc-Aufruf, nicht fuer die ganze Liste; example: 5 haengende Terminals -> 15,15 s, das Cockpit (register.tsx:212, 15 s) laeuft trotzdem in seinen Timeout - genau das sollte das Ticket beenden; fix: eine Gesamtfrist fuer 'tab list' (Rest der Frist an jedes get, abgelaufen -> restliche Terminals stumm ohne zu fragen), Test mit mehreren haengenden Terminals unter der Cockpit-Grenze. Mit dabei: JAIRA_HC_TIMEOUT wie reap.sh:154 pruefen (leer/nicht numerisch/0 -> Standard oder Exit 2), Test ueber abc/0/-1.
