@@ -4,14 +4,19 @@ title: "herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangsâ
 status: todo
 ready: true
 creator: Sascha
-context: "note: elsewhere: herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangs tab list and every caller; before this ticket"
+context: |-
+  herdr-hc.sh 'tab list' (core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:82) ruft hc ls und je Terminal hc get ohne Frist auf.
+  Haengt eins davon, haengt 'tab list' - und damit jeder Aufrufer.
+  reap.sh:133 haengt dann unter reap.lock: jede spaetere Runde wird uebersprungen, nichts wird mehr abgeraeumt.
+  Das Cockpit (register.tsx:212) bricht nach 15 s ab und sieht dann gar keine Tabs, nicht nur das eine stumme Terminal.
+  Gefunden bei 8NWE4P (Exit 3 fuer stumme Terminals); dort blieb der Haenger selbst offen.
 tags: []
 blocked-by: []
 related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T07:56:03Z
+updated-at: 2026-11-26T07:56:13Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
