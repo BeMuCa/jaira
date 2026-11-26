@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T07:55:42Z
+updated-at: 2026-11-26T07:55:58Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -28,7 +28,9 @@ goal: "Ein Push, den der Remote angenommen hat, gilt als gesendet, auch wenn dan
 
 ## Definition of Done
 
-- [ ] <A checkable statement, readable by someone who was not here>
+- [ ] Ein Test haelt den lokalen Ref mit einem .lock fest: Write liefert nach angenommenem Push die SHA ohne Fehler, und der Remote traegt den Inhalt
+- [ ] Ein Outbox-Test: Flush meldet in diesem Fall Sent und der Eintrag ist danach nicht mehr in der Outbox
+- [ ] Release-Note in core/release/notes/98KFJP.md
 
 ## Options
 
