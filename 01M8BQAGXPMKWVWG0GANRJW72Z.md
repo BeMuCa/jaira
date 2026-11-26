@@ -20,7 +20,7 @@ related: []
 follows: 01M5ZJ555685ZXARWNEF5QR36R
 commits: []
 created-at: 2026-11-26T10:44:50Z
-updated-at: 2026-11-26T10:51:21Z
+updated-at: 2026-11-26T10:51:30Z
 updated-by: BeMuCa
 claimed-by: worker-rjw72z
 claimed-at: 2026-11-26T10:46:49Z
@@ -59,3 +59,7 @@ review-summary: |-
 ## Progress
 - **2026-11-26 10:47 · BeMuCa** — decisions (worker, no open decision needed the person): (1) default batch is 1; a number from the person sets it for the rest of the interview, 'all' shows the rest. (2) 'accept all' now covers only tickets already shown and unanswered - otherwise it would accept tickets nobody saw. (3) new word 'next' leaves the shown tickets open and goes on; without it a person is stuck on a ticket they do not want to decide. (4) Gather runs per ticket just before it is shown, not for all up front: with 51 tickets the first message would otherwise wait for 51 machine runs. (5) Order stays the page path's block grouping, so tickets of one theme come one after another. (6) Prepare is done by the role where a build or a copy suffices (same rule the page path's setup has), else it is commands to paste. Page path (--page) untouched: it shows all tickets by design.
 - **2026-11-26 10:50 · BeMuCa** — Gegengelesen (Fable, 26.11.): die Check-Vorgabe in SKILL.md, Abschnitt Present, als jemand ohne Vorwissen gelesen und dreimal nachgeschaerft. (1) Maschinen-Zeile nannte nur das Kommando ('go test ./tui -run ...') - sagt einem Leser nichts; jetzt: in Worten was geprueft wird, Kommando in Klammern. (2) Prepare war ein langer Satz - jetzt eine Zeile pro Sache, und die Rolle bereitet selbst vor, wo ein Build oder eine Kopie reicht. (3) Es fehlte, woran man ein 'Nein' erkennt - neue Zeile 'Wrong if:'. Dazu Regel 'No shorthand': kein interner Name ohne Halbsatz, voller Pfad, woertliche Taste. Nicht geprueft: ob ein Modell, das die Rolle ausfuehrt, die Vorgabe auch so umsetzt - das zeigt erst ein echter Lauf.
+- **2026-11-26 10:51 · BeMuCa** — critique: core/role/builtin/jaira-role-interreview/SKILL.md section Answers: 'an answer other than explain' misses a fix that ended in a question of the role's own (asked) - say 'no shown ticket still waits on an explanation or on a question of yours'
+core/role/builtin/jaira-role-interreview/SKILL.md section Record: the record is written only at the end; one ticket per message over 51 tickets is a long session, and a killed one leaves no record - append each ticket's line when its answer is carried out
+README.md:849 the changed line is 130 characters in a 80-column paragraph - rewrap
+Let stand (note 'decisions (worker...)'): next, all, accept-all narrowing, per-ticket gather.
