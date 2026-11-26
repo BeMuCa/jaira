@@ -18,18 +18,35 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-23T13:20:07Z
-updated-at: 2026-11-26T08:04:47Z
+updated-at: 2026-11-26T08:12:08Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35091
 claimed-at: 2026-11-26T07:57:58Z
-round: 2
-back-from: backlog
-back-by: person
+round: 3
+back-from: review
+back-by: lane
 back-count: 1
 outcome-what: "Under z, a run of neighbouring empty lanes (cursor lane excepted) is drawn as one thin strip naming its lanes; fitWindow budgets the run as one unit, so full lanes get the saved width."
 outcome-why: Six empty lanes in a row cost six bordered strips - a large part of the width cards need (maintainer screenshot 23.11.).
 outcome-resolves: "4QMKAF goal: several empty lanes side by side occupy one strip"
+review-summary: "boardFit (internal/tui/view.go) now groups lanes into units before fitWindow: a maximal run of neighbouring thin (empty, z-mode) lanes that does not hold the cursor is one unit costing one thinColWidth, so the window never splits a run and the freed width is divided among the full columns (colW = (width - strips)/full). boardWindow gains fold[from]=to; renderBoard draws a run with one renderThinColumn(from,to,h) call and skips past it. The strip lists the lanes' full names down the column parted by a '─' row, or only their initials when that does not fit the height. The cursor lane is never folded, a lone empty lane stays its own strip, and without z nothing changes (fold only exists for thin lanes). Five tests in internal/tui/lanefold_test.go; release note core/release/notes/4QMKAF.md."
+review-gaps: |-
+  note: edge: fix-now: renderThinColumn (internal/tui/view.go:533-538) takes an Unknown lane's initial from its "? " prefix, so every unknown lane in a folded strip reads "?" - take the initial from lane.Name (and keep the "?" only in the full-name form), plus a test with two Unknown lanes
+  note: edge: on a short terminal a run with more lanes than body rows still loses lanes - the initials list is cut at h by the i >= h loop (renderThinColumn(0,10,3) on the ten-lane fixture reads "BBT"); reachable with 4+ neighbouring empty lanes and bodyHeight at its floor of 3; closing it needs a choice (e.g. a count "7" instead of initials when even initials do not fit)
+  note: limit: the cursor lane is never folded, so a run of empty lanes with the cursor inside draws as up to three strips (fold | cursor | fold) - chosen on purpose so h/l stay visible
+hunt-verdict: "pass: bughunt done at c6f605bd4, 0 blocker, 1 change edge (short-terminal initials: >h lanes cut, Unknown lanes read '?') left as note for review/person, 0 pre-existing"
+test-verdict: "pass: go vet (linux+windows) and go build ok, go test ./... RC=0, go test -race ./internal/tui RC=0; DoD 1-5,7 verified (proof tests run); DoD 6 left for the person; real TUI on a scratch board: 7 empty lanes in one strip, full lanes 24->56 cells; failure path: n/a, render-only; writes nothing, so no two-writer case"
+review-verdict: "accept: DoD 1-5 and 7 met by the diff and its tests (go test ./internal/tui passes at c6f605bd4); no blocker - one fix-now edge (Unknown lane initial) and one design edge on very short terminals"
+review-round: 2
+review-verdict-gaps: |-
+  note: edge: fix-now: renderThinColumn (internal/tui/view.go:533-538) takes an Unknown lane's initial from its "? " prefix, so every unknown lane in a folded strip reads "?" - take the initial from lane.Name (and keep the "?" only in the full-name form), plus a test with two Unknown lanes
+  note: edge: on a short terminal a run with more lanes than body rows still loses lanes - the initials list is cut at h by the i >= h loop (renderThinColumn(0,10,3) on the ten-lane fixture reads "BBT"); reachable with 4+ neighbouring empty lanes and bodyHeight at its floor of 3; closing it needs a choice (e.g. a count "7" instead of initials when even initials do not fit)
+  note: limit: the cursor lane is never folded, so a run of empty lanes with the cursor inside draws as up to three strips (fold | cursor | fold) - chosen on purpose so h/l stay visible
+review-check: |-
+  1. cd into this worktree and run: go run ./cmd/jaira (a terminal at least 120 wide)  2. on a board where several neighbouring lanes are empty (a fresh jaira init board: everything between Backlog and Done), press z  3. you see ONE thin strip (4 cells) in place of the run of empty lanes, with their names down it parted by a ─ row - or only initials (B T P I ...) if the terminal is short  4. the lanes with tickets are visibly wider than before z  5. press l to walk into the empty run: the lane under the cursor leaves the strip and gets its own accented thin box; the rest stay folded either side  6. press z again: every lane is a normal column again
+  7. seen by a person (DoD 6): in step 3 you see one strip instead of six and wider cards - tick it yourself on acceptance
+stop-after-fix: "true"
 ---
 
 # TUI z-Modus: benachbarte leere Lanes werden zu einem schmalen Streifen zusammengefasst
@@ -65,3 +82,12 @@ outcome-resolves: "4QMKAF goal: several empty lanes side by side occupy one stri
 - **2026-11-23 13:21 · Alexander Sacharov** — decision (Alex 23.11.2026): parked in ideas - Berk works a lot in internal/tui; start only after agreeing with him to avoid conflicts.
 - **2026-11-26 07:58 · Sascha** — parent session: uds:/run/user/1000/cc-socks/62036.sock
 - **2026-11-26 07:59 · Sascha** — plan (no planning lane ticked): boardFit (internal/tui/view.go) groups lanes into units - a maximal run of thin lanes not holding the cursor is one unit - and runs fitWindow over units; boardWindow gets fold map[from]to; renderThinColumn draws a run [from,to): names with a '─' row between, initials when they do not fit the height. Pre-condition: Alex's 23.11. note asked to agree with Berk first - teamlead dispatched this, so taken as agreed.
+- **2026-11-26 08:05 · Sascha** — critique: no findings. Considered and rejected: replacing thin+fold maps with a []unit in boardWindow - cleaner render loop, but lanewindow_test.go reads win.thin in four tests; the map stays.
+- **2026-11-26 08:07 · Sascha** — bughunt: change: internal/tui/view.go:535-549 (renderThinColumn initials fallback) - class: the short-terminal fallback still loses lanes it promises to show; (a) a folded run with more lanes than body rows is cut by the i >= h loop, (b) every Unknown lane's initial is the '?' of its '? ' prefix, so unknown lanes are indistinguishable; example: renderThinColumn(0,10,3) on the ten-lane fixture reads "BBT" (7 of 10 lanes gone), two Unknown lanes read "??"; reachable when 4+ neighbouring lanes are empty (ideas..pre-process on the default board) and bodyHeight sits at its floor of 3; edge, not a blocker (label only, no data or cursor effect); ran: scratch test in internal/tui (go test -run TestZZHunt -v)
+- **2026-11-26 08:07 · Sascha** — hunt report: 1 finding, 1 change (edge), 0 pre-existing, as a note on 4QMKAF | read whole: internal/tui/view.go layout path (boardWindow, boardFit, renderBoard, fitWindow, renderThinColumn, columnStyle), internal/tui/lanefold_test.go, core/release/notes/4QMKAF.md, plus every consumer of boardFit/thin/fold in internal/tui (no mouse hit-testing maps x to lanes, so folding shifts nothing else); none as a diff (first hunt) | not read whole: the other ~27k lines of package tui, which never reach boardWindow; checked out-of-range laneIdx (no panic, window centres on unit 0) and the full tui test suite (passes)
+- **2026-11-26 08:07 · Sascha** — bughunt: done at c6f605bd4 - 1 finding (1 change, 0 pre-existing) in 3 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/4QMKAF.md internal/tui/lanefold_test.go internal/tui/view.go
+- **2026-11-26 08:07 · Sascha** — testing: function seen on a scratch board (jaira init, 120x30, tmux): z draws the 7 empty lanes between Backlog and Done as one 4-cell strip reading B T P I H R H (initials - names do not fit 22 rows), Blocked alone at the end its own strip, Backlog/Done widen from 24 to 56 cells. waiting: full suite (bg) and bughunter (subagent) since 09:07
+- **2026-11-26 08:09 · Sascha** — waiting: fresh review agent (run-lane.sh, herdr tab) since 09:09
+- **2026-11-26 08:10 · Sascha** — review: done at c6f605bd4
+- **2026-11-26 08:10 · Sascha** — review: fix-now: Unknown lane initial in a folded strip is the '?' of its '? ' prefix (internal/tui/view.go:533-538) - take it from lane.Name and add a test with two Unknown lanes. The other edge (initials cut at h on very short terminals) needs a design choice and is NOT part of this round.
+- **2026-11-26 08:12 · Sascha** — fix-now closed: initials in a short folded strip now come from lane.Name, so unknown lanes no longer all read '?' (TestFoldedStripInitialOfUnknownLane). set stop-after-fix=true (fix ~15 lines, no lock, no parser). Left the other edge (more lanes than rows) - needs a choice, not fix-now.

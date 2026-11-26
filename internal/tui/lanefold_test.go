@@ -108,3 +108,15 @@ func TestFoldGivesItsWidthToFullLanes(t *testing.T) {
 		t.Errorf("colW = %d, no wider than the %d of five separate strips", win.colW, unfolded)
 	}
 }
+
+// An unknown lane gives its own initial in a short strip, not the "?" it is
+// prefixed with in full — two of them would otherwise read the same.
+func TestFoldedStripInitialOfUnknownLane(t *testing.T) {
+	m := newTestModel(t, 240, 40)
+	m.key(key("z"))
+	m.cols[6].lane.Unknown = true
+	m.cols[7].lane.Unknown = true
+	if got := strings.Join(thinColumnRows(m.renderThinColumn(6, 8, 5)), ""); got != "RH" {
+		t.Errorf("short strip of two unknown lanes reads %q, want \"RH\"", got)
+	}
+}

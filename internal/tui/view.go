@@ -533,8 +533,10 @@ func (m *Model) renderThinColumn(from, to, h int) string {
 	}
 	if len(names) > 1 && len(rows) > h {
 		rows = rows[:0]
-		for _, n := range names {
-			if len(n) > 0 {
+		// From the name itself: an unknown lane's "? " would make every one
+		// of them read "?".
+		for i := from; i < to; i++ {
+			if n := []rune(m.cols[i].lane.Name); len(n) > 0 {
 				rows = append(rows, string(n[0]))
 			}
 		}
