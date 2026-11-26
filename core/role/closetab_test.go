@@ -170,6 +170,12 @@ func TestReapClosesAParkedTabOnceItsCacheIsCold(t *testing.T) {
 			r.write(t, r.shown, `{"status":"human","question":"which one?"}`)
 			r.env = append(r.env, "JAIRA_CACHE_WINDOW=0")
 		}, false, "kept AB12CD: the ticket has an open question"},
+		// A herdr that gave no answer keeps the park: unparked, no later
+		// round would close the tab.
+		"herdr gives no answer": {func(t *testing.T, r *reapRig) {
+			r.write(t, filepath.Join(r.labels, "p1.fails"), "echo 'request timed out' >&2; exit 1\n")
+			r.env = append(r.env, "JAIRA_CACHE_WINDOW=0")
+		}, false, "kept AB12CD: herdr gave no answer for pane p1: request timed out"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -265,6 +271,24 @@ func TestCloseTabKeepsAWorkerThatIsNotFinished(t *testing.T) {
 		"herdr not reachable": {func(t *testing.T, r *reapRig) {
 			r.write(t, r.shown, `{"status":"signoff","question":""}`)
 			r.env = append(r.env, "HERDR_BIN_PATH="+filepath.Join(r.wt, "no-herdr"))
+		}, "p1", "", "herdr gave no answer for pane p1"},
+		// Only herdr's own not_found says the tab is gone; a timeout says
+		// nothing about it.
+		"pane get times out": {func(t *testing.T, r *reapRig) {
+			r.write(t, r.shown, `{"status":"signoff","question":""}`)
+			r.write(t, filepath.Join(r.labels, "p1.fails"), "echo 'request timed out' >&2; exit 1\n")
+		}, "p1", "", "herdr gave no answer for pane p1: request timed out"},
+		"tab get times out": {func(t *testing.T, r *reapRig) {
+			r.write(t, r.shown, `{"status":"signoff","question":""}`)
+			r.write(t, filepath.Join(r.labels, "tp1.fails"), "exit 1\n")
+		}, "p1", "", "herdr gave no answer for tab tp1: exit 1, no message"},
+		"pane unknown to hc": {func(t *testing.T, r *reapRig) {
+			r.write(t, r.shown, `{"status":"signoff","question":""}`)
+			r.write(t, filepath.Join(r.labels, "p1.fails"), `echo '{"error":{"kind":"not_found"}}' >&2; exit 3`+"\n")
+		}, "p1", "", "herdr does not know pane p1"},
+		"pane unknown to the old herdr": {func(t *testing.T, r *reapRig) {
+			r.write(t, r.shown, `{"status":"signoff","question":""}`)
+			r.write(t, filepath.Join(r.labels, "p1.fails"), `echo '{"error":{"code":"pane_not_found"}}'; exit 1`+"\n")
 		}, "p1", "", "herdr does not know pane p1"},
 		"tab already gone": {func(t *testing.T, r *reapRig) {
 			r.write(t, r.shown, `{"status":"signoff","question":""}`)

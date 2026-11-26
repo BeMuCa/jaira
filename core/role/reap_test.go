@@ -66,6 +66,9 @@ func newReapRig(t *testing.T) *reapRig {
 		"herdr": `#!/usr/bin/env bash
 n="` + tmp + `/panes-made"
 l="` + r.labels + `"
+# labels/<id>.fails, where it exists, answers 'pane get' or 'tab get' for that
+# id instead: a script fragment that prints herdr's error and exits.
+case "$1 $2" in "pane get"|"tab get") [ -f "$l/$3.fails" ] && . "$l/$3.fails" ;; esac
 case "$1 $2" in
   "tab create") echo x >> "$n"; p="p$(wc -l < "$n" | tr -d ' ')"
                 while [ $# -gt 0 ]; do [ "$1" = --label ] && { mkdir -p "$l"; echo "$2" > "$l/$p"; }; shift; done
@@ -443,6 +446,65 @@ func TestReapLeavesATabItDidNotOpen(t *testing.T) {
 	}
 	if recs := r.records(t); len(recs) != 0 {
 		t.Errorf("records left: %v", recs)
+	}
+}
+
+// A merged ticket's tab counts as closed only when herdr itself says it does
+// not know the pane or tab: hc's kind not_found on stderr, old herdr's code
+// pane_not_found. Any other failure - a timeout, a herdr gone mid-round, no
+// message at all - keeps the worktree, the branch and the records for the next
+// round: claude may still sit in that tab.
+func TestReapReadsOnlyNotFoundAsAClosedTab(t *testing.T) {
+	t.Parallel()
+	for name, c := range map[string]struct {
+		id, fails string
+		removes   bool
+		says      string
+	}{
+		"pane get times out": {"p2", "echo 'request timed out' >&2; exit 1", false,
+			"kept AB12CD: herdr gave no answer for pane p2 (request timed out)"},
+		"pane get fails silently": {"p2", "exit 1", false,
+			"kept AB12CD: herdr gave no answer for pane p2 (exit 1, no message)"},
+		"tab get times out": {"tp2", "echo 'request timed out' >&2; exit 1", false,
+			"kept AB12CD: herdr gave no answer for tab tp2 (request timed out)"},
+		"pane unknown to hc": {"p2", `echo '{"error":{"kind":"not_found"}}' >&2; exit 3`, true,
+			"removed "},
+		"pane unknown to the old herdr": {"p2", `echo '{"error":{"code":"pane_not_found"}}'; exit 1`, true,
+			"removed "},
+		"tab unknown to hc": {"tp2", `echo '{"error":{"kind":"not_found"}}' >&2; exit 3`, true,
+			"removed "},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			r := newReapRig(t)
+			r.mergedAt(t, r.git(t, r.repo, "rev-parse", "feat/ab12cd"))
+			r.write(t, r.shown, `{"status":"done"}`)
+			r.write(t, filepath.Join(r.labels, c.id+".fails"), c.fails+"\n")
+
+			out := r.run(t, r.repo, "reap.sh")
+			if !strings.Contains(out, c.says) {
+				t.Errorf("output lacks %q:\n%s", c.says, out)
+			}
+			_, err := os.Stat(r.wt)
+			if c.removes {
+				if !os.IsNotExist(err) {
+					t.Errorf("worktree still there (%v):\n%s", err, out)
+				}
+				if got := r.closedTabs(); got != "tp1" {
+					t.Errorf("closed tabs %q, want only tp1\n%s", got, out)
+				}
+				return
+			}
+			if err != nil {
+				t.Errorf("worktree removed beside a tab herdr gave no answer about: %v\n%s", err, out)
+			}
+			if b := r.git(t, r.repo, "branch", "--list", "feat/ab12cd"); b == "" {
+				t.Errorf("branch deleted:\n%s", out)
+			}
+			if recs := r.records(t); len(recs) != 2 {
+				t.Errorf("records %v, want both kept\n%s", recs, out)
+			}
+		})
 	}
 }
 

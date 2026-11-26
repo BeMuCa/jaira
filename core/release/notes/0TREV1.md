@@ -1,0 +1,2 @@
+- reap.sh now keeps a merged ticket's worktree, branch and tab records when herdr gives no answer about one of its tabs (a timeout, a restart) and says `kept <ticket>: herdr gave no answer for pane <id> (...)`; only herdr's own "not found" still counts as a closed tab. Run `jaira update --roles` to get it.
+- close-tab.sh now keeps a parked tab parked when herdr gives no answer about it, so a later reap round still closes it; run `jaira update --roles` to get it.
