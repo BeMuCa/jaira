@@ -23,7 +23,7 @@ related:
   - 01M58G28438KJJD3YDGM2B4KC9
 commits: []
 created-at: 2026-11-23T22:17:22Z
-updated-at: 2026-11-26T10:59:59Z
+updated-at: 2026-11-26T11:00:02Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-wfhpzt
@@ -37,6 +37,7 @@ back-from: testing
 back-by: lane
 back-count: 2
 review-gaps: "third pass, over the one-condition fix in renderStep: nothing to remove. Earlier passes stand: removed the guards for an unknown lane and an empty source from core/lane/tune.go; left corrections.go dropFrontmatterLine and share.go stampCreatorLine alone."
+test-verdict: "pass at b92876cf4, with a limit: go build ./... and go vet ./... RC=0, gofmt clean, targeted -race tests green (core/lane Tune|SetAgents|Parse; internal/tui Pipeline|NextTier|Catalogue|Help|Workers|LaneFocus; internal/cli Doc; core/release) - the full race suite was NOT run in this lane (house rule: the main session runs it before the PR). DoD 2-4 verified in the tree. Behaviour on a scratch board in a real terminal (tmux): t and + on Review wrote model-tier: cheap and agents: 2, step read 2×cheap, - and t restored the file byte for byte; unwritable lane directory shows REFUSED, file unchanged, no temp or lock file left; two boards pressing + and t at the same moment, three runs, both lines in the file each time (before the lock one was lost - sent back once for that)."
 ---
 
 # Der Lane-Verlauf eines Boards ist als Graph zu sehen und einzustellen: Lanes als Knoten, Uebergaenge und Loops als Kanten, je Lane Agent, Modell und Anzahl Agenten
