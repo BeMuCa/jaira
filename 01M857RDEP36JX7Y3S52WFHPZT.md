@@ -1,7 +1,7 @@
 ---
 id: 01M857RDEP36JX7Y3S52WFHPZT
 title: "Der Lane-Verlauf eines Boards ist als Graph zu sehen und einzustellen: Lanes als Knoten, Uebergaenge und Loops als Kanten, je Lane Agent, Modell und Anzahl Agenten"
-status: in-progress
+status: critique
 ready: true
 creator: BeMuCa
 goal: "Eine Person sieht den Ablauf eines Boards als Graph - jede Lane ein Knoten, jeder Uebergang und jeder Loop (critique/optimize/testing zurueck nach in-progress) eine Kante mit ihrer Grenze - und stellt je Knoten ein, welcher Agent bzw. welches Modell die Lane laeuft und wie viele Agenten sie gleichzeitig bearbeiten (Fan-out), ohne Lane-Dateien von Hand zu editieren."
@@ -23,11 +23,14 @@ related:
   - 01M58G28438KJJD3YDGM2B4KC9
 commits: []
 created-at: 2026-11-23T22:17:22Z
-updated-at: 2026-11-26T10:53:13Z
+updated-at: 2026-11-26T10:53:15Z
 assignee: BeMuCa
 updated-by: BeMuCa
 claimed-by: worker-wfhpzt
 claimed-at: 2026-11-26T10:46:36Z
+outcome-what: "The Compact View (v) sets a lane: t steps the focused lane's tier, + and - its agents (1-9). Each press rewrites one frontmatter line of the lane file (core/lane/tune.go SetTier, SetAgents), parsed before it is written; the step shows the planned count in front of its tier (3×cheap), a line under the graph names the file written."
+outcome-why: "The flow was visible (R68J0X) and the key existed (FSPJP9), but changing who runs a lane still meant opening the lane file by hand."
+outcome-resolves: "Concurrency: atomic write; a hand edit between read and write loses (noted). Error paths: a refused or failed write opens the REFUSED box and leaves the file alone; a reload error is shown, not dropped. Unusual input: tier taken from other lane files goes through SetScalar quoting; agents clamps at 1 and 9 and writes nothing there; lanes without agent step or without a file refuse. Permissions: writes only l.Source and, for a byte-equal custom lane, its catalogue twin as E does. Open: a shipped lane set this way is skipped by 'jaira update --lanes'."
 ---
 
 # Der Lane-Verlauf eines Boards ist als Graph zu sehen und einzustellen: Lanes als Knoten, Uebergaenge und Loops als Kanten, je Lane Agent, Modell und Anzahl Agenten
