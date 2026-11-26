@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:26:39Z
+updated-at: 2026-11-26T10:26:42Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T10:23:32Z
@@ -30,7 +30,7 @@ round: 4
 back-from: critique
 back-by: lane
 back-count: 1
-review-gaps: "removed internal/cli/handover.go shortSHA (copy of core/gitrepo shortSHA, now exported as gitrepo.ShortSHA); folded inbox.Record (forwarder with only test callers) and RecordNew into one Record returning what it added. Left: refsync decodeTicket (small, mirrors inline ParseDoc+Decode already repeated in refsync), inbox --all loading the file before AckAll and building groups it does not need (rare command, not a hot path), Arrival.Mine/Changed (still in fetch --json output), gitrepo CheckedOut vs core/board/gitignore.go:334 worktree list (different question), people active, milestone assign (peopleList is cached)"
+review-gaps: "round 2: folded inbox.Send's two success returns into one (err == nil || commit != \"\"); msg.go computes listed once and uses people.List.Same instead of a local EqualFold closure; left the double s.Load in take (second read is after refs.Pull, needed); peopleList repeat calls are cached; no other inbox caller still uses identity.Slug"
 hunt-verdict: "fail: bughunt done at 58e157861 (partial coverage, first hunt): 3 change blockers (identity slug collision, msg send double-delivery after push, msg to an unknown name goes to an unread inbox) and 1 edge (every clone fetches all inboxes); the hunter's claims were not run by testing"
 test-verdict: "fail: take on a stale local file reports 'already yours' (exit 0) while the ref names bob; a re-handover to a receiver who has not fetched since gives no inbox entry; a receiver's pull rewrites assigned-by (remote 7dddf77). Gates green RC=0 (build, vet, race tests on 9 packages); DoD 1-19 proofs exist and their packages pass; DoD 3 still [-] though its file exists; DoD 20 seen by a person left open for the person; no-remote msg exits 1 and writes nothing; two parallel msgs both land"
 ---
