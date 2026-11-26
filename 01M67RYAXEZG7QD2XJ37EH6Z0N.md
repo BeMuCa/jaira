@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: testing
+status: in-progress
 ready: true
 creator: berkc
 assignee: Berk
@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:53:35Z
+updated-at: 2026-11-26T00:53:39Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T00:35:07Z
@@ -28,15 +28,15 @@ outcome-what: "The diff beside a signoff/human ticket opens as a file list (path
 outcome-why: "The person found ]/[ awkward, long lines were cut off, the double gutter wasted room, the split was fixed, and o failed silently under WSL2 (the code wrapper exited 127 with stderr dropped while jaira printed 'opened')."
 outcome-resolves: "Person's signoff feedback of 2026-11-25 (DoD 7-11)."
 review-summary: "none"
-round: 10
+round: 11
 review-gaps: "round 88e9617d9..HEAD: folded the '-' row shows old line rule (in diffGutter and diffLine) into diffRow.shown(); dropped diffLine's num() blank branch (no '+'/'-'/context row has line 0, parseDiff guarantees >=1); dropped redundant r.to>r.from guard (to>from implies it); openDiffRow's reply closure is one diffOpenedMsg with err: wait(). Left: diffPan/left-right keys, clampDiffLeft in diffLeft (needed after resize), stderr last-line in openInCode (no existing helper; linklines.go LastIndex is unrelated), diffFileWidth per render (bounded to one file). Not cleanup, left for review: toggleDiffFile does not reset diffHScroll, so the sideways offset carries into the next opened file (clamped to its width)."
 test-verdict: "fail: DoD 5 proof names two tests that do not exist (TestGutterShowsOldAndNewNumbersOnTheirSides, TestBlankRowSeparatesFilesAndJumpsStillLandOnHeaders); gates green (RC=0, tui and gitrepo ok); DoD 7-11 proofs all exist and pass"
 review-verdict: "Pass. 68dc5cf8 fixes both blockers in the right place with minimal changes, and adds nothing new: seenHunk resets per file, and the all-unavailable check reuses Repo.Diff's second return value. Each fix has a test that fails without it. The rest of the branch is unchanged since the review that accepted it. go test ./core/gitrepo ./internal/tui -count=1 is green; gofmt and vet are clean."
 review-round: 7
 review-check: "1. cd /home/berkc/code/X_General/jaira-EH6Z0N && go test ./internal/tui -count=1 -run 'TestHeaderLineIsTheFirstHunkOfEachFile|TestUnshowableCommitIsDiffUnavailableNotNoChanges' -v  2. see both PASS  3. go build -o /tmp/jaira-eh ./cmd/jaira  4. make the terminal at least 140 columns wide and 20 rows tall  5. run /tmp/jaira-eh in this repo and open a ticket in signoff that has a feat/<handle> branch  6. see on the right: title 'Diff  feat/... → master' and 'file 1/N  +A −D' at its right end  7. see each file start with a grey bar (folder dim, name bold, '+a −d' on the right), an 'old new │' gutter, added rows on a green band and removed rows on a red band  8. press tab, then ]: the next file's bar moves to the top and the counter says file 2/N  9. press o on a file bar whose first hunk starts at line 1: VS Code opens that file at line 1, and the title says 'opened <path>:1'  10. open a ticket in signoff with no branch and no commits: the pane says 'No diff yet'"
-back-from: critique
+back-from: testing
 back-by: lane
-back-count: 2
+back-count: 1
 hunt-verdict: "fail: bughunt done at 16e7bd669, 5 change blockers (path parsing of quoted/space names, stale local master as base, branch not in a worktree, branch file name passed to editor without --, develop base)"
 ---
 
