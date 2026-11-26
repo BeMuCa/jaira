@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:52:43Z
+updated-at: 2026-11-26T00:52:45Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T00:35:07Z
@@ -160,3 +160,4 @@ Left standing: no openWait deadline (note 2026-11-26 00:35), mouse capture only 
 - **2026-11-26 00:43 · Berk** — Worker: critique pass 2 finding applied myself (one clause): '] and [ are gone' dropped from the release line, since no released build ever had them. Critique has sent back twice (the variant-b cap), so the ticket goes on to optimize without a third critique pass; nothing else was open.
 - **2026-11-26 00:46 · Berk** — optimize r10: behaviour-preserving cleanups only (diffRow.shown, dead num() blank branch, redundant span guard, one-line reply closure). Noticed but not changed: diffHScroll survives closing a file and opening another — toggleDiffFile resets diffScroll but not diffHScroll; a behaviour change, so for review/in-progress to decide.
 - **2026-11-26 00:52 · Berk** — bughunt: change: blocker: internal/tui/diffpane.go:175 - class: file paths git writes in a non-plain form are taken verbatim as the row path: with a space git ends the "+++ b/<path>" line in a TAB, with a double quote, backslash or control char it quotes the whole path ("b/...") and neither line 175 nor splitDiffGit (:270-276) unquotes it; splitDiffGit also splits at the first " b/", so a path containing " b/" gets a wrong path where no +++ line follows (deletion uses oldPath, pure rename, binary); example: a new file "my file.txt" gets path "my file.txt\t", and o runs code -g "my file.txt\t:1", a file that does not exist; a file q"uote.txt gets path "\"b/q\\\"uote.txt\""; ran: git diff of a scratch branch (cat -A shows +++ b/my file.txt^I) fed to parseDiff through a go test -overlay scratch test
+- **2026-11-26 00:52 · Berk** — bughunt: change: blocker: core/gitrepo/branchdiff.go:40 - class: a local base branch that is behind its remote: Base() takes refs/heads/master whenever it exists, never origin/master even when that is newer, so the merge base with a branch that merged origin/master is old and everything that merge brought in shows as the ticket change; example: a teammate PR merged on GitHub, local master not pulled, the ticket branch merged origin/master -> the pane lists the teammate file as changed by this ticket; ran: go test -overlay calling ticketDiff on a scratch clone (files: mine.txt teammate.txt; git diff origin/master...branch gives only mine.txt)
