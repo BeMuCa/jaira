@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:40:35Z
+updated-at: 2026-11-26T09:40:37Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -88,7 +88,7 @@ question: ""
 - [x] P10 'alex -> berkc': printDetail and TUI detail row 'assignee' show '<assigned-by> -> <assignee>' when assigned-by is set and differs; show --json already carries the field; tests (DoD 9)
 - [x] P11 TUI: load inbox on reload; banner line above lanes when entries exist ('✉ N new for you: ...  i open'); ✉ marker on cards with an entry; modeInbox list on 'i' (j/k, enter opens ticket or shows message stripped, x acks, esc); openDetail acks the ticket's entries; help text; TUI tests (DoD 2, 6)
 - [x] P12 README '## Commands' + docs/COMMANDS.md entries for inbox, msg, handover, take, milestone assign; core/release/notes/WQNRQN.md one line per client-facing change (DoD 10)
-- [ ] P13 go vet + go test for touched packages (core/ticket core/inbox core/gitref core/refsync internal/cli internal/tui) and core/shipped; tick DoD with proofs; commit feat(WQNRQN)
+- [x] P13 go vet + go test for touched packages (core/ticket core/inbox core/gitref core/refsync internal/cli internal/tui) and core/shipped; tick DoD with proofs; commit feat(WQNRQN)
 
 ## Progress
 - **2026-11-04 21:27 · berkc** — BRAINSTORM (Code-Befund, dann Optionen, Empfehlung zuerst)
