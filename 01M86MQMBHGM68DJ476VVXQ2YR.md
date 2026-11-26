@@ -15,7 +15,7 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T08:04:28Z
+updated-at: 2026-11-26T08:04:32Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -26,8 +26,8 @@ outcome-why: "Ein Cockpit-Testlauf hinterliess node_modules/.vite als ?? in jede
 outcome-resolves: "DoD 1-2; go test ./... gruen, go vet, shipped-history --check"
 review-summary: "Die Root-.gitignore ignoriert jetzt /core/mod/builtin/*/node_modules/, sodass der vitest-Cache (node_modules/.vite) nach einem Mod-Testlauf nicht mehr in git status auftaucht. mod.Builtins() ueberspringt node_modules/ auf oberster Ebene eines Mods (neben tests/ und den generierten Typen), damit 'jaira roles install' den Cache nie mitinstalliert; dafuer wurde der Walk in builtinsIn(fs.FS) ausgelagert, den ein neuer Test mit fstest.MapFS prueft - inklusive dass ein tieferes hooks/node_modules erhalten bleibt. Kommentare sagen ehrlich, dass go:embed all: den Cache in einen lokalen Build weiter einbettet."
 review-gaps: |-
-  none: 3 files, nothing duplicated elsewhere (core/web/ui/.gitignore covers only core/web/ui), every new symbol has a caller
-  round 2: none, comments only
+  note: limit: ein lokal nach einem Testlauf gebautes Binary traegt die node_modules-Bytes weiter (go:embed all: kann kein Unterverzeichnis auslassen); installiert werden sie nicht, Release-Builds laufen auf frischem Checkout - so in mod.go:49-54 und .gitignore:41-44 dokumentiert
+  note: limit: nur node_modules/ direkt im Mod-Ordner wird uebersprungen, tiefere (hooks/node_modules) bewusst nicht - der Test haelt das fest
 test-verdict: "pass round 2: go test ./core/mod ok, gofmt clean; DoD 1-2 unchanged by the comment-only fix, proofs still point at .gitignore:43 (node_modules line) and TestBuiltinsLeaveATestRunsCacheOut"
 hunt-verdict: "pass: stop-after-fix, no hunt in round 2"
 round: 2
