@@ -35,14 +35,33 @@ func (r *Repo) BranchFor(handle string) string {
 }
 
 // Base returns the branch a ticket branch is reviewed against: master, else
-// main, else the same two on origin. "" when none exists.
+// main, else the same two on origin. A local base that is behind its origin
+// copy gives the origin copy, since a ticket branch cut from origin would
+// otherwise show every commit pulled since as its own change. "" when none
+// exists.
 func (r *Repo) Base() string {
 	for _, ref := range []string{"refs/heads/master", "refs/heads/main", "refs/remotes/origin/master", "refs/remotes/origin/main"} {
 		if _, err := r.run("rev-parse", "--verify", "--quiet", ref); err == nil {
-			return strings.TrimPrefix(strings.TrimPrefix(ref, "refs/heads/"), "refs/remotes/")
+			name := strings.TrimPrefix(strings.TrimPrefix(ref, "refs/heads/"), "refs/remotes/")
+			if strings.HasPrefix(ref, "refs/heads/") && r.isBehindOrigin(name) {
+				return "origin/" + name
+			}
+			return name
 		}
 	}
 	return ""
+}
+
+// isBehindOrigin reports whether local branch name is an ancestor of
+// origin/name and not the same commit.
+func (r *Repo) isBehindOrigin(name string) bool {
+	local, errL := r.run("rev-parse", "--verify", "--quiet", "refs/heads/"+name)
+	origin, errO := r.run("rev-parse", "--verify", "--quiet", "refs/remotes/origin/"+name)
+	if errL != nil || errO != nil || strings.TrimSpace(local) == strings.TrimSpace(origin) {
+		return false
+	}
+	_, err := r.run("merge-base", "--is-ancestor", "refs/heads/"+name, "refs/remotes/origin/"+name)
+	return err == nil
 }
 
 // BranchDiff returns the patch of branch against the merge base with base,

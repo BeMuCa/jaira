@@ -172,8 +172,8 @@ func parseDiff(patch string) []diffRow {
 			switch {
 			case strings.HasPrefix(raw, "+++ "):
 				// A deletion names /dev/null here, and the file is still the old path.
-				path = strings.TrimPrefix(raw[4:], "b/")
-				if raw[4:] == "/dev/null" {
+				path = sidePath(raw[4:], "b/")
+				if path == "/dev/null" {
 					path = oldPath
 				}
 				rows[header].path = path
@@ -266,14 +266,63 @@ func markWordPair(del, add *diffRow) {
 	add.from, add.to = 1+p, 1+len(b)-s
 }
 
-// splitDiffGit reads "diff --git a/X b/Y" into X and Y.
+// splitDiffGit reads "diff --git a/X b/Y" into X and Y. Git C-quotes a path
+// with a quote, a backslash or a control byte, and then the whole quoted token
+// carries the a/ or b/ prefix.
 func splitDiffGit(line string) (oldPath, newPath string) {
-	rest := strings.TrimPrefix(line, "diff --git a/")
-	i := strings.Index(rest, " b/")
-	if i < 0 {
-		return rest, rest
+	rest := strings.TrimPrefix(line, "diff --git ")
+	if strings.HasPrefix(rest, `"`) {
+		if end := closingQuote(rest); end > 0 {
+			return sidePath(rest[:end+1], "a/"), sidePath(strings.TrimPrefix(rest[end+1:], " "), "b/")
+		}
 	}
-	return rest[:i], rest[i+3:]
+	sep := -1
+	for _, s := range []string{" b/", ` "b/`} {
+		if i := strings.Index(rest, s); i >= 0 && (sep < 0 || i < sep) {
+			sep = i
+		}
+	}
+	if sep < 0 {
+		p := sidePath(rest, "a/")
+		return p, p
+	}
+	return sidePath(rest[:sep], "a/"), sidePath(rest[sep+1:], "b/")
+}
+
+// sidePath is the path in one side of a diff header: git writes a tab after a
+// name that holds a space, a C-quoted name is unquoted, then the a/ or b/
+// prefix goes.
+func sidePath(tok, prefix string) string {
+	tok = strings.TrimSuffix(tok, "\t")
+	if strings.HasPrefix(tok, `"`) {
+		if u, err := strconv.Unquote(tok); err == nil {
+			tok = u
+		}
+	}
+	return strings.TrimPrefix(tok, prefix)
+}
+
+// closingQuote is the index of the quote that closes the C-quoted token at the
+// start of s, or -1 when it has none.
+func closingQuote(s string) int {
+	for i := 1; i < len(s); i++ {
+		switch s[i] {
+		case '\\':
+			i++
+		case '"':
+			return i
+		}
+	}
+	return -1
+}
+
+// diffArg is the path an IDE or editor is given. A name that starts with - or +
+// would be read as an option, or as a command by vim, so it is written ./name.
+func diffArg(path string) string {
+	if strings.HasPrefix(path, "-") || strings.HasPrefix(path, "+") {
+		return "./" + path
+	}
+	return path
 }
 
 // hunkStart reads the first line of one side of "@@ -a,b +c,d @@": side "-" gives
@@ -541,14 +590,15 @@ func (m *Model) openDiffRow() tea.Cmd {
 	}
 	r := m.diffRows[m.diffTargetRow()]
 	cur := settings.Load()
-	argv := ideCommand(cur.IDETemplate(), r.path, r.line)
+	file := diffArg(r.path)
+	argv := ideCommand(cur.IDETemplate(), file, r.line)
 	where := r.path + ":" + strconv.Itoa(r.line)
 	wait, err := openInCode(m.diffDir, argv)
 	// A bare program name fails Start with exec.ErrNotFound; a path to a missing
 	// program (./ide, /opt/x/idea.sh) fails with fs.ErrNotExist.
 	if errors.Is(err, exec.ErrNotFound) || errors.Is(err, fs.ErrNotExist) {
 		editor, _ := editorChoice(cur)
-		cmd := exec.Command(editor[0], append(editor[1:], r.path)...)
+		cmd := exec.Command(editor[0], append(editor[1:], file)...)
 		cmd.Dir = m.diffDir
 		m.diffOpened, m.diffOpenErr = argv[0]+" not found — opened in "+editor[0], false
 		return tea.ExecProcess(cmd, func(err error) tea.Msg { return diffEditorDoneMsg{err} })

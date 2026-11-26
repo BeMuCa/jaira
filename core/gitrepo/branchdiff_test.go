@@ -99,3 +99,37 @@ func TestBranchForPicksTheNewestBranchCarryingTheHandle(t *testing.T) {
 		t.Errorf("BranchFor(ABC123) = %q, want the newer feat/abc123-b, not exp/abc123-a", got)
 	}
 }
+
+// A clone whose local master is behind origin/master: the ticket branch was cut
+// from origin/master, so a teammate's commit is in its history. Base must be
+// origin/master, or that commit shows up as a change of the ticket.
+func TestBaseIsOriginWhenTheLocalBaseIsBehindIt(t *testing.T) {
+	origin, _ := fixtureRepo(t)
+	when := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	fixtureCommit(t, origin, map[string]string{"a.txt": "one\n"}, "base", when)
+	gitIn(t, origin, "branch", "-M", "master")
+
+	clone := filepath.Join(t.TempDir(), "clone")
+	if out, err := exec.Command("git", "clone", "-q", origin, clone).CombinedOutput(); err != nil {
+		t.Fatalf("git clone: %v\n%s", err, out)
+	}
+	gitIn(t, clone, "config", "user.email", "fixture@example.com")
+	gitIn(t, clone, "config", "user.name", "Fixture")
+
+	fixtureCommit(t, origin, map[string]string{"teammate.txt": "merged on GitHub\n"}, "teammate", when.Add(time.Hour))
+	gitIn(t, clone, "fetch", "-q", "origin")
+	gitIn(t, clone, "checkout", "-q", "-b", "feat/abc123-x", "origin/master")
+	fixtureCommit(t, clone, map[string]string{"mine.txt": "mine\n"}, "feat(ABC123): mine", when.Add(2*time.Hour))
+
+	repo := &Repo{Dir: clone}
+	if got := repo.Base(); got != "origin/master" {
+		t.Fatalf("Base() = %q, want origin/master while local master is behind it", got)
+	}
+	patch, err := repo.BranchDiff(repo.Base(), "feat/abc123-x")
+	if err != nil {
+		t.Fatalf("BranchDiff: %v", err)
+	}
+	if !strings.Contains(patch, "mine.txt") || strings.Contains(patch, "teammate.txt") {
+		t.Errorf("branch diff should list mine.txt only, got:\n%s", patch)
+	}
+}

@@ -904,3 +904,100 @@ func TestMouseIsLeftToTheTerminalOffTheDiffPane(t *testing.T) {
 		t.Error("the board asks for mouse events, which takes text selection away from the terminal")
 	}
 }
+
+// Git writes a tab after a name with a space, and C-quotes a name with a quote,
+// a backslash or a control byte, as the whole "a/…" or "b/…" token. The row
+// path must be the name itself, or 'o' opens a file that does not exist.
+func TestParseDiffReadsPathsGitWritesInOtherForms(t *testing.T) {
+	patch := "diff --git a/my file.txt b/my file.txt\n" +
+		"new file mode 100644\n" +
+		"--- /dev/null\n" +
+		"+++ b/my file.txt\t\n" +
+		"@@ -0,0 +1 @@\n" +
+		"+hello\n" +
+		"diff --git \"a/q\\\"uote.txt\" \"b/q\\\"uote.txt\"\n" +
+		"--- \"a/q\\\"uote.txt\"\n" +
+		"+++ \"b/q\\\"uote.txt\"\n" +
+		"@@ -1 +1 @@\n" +
+		"-x\n" +
+		"+y\n"
+	var headers []string
+	for _, r := range parseDiff(patch) {
+		if r.kind == 'H' {
+			headers = append(headers, r.path)
+		}
+	}
+	want := []string{"my file.txt", `q"uote.txt`}
+	if !slices.Equal(headers, want) {
+		t.Errorf("header paths = %q, want %q", headers, want)
+	}
+}
+
+// A file whose name starts with - or + is given to the IDE and to the editor as
+// ./name, so it is not read as an option or, in vim, as a command.
+func TestDiffArgKeepsAnOptionLikeNameOutOfTheFlags(t *testing.T) {
+	cases := map[string]string{
+		"-rf.txt":        "./-rf.txt",
+		"+!touch pwned":  "./+!touch pwned",
+		"internal/a.go":  "internal/a.go",
+		"docs/-notes.md": "docs/-notes.md",
+	}
+	for path, want := range cases {
+		if got := diffArg(path); got != want {
+			t.Errorf("diffArg(%q) = %q, want %q", path, got, want)
+		}
+	}
+	if got := ideCommand("code -g {file}:{line}", diffArg("-rf.txt"), 4); !slices.Equal(got, []string{"code", "-g", "./-rf.txt:4"}) {
+		t.Errorf("IDE argv for -rf.txt = %q", got)
+	}
+}
+
+// Opening a file whose name starts with - hands the IDE ./name, not the bare name.
+func TestOKeyGivesTheIDEADotSlashForAnOptionLikeName(t *testing.T) {
+	var gotArgv []string
+	orig := openInCode
+	openInCode = func(_ string, argv []string) (func() error, error) {
+		gotArgv = argv
+		return func() error { return nil }, nil
+	}
+	t.Cleanup(func() { openInCode = orig })
+
+	m := diffModel(t, 160, "signoff")
+	m.diffDir = "/repo/worktree"
+	m.diffRows = parseDiff("diff --git a/-rf.txt b/-rf.txt\n--- a/-rf.txt\n+++ b/-rf.txt\n@@ -1 +1 @@\n-x\n+y\n")
+	m.diffSel, m.diffOpen = 0, -1
+	m.render()
+	m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
+	if want := []string{"code", "-g", "./-rf.txt:1"}; !slices.Equal(gotArgv, want) {
+		t.Errorf("openInCode argv = %q, want %q", gotArgv, want)
+	}
+}
+
+// The blank row between two files is never a stop for up and down: the file
+// selection walks the file headers only, and 'o' on a header opens that file.
+func TestDownNeverStopsOnTheBlankRowBetweenFiles(t *testing.T) {
+	m := diffModel(t, 160, "signoff")
+	m.render()
+	blanks := 0
+	for _, r := range m.diffRows {
+		if r.kind == 'B' {
+			blanks++
+		}
+	}
+	if blanks == 0 {
+		t.Fatal("the sample diff has no blank separator row; the test would prove nothing")
+	}
+	m.Update(key("tab"))
+	for range 3 {
+		m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+		if kind := m.diffRows[m.diffTargetRow()].kind; kind != 'H' {
+			t.Fatalf("down selected a row of kind %q (sel=%d), want a file header", kind, m.diffSel)
+		}
+	}
+	for range 3 {
+		m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
+		if kind := m.diffRows[m.diffTargetRow()].kind; kind != 'H' {
+			t.Fatalf("up selected a row of kind %q (sel=%d), want a file header", kind, m.diffSel)
+		}
+	}
+}
