@@ -19,7 +19,7 @@ commits:
   - b70a95f7c15dd4fc85a73e07dfc7dd183486692a
   - a6c795086ddcc99194a09de2933e23b862a8c448
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T09:25:00Z
+updated-at: 2026-11-26T09:25:24Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -99,3 +99,4 @@ review-check: "1. cd in den Worktree feat/98kfjp  2. go test -count=1 -race ./co
 angenommen:
 - note: edge: die Lock-Tests (gitref_test.go holdRefLock, outbox_test.go) haben 700 ms Abstand zwischen 300 ms Halten und 1 s Wartezeit - auf einem sehr langsamen Windows-Runner kann das flackern; falls ja, Haltezeit auf 200 ms senken
 - note: limit: ein lokales Ref-Lock laenger als 1 s nach angenommenem Push (stehengebliebene .lock eines abgestuerzten git) meldet weiter Failed, der Eintrag verliert die naechste Runde gegen die eigene Schreibung - laut, wie vor dem Ticket, vom Teamlead so entschieden
+- **2026-11-26 09:25 · Sascha** — cockpit: accepted by the person, signoff -> done
