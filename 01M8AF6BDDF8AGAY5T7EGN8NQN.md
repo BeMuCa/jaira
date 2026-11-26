@@ -21,7 +21,7 @@ related: []
 commits:
   - 93e7b219801136cd21e8edde9fafd9a3f381da6f
 created-at: 2026-11-25T23:03:30Z
-updated-at: 2026-11-26T00:01:39Z
+updated-at: 2026-11-26T00:01:45Z
 updated-by: Berk
 claimed-by: w-gn8nqn
 claimed-at: 2026-11-26T00:01:36Z
@@ -75,3 +75,4 @@ back-count: 1
 core/role/builtin/jaira-worker/SKILL.md:364-368 and jaira-dispatcher/SKILL.md:200-203 say "tries SendMessage to=main first: if accepted ..." and then "write onto the ticket ..., send the same text to main" — reads as send, then note, then send again; reword to one order: jaira note + question field, then SendMessage to=main; accepted = it reached main, refused/no tool = old way. Left alone: setting the question field beside the note and ending the turn with the options on top of the status line (plan decisions 4 and 5 in the 23:06 note); role-lane/role-pr unchanged (decisions 2, 3); duplicated paragraph in worker+dispatcher matches the existing pattern there.
 - **2026-11-25 23:35 · Berk** — waiting: in-progress round 2 (haiku subagent) since 00:35
 - **2026-11-25 23:54 · Berk** — round 2: dispatcher line ~210 got the clear-the-field sentence; worker and dispatcher now one order (note + question field, then SendMessage to main). shipped.sha256: core/role test demanded dispatcher 69bbb910 and worker 74f035fb; inserted each in its sorted place in the path group, no old line removed. TestReapTearsDownWhatTheSetupBuilt failed once in the full core/role run (child outlived 1s teardown under load), passes alone; not related to skill text
+- **2026-11-26 00:01 · Berk** — critique (round 2): both round-1 findings addressed in bf15d840 — dispatcher SKILL.md ~:210 now clears the question field when main answers; worker :364-373 and dispatcher :200-208 now read in one order (note + question field, then SendMessage to main). No defect introduced by the repair. Change is 47 lines outside .jaira, no untracked files, no locking/parser -> critique+optimize in one pass. Optimize: nothing removed. Duplicated worker/dispatcher paragraph left (round-1 critique let it stand, matches existing pattern). Teamlead :90-94 partly restates the following 'Each answer goes onto the ticket ... SendMessage' sentence but adds the return route (by name or id) — left. go test ./core/role ./core/shipped -run 'Shipped|Installed' ok.
