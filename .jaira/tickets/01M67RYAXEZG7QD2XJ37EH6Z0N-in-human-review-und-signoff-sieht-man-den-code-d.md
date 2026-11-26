@@ -1,7 +1,7 @@
 ---
 id: 01M67RYAXEZG7QD2XJ37EH6Z0N
 title: "In human review und signoff sieht man den Code-Diff wie bei einem Merge, mit Sprung zur Datei in VS Code"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: Berk
@@ -20,13 +20,13 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:01:55Z
+updated-at: 2026-11-26T00:36:24Z
 updated-by: Berk
 claimed-by: w-eh6z0n
-claimed-at: 2026-11-25T23:39:47Z
-outcome-what: "The TUI diff pane (ticket view, sign-off/human lanes) shows each file's header at its first hunk's line, and a failed diff load shows 'Diff unavailable' instead of 'No changes'. Covered by new tests TestHeaderLineIsTheFirstHunkOfEachFile and TestUnshowableCommitIsDiffUnavailableNotNoChanges in internal/tui/diffpane_test.go; the rest of the ticket is unchanged from the earlier passes."
-outcome-why: "Review sent back two blockers: a header line taken from the second hunk when the first starts at line 1 makes 'o' open the wrong line; an unshowable commit list reported as 'No changes' hides a git problem (rule 8 of the spec)."
-outcome-resolves: "review 2026-11-05 09:31: diffpane.go:96 header line (blocker 1) and diffpane.go:271 fallback notice (blocker 2)"
+claimed-at: 2026-11-26T00:35:07Z
+outcome-what: "The diff beside a signoff/human ticket opens as a file list (paths from repo root, +/-): up/down select, enter opens a file inline and enter again closes it; inside it up/down scroll lines and left/right scroll sideways; one narrow line-number column; the divider drags with the mouse for the session; o waits for the IDE and shows its error in the diff title. ] and [ are gone."
+outcome-why: "The person found ]/[ awkward, long lines were cut off, the double gutter wasted room, the split was fixed, and o failed silently under WSL2 (the code wrapper exited 127 with stderr dropped while jaira printed 'opened')."
+outcome-resolves: "Person's signoff feedback of 2026-11-25 (DoD 7-11)."
 review-summary: "On a ticket in human or signoff, a wide TUI detail view shows the ticket's diff on the right: the feat/<handle> branch against the base's merge-base (.jaira excluded), or, when no branch exists, the commits that name the handle. Files get a header bar, hunk headers, an old/new number gutter, full-width +/- tint and word highlight; ] and [ jump between files, o opens the file at the row's line in VS Code and confirms in the title. 68dc5cf8 fixes the two blockers from the last review: parseDiff now sets a file header's line from its first @@ (seenHunk flag, reset at every diff --git), so a first hunk at +1 is no longer replaced by the second hunk's start. ticketDiff shows the red 'Diff unavailable' notice with the shas when git can show none of the fallback commits, not 'No changes'."
 round: 8
 review-gaps: |-
@@ -65,7 +65,8 @@ back-count: 1
   proof: internal/tui/diffpane.go:diffGutter,renderDiffPane,diffLine; tests TestGutterShowsOneNumberOnTheRowsSide, TestGutterIsOneDigitForAShortFile
 - [x] Der Spalt zwischen Ticket-Text und Diff laesst sich mit der Maus nach links/rechts ziehen, die Breite bleibt fuer die Sitzung; Test
   proof: internal/tui/model.go Update tea.MouseClickMsg/MouseMotionMsg/MouseReleaseMsg; diffpane.go diffLeft, clampDiffLeft, onDiffDivider; view.go View MouseMode; tests TestDragTheDividerResizesTheSplit, TestMouseIsLeftToTheTerminalOffTheDiffPane
-- [ ] o oeffnet die Datei wirklich: unter WSL2 mit VS Code auf Windows getestet; schlaegt der Start fehl, steht der Fehler sichtbar in der Titelzeile statt nichts zu passieren; Test
+- [x] o oeffnet die Datei wirklich: unter WSL2 mit VS Code auf Windows getestet; schlaegt der Start fehl, steht der Fehler sichtbar in der Titelzeile statt nichts zu passieren; Test
+  proof: internal/tui/diffpane.go openInCode (stderr captured, waits for exit) + openDiffRow (diffOpenedMsg, error in title via diffOpenErr); tests TestOpenInCodeWaitsAndReportsTheExitStatusAndStderr, TestOKeyShowsTheIDEsFailureInTheTitle, TestOKeyShowsALaunchErrorInTheTitle, TestOKeyConfirmsInTheDiffTitleWithoutAModal; WSL2 check note 2026-11-26 (127 + stderr on the broken server, exit 0 with a fresh one)
 
 ## Options
 
@@ -90,8 +91,8 @@ back-count: 1
 - [x] DoD8 scrolling inside an open file: rows of the open file follow its header (header pinned as first body row, then that file's rows from diffScroll, then the following file headers fill the rest). up/down/pgup/pgdn change diffScroll clamped to the file's rows; left/right change diffHScroll by 8 columns (clamped 0..longest row of the file); the code text after the sign is shifted by diffHScroll before fitSegs (gutter and sign stay); word spans shifted the same way. 'o' targets the row at the top of the open file (header line when on the list). Tests
 - [x] DoD9 narrow gutter: one number column instead of old+new: '-' rows show the old line, '+' and context rows the new line; width = digits of the largest number in the open file (no minimum 3), then '│'. Hunk header indented by that width+1. Rewrite TestGutterShowsOldAndNewNumbersOnTheirSides; test a file with lines <10 has a 1-wide gutter
 - [x] DoD10 drag the divider: Model.diffLeftW (0 = diffLeftWidth). withDiff uses it. View sets v.MouseMode=tea.MouseModeCellMotion only while modeDetail && diffPaneShown (so text selection works elsewhere). Update: tea.MouseClickMsg with X within 1 column of the gap (left box is leftW+2 wide, gap at X=leftW+2) starts a drag; tea.MouseMotionMsg while dragging sets leftW = clamp(X-2, 40, width-50); tea.MouseReleaseMsg ends it. Kept in the model for the session. Tests send the msgs and assert the width and the rendered split
-- [ ] DoD11 o really opens: openInCode becomes func(dir, argv) (wait func() error, err error): Start error returned at once (keeps 4BN68F's editor fallback untouched); stderr captured into a buffer; wait blocks until exit or 10s, returns an error with exit status + trimmed stderr (last line) on a non-zero exit, nil on exit 0 or timeout. openDiffRow sets diffOpened='opening <path>:<line>…' and returns a tea.Cmd that calls wait and yields diffOpenedMsg{text, err}; Update sets diffOpened to 'opened …' or the error text with a diffOpenErr flag rendered styErr in the title. No notify modal. No --remote/wslpath: the Windows 'code' wrapper handles WSL itself (note 2026-11-26). Tests with stubs: success, non-zero exit shows stderr in title. Do NOT touch settings rows (4BN68F)
-- [ ] release note core/release/notes/EH6Z0N.md: rewrite line 1 without ']/[' and add one '- ! ' line: diff opens as a file list, up/down select, enter opens/closes, left/right scroll, drag the divider, o shows its error in the title. Footer hint in withDiff: 'tab diff · ↑↓ file · enter open/close · ←→ scroll · o open in IDE'. go test ./internal/tui ./core/gitrepo -count=1; gofmt; go vet
+- [x] DoD11 o really opens: openInCode returns (wait, err); Start error at once (4BN68F editor fallback untouched); stderr captured; wait blocks until exit, with no deadline (the WSL wrapper took up to 46s to fail; the wait runs in a tea.Cmd), error = exit status + last stderr line. openDiffRow shows 'opening <path>:<line>…', then diffOpenedMsg sets 'opened …' or the error (styErr via diffOpenErr). No modal, no --remote/wslpath (note 2026-11-26)
+- [x] release note core/release/notes/EH6Z0N.md: rewrite line 1 without ']/[' and add one '- ! ' line: diff opens as a file list, up/down select, enter opens/closes, left/right scroll, drag the divider, o shows its error in the title. Footer hint in withDiff: 'tab diff · ↑↓ file · enter open/close · ←→ scroll · o open in IDE'. go test ./internal/tui ./core/gitrepo -count=1; gofmt; go vet
 
 ## Progress
 - **2026-11-03 17:18 · berkc** — Maintainer 03.11.2026 (Screenshot): Ort = rechte, heute leere Haelfte der TUI-Ticketansicht (neben tags/problem/what/why/summary), dazu im Cockpit-Pane aus Q63EEV - beide zeigen denselben Diff. Brainstorm-Punkt 1 damit erledigt.
@@ -151,3 +152,4 @@ Let stand: hunk header indented 2*nw+4 with no │ (aligns @@ with the sign colu
 - **2026-11-25 23:06 · Berk** — Worker 2026-11-26: o does nothing on this WSL2 machine because ~/.vscode-server/bin/69047191fc.../ lacks bin/ (the complete server sits nested in .../69047191fc...-1795647297/); 'code -g README.md:3' exits 127 after ~4.5s with 'remote-cli/code: not found' on stderr. The Windows wrapper already handles WSL (wslCode.sh, wsl+$WSL_DISTRO_NAME), so no --remote/wslpath is needed in jaira. jaira's bug: Start() only, stderr dropped, 'opened' shown. Asked main: repair the server dir (1, recommended) / person repairs (2) / leave (3).
 - **2026-11-25 23:07 · Berk** — Plan decisions 2026-11-26 (worker): tab still gives the diff the keys (arrows scroll the ticket otherwise, the person did not ask to drop that); an open file pins its header and hides the files above it so its rows get the pane; mouse capture only while the diff pane is shown, because capture switches off terminal text selection; o waits for the IDE asynchronously (the WSL code wrapper took 4.5s to fail here), so the TUI never blocks. Release note line 1 rewritten rather than appended: ]/[ never shipped in a release.
 - **2026-11-25 23:07 · Berk** — waiting: in-progress Haiku implementer (subagent) and main's answer on the VS Code server repair, since 00:07
+- **2026-11-26 00:35 · Berk** — DoD 11 checked on this WSL2 machine (worker 2026-11-26). (a) Failure path: the real argv 'code -g README.md:3' via exec, as openInCode runs it, exits 127 after 8-46s with stderr '.../remote-cli/code: not found' (broken ~/.vscode-server); openInCode now returns that as 'exit status 127: <stderr line>' for the title. (b) Success path: openInCode run from go test, whose HOME is an empty temp dir (internal/testhome), made the wrapper download a fresh server (~115s) and exit 0 twice -> 'opened'. So with an intact server the plain 'code -g' launch works under WSL; no --remote/wslpath needed. Side effect: two VS Code windows were opened on the person's desktop by those probes. Changed after the implementer: dropped the 10s openWait deadline (it reported a still-running 46s failure as 'opened'); the wait runs in a tea.Cmd, so the screen never blocks. The person's own ~/.vscode-server/bin/69047191fc... is still broken (repair asked of main, no answer yet).

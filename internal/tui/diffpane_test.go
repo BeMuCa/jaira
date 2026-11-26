@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"io/fs"
 	"os/exec"
 	"slices"
@@ -244,9 +245,9 @@ func TestOKeyOpensFileAtLine(t *testing.T) {
 	var gotDir string
 	var gotArgv []string
 	orig := openInCode
-	openInCode = func(dir string, argv []string) error {
+	openInCode = func(dir string, argv []string) (func() error, error) {
 		gotDir, gotArgv = dir, argv
-		return nil
+		return func() error { return nil }, nil
 	}
 	t.Cleanup(func() { openInCode = orig })
 
@@ -261,18 +262,29 @@ func TestOKeyOpensFileAtLine(t *testing.T) {
 }
 
 // A successful open must not raise the message modal: it would take the next
-// keys. The confirmation sits in the diff title and clears on the next key.
+// keys. The title says it is opening, then that it opened, and the next key
+// clears it.
 func TestOKeyConfirmsInTheDiffTitleWithoutAModal(t *testing.T) {
 	orig := openInCode
-	openInCode = func(string, []string) error { return nil }
+	openInCode = func(string, []string) (func() error, error) { return func() error { return nil }, nil }
 	t.Cleanup(func() { openInCode = orig })
 
 	m := diffModel(t, 160, "signoff")
 	m.diffDir = "/repo/worktree"
 	m.render()
-	m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
+	_, cmd := m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
 	if m.mode != modeDetail {
-		t.Fatalf("mode = %v after a successful open, want modeDetail", m.mode)
+		t.Fatalf("mode = %v after o, want modeDetail", m.mode)
+	}
+	if out := stripANSI(m.render()); !strings.Contains(out, "opening internal/a.go:10") {
+		t.Errorf("title misses the opening state:\n%s", out)
+	}
+	if cmd == nil {
+		t.Fatal("o returned no command to wait for the IDE")
+	}
+	m.Update(cmd())
+	if m.mode != modeDetail {
+		t.Fatalf("mode = %v after the IDE returned, want modeDetail", m.mode)
 	}
 	if out := stripANSI(m.render()); !strings.Contains(out, "opened internal/a.go:10") {
 		t.Errorf("diff title misses the open confirmation:\n%s", out)
@@ -280,6 +292,69 @@ func TestOKeyConfirmsInTheDiffTitleWithoutAModal(t *testing.T) {
 	m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	if out := stripANSI(m.render()); strings.Contains(out, "opened internal/a.go:10") {
 		t.Errorf("the open confirmation survives the next key:\n%s", out)
+	}
+}
+
+// An IDE that exits with an error shows the exit status and the last line of its
+// stderr in the title, in red, rather than saying nothing happened.
+func TestOKeyShowsTheIDEsFailureInTheTitle(t *testing.T) {
+	orig := openInCode
+	openInCode = func(string, []string) (func() error, error) {
+		return func() error { return errors.New("exit status 127: remote-cli/code: not found") }, nil
+	}
+	t.Cleanup(func() { openInCode = orig })
+
+	m := diffModel(t, 160, "signoff")
+	m.diffDir = "/repo/worktree"
+	m.render()
+	_, cmd := m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
+	m.Update(cmd())
+	if m.mode != modeDetail || !m.diffOpenErr {
+		t.Fatalf("after a failed open mode=%v err=%v, want modeDetail and the error flag", m.mode, m.diffOpenErr)
+	}
+	if out := stripANSI(m.render()); !strings.Contains(out, "exit status 127: remote-cli/code: not found") {
+		t.Errorf("diff title misses the IDE's failure:\n%s", out)
+	}
+}
+
+// A command that cannot be started at all, for a reason other than a missing
+// program, is reported in the title as well.
+func TestOKeyShowsALaunchErrorInTheTitle(t *testing.T) {
+	orig := openInCode
+	openInCode = func(string, []string) (func() error, error) {
+		return nil, errors.New("permission denied")
+	}
+	t.Cleanup(func() { openInCode = orig })
+
+	m := diffModel(t, 160, "signoff")
+	m.diffDir = "/repo/worktree"
+	m.render()
+	m.Update(tea.KeyPressMsg{Code: 'o', Text: "o"})
+	if m.mode != modeDetail {
+		t.Fatalf("mode = %v after a launch error, want modeDetail, not a modal", m.mode)
+	}
+	if out := stripANSI(m.render()); !strings.Contains(out, "permission denied") {
+		t.Errorf("diff title misses the launch error:\n%s", out)
+	}
+}
+
+// The real launcher returns at once, and its wait reports the exit status and the
+// last stderr line of a command that failed; a clean exit is no error.
+func TestOpenInCodeWaitsAndReportsTheExitStatusAndStderr(t *testing.T) {
+	wait, err := openInCode(t.TempDir(), []string{"sh", "-c", "echo first >&2; echo boom >&2; exit 3"})
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	err = wait()
+	if err == nil || !strings.Contains(err.Error(), "exit status 3") || !strings.HasSuffix(err.Error(), ": boom") {
+		t.Errorf("wait = %v, want the exit status and the last stderr line boom", err)
+	}
+	wait, err = openInCode(t.TempDir(), []string{"sh", "-c", "exit 0"})
+	if err != nil {
+		t.Fatalf("start of a clean command: %v", err)
+	}
+	if err := wait(); err != nil {
+		t.Errorf("wait after a clean exit = %v, want nil", err)
 	}
 }
 
@@ -635,11 +710,11 @@ func TestOKeyFallsBackToTheEditorWhenTheIDEIsMissing(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			orig := openInCode
-			openInCode = func(_ string, argv []string) error {
+			openInCode = func(_ string, argv []string) (func() error, error) {
 				if argv[0] != c.prog {
 					t.Errorf("started %q, want the missing IDE", argv[0])
 				}
-				return c.err(argv[0])
+				return nil, c.err(argv[0])
 			}
 			t.Cleanup(func() { openInCode = orig })
 
@@ -740,9 +815,9 @@ func TestLeftAndRightScrollTheCodeSideways(t *testing.T) {
 func TestOKeyOpensTheTopRowOfTheOpenFile(t *testing.T) {
 	var gotArgv []string
 	orig := openInCode
-	openInCode = func(_ string, argv []string) error {
+	openInCode = func(_ string, argv []string) (func() error, error) {
 		gotArgv = argv
-		return nil
+		return func() error { return nil }, nil
 	}
 	t.Cleanup(func() { openInCode = orig })
 

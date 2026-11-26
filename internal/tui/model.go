@@ -181,6 +181,7 @@ type Model struct {
 	diffOpen      int
 	diffScrollFor string
 	diffOpened    string
+	diffOpenErr   bool
 	// diffLeftW is the ticket column's width once the divider has been dragged, and
 	// diffDrag says a drag is under way.
 	diffLeftW int
@@ -1284,6 +1285,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case diffOpenedMsg:
+		if m.mode == modeDetail {
+			m.diffOpened, m.diffOpenErr = msg.text, msg.err != nil
+			if msg.err != nil {
+				m.diffOpened = msg.err.Error()
+			}
+		}
+		return m, nil
+
 	case boardEditorDoneMsg:
 		if m.board != nil {
 			if msg.err != nil {
@@ -1726,7 +1736,7 @@ func (m *Model) key(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 	case modeDetail:
 		m.copied = false
-		m.diffOpened = ""
+		m.diffOpened, m.diffOpenErr = "", false
 		switch s {
 		case "esc", "q", "enter":
 			// In the diff pane enter opens the selected file, or closes it again.

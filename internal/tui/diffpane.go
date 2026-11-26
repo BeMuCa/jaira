@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"image/color"
@@ -48,17 +49,35 @@ type diffRow struct {
 	from, to int
 }
 
-// openInCode starts the IDE command argv in dir and does not wait for it: a GUI
-// window returns at once. A package variable so tests can replace it with a
-// recorder instead of launching an IDE.
-var openInCode = func(dir string, argv []string) error {
+// openInCode starts the IDE command argv in dir. It returns at once, with the
+// error Start gives, and a wait function that blocks until the command exits.
+// It has no deadline: the Windows 'code' wrapper under WSL took 46 seconds to
+// report a broken VS Code server on a loaded machine, and the wait runs in a
+// tea.Cmd, so the screen never waits on it. A non-zero exit is an error that
+// carries the exit status and the last line the command wrote to stderr. A
+// package variable so tests can replace it with a stub instead of an IDE.
+var openInCode = func(dir string, argv []string) (func() error, error) {
 	cmd := exec.Command(argv[0], argv[1:]...)
 	cmd.Dir = dir
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 	if err := cmd.Start(); err != nil {
-		return err
+		return nil, err
 	}
-	go cmd.Wait()
-	return nil
+	return func() error {
+		err := cmd.Wait()
+		if err == nil {
+			return nil
+		}
+		last := strings.TrimSpace(stderr.String())
+		if i := strings.LastIndex(last, "\n"); i >= 0 {
+			last = last[i+1:]
+		}
+		if last == "" {
+			return err
+		}
+		return fmt.Errorf("%w: %s", err, last)
+	}, nil
 }
 
 // ideCommand is the command that opens file at line with the IDE template. The
@@ -82,6 +101,13 @@ func ideCommand(template, file string, line int) []string {
 // diffEditorDoneMsg reports how the editor opened for a file the IDE does not
 // have ended.
 type diffEditorDoneMsg struct{ err error }
+
+// diffOpenedMsg reports how the IDE returned from opening text: err is nil when
+// it exited cleanly.
+type diffOpenedMsg struct {
+	text string
+	err  error
+}
 
 // parseDiff turns a git patch into one row per line of the diff, numbering each
 // row by its new-side line so a row can be opened in an editor. Lines outside a
@@ -328,7 +354,7 @@ func (m *Model) loadDiff(t *ticket.Ticket) {
 	if m.diffScrollFor != t.ID {
 		m.diffScroll = 0
 		m.diffFocus = false
-		m.diffOpened = ""
+		m.diffOpened, m.diffOpenErr = "", false
 		m.diffSel, m.diffOpen, m.diffHScroll = 0, -1, 0
 		m.diffScrollFor = t.ID
 	}
@@ -498,10 +524,12 @@ func (m *Model) toggleDiffFile() {
 	}
 }
 
-// openDiffRow opens the file of the target row in the IDE from settings at its
-// line. When the IDE's program is not installed, the file opens in the editor
-// instead, without a line: +N means something different in every editor. The
-// returned command runs that editor; it is nil when the IDE was started.
+// openDiffRow opens the target row's file in the IDE from settings at its line.
+// The IDE is waited for in the returned command, which reports back as a
+// diffOpenedMsg, so the title says what happened without a modal. When the IDE's
+// program is not installed, the file opens in the editor instead, without a line:
+// +N means something different in every editor. That editor command is returned
+// too, and nil is returned when the IDE was started.
 func (m *Model) openDiffRow() tea.Cmd {
 	if len(m.diffRows) == 0 {
 		return nil
@@ -509,22 +537,28 @@ func (m *Model) openDiffRow() tea.Cmd {
 	r := m.diffRows[m.diffTargetRow()]
 	cur := settings.Load()
 	argv := ideCommand(cur.IDETemplate(), r.path, r.line)
-	err := openInCode(m.diffDir, argv)
+	where := r.path + ":" + strconv.Itoa(r.line)
+	wait, err := openInCode(m.diffDir, argv)
 	// A bare program name fails Start with exec.ErrNotFound; a path to a missing
 	// program (./ide, /opt/x/idea.sh) fails with fs.ErrNotExist.
 	if errors.Is(err, exec.ErrNotFound) || errors.Is(err, fs.ErrNotExist) {
 		editor, _ := editorChoice(cur)
 		cmd := exec.Command(editor[0], append(editor[1:], r.path)...)
 		cmd.Dir = m.diffDir
-		m.diffOpened = argv[0] + " not found — opened in " + editor[0]
+		m.diffOpened, m.diffOpenErr = argv[0]+" not found — opened in "+editor[0], false
 		return tea.ExecProcess(cmd, func(err error) tea.Msg { return diffEditorDoneMsg{err} })
 	}
 	if err != nil {
-		m.notify(err.Error(), true)
+		m.diffOpened, m.diffOpenErr = err.Error(), true
 		return nil
 	}
-	m.diffOpened = "opened " + r.path + ":" + strconv.Itoa(r.line)
-	return nil
+	m.diffOpened, m.diffOpenErr = "opening "+where+"…", false
+	return func() tea.Msg {
+		if err := wait(); err != nil {
+			return diffOpenedMsg{text: "opened " + where, err: err}
+		}
+		return diffOpenedMsg{text: "opened " + where}
+	}
 }
 
 // diffPalette is the background of the changed rows and of the words that
@@ -745,7 +779,11 @@ func (m *Model) renderDiffPane(width, height int) string {
 	switch {
 	case m.diffOpened != "":
 		// The reply replaces the counter; the title's left part is what gets cut.
-		right = []diffSeg{{m.diffOpened, styOK}, {" ", lipgloss.NewStyle()}}
+		sty := styOK
+		if m.diffOpenErr {
+			sty = styErr
+		}
+		right = []diffSeg{{truncate(m.diffOpened, width-1), sty}, {" ", lipgloss.NewStyle()}}
 	case files > 0:
 		right = []diffSeg{
 			{fmt.Sprintf("file %d/%d", m.diffSel+1, files), styMeta},
@@ -769,7 +807,7 @@ func (m *Model) renderDiffPane(width, height int) string {
 // diff on the right, with the footer below both. hint is the ticket's own key
 // list; the diff's keys are appended to it.
 func (m *Model) withDiff(left, hint string) string {
-	footer := wrapHints(strings.Split(hint+" · tab diff · ↑↓ file · enter open/close · o open in IDE", " · "), max(1, m.width))
+	footer := wrapHints(strings.Split(hint+" · tab diff · ↑↓ file · enter open/close · ←→ scroll · o open in IDE", " · "), max(1, m.width))
 	// A pane costs a row top and bottom for its box, and a column each side and
 	// the space between them.
 	rows := max(1, m.height-len(footer)-2)
