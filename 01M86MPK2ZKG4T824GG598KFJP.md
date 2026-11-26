@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:05:07Z
+updated-at: 2026-11-26T08:05:11Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -42,7 +42,7 @@ back-count: 1
 - [x] Ein Test haelt den lokalen Ref kurz (300 ms, laenger als gits 100 ms) gesperrt, waehrend Write pusht: Write liefert die SHA ohne Fehler, lokaler Ref und Remote tragen sie - fuer Ticket, Milestone, Migration, Epic; ein dauerhaft gesperrter Ref bleibt ein Fehler
   proof: core/gitref/gitref_test.go TestAWriteWaitsOutABrieflyLockedLocalRef, TestALocalRefThatStaysLockedIsStillAnError (rot gegen master-gitref.go)
 - [x] Ein Outbox-Test: Flush meldet in diesem Fall Sent, der Eintrag ist weg, und die naechste Schreibung mit der Lease vom lokalen Ref geht durch statt gegen die erste zu verlieren
-  proof: core/outbox/outbox_test.go TestAnAcceptedPushIsSentEvenWhenTheLocalRefIsLocked (rot ohne Fix)
+  proof: core/outbox/outbox_test.go TestABrieflyLockedLocalRefNeitherFailsTheFlushNorTheNextWrite (rot gegen master-gitref.go)
 - [x] Release-Note in core/release/notes/98KFJP.md
   proof: core/release/notes/98KFJP.md
 
