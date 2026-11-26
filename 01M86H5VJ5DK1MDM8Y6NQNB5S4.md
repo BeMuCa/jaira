@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:02:36Z
+updated-at: 2026-11-26T08:02:45Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -57,3 +57,4 @@ review-gaps: "none: nichts entfernt. Geprueft: Duplikat - reap.sh:389 timeout(1)
 - **2026-11-26 08:01 · Sascha** — Dead end: hc-Ausgabe direkt in die Pipe des Aufrufers - ein Kind des getoeteten hc (Stub ohne exec: sleep) hielt stderr offen, Go/Cockpit warteten trotzdem 20 s. Darum schreibt bounded() stdout UND stderr in Dateien und gibt sie danach aus. Vier Kategorien: Nebenlaeufigkeit - jeder Aufruf eigene mktemp-Dateien; PID-Reuse ausgeschlossen, solange hc ungewartet Zombie ist, Restfenster zwischen wait und kill des Watchdogs ist Mikrosekunden. Fehlerpfade - Absage von hc behaelt Exit und stderr (not_found-Erkennung unveraendert), Ablauf -> Exit 137 + 'gave no answer within Ns'. Eingabe - JAIRA_HC_TIMEOUT nicht numerisch/0 -> sleep endet sofort, alles gilt als stumm, Exit 3 = sicherer Fehler. Rechte - nichts Neues. Manifest core/shipped/shipped.sha256 neu geschrieben (TestEveryInstalledFileIsAShippedVersion).
 - **2026-11-26 08:02 · Sascha** — critique: nichts. Ein Muster neben reap.sh:389 (timeout(1)-Probe) ist hier gewollt: reap.sh braucht den Gruppen-Kill fuer docker compose und verweigert ohne coreutils; hier hiesse Verweigern, dass 'tab list' auf einem Mac ohne coreutils immer scheitert. JAIRA_HC_TIMEOUT hat einen Aufrufer (der Test) und steht in der Release-Note. Ort stimmt: im Aufgerufenen, kein Cockpit-Code.
 - **2026-11-26 08:02 · Sascha** — not this ticket (teamlead 26.11.): 0TREV1 (feat/0trev1, 2fc5359c9) laesst reap.sh und close-tab.sh nur not_found als geschlossenen Tab lesen, ein Timeout behaelt den Tab. Sind beide gelandet, kann auch 'tab get'/'pane get' in herdr-hc.sh eine Frist bekommen - hier bewusst nicht, nichts auf 0TREV1s ungemergtem Code gebaut.
+- **2026-11-26 08:02 · Sascha** — waiting: bughunt (background agent) since 09:02
