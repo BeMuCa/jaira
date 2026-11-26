@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:13:50Z
+updated-at: 2026-11-26T09:16:49Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -172,3 +172,4 @@ I) people: 'jaira people' gains 'active' (assignees + creators of board tickets,
 - **2026-11-26 00:49 · Berk** — P7 milestone assign: loads the milestone, skips done (terminal lane of the ticket's board) and already-assigned tickets, refuses ref-only members before writing anything (exit 3, pull first), then s.Mutate SetScalar(assignee) per ticket. Receiver test: one inbox row, three tickets (TestMilestoneAssignGivesTheReceiverOneInboxRow). Unticked: DoD 9 and onward. Note: a stray dod call overwrote DoD 7 proof with 'x' for a moment; restored to the inbox test.
 - **2026-11-26 00:51 · Berk** — worker: P5-P7 verified (go test ./internal/cli -run 'Milestone|Msg|Inbox|TestEveryCommandIsDocumented' ok, build+vet clean). Kept: 'inbox --all' alone acks everything, with --ack it is exit 2 (matches DoD wording '--ack <id>|--all'); a CLI test for --all is still missing -> P8-P10 agent adds it.
 - **2026-11-26 09:00 · Berk** — waiting: P8-P10 agent resumed after API rate-limit cutoff (uncommitted work in tree) since 10:00
+- **2026-11-26 09:16 · Berk** — P8-P10 worker (26.11.): P8 done in 771106263. Decisions: (1) take on a ticket held on disk changes it in place via Store.Mutate; a ref-only ticket goes through refs.Pull(steal). (2) Found: a takeover was invisible to the previous holder whose own pull was never recorded in refs-seen, since only Incoming wrote it; Pull now calls noteSeen after its write, and only when a refs-seen record already exists so a never-fetched clone keeps its baseline. A clone that has never fetched still gets no taken entry (design A, deliberate). (3) handover commits dirty work with git add -A (design F, as written). (4) pull now also creates a worktree for every pull where exactly one remote branch contains the handle: a behaviour change for all pulls, not only handed-over tickets. (5) Dead end: git log --since stops at the first commit past the cutoff, so a backdated commit at HEAD hides newer ones; the people test orders commits accordingly.
