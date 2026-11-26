@@ -20,7 +20,7 @@ related: []
 follows: 01M5ZJ555685ZXARWNEF5QR36R
 commits: []
 created-at: 2026-11-26T10:44:50Z
-updated-at: 2026-11-26T10:52:10Z
+updated-at: 2026-11-26T10:52:22Z
 updated-by: BeMuCa
 claimed-by: worker-rjw72z
 claimed-at: 2026-11-26T10:46:49Z
@@ -29,6 +29,7 @@ outcome-why: "51 tickets in one 27 KB message could not be worked through, and a
 outcome-resolves: "Present, Gather and Answers of jaira-role-interreview SKILL.md rewritten; page path untouched"
 review-summary: none
 round: 2
+review-gaps: "nothing removed. Left on purpose: the Check rules in section Present repeat 'one action per step, expect concretely' from 'Write one scenario per block' (page path) - the chat format has other parts (Machine, Prepare, Wrong if) and a reader of Present should not have to jump to the page section for the rule the ticket is about. No code, nothing dead."
 ---
 
 # Interreview geht die Tickets einzeln mit der Person durch und beschreibt den Check als Schrittliste
