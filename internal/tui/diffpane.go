@@ -49,6 +49,15 @@ type diffRow struct {
 	from, to int
 }
 
+// shown is the line number the row shows: the old-side one for a '-' row, the
+// new-side one otherwise.
+func (r diffRow) shown() int {
+	if r.kind == '-' {
+		return r.old
+	}
+	return r.line
+}
+
 // openInCode starts the IDE command argv in dir. It returns at once, with the
 // error Start gives, and a wait function that blocks until the command exits.
 // It has no deadline: the Windows 'code' wrapper under WSL took 46 seconds to
@@ -491,15 +500,9 @@ func (m *Model) diffGutter() int {
 		return nw
 	}
 	for _, i := range m.diffFileRows(hdrs[m.diffOpen]) {
-		r := m.diffRows[i]
-		if r.kind == '@' {
-			continue
+		if r := m.diffRows[i]; r.kind != '@' {
+			nw = max(nw, len(strconv.Itoa(r.shown())))
 		}
-		n := r.line
-		if r.kind == '-' {
-			n = r.old
-		}
-		nw = max(nw, len(strconv.Itoa(n)))
 	}
 	return nw
 }
@@ -556,12 +559,7 @@ func (m *Model) openDiffRow() tea.Cmd {
 	}
 	m.diffOpened, m.diffOpenErr = "opening "+where+"…", false
 	id := m.detail.ID
-	return func() tea.Msg {
-		if err := wait(); err != nil {
-			return diffOpenedMsg{id: id, text: "opened " + where, err: err}
-		}
-		return diffOpenedMsg{id: id, text: "opened " + where}
-	}
+	return func() tea.Msg { return diffOpenedMsg{id: id, text: "opened " + where, err: wait()} }
 }
 
 // diffPalette is the background of the changed rows and of the words that
@@ -713,17 +711,6 @@ func (m *Model) diffLine(r diffRow, width, nw, sel int) string {
 		}
 		return padRow(segs, width, lipgloss.NewStyle())
 	}
-	// A '-' row shows its old-side number and every other row its new-side one.
-	num := func(n int) string {
-		if n == 0 {
-			return strings.Repeat(" ", nw)
-		}
-		return fmt.Sprintf("%*d", nw, n)
-	}
-	n := r.line
-	if r.kind == '-' {
-		n = r.old
-	}
 	bg, wordBg, sign := lipgloss.NewStyle(), lipgloss.NewStyle(), lipgloss.NewStyle()
 	switch r.kind {
 	case '+':
@@ -734,7 +721,7 @@ func (m *Model) diffLine(r diffRow, width, nw, sel int) string {
 		sign = bg.Foreground(colErr)
 	}
 	segs := []diffSeg{
-		{num(n) + " │ ", bg.Foreground(colFaint)},
+		{fmt.Sprintf("%*d", nw, r.shown()) + " │ ", bg.Foreground(colFaint)},
 		{r.text[:1], sign},
 	}
 	// The code after the sign scrolls sideways; the sign and the gutter stay, and
@@ -743,7 +730,7 @@ func (m *Model) diffLine(r diffRow, width, nw, sel int) string {
 	off := min(m.diffHScroll, max(len(rs)-1, 0))
 	rs = append(rs[:1:1], rs[1+off:]...)
 	from, to := max(r.from-off, 1), max(r.to-off, 1)
-	if r.to > r.from && to > from {
+	if to > from {
 		segs = append(segs,
 			diffSeg{string(rs[1:from]), bg},
 			diffSeg{string(rs[from:to]), wordBg},
