@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:50:58Z
+updated-at: 2026-11-26T10:51:02Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T10:27:37Z
@@ -43,7 +43,8 @@ test-verdict: "fail: DoD item 3 is [-] with its proof present (core/release/note
   proof: Notiz 04.11.2026 Entscheidung berkc Option 1 + B1
 - [x] Nach einer Zuweisung durch jemand anderen zeigt das Board die Nachricht bis zum Gesehen; Test
   proof: internal/tui/inbox_test.go TestInboxBannerAndCardMarkerShowWhatWaits (banner and card mark after a reload; nothing marked before); TestOpeningATicketsDetailAcksItsEntries; the entry survives a reload from disk in core/inbox TestRecordThenLoadKeepsTheEntry
-- [-] Release-Notiz unter core/release/notes/
+- [x] Release-Notiz unter core/release/notes/
+  proof: core/release/notes/WQNRQN.md
 - [x] Eintrag nur bei Assignee-Wechsel auf mich durch jemand anderen; Notizen und eigene Zuweisung erzeugen keinen; Test core/refsync
   proof: core/refsync/inbox_test.go TestAnAssignmentByAnotherRecordsAnEntry, TestAReassignmentAwayRecordsATakenEntry, TestNotesAndSelfAssignmentsRecordNothing, TestTheFirstFetchIsABaseline
 - [x] Eintrag ueberlebt 'jaira fetch' aus einer anderen Session und einen Board-Neustart, bis gesehen; Test
