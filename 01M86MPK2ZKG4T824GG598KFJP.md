@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:10:37Z
+updated-at: 2026-11-26T08:10:41Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -26,7 +26,10 @@ outcome-what: "gitref publish laesst update-ref nach angenommenem Push bis zu 1 
 outcome-why: "Ein kurz gesperrter lokaler Ref liess Flush Failed melden und den Eintrag behalten; den Fehler zu schlucken (Runde 1) liess den lokalen Ref hinter dem Remote, und die naechste Schreibung verlor gegen die eigene. Warten haelt den lokalen Ref aktuell."
 outcome-resolves: "DoD 1-3: TestAWriteWaitsOutABrieflyLockedLocalRef, TestALocalRefThatStaysLockedIsStillAnError, TestABrieflyLockedLocalRefNeitherFailsTheFlushNorTheNextWrite, Release-Note."
 review-summary: "publish (core/gitref/gitref.go:555) laesst das lokale update-ref nach einem vom Remote angenommenen Push jetzt mit -c core.filesRefLockTimeout=1000 bis zu 1 s auf ein fremdes Ref-Lock warten statt nach gits 100 ms zu scheitern. Damit endet ein kurz von einem parallelen fetch gesperrter Ref auf dem Remote-Stand: Write liefert die SHA, Flush meldet Sent, die naechste Schreibung least auf dem richtigen Ref. Bleibt das Lock laenger, kommt der Fehler wie vorher. Alle vier Schreibpfade (Ticket, Milestone, Migration, Epic) laufen durch publish; Tests fuer alle vier, fuer das Dauer-Lock und fuer den Outbox-Fall End-to-End, plus Release-Note."
-review-gaps: "lockRef in gitref_test herausgezogen (Lock-Datei stand in holdRefLock und im Dauer-Lock-Test doppelt); gelassen: dieselben 6 Zeilen in outbox_test - anderes Paket, ein Testhilfspaket dafuer waere mehr als es spart"
+review-gaps: |-
+  note: limit: ein lokales Ref-Lock laenger als 1 s nach angenommenem Push (stehengebliebene .lock eines abgestuerzten git) meldet weiter Failed, der Eintrag verliert die naechste Runde gegen die eigene Schreibung - laut, wie vor dem Ticket, vom Teamlead so entschieden
+  note: edge: die Lock-Tests (gitref_test.go holdRefLock, outbox_test.go) haben 700 ms Abstand zwischen 300 ms Halten und 1 s Wartezeit - auf einem sehr langsamen Windows-Runner kann das flackern; falls ja, Haltezeit auf 200 ms senken
+  note: elsewhere: core/gitref/gitref.go:998 stuft jede Server-Ablehnung mit 'rejected' (pre-receive hook, geschuetzter Ref) als ErrRaceLost ein, outbox.Flush raeumt den Eintrag dann weg - vorbestehend, neues Ticket
 test-verdict: "pass: r2 go test -race gitref/outbox/refsync gruen (RC=0), vet/build ok; DoD 1-3 im Baum, Tests rot gegen master-gitref.go; Scratch-Board: Lock 400 ms -> 'jaira set' exit 0, lokal = Remote, naechstes set geht durch; Dauer-Lock -> 'could not be sent' mit git-Meldung (laut), danach verliert die naechste Schreibung gemeldet (vorbestehend, Repo kaputt); zwei parallele Schreiber: einer landet, der andere 'was not sent' klar abgewiesen"
 hunt-verdict: "pass: bughunt done at a6c795086 - 0 change nach Entscheidung (r2-Befund langes Lock -> note limit, Teamlead Option 1), 1 pre-existing aus r1 (gitref.go:998 Server-Ablehnung = ErrRaceLost) als note fuer die Person"
 round: 2
