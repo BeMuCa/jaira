@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T08:10:10Z
+updated-at: 2026-11-26T08:10:14Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -84,3 +84,4 @@ review-check: "1. cd core && go test ./role/ -run 'TestReapReadsOnlyNotFoundAsAC
 - **2026-11-26 08:08 · Sascha** — hunt report: 0 findings, nothing written beyond this report | read as a diff since 4899c2218: close-tab.sh (ask), closetab_test.go, shipped.sha256; no file new to the change; reap.sh, reap_test.go, release note unchanged since that round | could not check: a real herdr/hc that fails mid-call - checked with the test rig's fake herdr and a bash reproduction of mktemp failing under set -e with an ERR trap (kept, exit 0)
 - **2026-11-26 08:08 · Sascha** — bughunt: done at 40c8324fd - 0 findings (0 change, 0 pre-existing) in 6 modules, follow-up hunt since 4899c2218; concurrency, error paths, input, permissions checked; files: core/release/notes/0TREV1.md core/role/builtin/jaira-dispatcher/scripts/close-tab.sh core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/closetab_test.go core/role/reap_test.go core/shipped/shipped.sha256
 - **2026-11-26 08:08 · Sascha** — waiting: review (frischer Agent via run-lane.sh, eigener Tab) seit 09:08
+- **2026-11-26 08:10 · Sascha** — review: done at 40c8324fd
