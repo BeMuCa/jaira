@@ -1,7 +1,7 @@
 ---
 id: 01M8BQAGXPMKWVWG0GANRJW72Z
 title: Interreview geht die Tickets einzeln mit der Person durch und beschreibt den Check als Schrittliste
-status: todo
+status: in-progress
 ready: true
 creator: Berk
 assignee: BeMuCa
@@ -20,7 +20,7 @@ related: []
 follows: 01M5ZJ555685ZXARWNEF5QR36R
 commits: []
 created-at: 2026-11-26T10:44:50Z
-updated-at: 2026-11-26T10:47:06Z
+updated-at: 2026-11-26T10:47:44Z
 updated-by: BeMuCa
 claimed-by: worker-rjw72z
 claimed-at: 2026-11-26T10:46:49Z
