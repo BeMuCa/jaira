@@ -18,7 +18,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:10Z
-updated-at: 2026-11-26T08:05:43Z
+updated-at: 2026-11-26T08:06:59Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-35248
@@ -69,3 +69,4 @@ hunt-verdict: "fail: bughunt done at 4899c2218, 1 change (close-tab.sh ask(): mk
 - **2026-11-26 08:05 · Sascha** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/close-tab.sh:165 - class: a failing command inside a function in close-tab.sh ends the script with exit 1 and no 'kept' line, because the ERR trap (line 95) is not inherited by functions without set -E; new in ask() (mktemp at :165, the tr read at :167), and already there in park() (:153). The usage text promises exit 0 with 'kept <ticket>: ...'. example: TMPDIR not writable -> mktemp exits 1 -> close-tab.sh exits 1 with only mktemp's message. Not a blocker: reap.sh calls close-tab with '|| true', and a worker's tab just stays open. ran: bash model of the same set -e + ERR trap + function shape (rc=1, trap silent); TMPDIR=/nonexistent mktemp (rc=1)
 - **2026-11-26 08:05 · Sascha** — hunt report: 1 finding, 1 change (an edge, not a blocker), as a note on 0TREV1 | read whole: reap.sh, close-tab.sh (plus herdr-hc.sh, which both call), reap_test.go and closetab_test.go fakes, release note, shipped.sha256 (both script hashes are present) | could not check how old (non-hc) herdr answers 'tab get' for a gone tab (tab_not_found?): no herdr binary on this machine. If it answers that way, the pane-to-tab race is read as 'no answer' and kept for one round only. hc's not_found (exit 3) and unavailable (exit 5) were confirmed live
 - **2026-11-26 08:05 · Sascha** — bughunt: done at 4899c2218 - 1 finding (1 change, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/release/notes/0TREV1.md core/role/builtin/jaira-dispatcher/scripts/close-tab.sh core/role/builtin/jaira-dispatcher/scripts/reap.sh core/role/closetab_test.go core/role/reap_test.go core/shipped/shipped.sha256
+- **2026-11-26 08:06 · Sascha** — bughunt-Fix: ask() prueft mktemp und tr selbst (kept-Zeile). set -E verworfen: dann feuert die ERR-Falle auch in jeder $(...)-Substitution, und ein ungeschuetztes x="$(cmd)" bekaeme die kept-Zeile als Wert statt die Runde zu beenden. park() (close-tab.sh:153) hat dieselbe Luecke seit vorher - nicht angefasst, Notiz fuer die Person. Altes herdr: strings herdr.exe kennt kein tab_not_found, also kein weiterer Code noetig.
