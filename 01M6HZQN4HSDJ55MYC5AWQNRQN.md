@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:13:16Z
+updated-at: 2026-11-26T09:13:22Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -41,7 +41,8 @@ question: ""
   proof: internal/cli/inbox_test.go TestInboxShowsAnAssignmentUntilItIsAcknowledged
 - [x] Ein Befehl weist alle offenen Tickets eines Milestones einer Person zu (jaira milestone assign <name> <person>); mehrere Zuweisungen aus einem Milestone/Epic in einem Fetch sind ein Eintrag; Test
   proof: internal/cli/milestone_assign_test.go TestMilestoneAssignGivesTheReceiverOneInboxRow
-- [ ] Das Ticket zeigt, wer es wem zugewiesen hat ('alex -> berkc') in Detail und show; Test
+- [x] Das Ticket zeigt, wer es wem zugewiesen hat ('alex -> berkc') in Detail und show; Test
+  proof: internal/cli/handedshow_test.go TestShowSaysWhoHandedTheTicketOver; internal/tui/handover_detail_test.go TestDetailShowsWhoHandedTheTicketOver
 - [ ] Release-Note-Zeile in core/release/notes/WQNRQN.md
 - [x] Uebergabe: 'jaira handover <id> <person>' setzt den Assignee, pusht vorher den Branch des Tickets (WIP-Commit, wenn der Worktree Aenderungen hat) und schreibt Branch und Commit aufs Ticket; der Empfaenger bekommt den Inbox-Eintrag mit Branch und Commit; Test
   proof: internal/cli/handover_test.go TestHandoverGivesTheReceiverTheBranchAndTheCommit
