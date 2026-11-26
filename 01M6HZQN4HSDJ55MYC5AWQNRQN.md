@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T14:44:38Z
+updated-at: 2026-11-26T14:44:41Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T14:38:22Z
@@ -275,3 +275,4 @@ Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/tak
 - **2026-11-26 14:43 · Berk** — bughunt: done at 7121fbb59 - 2 findings (2 change, 0 pre-existing; both blockers) in 4 modules, follow-up hunt since 80d62463c; concurrency, error paths, unusual input, permissions checked; files: core/inbox/inbox.go core/inbox/inbox_test.go core/refsync/refsync.go core/refsync/inbox_test.go
 - **2026-11-26 14:44 · Berk** — testing: class: an unreadable or missing per-clone state file is read as empty, so entries already acked or already baselined come back as new; examples (reproduced by hand at 7121fbb59 with wq-bin4 on a scratch board): (1) acked message 'b1 acked message' plus earlier acked messages all came back as 4 entries after repo inbox.json was '{not json' and state refs-seen.json was removed; (2) erin, whose assignment QFZ3ED was baselined at 0 entries, got 1 'assigned' entry after repo inbox.json was removed and state refs-seen.json was '{not json'; hunt refs core/inbox/inbox.go:85-94 loadLocked replaces an unreadable inbox.json with empty State, and core/refsync/refsync.go:1233-1260 and 1317-1320 treat a missing or unreadable refs-seen record as no baseline; fix: at the cause, an existing but unreadable state file must not be read as empty: keep the acked set and the baseline it held, or stop with a loud error, and a missing refs-seen with an existing inbox.json must not re-record acked keys; test over the class: table test over every combination of inbox.json and refs-seen being absent, corrupt or intact, asserting no acked key and no baselined assignment is recorded again
 - **2026-11-26 14:44 · Berk** — testing: note: edge: jaira pull NOSUCH exits 1 with 'gitref: no ref for this ticket' where jaira show NOSUCH exits 5, the documented no-such-ticket code (top-level help); not sent back, a wrong exit code only
+- **2026-11-26 14:44 · Berk** — testing: note: edge: not verified this round: RecordFetch replaces Seen as a whole (core/inbox/inbox.go around 133-135, from 80d62463c, outside this diff) and can drop a NoteSeen written between a fetch's read of the refs and its write; the hunt flagged it and it was not run
