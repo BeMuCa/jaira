@@ -4,7 +4,7 @@ title: "Vor dem Uebernehmen zeigt jaira lanes market, was die Lane tut - und ein
 status: backlog
 ready: true
 creator: BeMuCa
-assignee: BeMuCa
+assignee: Berk
 goal: "Wer eine Lane aus dem Marktplatz holt, sieht vorher Vertrag und Prompt, und ohne eine Person am Terminal wird keine fremde Lane uebernommen."
 context: |-
   Heute schreibt 'jaira lanes market adopt <id>' die Datei sofort nach ~/.jaira/lanes (internal/cli/market.go, newLanesMarketAdoptCmd). Vorher zeigt es nichts.
@@ -26,7 +26,8 @@ blocked-by:
 related: []
 commits: []
 created-at: 2026-11-23T23:08:38Z
-updated-at: 2026-11-23T23:08:38Z
+updated-at: 2026-11-26T10:51:07Z
+updated-by: Berk
 ---
 
 # Vor dem Uebernehmen zeigt jaira lanes market, was die Lane tut - und ein Agent uebernimmt nicht allein
