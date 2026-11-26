@@ -545,7 +545,14 @@ func (r *Repo) publish(ref, commit, lease string) (string, error) {
 	}
 	// Only now is the local ref moved: it records what the remote accepted, so
 	// the next lease is a SHA the remote has really seen.
-	if _, err := r.value("update-ref", ref, commit); err != nil {
+	//
+	// It waits up to a second for a ref lock another git process holds — a
+	// fetch running beside this command — where git gives up after 100 ms. A
+	// local ref left behind the remote is the lease of the next write, and that
+	// write would lose against this one. A ref that stays unwritable is still
+	// an error: swallowing it would make every later write lose with no cause
+	// shown.
+	if _, err := r.value("-c", "core.filesRefLockTimeout=1000", "update-ref", ref, commit); err != nil {
 		return commit, err
 	}
 	return commit, nil

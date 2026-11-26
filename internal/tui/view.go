@@ -196,6 +196,7 @@ type boardWindow struct {
 	start int          // first rendered lane, an index into m.cols
 	end   int          // one past the last rendered lane
 	thin  map[int]bool // lanes drawn at thinColWidth because they hold no tickets
+	fold  map[int]int  // first lane of a run of thin lanes drawn as one strip → one past its last
 	colW  int          // rendered width (border included) of every other column
 }
 
@@ -205,35 +206,67 @@ type boardWindow struct {
 // and with the toggle on it is drawn thin to say that it holds nothing — an
 // earlier version dropped it instead, which read as if the lane did not exist.
 func (m *Model) boardFit(width int) boardWindow {
-	costs := make([]int, len(m.cols))
 	thin := map[int]bool{}
 	for i, c := range m.cols {
-		// A column is budgeted at its rendered width: lipgloss's Width is the
-		// whole box, border included, and the columns are joined with no gap.
-		costs[i] = minColWidth
 		if m.thinEmpty && len(c.tickets) == 0 {
 			thin[i] = true
-			costs[i] = thinColWidth
 		}
 	}
-	start, end := fitWindow(m.laneIdx, costs, width)
+	// Neighbouring thin lanes share one strip: six empty lanes in a row cost
+	// six borders otherwise, a good part of the width the cards wanted. The
+	// lane holding the cursor never folds — it stays a strip of its own, so
+	// h and l over empty lanes still show where you are. A folded run is one
+	// unit for fitWindow, so the window never starts or ends inside it.
+	type unit struct{ from, to int }
+	var units []unit
+	cur := 0
+	for i := 0; i < len(m.cols); {
+		j := i + 1
+		if thin[i] && i != m.laneIdx {
+			for j < len(m.cols) && thin[j] && j != m.laneIdx {
+				j++
+			}
+		}
+		if i <= m.laneIdx && m.laneIdx < j {
+			cur = len(units)
+		}
+		units = append(units, unit{i, j})
+		i = j
+	}
+	if len(units) == 0 {
+		return boardWindow{thin: thin, colW: minColWidth}
+	}
+	// A column is budgeted at its rendered width: lipgloss's Width is the
+	// whole box, border included, and the columns are joined with no gap.
+	costs := make([]int, len(units))
+	for k, u := range units {
+		costs[k] = minColWidth
+		if thin[u.from] {
+			costs[k] = thinColWidth
+		}
+	}
+	us, ue := fitWindow(cur, costs, width)
 
 	// The full columns stretch to fill what the thin ones leave: a capped
 	// column width left the right third of a wide terminal blank, which read
 	// as wasted screen rather than as a decision.
+	fold := map[int]int{}
 	full, thinCells := 0, 0
-	for i := start; i < end; i++ {
-		if thin[i] {
-			thinCells += thinColWidth
-		} else {
+	for _, u := range units[us:ue] {
+		if !thin[u.from] {
 			full++
+			continue
+		}
+		thinCells += thinColWidth
+		if u.to-u.from > 1 {
+			fold[u.from] = u.to
 		}
 	}
 	colW := minColWidth
 	if full > 0 {
 		colW = max(minColWidth, (width-thinCells)/full)
 	}
-	return boardWindow{start: start, end: end, thin: thin, colW: colW}
+	return boardWindow{start: units[us].from, end: units[ue-1].to, thin: thin, fold: fold, colW: colW}
 }
 
 func (m *Model) renderBoard() string {
@@ -306,8 +339,13 @@ func (m *Model) renderBoard() string {
 	rendered := make([]string, 0, win.end-win.start)
 	for ci := win.start; ci < win.end; ci++ {
 		if win.thin[ci] {
-			rendered = append(rendered, m.renderThinColumn(ci, bodyHeight))
+			to := ci + 1
+			if f, ok := win.fold[ci]; ok {
+				to = f
+			}
+			rendered = append(rendered, m.renderThinColumn(ci, to, bodyHeight))
 			x += lipgloss.Width(rendered[len(rendered)-1])
+			ci = to - 1
 			continue
 		}
 		col, rows := m.renderColumn(ci, win.colW, bodyHeight)
@@ -467,23 +505,48 @@ func fitWindow(idx int, costs []int, budget int) (start, end int) {
 	return start, end
 }
 
-// renderThinColumn draws a lane that holds nothing at thinColWidth: its name
-// down the column, one letter per line, so it still reads as a step in the
-// process while the room for cards goes to the lanes that have some. No count
-// — being drawn thin is what says zero.
-func (m *Model) renderThinColumn(idx, h int) string {
-	col := m.cols[idx]
-	style := m.columnStyle(idx, thinColWidth, h)
-	title := col.lane.Name
-	if col.lane.Unknown {
-		title = "? " + title
+// renderThinColumn draws the lanes from..to-1, which hold nothing, as one strip
+// at thinColWidth: their names down the column, one letter per line, so they
+// still read as steps in the process while the room for cards goes to the
+// lanes that have some. No count — being drawn thin is what says zero. Several
+// lanes in one strip are parted by a '─' row; when their names do not fit the
+// height, each gives only its initial, so a short terminal still shows every
+// lane the strip holds.
+func (m *Model) renderThinColumn(from, to, h int) string {
+	style := m.columnStyle(from, thinColWidth, h)
+	var names [][]rune
+	for i := from; i < to; i++ {
+		title := m.cols[i].lane.Name
+		if m.cols[i].lane.Unknown {
+			title = "? " + title
+		}
+		names = append(names, []rune(title))
+	}
+	var rows []string
+	for k, n := range names {
+		if k > 0 {
+			rows = append(rows, "─")
+		}
+		for _, r := range n {
+			rows = append(rows, string(r))
+		}
+	}
+	if len(names) > 1 && len(rows) > h {
+		rows = rows[:0]
+		// From the name itself: an unknown lane's "? " would make every one
+		// of them read "?".
+		for i := from; i < to; i++ {
+			if n := []rune(m.cols[i].lane.Name); len(n) > 0 {
+				rows = append(rows, string(n[0]))
+			}
+		}
 	}
 	var body strings.Builder
-	for i, r := range []rune(title) {
+	for i, r := range rows {
 		if i >= h {
 			break
 		}
-		body.WriteString(styLaneTitle.Render(" "+string(r)) + "\n")
+		body.WriteString(styLaneTitle.Render(" "+r) + "\n")
 	}
 	return style.Render(clampBlock(body.String(), thinColWidth, h))
 }
