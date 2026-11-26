@@ -2,7 +2,7 @@
 id: 01M86H5VJ5DK1MDM8Y6NQNB5S4
 title: "herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangs…"
 status: backlog
-ready: false
+ready: true
 creator: Sascha
 context: "note: elsewhere: herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangs tab list and every caller; before this ticket"
 tags: []
@@ -11,11 +11,12 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T07:54:50Z
+updated-at: 2026-11-26T07:55:45Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
 claimed-at: 2026-11-26T07:54:46Z
+goal: "herdr-hc.sh 'tab list' endet in begrenzter Zeit, auch wenn hc get (oder hc ls) haengt: ein Terminal, dessen hc get nicht in der Frist antwortet, zaehlt als stumm (Exit 3 + stderr, wie seit 8NWE4P)"
 ---
 
 # herdr-hc.sh 'hc get' has no timeout of its own - a hanging hc get hangs…
