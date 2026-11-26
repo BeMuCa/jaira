@@ -1,7 +1,7 @@
 ---
 id: 01M86MPK2ZKG4T824GG598KFJP
 title: "gitref.go:548 publish - schlaegt update-ref nach erfolgreichem Push feh…"
-status: testing
+status: in-progress
 ready: true
 creator: Sascha
 context: |-
@@ -16,7 +16,7 @@ related: []
 follows: 01M865XBRDFR99ENKNMKWV2J2W
 commits: []
 created-at: 2026-11-24T11:22:48Z
-updated-at: 2026-11-26T08:03:35Z
+updated-at: 2026-11-26T08:03:39Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-37950
@@ -29,6 +29,10 @@ review-summary: none
 review-gaps: "none: publish nutzt jetzt dasselbe r.run-Muster wie Delete/PushBranch; das Anlegen des .lock steht in gitref_test und outbox_test doppelt - zwei Pakete, ein gemeinsamer Helfer waere ein Testpaket fuer 6 Zeilen, gelassen"
 test-verdict: "fail: bughunt change blocker - nach geschlucktem update-ref liest die naechste Schreibung den veralteten lokalen Ref als Lease und verliert gegen sich selbst"
 hunt-verdict: "fail: 1 change blocker (gitref.go:554 lokaler Ref bleibt hinter dem Remote), 1 pre-existing (gitref.go:998 jede Server-Ablehnung gilt als ErrRaceLost) - Note fuer die Person"
+round: 2
+back-from: testing
+back-by: lane
+back-count: 1
 ---
 
 # gitref.go:548 publish - schlaegt update-ref nach erfolgreichem Push feh…
