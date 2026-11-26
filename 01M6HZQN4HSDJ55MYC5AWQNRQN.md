@@ -1,7 +1,7 @@
 ---
 id: 01M6HZQN4HSDJ55MYC5AWQNRQN
 title: "Wer ein Ticket, einen Milestone oder ein Epic zugewiesen bekommt, sieht das im Board als Nachricht"
-status: in-progress
+status: critique
 ready: true
 creator: berkc
 assignee: Berk
@@ -17,14 +17,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T10:51:02Z
+updated-at: 2026-11-26T10:51:05Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T10:27:37Z
 question: ""
-outcome-what: "Fixes (a) take on a stale file checks the ref; (b) handover to the current holder records an entry; (c) a holder's pull keeps assigned-by; (h1) inbox refs carry a hash of the name (inbox.Slug); (h2) a send whose push landed is success; (h3) msg refuses a person name neither on the people list nor active here (exit 3, nothing written); (h4) msg help and release note say messages are readable by anyone with the repository"
-outcome-why: "Testing round 2 and bughunt found: take printed 'already yours' for a ticket the ref had given away; a re-handover to the current holder left no inbox entry; a pull rewrote assigned-by; 'Zoë' and 'Zo' shared one inbox; a send reported failed after the message landed; mail to a misspelt name was stored in an inbox nobody opens"
-outcome-resolves: "testing round 2 send-back items (a), (b), (c) and bughunt blockers slug collision, double send, unknown-name mail; the readable-inbox edge is documented, not changed"
+outcome-what: "Handover commits tracked changes only and lists untracked files as not handed over; a pull or take that finds a diverged local branch makes no worktree, and a behind one is fast-forwarded; the first-fetch baseline is per repository (inbox.json), so a second worktree's first fetch records assignments made after the clone's last fetch."
+outcome-why: "Testing round 2 showed handover pushing an untracked scratch-credentials.txt, a stale local branch checked out as success, and a new worktree dropping assignments made since the last fetch."
+outcome-resolves: "triage round 2 fixes (1), (3), (4). Left open for the person, per the triage: (2) ack of an entry recorded after the list was printed, take-back before fetch, a losing parallel take."
 review-summary: none
 round: 5
 back-from: testing
