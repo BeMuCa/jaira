@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T09:57:21Z
+updated-at: 2026-11-26T09:57:25Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-26T09:55:07Z
@@ -199,3 +199,4 @@ core/inbox/inbox.go:155-163 retries ticket.LockFile 5x on top of its own timeout
 Left standing: handover git add -A is DoD 11 (WIP commit) and design F; pull/take worktree rule per note 2026-11-26 09:23; first-fetch baseline per note 00:27.
 - **2026-11-26 09:52 · Berk** — in-progress send-back fixes (worker w-wqnrqn): (1) messages: refsync.messageEntries now keeps the last-seen inbox commit per slug in refs-seen as inbox:<slug>; a fetch returns only lines absent from the commit it last saw (keyed by line content), so a pruned ack does not come back; a first sight still records all lines. Old commit unreadable => every line counts as new (rare; history gc'd). (2) notifications: inbox.RecordNew returns what a fetch added; Arrival.Recorded marks an assigned entry that this fetch recorded. TUI announceArrivals and the CLI jaira fetch announceArrivals both notify only on Recorded; the TUI flash is gone (the banner replaces it). The CLI copy had the same bug as the TUI copy, so it is fixed in the same change. (3) grouping and row text: inbox.Groups and inbox.Line in core/inbox/rows.go; TUI and CLI call them. (4) lock: update takes ticket.LockFile once; TestConcurrentRecordLosesNothing is 3x5. Mutation check: disabling both tip guards makes TestAnAckedMessageDoesNotComeBackAfterPrune fail.
 - **2026-11-26 09:54 · Berk** — critique round 2 (w-wqnrqn, 26.11.): read only round-1 findings and their fixes 2a6ade45f, b24172b1a, 1d784d287. All four answered: (1) inbox tip kept in refs-seen as inbox:<slug>, lines diffed against last-seen commit; checked that Departed and the vanished-ref loop skip inbox: keys (both need a local ticket file), harmless. (2) flash gone, notify only on Arrival.Recorded in TUI and CLI fetch. (3) inbox.Groups/inbox.Line in core/inbox/rows.go used by both. (4) lock retry loop dropped, test 3x5. build+vet ok; go test core/inbox core/gitref core/refsync, tui -run Inbox|Arriv|Help, cli -run Inbox|Fetch|Msg all ok. review-summary=none.
+- **2026-11-26 09:57 · Berk** — optimize (w-wqnrqn, 26.11.): two behaviour-neutral cleanups, see review-gaps. Checked and kept: TUI flash removal left m.flash with other callers (refs.go:145, model.go:1124/1220), so nothing orphaned; peopleList() in the milestone-assign loop is cached (root.go:415). Tests: core/inbox gitrepo refsync full, cli -run Handover|Take|Pull|Inbox|Msg|Milestone|People|Show|Fetch|TestEveryCommandIsDocumented, tui -run Inbox|Handover|Arriv|Help|Detail all ok; build+vet clean.
