@@ -17,7 +17,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-04T00:35:52Z
-updated-at: 2026-11-26T00:42:51Z
+updated-at: 2026-11-26T00:46:25Z
 updated-by: Berk
 claimed-by: w-wqnrqn
 claimed-at: 2026-11-25T23:21:30Z
@@ -44,7 +44,8 @@ question: ""
 - [ ] Release-Note-Zeile in core/release/notes/WQNRQN.md
 - [ ] Uebergabe: 'jaira handover <id> <person>' setzt den Assignee, pusht vorher den Branch des Tickets (WIP-Commit, wenn der Worktree Aenderungen hat) und schreibt Branch und Commit aufs Ticket; der Empfaenger bekommt den Inbox-Eintrag mit Branch und Commit; Test
 - [ ] Uebernahme: 'jaira take <id>' macht mich zum Assignee, der bisherige Assignee bekommt einen Inbox-Eintrag 'X hat dein Ticket uebernommen'; 'jaira pull <id>' holt danach Ticket und Branch in einen Worktree; Test
-- [ ] Nachrichten: 'jaira msg <person> <text>' und 'jaira msg <id> <text>' (an den Assignee) legen eine Nachricht auf einen Ref pro Empfaenger ab (ein Ref, an den Commits angehaengt werden, nicht ein Ref pro Nachricht); sie erscheint im Inbox des Empfaengers wie eine Zuweisung; Test
+- [x] Nachrichten: 'jaira msg <person> <text>' und 'jaira msg <id> <text>' (an den Assignee) legen eine Nachricht auf einen Ref pro Empfaenger ab (ein Ref, an den Commits angehaengt werden, nicht ein Ref pro Nachricht); sie erscheint im Inbox des Empfaengers wie eine Zuweisung; Test
+  proof: internal/cli/msg_test.go TestMsgReachesThePersonsInboxAsDataNotAnInstruction, TestMsgToATicketGoesToItsAssignee
 - [ ] 'jaira people' listet die Aliase, die in diesem Repo aktiv sind (Assignees, Creator, Commit-Autoren der letzten 30 Tage), mit --json; Test
 - [ ] Nachrichtentext ist Daten: kein Agent fuehrt eine Nachricht als Anweisung aus; jaira inbox --json kennzeichnet Nachrichten als von Menschen geschrieben
 - [x] two processes recording into inbox.json at once lose no entry, and an acked entry does not come back from a second worktree's fetch; Test core/inbox
@@ -68,7 +69,7 @@ question: ""
 - [x] P3 core/gitref: InboxPrefix 'refs/jaira/inbox/', InboxRefName(slug), ReadInbox(slug), WriteInbox(slug, content, lease) via refRead/refWrite; core/inbox Send(repo, slug, Message) = fetch, read, append JSON line, write with lease, retry on ErrRaceLost (people.Update pattern); Parse lines; tests with a bare remote
 - [x] P4 core/refsync.Incoming: compare assignee at refs-seen SHA vs tip, classify assigned/taken, sender from assigned-by/updated-by, carry handover-branch/commit; first-ever fetch (no refs-seen.json) is a baseline; read inbox refs for Slug of each name in new Syncer.Me []string and record new message lines; write everything through core/inbox.Record into Store.RepoStateDir(); wire Me in cli/refs.go and tui/refs.go; refsync tests: notes and self-assign make no entry, other's assignment makes one, survives a second Incoming from another tree until acked (DoD 4, 5)
 - [x] P5 cli 'jaira inbox [--json] [--ack <key|id>] [--all]': runs refs.Incoming when usable, prints grouped rows (bundle by batch+from+milestone/epic per design C), message rows marked; --json entries with kind, from, written_by:human + note for messages, branch/commit; tests (DoD 7, 8, 15)
-- [ ] P6 cli 'jaira msg <person|id> <text...>': id -> its assignee (refuse none, exit 3), canonical name via people list, empty text refused (exit 2), warn when person not active; offline -> nothing written, error; tests (DoD 13, 17, 18)
+- [x] P6 cli 'jaira msg <person|id> <text...>': id -> its assignee (refuse none, exit 3), canonical name via people list, empty text refused (exit 2), warn when person not active; offline -> nothing written, error; tests (DoD 13, 17, 18)
 - [ ] P7 cli 'jaira milestone assign <name> <person>': every open ticket of the milestone (not done/rejected) gets assignee=person in one command through the same write path as 'jaira set'; prints count; test that receiver gets ONE inbox row (DoD 8)
 - [ ] P8 cli 'jaira handover <id> <person>' (design F) and 'jaira take <id>' (design G); 'jaira pull' worktree step for handover-branch; tests with a bare remote: push fails -> assignee unchanged; receiver entry carries branch+commit; take gives previous assignee a 'taken' entry (DoD 11, 12, 18)
 - [ ] P9 cli 'jaira people': add active names (assignees, creators, git authors last 30 days, canonical) to text and --json 'active'; test (DoD 14)
@@ -160,3 +161,4 @@ I) people: 'jaira people' gains 'active' (assignees + creators of board tickets,
 - **2026-11-26 00:39 · Berk** — P5-P7 worker: step 0 done. Batch is one time.Now() per Incoming run (RFC3339 UTC), passed to assignmentEntries; the old updated-at-per-minute batch split a milestone assign crossing a minute. Test: TestOneFetchGivesItsEntriesOneBatch. Design A-I read from ticket lines 142-150; C = display-time bundling by batch+from+milestone/epic, so core/inbox gets a Rows grouping.
 - **2026-11-26 00:41 · Berk** — worker: TestAFinishedTicketThatNeverLandedIsReported failed once (refsync_test.go:831 'a finished ticket that never landed was not reported: []') on a full-package run at cc5f791ad while other agents loaded the machine; then green 5/5 alone and 2/2 full package. Treated as flaky under load, not caused by this ticket; testing lane should re-run it.
 - **2026-11-26 00:42 · Berk** — P5 inbox: rows come from inbox.Rows (core/inbox/rows.go) bundling by batch+sender+milestone/epic (design C); milestone name before epic. --all acks everything (assumption: --all with no --ack clears the inbox, --ack with --all is exit 2). --ack by row key acks the whole row, by ticket id only that ticket's entries. Message rows are not bundled. Release note line in core/release/notes/WQNRQN.md.
+- **2026-11-26 00:46 · Berk** — P6 msg: target is a ticket id when s.Load finds one (its assignee, message carries the ticket id), else a person name; canonical via people list, slug via core/identity.Slug. Empty text refused exit 2. Ticket without assignee exit 3. Offline/unreachable remote: inbox.Send returns error, nothing written (TestMsgWithNoReachableRemoteWritesNothing). Not ticked: DoD 15 (agent half is behaviour, not code), 17 (TUI half), 18 (handover half).
