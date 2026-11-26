@@ -20,7 +20,7 @@ commits:
   - 2a73eae23200b5ca18fbe670c86fb7fdb9616b35
   - 725643c320eeedd21577de96a6c559dddd8d2758
 created-at: 2026-10-31T01:24:47Z
-updated-at: 2026-11-26T00:38:27Z
+updated-at: 2026-11-26T00:38:31Z
 updated-by: Berk
 claimed-by: w-eh6z0n
 claimed-at: 2026-11-26T00:35:07Z
@@ -156,3 +156,6 @@ Let stand: hunk header indented 2*nw+4 with no │ (aligns @@ with the sign colu
 - **2026-11-25 23:07 · Berk** — Plan decisions 2026-11-26 (worker): tab still gives the diff the keys (arrows scroll the ticket otherwise, the person did not ask to drop that); an open file pins its header and hides the files above it so its rows get the pane; mouse capture only while the diff pane is shown, because capture switches off terminal text selection; o waits for the IDE asynchronously (the WSL code wrapper took 4.5s to fail here), so the TUI never blocks. Release note line 1 rewritten rather than appended: ]/[ never shipped in a release.
 - **2026-11-25 23:07 · Berk** — waiting: in-progress Haiku implementer (subagent) and main's answer on the VS Code server repair, since 00:07
 - **2026-11-26 00:35 · Berk** — DoD 11 checked on this WSL2 machine (worker 2026-11-26). (a) Failure path: the real argv 'code -g README.md:3' via exec, as openInCode runs it, exits 127 after 8-46s with stderr '.../remote-cli/code: not found' (broken ~/.vscode-server); openInCode now returns that as 'exit status 127: <stderr line>' for the title. (b) Success path: openInCode run from go test, whose HOME is an empty temp dir (internal/testhome), made the wrapper download a fresh server (~115s) and exit 0 twice -> 'opened'. So with an intact server the plain 'code -g' launch works under WSL; no --remote/wslpath needed. Side effect: two VS Code windows were opened on the person's desktop by those probes. Changed after the implementer: dropped the 10s openWait deadline (it reported a still-running 46s failure as 'opened'); the wait runs in a tea.Cmd, so the screen never blocks. The person's own ~/.vscode-server/bin/69047191fc... is still broken (repair asked of main, no answer yet).
+- **2026-11-26 00:38 · Berk** — critique (round DoD 7-11, 88e9617d9^..9ad26991c): core/release/notes/EH6Z0N.md:3 marks the new keys "- !" (must act) and repeats line 1, but nothing of this diff ever shipped (no EH6Z0N in 0.6.x, ]/[ never released - your own note 2026-11-25 23:07): fold enter-closes, left/right scroll, divider drag and the IDE error in the title into lines 1-2 and delete line 3
+internal/tui/model.go:1288 case diffOpenedMsg checks only m.mode==modeDetail, so an IDE result that arrives 5-46 s later (the WSL wrapper delay in note 2026-11-26 00:35) lands in the title of whatever ticket is open by then: carry the ticket id in diffOpenedMsg (set in diffpane.go openDiffRow) and drop the message when it != m.diffScrollFor
+Left standing: no openWait deadline (note 2026-11-26 00:35), mouse capture only while the diff is shown, tab still focuses the diff (note 2026-11-25 23:07)
