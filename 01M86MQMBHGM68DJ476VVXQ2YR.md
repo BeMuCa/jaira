@@ -15,7 +15,7 @@ related: []
 follows: 01M86H5PFARVW0Z0NBMJN5ZZP6
 commits: []
 created-at: 2026-11-24T11:23:22Z
-updated-at: 2026-11-26T08:02:38Z
+updated-at: 2026-11-26T08:02:42Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-38348
@@ -30,8 +30,8 @@ review-summary: |-
 review-gaps: |-
   none: 3 files, nothing duplicated elsewhere (core/web/ui/.gitignore covers only core/web/ui), every new symbol has a caller
   round 2: none, comments only
-test-verdict: "pass: go test ./... green (exit 0), go test -race -count=1 ./core/mod ok, go vet, shipped-history --check ok; DoD 1: git check-ignore matches .gitignore:43 for node_modules/.vite/vitest/results.json; DoD 2: TestBuiltinsLeaveATestRunsCacheOut ok; function: in a git-archive copy with a real node_modules/.vite/vitest/results.json, the file is in the embedded FS but in no Mod.Files, so it is not installed"
-hunt-verdict: "change: mod.go/.gitignore text says node_modules stays out of the binary; go:embed all: still embeds it, only the install skips it - fix the wording (go:embed cannot exclude a subdirectory; release builds run on a clean checkout)"
+test-verdict: "pass round 2: go test ./core/mod ok, gofmt clean; DoD 1-2 unchanged by the comment-only fix, proofs still point at .gitignore:43 (node_modules line) and TestBuiltinsLeaveATestRunsCacheOut"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 2"
 round: 2
 back-from: testing
 back-by: lane
