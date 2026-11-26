@@ -16,7 +16,7 @@ related: []
 follows: 01M866HXTHQS29K2ZMNQ8NWE4P
 commits: []
 created-at: 2026-11-24T10:21:14Z
-updated-at: 2026-11-26T08:11:21Z
+updated-at: 2026-11-26T08:11:25Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-36559
@@ -79,3 +79,4 @@ back-count: 1
 - **2026-11-26 08:10 · Sascha** — bughunt: change: core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh:40-43,52 - class: the budget is counted in whole SECONDS ticks, so it is secs minus up to 1 s depending on where in the wall-clock second the script starts; the watchdog sleeps the truncated 'left' too; example: JAIRA_HC_TIMEOUT=1 with an hc that answers at once reports a live terminal as mute and exits 3 when started just before a second tick; ran: 10 runs of tab list started ~20 ms before a tick with a stub hc (2/10 exit 3 'hc get gave no answer for t1'); with the default 5 the budget is 4-5 s, not a blocker; also the source of possible flakes in TestHerdrHcTabListSaysWhichTerminalDidNotAnswer at JAIRA_HC_TIMEOUT=2; fix: end=$((SECONDS + secs + 1)) or document the -1 s, or the guard minimum as 2
 - **2026-11-26 08:10 · Sascha** — hunt report: 2 findings, both change, neither a blocker, as notes on QNB5S4 (octal JAIRA_HC_TIMEOUT; whole-second budget) | read as a diff since 21d6e7e89: herdr-hc.sh (plus the whole script for context), role_test.go, release note, shipped.sha256 (new hash matches the file); no new files | not checked: behaviour on macOS bash 3.2 and Git Bash, no such machine here
 - **2026-11-26 08:10 · Sascha** — bughunt: done at ff4b72ae3 - 2 findings (2 change, 0 pre-existing) in 4 modules, follow-up hunt since 21d6e7e89; concurrency, error paths, input, permissions checked; files: core/release/notes/QNB5S4.md core/role/builtin/jaira-dispatcher/scripts/herdr-hc.sh core/role/role_test.go core/shipped/shipped.sha256
+- **2026-11-26 08:11 · Sascha** — testing (Runde 2): class: Zahl aus der Umgebung wird von $(( )) als Oktal gelesen; example: JAIRA_HC_TIMEOUT=08 -> Exit 1, 00 -> Budget 0; fix: nach der Ziffern-Pruefung 10#$secs und 0 ablehnen, Test um 08/00/010 erweitern. Dazu: end um 1 s erhoehen, damit das Budget nie unter secs faellt (SECONDS zaehlt ganze Sekunden).
