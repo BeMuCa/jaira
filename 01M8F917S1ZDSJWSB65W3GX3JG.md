@@ -28,7 +28,7 @@ commits:
   - eb1c703587f6dd329a5154fa4442e2a37fbe59bd
   - e1ae3cc55a5589bddea0c23518e560b0877e0245
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T21:04:45Z
+updated-at: 2026-11-27T21:04:48Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -111,3 +111,8 @@ review-check: "1. cd into a git worktree that has no .jaira folder, e.g. git -C 
 - **2026-11-27 20:56 · Sascha** — waiting: fresh review agent (run-lane.sh tab) since 21:56
 - **2026-11-27 20:58 · Sascha** — review: done at e1ae3cc55
 - **2026-11-27 20:59 · Sascha** — report: ticket.Discover falls back to the main checkout's board in a linked worktree without .jaira (only a board inside the main checkout); git questions go to the board's place in the worktree via Store.WorkTree(); git-file reading moved to new core/gitwt | signoff, context 172k of 1000k, cache warm 60 min after last answer | open: DoD 3 (cockpit Accept, seen by a person); 4 note: limit lines in review-gaps; branch feat/3gx3jg not pushed
+- **2026-11-27 21:04 · Sascha** — Accepted from signoff: angenommen:
+- note: limit: a path inside an initialized submodule of the main checkout is measured against the submodule top, so jaira run in <worktree>/<submodule> of a worktree without that submodule finds no board - teamlead decided 2026-11-27 to keep it, fails to ErrNoStore as before
+- note: limit: a board above the repository (parent/.jaira, repo in parent/repo) is not used from a worktree, ErrNoStore as before - teamlead decision
+- note: limit: in such a worktree the ticket file lives in the main checkout, so it cannot ride in the branch's commits and 'jaira pull' writes into the main checkout - the board is not in git there anyway
+- note: limit: core/gitwt has no tests of its own - covered through core/ticket discover_test.go and core/project tests
