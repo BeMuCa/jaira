@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:46:20Z
+updated-at: 2026-11-27T20:46:24Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -70,3 +70,4 @@ back-count: 1
 - **2026-11-27 20:42 · Sascha** — bughunt: done at e0d480a8e - 2 findings (2 change, 0 pre-existing) in 5 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/PYR4JK.md
 - **2026-11-27 20:45 · Sascha** — fix round 2 (bughunt): (1) Antwort neben einer fix-Note: execute behandelt giveBack und answer gleich — getippter Text bei waitsForAnswer ist immer 'answer to "…"', question= vor den Decisions (giveBackWith bekommt first-Callback); answer() entfällt, clearQuestion() übernimmt. (2) needAnswer ohne Feld (canType=false): eigener Text needAnswerUntyped, verweist auf Discuss/Explain. Test: 'an answer typed beside a note marked fix…'. Mobile-Pfad nur gelesen, kein Test-Harness dafür.
 - **2026-11-27 20:45 · Sascha** — critique round 2 (one pass, 49 lines): both bughunt findings addressed in 5ca1382c7 — answer beside a fix note clears the question and says 'answer to'; canType=false gets needAnswerUntyped. Nothing new.
+- **2026-11-27 20:46 · Sascha** — waiting: bughunt round 2 (background subagent) since 21:46
