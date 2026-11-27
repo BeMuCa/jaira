@@ -3,6 +3,7 @@ package ticket_test
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -81,5 +82,28 @@ func TestDiscoverInLinkedWorktree(t *testing.T) {
 				t.Fatalf("WorkTree = %q, want %q", got, want)
 			}
 		})
+	}
+}
+
+// A board above the main checkout belongs to no repository; a worktree
+// elsewhere does not borrow it, as it would have no copy of its place to ask
+// git from.
+func TestDiscoverIgnoresBoardAboveMainCheckout(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	base := t.TempDir()
+	outer := filepath.Join(base, "outer")
+	main := filepath.Join(outer, "repo")
+	if err := os.MkdirAll(main, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mkTickets(t, outer)
+	git(t, main, "init")
+	git(t, main, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "--allow-empty", "-m", "root")
+	tree := filepath.Join(base, "elsewhere", "wt")
+	git(t, main, "worktree", "add", "-b", "side", tree)
+	if s, err := ticket.Discover(tree); !errors.Is(err, ticket.ErrNoStore) {
+		t.Fatalf("got %v, %v; want ErrNoStore", s, err)
 	}
 }

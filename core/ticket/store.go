@@ -287,7 +287,12 @@ func Discover(dir string) (*Store, error) {
 		return &Store{Root: root}, nil
 	}
 	if main := gitwt.MainCheckout(abs); main != "" {
-		if root, ok := boardAbove(main); ok {
+		// Only a board inside the main checkout: one above the repository is
+		// not this repository's board, and the worktree has no copy of its
+		// place to ask git from.
+		root, ok := boardAbove(main)
+		inside, err := filepath.Rel(gitwt.Top(main), root)
+		if ok && err == nil && inside != ".." && !strings.HasPrefix(inside, ".."+string(filepath.Separator)) {
 			// The worktree's own copy of root, not the directory the command
 			// ran in: git reads paths relative to it, and board data counts as
 			// board data only from where the board sits.

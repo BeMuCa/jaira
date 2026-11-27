@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:49:47Z
+updated-at: 2026-11-27T20:54:40Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -30,13 +30,14 @@ outcome-what: "ticket.Discover falls back to the main checkout's board when a li
 outcome-why: "worktrees cut before jaira share have no .jaira, so every jaira call there - the cockpit's Accept included - failed with no_store"
 outcome-resolves: jaira list/show/move and cockpit Accept work in a worktree without .jaira; a worktree with its own board keeps it
 review-summary: "none"
-round: 4
+round: 5
 back-from: testing
 back-by: lane
-back-count: 2
-review-gaps: "round 2: unexported Store.Tree to tree - only Discover sets it, WorkTree() is the one reader. Round 1: removed TestDiscoverWorktreeWritesMainBoard (the CLI test covers it). Left: gitwt has no own tests - its callers' tests exercise every function"
+back-count: 3
+review-gaps: "round 3: nothing to remove - the fix is 8 lines and one test assertion. Earlier: unexported Store.tree; removed TestDiscoverWorktreeWritesMainBoard (CLI test covers it). Left: gitwt has no own tests - callers' tests exercise every function"
 test-verdict: "pass: go test -race ./core/... ./internal/... rc=0 (full ./... -race rc=0 before the unexport); DoD 1,2,4 verified - tests named in the proofs run green and go red with the fallback/WorkTree disabled; binary on a scratch repo: list/move/create from a worktree without .jaira use the main board, create follows the worktree's branch ticket with main on another ticket's branch; worktree whose main has no board exits 1 and writes no .jaira; two parallel notes (worktree + main) both land. DoD 3 (cockpit Accept, seen by a person) left for the person"
-hunt-verdict: "fail: 1 change (edge) - Store.tree is the directory the command ran in, so from a subdirectory board-data paths count as code in HuntCheck/HuntCoverage"
+hunt-verdict: "fail: 1 change - board above the main checkout's top makes tree point outside the worktree (round 3)"
+question: ""
 ---
 
 # Worktree ohne .jaira findet das Board des Hauptcheckouts
@@ -73,3 +74,10 @@ hunt-verdict: "fail: 1 change (edge) - Store.tree is the directory the command r
 - **2026-11-27 20:48 · Sascha** — hunt report: 1 finding, 1 change (edge, not blocker), as a note on 3GX3JG | read as a diff since 807794849: core/ticket/store.go internal/cli/worktreeboard_test.go; new to the change and read around their changed call (not whole - 6.7k lines of one-line edits): internal/cli/flow.go internal/cli/roles.go internal/cli/root.go internal/cli/tickets.go internal/tui/model.go, plus every gitrepo method those calls reach (git.go, derive.go, hunt.go, named.go) and every remaining gitrepo.Repo{Dir: s.Root} site | not checked end to end: the full move refusal in a board-less worktree with ticket-file-only commits (needs a shared board with an untracked-empty tickets dir); CommitsForTicket's first source now gets an absolute ticket path outside the worktree and git errors silently, judged unreachable since such a worktree has no ticket files in its history
 - **2026-11-27 20:48 · Sascha** — bughunt: done at 17c54243e - 1 finding (1 change, 0 pre-existing) in 8 modules, follow-up hunt since 807794849; concurrency, error paths, input, permissions checked; files: core/gitwt/gitwt.go core/project/worktree.go core/release/notes/3GX3JG.md core/ticket/discover_test.go core/ticket/store.go internal/cli/flow.go internal/cli/roles.go internal/cli/root.go internal/cli/tickets.go internal/cli/worktreeboard_test.go internal/tui/model.go
 - **2026-11-27 20:49 · Sascha** — fix for hunt r2: tree is now Root mirrored into the worktree (abs + rel(main, root)), not the directory the command ran in - git's --show-prefix then matches the board's place, as with Root. TestDiscoverInLinkedWorktree checks WorkTree per case; red with the old value (2 cases).
+- **2026-11-27 20:51 · Sascha** — bughunt: change: blocker: core/ticket/store.go:294-298 (Discover) - class: board found above the main checkout's top (boardAbove(main) walks past the repo, so Rel(main, root) climbs out of it) makes tree = abs+'../..' point outside the linked worktree, so every WorkTree() caller (cli/tickets.go:171 Branch, :865 LastHunt, cli/root.go:359, cli/flow.go:675, cli/roles.go:193, tui/model.go:2108) asks git in a directory that is not the worktree - no repo at all, or a different enclosing repo; example: board at parent/.jaira (not in git), main checkout parent/repo, worktree elsewhere/wt2 on branch feat/6gwvx6 - 'jaira create' no longer sets follows 6GWVX6, which the 17c54243e build does; fix direction: map root via the worktree top (gitwt.Top(abs)) and fall back to that top when root lies outside the main checkout; ran: built HEAD and 17c54243e, jaira create in a scratch layout (HEAD: no Follows line; old: 'Follows 6GWVX6, from branch feat/6gwvx6')
+- **2026-11-27 20:51 · Sascha** — hunt report: 1 finding, 1 change (blocker), note on 3GX3JG | read as a diff since 17c54243e: core/ticket/store.go, core/ticket/discover_test.go (no other file changed, none new) | not checked: whether the enclosing-repo variant (board root inside another git repo) gives a wrong branch rather than none - same path, not run
+- **2026-11-27 20:51 · Sascha** — bughunt: done at eb1c70358 - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since 17c54243e; concurrency, error paths, input, permissions checked; files: core/gitwt/gitwt.go core/project/worktree.go core/release/notes/3GX3JG.md core/ticket/discover_test.go core/ticket/store.go internal/cli/flow.go internal/cli/roles.go internal/cli/root.go internal/cli/tickets.go internal/cli/worktreeboard_test.go internal/tui/model.go
+- **2026-11-27 20:51 · Sascha** — question (3rd testing send-back, to teamlead): testing would send 3GX3JG back a 3rd time. Round 3 finding: a board ABOVE the main checkout top (parent/.jaira, repo in parent/repo) makes tree point outside the worktree, so create loses follows. My view: the loop is not deepening the DoD, it is the fallback reaching too far - edges grow, pick the smaller design. Options: 1) (Recommended) fall back only to a board inside the main checkout (root under its top); a board above the repo stays ErrNoStore in a worktree, as before this ticket - ~3 lines + 1 test case. 2) keep the wider fallback, clamp tree to the worktree top when root lies outside the main checkout - ~5 lines, keeps an odd setup working. 3) accept as known limit, move on to review. Send back for 1?
+- **2026-11-27 20:52 · Sascha** — waiting: teamlead decision on the 3rd send-back (uds:/run/user/1000/cc-socks/24078.sock) since 21:52
+- **2026-11-27 20:52 · Sascha** — decision (teamlead): Rückfall nur auf ein Board im Hauptcheckout selbst; ein Board oberhalb des Repos bleibt im worktree ErrNoStore wie bisher. Kleinere Lösung statt tree-Klammer – die Randfälle wuchsen.
+- **2026-11-27 20:54 · Sascha** — fix per teamlead decision (option 1): Discover falls back only to a board inside the main checkout (Rel to gitwt.Top(main) must not climb); a board above the repo stays ErrNoStore in a worktree. Test TestDiscoverIgnoresBoardAboveMainCheckout - red without the bound.
