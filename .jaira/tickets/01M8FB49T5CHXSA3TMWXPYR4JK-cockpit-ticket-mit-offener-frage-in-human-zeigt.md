@@ -1,7 +1,7 @@
 ---
 id: 01M8FB49T5CHXSA3TMWXPYR4JK
 title: "Cockpit: Ticket mit offener Frage in human zeigt Frage statt Abnahme-Checkliste"
-status: critique
+status: testing
 ready: true
 creator: Sascha
 goal: "Steht ein Ticket in einer Frage-Lane (human) mit offener Frage, zeigt der cockpit die Frage und ein Antwortfeld – keine 'Check yourself'-Liste und kein Accept, das danach abgelehnt wird."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:39:09Z
+updated-at: 2026-11-27T20:41:16Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -27,6 +27,8 @@ claimed-at: 2026-11-27T20:33:49Z
 outcome-what: "Acceptance pane: offene Frage in nicht-endender Person-Lane wird beantwortet statt abgenommen — neuer Execute-step 'answer' (Note + question= + zurück an den Worker über giveBack), Frage oben, seen-Liste ausgeblendet, Feld 'Your answer'"
 outcome-why: "Bei Lane ohne next_lane lief Execute in 'noNext' und die seen-Liste verleitete zum Abhaken vor Ende der Arbeit"
 outcome-resolves: "Person sieht im human-Lane die Frage und beantwortet sie direkt; kein 'nothing to accept'"
+review-summary: none
+review-gaps: "hoisted waitsForAnswer(w) in the Acceptance pane render into one const asking (was called 7 times); kept t.answer as the fail title, the same shape as t.giveBack; no duplication found — answer() reuses giveBack/givingBack; nothing orphaned (noNext still reached for a lane with no next and no question)"
 ---
 
 # Cockpit: Ticket mit offener Frage in human zeigt Frage statt Abnahme-Checkliste
@@ -55,3 +57,4 @@ outcome-resolves: "Person sieht im human-Lane die Frage und beantwortet sie dire
 ## Progress
 - **2026-11-27 20:33 · Sascha** — parent session: uds:/run/user/1000/cc-socks/24078.sock
 - **2026-11-27 20:34 · Sascha** — decision (worker): keine offene Entscheidung. Antwort = neuer step 'answer' in executionOf: question offen + Lane endet nicht (waitsForAnswer) + Text eingetippt -> question= löschen, dann bestehender giveBack nach backTo mit Note 'Given back from <lane>: answer to "<frage>": <text>' (gibt an alten Worker per herdr). Warum giveBack: der Weg an den Worker existiert schon und schreibt die Note. Ohne Text: needAnswer statt noNext, auch wenn acceptTo null. seen-Liste ausgeblendet solange waitsForAnswer.
+- **2026-11-27 20:39 · Sascha** — critique: none. Form passt: answer() reuses giveBack (move, note, handover an alten Worker) statt eigenem Pfad; step in executionOf neben den anderen. Bewusst gelassen: die Antwort geht nach backTo (in-progress), nicht in die Lane, aus der der Worker fragte (z.B. brainstorm) — jaira führt die Herkunftslane nicht; der Worker liest seinen Lane aus status. Discuss/Explain-accept bleibt als zweiter Weg (bewegt nach vorn), der needAnswer-Text nennt nur noch das Feld.
