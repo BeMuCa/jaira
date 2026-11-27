@@ -1,7 +1,7 @@
 ---
 id: 01M8F917S1ZDSJWSB65W3GX3JG
 title: Worktree ohne .jaira findet das Board des Hauptcheckouts
-status: signoff
+status: done
 ready: true
 creator: Sascha
 goal: "jaira (und damit der cockpit) arbeitet in einem git-worktree auch dann, wenn dort kein .jaira liegt: es nimmt das Board des Hauptcheckouts."
@@ -19,9 +19,16 @@ tags:
   - cockpit
 blocked-by: []
 related: []
-commits: []
+commits:
+  - f5b3074649f785dcb1358f79d62cf491badc85bc
+  - bc81ebf1f2360c8f0db25796cc8d83489c0f9c33
+  - 80779484943c946b6f3fddf305d9b5f8b15fe261
+  - 1fbae6be917f44dc953ad6a325a8a88cf47fc065
+  - 17c54243e40c2eb98e729ffe4f75d049d2ba9ce3
+  - eb1c703587f6dd329a5154fa4442e2a37fbe59bd
+  - e1ae3cc55a5589bddea0c23518e560b0877e0245
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T21:04:24Z
+updated-at: 2026-11-27T21:04:45Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
