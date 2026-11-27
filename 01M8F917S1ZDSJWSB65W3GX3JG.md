@@ -21,9 +21,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:33:39Z
+updated-at: 2026-11-27T20:33:44Z
 assignee: Sascha
 updated-by: Sascha
+claimed-by: DESKTOP-RFTCH11-68058
+claimed-at: 2026-11-27T20:33:41Z
 ---
 
 # Worktree ohne .jaira findet das Board des Hauptcheckouts
@@ -45,4 +47,4 @@ updated-by: Sascha
 <Steps, in order — filled in by the pre-process step, or by you.>
 
 ## Progress
-
+- **2026-11-27 20:33 · Sascha** — parent session: uds:/run/user/1000/cc-socks/24078.sock
