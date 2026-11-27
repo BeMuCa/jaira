@@ -957,15 +957,45 @@ describe('waiting for you', () => {
     const ui = await $.ui.mount(BAND)
     expect(await ui.find({ key: 'discuss-K7P2QX' })).toBeDefined()
     const pane = await quietly($, ui, 'K7P2QX', w)
-    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Execute: answer the question first - or mark a note fix, or type what is missing')
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('Execute: type your answer to the question first - or mark a note fix')
     await pane.press({ key: 'execute-K7P2QX' })
     expect(ran(w, 'jaira', 'move')).toEqual([])
-    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('K7P2QX waits in human for the answer to its question: answer it first - Discuss, or an option marked [accept] under Explain - and Execute then moves it on to review. Mark a note fix, or type what is missing, to give it back.')
+    expect((await pane.findAll({ type: 'Text' })).map(x => x.text)).toContain('K7P2QX waits in human for the answer to its question: type it in the field, and Execute sends it back to the worker. Mark a note fix to give it back without one.')
   })
+
+  // PYR4JK: a worker's question in a person's lane is answered, not accepted -
+  // whether or not jaira names a lane after it. The pane leads with the
+  // question, lists nothing to tick yourself, and the words typed are the
+  // answer: a note on the ticket, the question cleared, back to the worker.
+  for (const [name, next] of [['with no lane after it', undefined], ['with a lane after it', 'review']] as const) {
+    test(`a question waiting in human ${name}: the pane shows it and no checklist, and the answer goes back to the worker`, async ($, on) => {
+      const w = world(on)
+      w.tickets = [{ ...HUMAN, next_lane: next }]
+      w.shows.K7P2QX = { title: 'tags popup', dod_items: [{ n: 1, done: false, state: 'todo', text: 'seen by a person: the popup opens' }] }
+      await startSession($)
+      const pane = await quietly($, await $.ui.mount(BAND), 'K7P2QX', w)
+      const texts = (await pane.findAll({ type: 'Text' })).map(x => x.text)
+      const title = texts.indexOf('tags popup')
+      expect(texts[title + 1]).toBe('┃ Question: Popup oder eigene Seite?')
+      expect(texts.some(x => x.startsWith('Check yourself') || x.includes('the popup opens'))).toBe(false)
+      expect(texts).toContain('Execute: type your answer to the question first - or mark a note fix')
+      const field = await pane.find({ key: 'typed-K7P2QX' })
+      expect(field?.props.label).toBe('Your answer')
+      expect(field?.props.autoFocus).toBe(true)
+      await pane.input({ key: 'typed-K7P2QX', text: 'Popup' })
+      expect(ran(w, 'jaira', 'move', 'K7P2QX')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'K7P2QX', '--to', 'in-progress'])
+      expect(ran(w, 'jaira', 'move', 'K7P2QX').filter(r => r.includes('--force'))).toEqual([])
+      expect(ran(w, 'jaira', 'note', 'K7P2QX')[0]?.[3]).toBe('Given back from human: answer to "Popup oder eigene Seite?": Popup')
+      expect(ran(w, 'jaira', 'set', 'K7P2QX', 'question=')).toHaveLength(1)
+      expect(ran(w, 'jaira', 'dod')).toEqual([])
+      expect(w.closed).toContain('cockpit-acceptance')
+      expect(JSON.stringify(w.toasts)).not.toContain('nothing to accept')
+    })
+  }
 
   test('where jaira names no lane after it, Execute accepts nothing and says so', async ($, on) => {
     const w = world(on)
-    w.tickets = [{ ...HUMAN, next_lane: undefined }]
+    w.tickets = [{ ...HUMAN, next_lane: undefined, question: '' }]
     await startSession($)
     const ui = await $.ui.mount(BAND)
     const pane = await pressAccept($, ui, 'K7P2QX', w)
@@ -1039,7 +1069,7 @@ describe('waiting for you', () => {
     // The row marks the question; the question itself is in the Acceptance pane.
     expect(await ui.find({ text: /Popup oder eigene Seite/ })).toBeUndefined()
     expect(await ui.find({ type: 'Text', text: /K7P2QX \| human \| .* \| \?/ })).toBeDefined()
-    expect(await (await acceptancePane($, ui, 'K7P2QX')).find({ type: 'Text', text: '? Popup oder eigene Seite?' })).toBeDefined()
+    expect(await (await acceptancePane($, ui, 'K7P2QX')).find({ type: 'Text', text: '┃ Question: Popup oder eigene Seite?' })).toBeDefined()
     await ui.press({ key: 'discuss-K7P2QX' })
     // The chat sends its decision to this session, by its messaging socket.
     // No --back on the default board: an older spawn.sh refuses the flag.
@@ -6207,11 +6237,16 @@ describe('the Acceptance pane, read alone', () => {
     ['blocker kept, words typed, with no next lane', [item('blocker', 'accept')], 'fehlt', null, 'giveBack', 0, 0],
     ['blocker kept, nothing typed, with no next lane', [item('blocker', 'later')], '', null, 'noNext', 0, 1],
   ]
-  test('an open question in a lane that does not end the work waits for its answer; words typed still give back', () => {
-    expect(executionOf([item('edge', 'accept')], '', 'review', 0, true).step).toBe('needAnswer')
-    expect(executionOf([item('blocker', 'accept')], '', 'review', 0, true)).toEqual({ step: 'needAnswer', fix: 0, followUps: 0, asksWhy: false })
-    expect(executionOf([], 'fehlt', 'review', 0, true).step).toBe('giveBack')
-    expect(executionOf([item('edge', 'now')], '', 'review', 0, true).step).toBe('giveBack')
+  test('an open question in a lane that does not end the work waits for its answer; words typed are the answer; a note to fix still gives back', () => {
+    for (const to of ['review', null]) {
+      expect(executionOf([item('edge', 'accept')], '', to, 0, true).step).toBe('needAnswer')
+      expect(executionOf([item('blocker', 'accept')], '', to, 0, true)).toEqual({ step: 'needAnswer', fix: 0, followUps: 0, asksWhy: false })
+      expect(executionOf([], 'fehlt', to, 0, true).step).toBe('answer')
+      expect(executionOf([item('blocker', 'accept')], 'Popup', to, 0, true).step).toBe('answer')
+      expect(executionOf([item('edge', 'now')], '', to, 0, true).step).toBe('giveBack')
+      // Nothing to tick waits: the answer comes first.
+      expect(executionOf([], '', to, 1, true).step).toBe('needAnswer')
+    }
   })
 
   for (const [name, items, typed, to, step, fix, followUps] of TABLE) {

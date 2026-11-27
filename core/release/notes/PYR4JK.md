@@ -1,0 +1,1 @@
+- In the cockpit's Acceptance pane, answer a ticket that waits in a person's lane on a worker's question by typing the answer and pressing Execute: the question now stands at the top, the "Check yourself" list is gone until the work is done, and the answer goes onto the ticket as a note and back to the worker with the question cleared — no more "nothing to accept in this lane".

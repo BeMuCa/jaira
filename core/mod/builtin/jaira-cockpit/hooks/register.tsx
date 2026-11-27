@@ -1415,7 +1415,9 @@ async function openAcceptance($: EngineInterface, w: Waiting): Promise<void> {
   const json = shown?.exitCode === 0 ? shown.stdout : undefined
   const items = itemsOf(w, json)
   await update($, choosingAtom, () => (items.length === 0 ? null : { id: w.id, items }))
-  const seen = json === undefined ? [] : seenItemsOf(json)
+  // PYR4JK: a ticket waiting on its question is not at its end - what only a
+  // person can tick is checked there, not while the work still asks.
+  const seen = json === undefined || waitsForAnswer(w) ? [] : seenItemsOf(json)
   await update($, seenAtom, () => (seen.length === 0 ? null : { id: w.id, items: seen }))
   const story = json === undefined ? undefined : storyOf(json)
   await update($, storyAtom, () => ({ id: w.id, ...(story !== undefined ? { story } : {}), ...(language !== undefined ? { language } : {}), release: [], pr: false }))
@@ -1538,17 +1540,30 @@ async function execute($: EngineInterface, w: Waiting, typed: string, share: num
   const refuse = async (text: string) => void await update($, refusalAtom, () => ({ id: w.id, text }))
   await update($, refusalAtom, () => null)
   if (e.step === 'noNext') return refuse(t.noNext(w.id, w.lane))
-  if (e.step === 'needAnswer') return refuse(t.needAnswer(w.id, w.lane, w.acceptTo ?? ''))
+  if (e.step === 'needAnswer') return refuse(t.needAnswer(w.id, w.lane))
   if (e.step === 'needWhy') return refuse(canType ? t.blockerNeedsWhy(w.id) : t.blockerNeedsTyping(w.id))
   if (e.step === 'needSeen') return refuse(t.seenMissing(w.id, unticked.map(x => x.text)))
   // The pane closes once the ticket moved, as for Accept: a refusal before
   // that leaves the person's marks in it.
+  if (e.step === 'answer') return answer($, w, typed.trim(), share, () => closeAcceptance($))
   if (e.step === 'giveBack') {
     if (items.length === 0) return giveBack($, w.id, w.lane, w.backTo, typed.trim(), share, () => closeAcceptance($))
     return giveBackWith($, w, items, typed.trim(), share, () => closeAcceptance($))
   }
   const moved = await acceptWith($, w, items, e.asksWhy ? typed : '', (why, ticked) => refuse(`${ticked.length === 0 ? t.refused(w.id) : t.refusedTicked(w.id, ticked)}\n${why}`), seen)
   if (moved) closeAcceptance($)
+}
+
+// PYR4JK: the person's answer to the question the ticket waits on goes back
+// to the worker the way Give back goes - the same move, note and handover -
+// and the question comes off the ticket once it moved, so the worker does not
+// read it as still open.
+function answer($: EngineInterface, w: Waiting, text: string, share: number, onMoved: () => void): Promise<void> {
+  return giveBack($, w.id, w.lane, w.backTo, async dir => {
+    const cleared = await jaira($, dir, ['set', w.id, 'question='])
+    if (!cleared.ok) await fail($, `${t.answer} ${w.id}`, t.questionNotCleared(w.id, cleared.why))
+    return t.answered(w.question, text)
+  }, share, onMoved)
 }
 
 // The 'seen by a person' items the Acceptance pane lists for this ticket.
@@ -2651,10 +2666,14 @@ export const register: Register = (on, options) => {
           : {first === undefined ? t.lightAccept : tr(t.lightReason(first))}{light.reasons.length > 1 ? t.lightMore(light.reasons.length - 1) : ''}
         </Text>
         <Text key="title" bold wrap="wrap">{tr(story_?.title || w.title)}</Text>
+        {/* PYR4JK: the question the ticket waits on comes first - it is what
+            the person is here for. One that no longer holds the work up stays
+            below, beside what was done. */}
+        {waitsForAnswer(w) ? field('question', t.question, 'warning', w.question) : null}
         {(story_?.goal || w.goal) ? field('goal', t.goal, 'suggestion', tr(story_?.goal || w.goal)) : null}
         {story_?.what ? field('what', t.done, 'success', tr(story_.what)) : null}
         {story_?.why ? field('why', t.why, 'warning', tr(story_.why)) : null}
-        {w.question !== '' ? <Text key="question" color="warning" wrap="wrap">? {w.question}</Text> : null}
+        {w.question !== '' && !waitsForAnswer(w) ? <Text key="question" color="warning" wrap="wrap">? {w.question}</Text> : null}
         {section('history-head', t.historyHeading)}
         <Text key="history-where" dimColor wrap="wrap">{[w.id, w.lane, ...(w.reviewedIn !== undefined ? [t.reviewedIn(w.reviewedIn)] : [])].join(SEP)}</Text>
         {history.map(({ line, dim }, i) => <Text key={`history-${i}`} wrap="wrap" dimColor={dim}>{line}</Text>)}
@@ -2678,7 +2697,7 @@ export const register: Register = (on, options) => {
             </Text>
             <Box flexDirection="row">
               {CHOICES.map(([c, label, colour], j) => (
-                <Button key={`${c}-${w.id}-${i}`} label={label} plain {...(i === 0 && j === 0 && seen.length === 0 ? { autoFocus: true as const } : {})} onPress={() => choose(i, c)}>
+                <Button key={`${c}-${w.id}-${i}`} label={label} plain {...(i === 0 && j === 0 && seen.length === 0 && !waitsForAnswer(w) ? { autoFocus: true as const } : {})} onPress={() => choose(i, c)}>
                   <Text {...(x.choice === c ? { bold: true, color: colour } : { dimColor: true })}>{x.choice === c ? `[•${label}]` : `[ ${label} ]`}</Text>
                 </Button>
               ))}
@@ -2693,10 +2712,10 @@ export const register: Register = (on, options) => {
           ? (
             <Input
               key={`typed-${w.id}`}
-              label={exec.asksWhy ? t.whyLabel : items.length > 0 ? t.moreLabel : t.reasonLabel}
-              placeholder={exec.asksWhy ? t.whyPlaceholder : items.length > 0 ? t.morePlaceholder : t.reasonPlaceholder}
+              label={waitsForAnswer(w) ? t.answerLabel : exec.asksWhy ? t.whyLabel : items.length > 0 ? t.moreLabel : t.reasonLabel}
+              placeholder={waitsForAnswer(w) ? t.answerPlaceholder : exec.asksWhy ? t.whyPlaceholder : items.length > 0 ? t.morePlaceholder : t.reasonPlaceholder}
               submitLabel={executeLabel}
-              {...(items.length === 0 && seen.length === 0 ? { autoFocus: true as const } : {})}
+              {...((items.length === 0 || waitsForAnswer(w)) && seen.length === 0 ? { autoFocus: true as const } : {})}
               onInput={(text: string) => void update($, typedAtom, () => text)}
               onSubmit={(text: string) => {
                 void update($, typedAtom, () => text)

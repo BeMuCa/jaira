@@ -70,15 +70,16 @@ export const t = {
   // What Execute will do, in the pane's last line before the button.
   // ends: whether to is the terminal lane; elsewhere the line names the lane
   // the ticket goes on to, so nobody reads it as done (M5JSE9).
-  summary: (step: 'giveBack' | 'accept' | 'needWhy' | 'noNext' | 'needAnswer' | 'needSeen', fix: number, followUps: number, to: string, ends: boolean) => {
+  summary: (step: 'giveBack' | 'answer' | 'accept' | 'needWhy' | 'noNext' | 'needAnswer' | 'needSeen', fix: number, followUps: number, to: string, ends: boolean) => {
     const into = ends ? to : `accept → ${to}`
     const tickets = followUps > 0 ? ` + ${followUps} follow-up ticket${followUps === 1 ? '' : 's'}` : ''
     switch (step) {
       case 'giveBack': return `Execute: give back${fix > 0 ? ` with ${fix} note${fix === 1 ? '' : 's'} to fix` : ' with what you typed'}${tickets}`
+      case 'answer': return 'Execute: send your answer back to the worker'
       case 'accept': return `Execute: ${into}${tickets}`
       case 'needWhy': return `Execute: type why the blocker is accepted${tickets}`
       case 'noNext': return 'Execute: nothing to accept in this lane - mark a note fix, or type what is missing'
-      case 'needAnswer': return 'Execute: answer the question first - or mark a note fix, or type what is missing'
+      case 'needAnswer': return 'Execute: type your answer to the question first - or mark a note fix'
       case 'needSeen': return `Execute: tick what you checked above first, then ${into}${tickets}`
     }
   },
@@ -87,7 +88,15 @@ export const t = {
   checkYourself: 'Check yourself - tick what you have seen',
   seenMissing: (id: string, texts: string[]) => `${id}: not accepted - ${texts.length === 1 ? 'one item is' : `${texts.length} items are`} still to check yourself and tick:\n${texts.map(x => `- ${x}`).join('\n')}`,
   noNext: (id: string, lane: string) => `${id} waits in ${lane}, and jaira names no lane after it: nothing to accept there. Mark a note fix, or type what is missing, to give it back.`,
-  needAnswer: (id: string, lane: string, to: string) => `${id} waits in ${lane} for the answer to its question: answer it first - Discuss, or an option marked [accept] under Explain - and Execute then moves it on to ${to}. Mark a note fix, or type what is missing, to give it back.`,
+  // PYR4JK: a ticket waiting on its question is answered, never accepted -
+  // whether or not jaira names a lane after it.
+  needAnswer: (id: string, lane: string) => `${id} waits in ${lane} for the answer to its question: type it in the field, and Execute sends it back to the worker. Mark a note fix to give it back without one.`,
+  question: 'Question:',
+  answerLabel: 'Your answer',
+  answerPlaceholder: 'goes onto the ticket as a note and back to the worker',
+  answered: (question: string, text: string) => `answer to "${question}": ${text}`,
+  answer: 'Answer',
+  questionNotCleared: (id: string, why: string) => `${id}: the answer went back, but the question stays on the ticket - clear it with jaira set ${id} question=\n${why}`,
   refused: (id: string) => `${id} was not accepted, nothing was changed:`,
   refusedTicked: (id: string, ns: readonly number[]) => `${id} was not accepted; only definition-of-done item${ns.length === 1 ? '' : 's'} ${ns.join(', ')} ${ns.length === 1 ? 'was' : 'were'} ticked as seen by you:`,
   seenChanged: (texts: string[]) => `${texts.length === 1 ? 'this item' : 'these items'} changed on the ticket since the pane opened - close it, open it again and look once more:\n${texts.map(x => `- ${x}`).join('\n')}`,
