@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:52:29Z
+updated-at: 2026-11-27T20:54:36Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -80,3 +80,4 @@ question: ""
 - **2026-11-27 20:51 · Sascha** — question (3rd testing send-back, to teamlead): testing would send 3GX3JG back a 3rd time. Round 3 finding: a board ABOVE the main checkout top (parent/.jaira, repo in parent/repo) makes tree point outside the worktree, so create loses follows. My view: the loop is not deepening the DoD, it is the fallback reaching too far - edges grow, pick the smaller design. Options: 1) (Recommended) fall back only to a board inside the main checkout (root under its top); a board above the repo stays ErrNoStore in a worktree, as before this ticket - ~3 lines + 1 test case. 2) keep the wider fallback, clamp tree to the worktree top when root lies outside the main checkout - ~5 lines, keeps an odd setup working. 3) accept as known limit, move on to review. Send back for 1?
 - **2026-11-27 20:52 · Sascha** — waiting: teamlead decision on the 3rd send-back (uds:/run/user/1000/cc-socks/24078.sock) since 21:52
 - **2026-11-27 20:52 · Sascha** — decision (teamlead): Rückfall nur auf ein Board im Hauptcheckout selbst; ein Board oberhalb des Repos bleibt im worktree ErrNoStore wie bisher. Kleinere Lösung statt tree-Klammer – die Randfälle wuchsen.
+- **2026-11-27 20:54 · Sascha** — fix per teamlead decision (option 1): Discover falls back only to a board inside the main checkout (Rel to gitwt.Top(main) must not climb); a board above the repo stays ErrNoStore in a worktree. Test TestDiscoverIgnoresBoardAboveMainCheckout - red without the bound.
