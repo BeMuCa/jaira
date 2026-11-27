@@ -16,6 +16,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/BeMuCa/jaira/core/gitwt"
 )
 
 const (
@@ -265,11 +267,30 @@ func (s *Store) record(id string, content []byte) error {
 func (s *Store) DuplicateIDs() []string { return s.dupIDs }
 
 // Discover walks up from dir looking for an existing .jaira directory.
+//
+// A linked git worktree with no board of its own on the way up - its branch
+// was cut before 'jaira share' put .jaira into git, or the board was never
+// shared - uses the board of the repository's main checkout: the worktree is a
+// second copy of that repository, and its tickets are on the main checkout's
+// board. A worktree that has a board keeps its own.
 func Discover(dir string) (*Store, error) {
 	abs, err := filepath.Abs(dir)
 	if err != nil {
 		return nil, err
 	}
+	if root, ok := boardAbove(abs); ok {
+		return &Store{Root: root}, nil
+	}
+	if main := gitwt.MainCheckout(abs); main != "" {
+		if root, ok := boardAbove(main); ok {
+			return &Store{Root: root}, nil
+		}
+	}
+	return nil, ErrNoStore
+}
+
+// boardAbove is the nearest directory at or above abs that holds a board.
+func boardAbove(abs string) (string, bool) {
 	for {
 		// A board is identified by its tickets directory, not merely by a
 		// directory named .jaira. The user's global config lives at ~/.jaira, so
@@ -277,11 +298,11 @@ func Discover(dir string) (*Store, error) {
 		// board to anything run underneath it.
 		candidate := filepath.Join(abs, DirName, TicketsSubdir)
 		if fi, err := os.Stat(candidate); err == nil && fi.IsDir() {
-			return &Store{Root: abs}, nil
+			return abs, true
 		}
 		parent := filepath.Dir(abs)
 		if parent == abs {
-			return nil, ErrNoStore
+			return "", false
 		}
 		abs = parent
 	}
