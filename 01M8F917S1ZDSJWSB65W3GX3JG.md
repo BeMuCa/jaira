@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:56:54Z
+updated-at: 2026-11-27T20:58:09Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -29,7 +29,7 @@ claimed-at: 2026-11-27T20:33:41Z
 outcome-what: "ticket.Discover falls back to the main checkout's board when a linked worktree has none; the git-file reading moved from core/project into a new leaf package core/gitwt shared by both"
 outcome-why: "worktrees cut before jaira share have no .jaira, so every jaira call there - the cockpit's Accept included - failed with no_store"
 outcome-resolves: jaira list/show/move and cockpit Accept work in a worktree without .jaira; a worktree with its own board keeps it
-review-summary: "none"
+review-summary: "ticket.Discover gets a fallback: when no board lies at or above the directory and that directory sits in a linked git worktree, it maps the path to the same place in the main checkout (read off .git/commondir by the new leaf package core/gitwt, which project/worktree.go now shares instead of its own copy) and takes the board found there - but only a board inside the main checkout, not one above the repository. The Store then remembers the worktree's copy of the board's place (tree), and WorkTree() hands it to every git question about HEAD, branch, diff and commits (gate env in cli/root.go and tui, show --for-lane diff, pr-gate, branchTicket for --follows, LastHunt), while questions about the board itself (tracked/ignored, update, share) stay on Root. A worktree with its own .jaira keeps it. Tests: discover_test.go (own board wins, fallback, board above main ignored, WorkTree value) and cli worktreeboard_test.go (list/show/move in the worktree write the main board; create follows the worktree's branch ticket; the review payload carries the worktree's commit). Full review, first review round, at e1ae3cc55."
 round: 5
 back-from: testing
 back-by: lane
