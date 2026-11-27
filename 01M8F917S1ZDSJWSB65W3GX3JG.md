@@ -1,7 +1,7 @@
 ---
 id: 01M8F917S1ZDSJWSB65W3GX3JG
 title: Worktree ohne .jaira findet das Board des Hauptcheckouts
-status: testing
+status: in-progress
 ready: true
 creator: Sascha
 goal: "jaira (und damit der cockpit) arbeitet in einem git-worktree auch dann, wenn dort kein .jaira liegt: es nimmt das Board des Hauptcheckouts."
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:42:35Z
+updated-at: 2026-11-27T20:42:39Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -30,8 +30,8 @@ outcome-what: "ticket.Discover falls back to the main checkout's board when a li
 outcome-why: "worktrees cut before jaira share have no .jaira, so every jaira call there - the cockpit's Accept included - failed with no_store"
 outcome-resolves: jaira list/show/move and cockpit Accept work in a worktree without .jaira; a worktree with its own board keeps it
 review-summary: "none"
-round: 2
-back-from: critique
+round: 3
+back-from: testing
 back-by: lane
 back-count: 1
 review-gaps: "removed TestDiscoverWorktreeWritesMainBoard - the CLI test TestWorktreeWithoutBoardUsesTheMainCheckouts covers the same write through the main board end to end; DoD 1 proof updated. Left: gitwt has no own tests - core/project/worktree_test.go and core/ticket/discover_test.go exercise every function through their callers"
