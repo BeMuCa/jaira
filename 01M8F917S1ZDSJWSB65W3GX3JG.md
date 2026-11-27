@@ -21,7 +21,9 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T19:52:04Z
+updated-at: 2026-11-27T19:52:15Z
+assignee: Sascha
+updated-by: Sascha
 ---
 
 # Worktree ohne .jaira findet das Board des Hauptcheckouts
