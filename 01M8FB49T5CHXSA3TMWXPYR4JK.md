@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:54:58Z
+updated-at: 2026-11-27T20:55:02Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -28,7 +28,9 @@ outcome-what: "Acceptance pane: offene Frage in nicht-endender Person-Lane wird 
 outcome-why: "Bei Lane ohne next_lane lief Execute in 'noNext' und die seen-Liste verleitete zum Abhaken vor Ende der Arbeit"
 outcome-resolves: "Person sieht im human-Lane die Frage und beantwortet sie direkt; kein 'nothing to accept'"
 review-summary: "delta review from 5ca1382c7: only core/shipped/shipped.sha256 changed (+6 lines, the hashes of board.ts, register.tsx and texts.ts as of each of the three branch commits). The round-2 blocker is closed: the current hashes of all three files are in the manifest, scripts/shipped-history.sh --check passes, go test ./core/role passes. The cockpit change itself (question in human -> 'Question:' + 'Your answer' field, typed text clears question= and gives back with 'answer to \"...\"', needAnswer/needAnswerUntyped instead of 'nothing to accept') is unchanged since the previous review."
-review-gaps: "none (round 3: generated manifest lines only)"
+review-gaps: |-
+  note: limit: the answer goes back to backTo (in-progress), not to the lane the worker asked from - jaira does not record that lane (critique note 20:39)
+  note: edge: on a surface without a field (canType=false) nothing gets autoFocus while the ticket asks - the choice buttons skip it when asking and the Input is not rendered; give the first choice button autoFocus when !canType
 test-verdict: "pass: round 3 ran only what changed — scripts/shipped-history.sh --check exit 0, go test ./core/role ok (TestEveryInstalledFileIsAShippedVersion), full go test ./... rc=0, go vet ok; cockpit suite 591/591 unchanged since 5ca1382c7; DoD 4 left for the person"
 round: 3
 back-from: review
