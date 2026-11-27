@@ -77,36 +77,3 @@ func TestDiscoverInLinkedWorktree(t *testing.T) {
 		})
 	}
 }
-
-// TestDiscoverWorktreeWritesMainBoard is the round trip the cockpit's Accept
-// needs: a ticket created on the main checkout's board is read and written
-// back from a worktree that has no board.
-func TestDiscoverWorktreeWritesMainBoard(t *testing.T) {
-	main, tree := clonePair(t)
-	mkTickets(t, main)
-	ms, err := ticket.Discover(main)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tk, err := ms.Create(map[string]string{ticket.FieldID: "AAAAAA", ticket.FieldTitle: "from main", ticket.FieldStatus: "todo"}, nil, "body\n")
-	if err != nil {
-		t.Fatal(err)
-	}
-	ws, err := ticket.Discover(tree)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := ws.Mutate(tk.ID, func(t *ticket.Ticket) error { return t.Doc().SetScalar(ticket.FieldStatus, "done") }); err != nil {
-		t.Fatal(err)
-	}
-	got, err := ms.Load(tk.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got.Status != "done" {
-		t.Fatalf("status on the main board = %q, want done", got.Status)
-	}
-	if _, err := os.Stat(filepath.Join(tree, ticket.DirName)); !os.IsNotExist(err) {
-		t.Fatalf("the worktree grew a .jaira: %v", err)
-	}
-}

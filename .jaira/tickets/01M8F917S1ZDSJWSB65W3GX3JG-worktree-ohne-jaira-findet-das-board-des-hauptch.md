@@ -1,7 +1,7 @@
 ---
 id: 01M8F917S1ZDSJWSB65W3GX3JG
 title: Worktree ohne .jaira findet das Board des Hauptcheckouts
-status: critique
+status: testing
 ready: true
 creator: Sascha
 goal: "jaira (und damit der cockpit) arbeitet in einem git-worktree auch dann, wenn dort kein .jaira liegt: es nimmt das Board des Hauptcheckouts."
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:39:34Z
+updated-at: 2026-11-27T20:40:07Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -29,11 +29,12 @@ claimed-at: 2026-11-27T20:33:41Z
 outcome-what: "ticket.Discover falls back to the main checkout's board when a linked worktree has none; the git-file reading moved from core/project into a new leaf package core/gitwt shared by both"
 outcome-why: "worktrees cut before jaira share have no .jaira, so every jaira call there - the cockpit's Accept included - failed with no_store"
 outcome-resolves: jaira list/show/move and cockpit Accept work in a worktree without .jaira; a worktree with its own board keeps it
-review-summary: "core/project/worktree.go:50 Trees still explains how .git/worktrees is read; that now lives in gitwt.Linked's doc - drop the paragraph"
+review-summary: "none"
 round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "removed TestDiscoverWorktreeWritesMainBoard - the CLI test TestWorktreeWithoutBoardUsesTheMainCheckouts covers the same write through the main board end to end; DoD 1 proof updated. Left: gitwt has no own tests - core/project/worktree_test.go and core/ticket/discover_test.go exercise every function through their callers"
 ---
 
 # Worktree ohne .jaira findet das Board des Hauptcheckouts
@@ -41,7 +42,7 @@ back-count: 1
 ## Definition of Done
 
 - [x] Im worktree ohne .jaira findet jaira list/show/move das Board des Hauptcheckouts (Test in core/ticket oder core/project)
-  proof: core/ticket/store.go:284 fallback; internal/cli/worktreeboard_test.go TestWorktreeWithoutBoardUsesTheMainCheckouts (list/show/move); core/ticket/discover_test.go TestDiscoverInLinkedWorktree, TestDiscoverWorktreeWritesMainBoard
+  proof: core/ticket/store.go:284 fallback; internal/cli/worktreeboard_test.go TestWorktreeWithoutBoardUsesTheMainCheckouts (list/show/move); core/ticket/discover_test.go TestDiscoverInLinkedWorktree
 - [x] Ein worktree mit eigenem .jaira benutzt weiter sein eigenes (Test)
   proof: core/ticket/discover_test.go TestDiscoverInLinkedWorktree cases 'the worktree's own board wins' (+ from below)
 - [ ] cockpit Accept auf ein Ticket, dessen worktree kein .jaira hat, geht durch (gesehen von einer Person)
