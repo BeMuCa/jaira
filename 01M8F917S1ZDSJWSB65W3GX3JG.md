@@ -1,7 +1,7 @@
 ---
 id: 01M8F917S1ZDSJWSB65W3GX3JG
 title: Worktree ohne .jaira findet das Board des Hauptcheckouts
-status: in-progress
+status: critique
 ready: true
 creator: Sascha
 goal: "jaira (und damit der cockpit) arbeitet in einem git-worktree auch dann, wenn dort kein .jaira liegt: es nimmt das Board des Hauptcheckouts."
@@ -21,11 +21,14 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:37:20Z
+updated-at: 2026-11-27T20:38:51Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
 claimed-at: 2026-11-27T20:33:41Z
+outcome-what: "ticket.Discover falls back to the main checkout's board when a linked worktree has none; the git-file reading moved from core/project into a new leaf package core/gitwt shared by both"
+outcome-why: "worktrees cut before jaira share have no .jaira, so every jaira call there - the cockpit's Accept included - failed with no_store"
+outcome-resolves: jaira list/show/move and cockpit Accept work in a worktree without .jaira; a worktree with its own board keeps it
 ---
 
 # Worktree ohne .jaira findet das Board des Hauptcheckouts
