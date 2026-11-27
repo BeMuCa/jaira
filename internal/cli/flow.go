@@ -672,7 +672,7 @@ func showForLane(cmd *cobra.Command, s *ticket.Store, env gate.Env, t *ticket.Ti
 				fields["notes"] = "- " + strings.Join(ns, "\n- ")
 			}
 		case "diff":
-			repo := &gitrepo.Repo{Dir: s.Root}
+			repo := &gitrepo.Repo{Dir: s.WorkTree()}
 			// Always derived, never the field alone. commits: is a snapshot —
 			// 'move --out --commits' writes it once and no later commit ever
 			// joins it — so a lane handed the field as the answer judged three

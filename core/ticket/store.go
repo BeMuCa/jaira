@@ -83,6 +83,11 @@ type Store struct {
 	// Root is the directory containing .jaira.
 	Root string
 
+	// Tree is where the command runs when that is a linked worktree using the
+	// main checkout's board (see Discover); empty otherwise. Git questions
+	// about HEAD, the branch and the diff go to WorkTree, not Root.
+	Tree string
+
 	// Actor is who this process writes as, recorded on every mutation as
 	// updated-by. It is a field rather than a package-level value because a
 	// process can hold two stores at once — the board switcher does — and it is
@@ -283,10 +288,21 @@ func Discover(dir string) (*Store, error) {
 	}
 	if main := gitwt.MainCheckout(abs); main != "" {
 		if root, ok := boardAbove(main); ok {
-			return &Store{Root: root}, nil
+			return &Store{Root: root, Tree: abs}, nil
 		}
 	}
 	return nil, ErrNoStore
+}
+
+// WorkTree is the working tree git is asked about - its HEAD, its branch, its
+// diff: the worktree a command runs in when Discover fell back to the main
+// checkout's board, Root otherwise. Questions about the board itself - is
+// .jaira tracked, ignored, where its files live - stay on Root.
+func (s *Store) WorkTree() string {
+	if s.Tree != "" {
+		return s.Tree
+	}
+	return s.Root
 }
 
 // boardAbove is the nearest directory at or above abs that holds a board.

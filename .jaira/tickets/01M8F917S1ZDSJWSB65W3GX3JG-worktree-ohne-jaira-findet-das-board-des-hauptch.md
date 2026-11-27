@@ -1,7 +1,7 @@
 ---
 id: 01M8F917S1ZDSJWSB65W3GX3JG
 title: Worktree ohne .jaira findet das Board des Hauptcheckouts
-status: testing
+status: critique
 ready: true
 creator: Sascha
 goal: "jaira (und damit der cockpit) arbeitet in einem git-worktree auch dann, wenn dort kein .jaira liegt: es nimmt das Board des Hauptcheckouts."
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:40:07Z
+updated-at: 2026-11-27T20:45:56Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -30,11 +30,13 @@ outcome-what: "ticket.Discover falls back to the main checkout's board when a li
 outcome-why: "worktrees cut before jaira share have no .jaira, so every jaira call there - the cockpit's Accept included - failed with no_store"
 outcome-resolves: jaira list/show/move and cockpit Accept work in a worktree without .jaira; a worktree with its own board keeps it
 review-summary: "none"
-round: 2
-back-from: critique
+round: 3
+back-from: testing
 back-by: lane
 back-count: 1
 review-gaps: "removed TestDiscoverWorktreeWritesMainBoard - the CLI test TestWorktreeWithoutBoardUsesTheMainCheckouts covers the same write through the main board end to end; DoD 1 proof updated. Left: gitwt has no own tests - core/project/worktree_test.go and core/ticket/discover_test.go exercise every function through their callers"
+test-verdict: "fail: suite green (rc=0, -race); binary: list/move from a worktree without .jaira work, a worktree whose main checkout has no board still exits 1; but bughunt blocker - git questions go to the main checkout's HEAD"
+hunt-verdict: "fail: 1 change blocker - gitrepo.Repo{Dir: s.Root} answers with the main checkout's branch/HEAD after the fallback"
 ---
 
 # Worktree ohne .jaira findet das Board des Hauptcheckouts
@@ -42,7 +44,7 @@ review-gaps: "removed TestDiscoverWorktreeWritesMainBoard - the CLI test TestWor
 ## Definition of Done
 
 - [x] Im worktree ohne .jaira findet jaira list/show/move das Board des Hauptcheckouts (Test in core/ticket oder core/project)
-  proof: core/ticket/store.go:284 fallback; internal/cli/worktreeboard_test.go TestWorktreeWithoutBoardUsesTheMainCheckouts (list/show/move); core/ticket/discover_test.go TestDiscoverInLinkedWorktree
+  proof: core/ticket/store.go Discover fallback + WorkTree; internal/cli/worktreeboard_test.go TestWorktreeWithoutBoardUsesTheMainCheckouts (list/show/move), TestWorktreeWithoutBoardAsksGitAboutItself (branch, commits); core/ticket/discover_test.go TestDiscoverInLinkedWorktree
 - [x] Ein worktree mit eigenem .jaira benutzt weiter sein eigenes (Test)
   proof: core/ticket/discover_test.go TestDiscoverInLinkedWorktree cases 'the worktree's own board wins' (+ from below)
 - [ ] cockpit Accept auf ein Ticket, dessen worktree kein .jaira hat, geht durch (gesehen von einer Person)
@@ -62,3 +64,7 @@ review-gaps: "removed TestDiscoverWorktreeWritesMainBoard - the CLI test TestWor
 - **2026-11-27 20:33 · Sascha** — parent session: uds:/run/user/1000/cc-socks/24078.sock
 - **2026-11-27 20:34 · Sascha** — decisions (worker, none open for a person): 1) fallback lives in ticket.Discover, only after the upward walk finds nothing - a worktree with its own .jaira keeps it. 2) the git-file reading of project/worktree.go moves into a new leaf package core/gitwt (Top, MainCheckout, Linked) - project imports ticket, so ticket cannot call project; gitwt keeps one copy. 3) writes from the worktree land on the main checkout's board: locks and state are that board's, refs/jaira are shared by all worktrees, CommitsForTicket reads HEAD plus --branches, so branch commits are still found. Known limit: Branch() (create --follows from the branch name) reads the main checkout's branch when run from such a worktree. 4) DoD 3 is the person's check at signoff.
 - **2026-11-27 20:39 · Sascha** — critique: core/project/worktree.go:50 Trees' second comment paragraph repeats gitwt.Linked's doc - drop it. Let stand: the fallback walks up from the main-checkout place past the repo top, same as a command run in the main checkout itself would - the worktree behaves as its main checkout; a bound to the repo top would make the two disagree.
+- **2026-11-27 20:42 · Sascha** — bughunt: change: blocker: core/ticket/store.go:283 (Discover falls back to gitwt.MainCheckout) - class: once a linked worktree without .jaira opens the main checkout's board, every git question jaira asks through gitrepo.Repo{Dir: s.Root} is answered by the main checkout's HEAD/branch/index, not the worktree's: internal/cli/tickets.go:171 branchTicket (follows), internal/cli/root.go:359 DeriveCommits/CommitsElsewhere/HuntCheck (terminal gate, bughunt freshness), internal/cli/flow.go:675 show --for-lane diff, internal/cli/roles.go:193 pr-gate, tickets.go:865 LastHunt; example 1: main checkout on feat/dpgx0x, 'jaira create' in a worktree on feat/wzktgw printed 'Follows DPGX0X, from branch feat/dpgx0x' (wrong ticket linked; on master no follows at all); example 2: worktree commit 'fix(WZKTGW): work', 'jaira show WZKTGW --for-lane review --json' in the worktree gave commits: [] and a commits_source=worktree diff of the main checkout's untracked AGENTS.md/CLAUDE.md, so a review lane judges the wrong diff; ran: scratch repo + git worktree add + built binary from 807794849; before this change the worktree got ErrNoStore, so the path is newly reached
+- **2026-11-27 20:42 · Sascha** — hunt report: 1 finding, 1 change (blocker), note on 3GX3JG | read whole: core/gitwt/gitwt.go core/project/worktree.go core/ticket/store.go (Discover/boardAbove) core/ticket/discover_test.go internal/cli/worktreeboard_test.go core/release/notes/3GX3JG.md, plus callers of Discover and of gitrepo.Repo{Dir: s.Root} | not checked: 'jaira pull' from such a worktree (needs a remote; it likely writes the file into the main checkout, same class)
+- **2026-11-27 20:42 · Sascha** — bughunt: done at 807794849 - 1 finding (1 change, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/gitwt/gitwt.go core/project/worktree.go core/release/notes/3GX3JG.md core/ticket/discover_test.go core/ticket/store.go internal/cli/worktreeboard_test.go
+- **2026-11-27 20:45 · Sascha** — fix for bughunt blocker: ticket.Store gets Tree (set by Discover's fallback) and WorkTree(); every gitrepo.Repo that asks about HEAD/branch/diff/commits now uses WorkTree - root.go loadBoardEnv, flow.go diff, roles.go pr-gate, tickets.go branchTicket + LastHunt, tui gateEnv. Left on Root on purpose: questions about the board itself (share/update/tickets.go:83 is .jaira tracked or ignored), pr.Checker (asks by PR number), whoami remotes and refsync (refs and remotes are common to all worktrees), plugin/hook cmd.Dir (documented as the board root). 'jaira pull' in such a worktree writes into the main checkout's board - that is where this board's files live.
