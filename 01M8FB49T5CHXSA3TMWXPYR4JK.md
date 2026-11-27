@@ -19,9 +19,11 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:33:47Z
+updated-at: 2026-11-27T20:33:49Z
 assignee: Sascha
 updated-by: Sascha
+claimed-by: DESKTOP-RFTCH11-69193
+claimed-at: 2026-11-27T20:33:49Z
 ---
 
 # Cockpit: Ticket mit offener Frage in human zeigt Frage statt Abnahme-Checkliste
