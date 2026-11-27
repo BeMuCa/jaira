@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:56:33Z
+updated-at: 2026-11-27T20:56:42Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -34,10 +34,10 @@ round: 5
 back-from: testing
 back-by: lane
 back-count: 3
-review-gaps: "round 4: nothing to remove - the bound reuses gitwt.Top; the under() check is 1 line and project.under cannot be imported from ticket. Earlier: unexported Store.tree; removed TestDiscoverWorktreeWritesMainBoard. Left: gitwt has no own tests - callers' tests exercise every function"
+review-gaps: "note: limit: jaira run in <wt>/sub, where sub/ is an initialized submodule in the main checkout but not in the worktree, finds no board (inside-check uses the nearest .git) - exits 1 as master does; teamlead accepted 2026-11-27. Optimize: unexported Store.tree; removed TestDiscoverWorktreeWritesMainBoard; gitwt has no own tests - callers' tests exercise every function"
 test-verdict: "pass: go vet + go test -race ./... rc=0 at e1ae3cc55; DoD 1,2,4 verified by the named tests (each red with its fix disabled); binary on scratch repos: list/move/create from a worktree without .jaira use the main board, create follows the worktree's branch ticket, worktree of a repo without a board exits 1 and writes no .jaira, board above the repo is not borrowed (test); two parallel notes from worktree and main both land. DoD 3 (cockpit Accept, seen by a person) left for the person"
-hunt-verdict: "fail: 1 change (edge) - inside-check uses the nearest .git, a submodule top in the main checkout refuses the main board from <wt>/sub (round 4)"
-question: "testing would send 3GX3JG back a 4th time (jaira refuses it without the teamlead). Round 4 finding: the inside-check measures against gitwt.Top(main), the nearest .git - in a path that sits in an initialized submodule of the main checkout that is the submodule top, so jaira run in <wt>/sub of a worktree whose sub/ is not initialized exits 1 (no board); at <wt> it works. Fails toward ErrNoStore, as master. Options: 1) (Recommended) fix: bound by gitwt.MainCheckout(gitwt.Top(abs)) - the real main top, 1 line + 1 test case; you allow the send-back. 2) accept as known limit, go on to review with it as a note."
+hunt-verdict: "pass: round 4 finding (submodule top as inside-bound) accepted as known limit by teamlead - fails toward ErrNoStore, as master"
+question: ""
 ---
 
 # Worktree ohne .jaira findet das Board des Hauptcheckouts
