@@ -168,7 +168,7 @@ const followsNone = "none"
 // on the board by its handle. On master, or on a branch naming no ticket,
 // nothing is set.
 func branchTicket(s *ticket.Store) (id, branch string) {
-	branch = (&gitrepo.Repo{Dir: s.Root}).Branch()
+	branch = (&gitrepo.Repo{Dir: s.WorkTree()}).Branch()
 	if branch == "" {
 		return "", ""
 	}
@@ -862,7 +862,7 @@ there are as notes_total.`,
 				return showForLane(cmd, s, env, t, forLane)
 			}
 			if brief {
-				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body, (&gitrepo.Repo{Dir: s.Root}).LastHunt(t)))
+				line, err := compactJSON(ticketBrief(ticketJSON(t, env.Lanes), t.Body, (&gitrepo.Repo{Dir: s.WorkTree()}).LastHunt(t)))
 				if err != nil {
 					return err
 				}
