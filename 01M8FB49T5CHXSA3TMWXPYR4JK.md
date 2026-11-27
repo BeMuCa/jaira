@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:43:14Z
+updated-at: 2026-11-27T20:45:23Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -68,3 +68,4 @@ back-count: 1
 - **2026-11-27 20:42 · Sascha** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/texts.ts:93 (needAnswer) with register.tsx:1543 - class: a surface without an Input (execute called with canType=false, register.tsx:2634) and a ticket waiting on its question: executionOf can only return needAnswer there (nothing can be typed), and the refusal now says 'type it in the field' - a field that does not exist; the old text pointed to Discuss / an [accept] option under Explain, which work without a field. needWhy has a canType variant (blockerNeedsTyping), needAnswer has none; example: mobile surface, human-lane ticket with a question, Execute -> dead-end instruction; ran: read (execute passes canType only to needWhy)
 - **2026-11-27 20:42 · Sascha** — hunt report: 2 findings, both change, neither a blocker, as bughunt notes on PYR4JK | read whole: the Acceptance pane path in hooks/register.tsx (openAcceptance, deciding, execute, answer, giveBack/givingBack, giveBackWith, acceptWith, stillIn, once, pane render), hooks/board.ts (Waiting, snapshotOf, executionOf, waitsForAnswer, decisionLines), hooks/texts.ts, release note; tests/board.test.ts only as the test file | not checked: a live cockpit run (no Herdr/claude UI here); the stale-w race in answer() (no stillIn, unlike giveBackWith) was dropped - the pane re-reads w from boardAtom each render and the same gap already exists on the plain giveBack path
 - **2026-11-27 20:42 · Sascha** — bughunt: done at e0d480a8e - 2 findings (2 change, 0 pre-existing) in 5 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/PYR4JK.md
+- **2026-11-27 20:45 · Sascha** — fix round 2 (bughunt): (1) Antwort neben einer fix-Note: execute behandelt giveBack und answer gleich — getippter Text bei waitsForAnswer ist immer 'answer to "…"', question= vor den Decisions (giveBackWith bekommt first-Callback); answer() entfällt, clearQuestion() übernimmt. (2) needAnswer ohne Feld (canType=false): eigener Text needAnswerUntyped, verweist auf Discuss/Explain. Test: 'an answer typed beside a note marked fix…'. Mobile-Pfad nur gelesen, kein Test-Harness dafür.
