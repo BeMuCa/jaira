@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:46:15Z
+updated-at: 2026-11-27T20:46:20Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -29,7 +29,7 @@ outcome-why: "Bei Lane ohne next_lane lief Execute in 'noNext' und die seen-List
 outcome-resolves: "Person sieht im human-Lane die Frage und beantwortet sie direkt; kein 'nothing to accept'"
 review-summary: none
 review-gaps: "round 2: folded answer() into the giveBack branch of execute (one path for both steps, clearQuestion as first-callback) — answer() is gone; nothing else orphaned; left t.answer as the fail title"
-test-verdict: "pass: claude plugin test . (2.1.332) 590 pass 0 fail, exit 0; go test ./core/release/... ok; DoD 1-3,5 verified in the tree (new tests 'a question waiting in human with/without a lane after it' render the pane and type the answer: note, question=, move to in-progress, no dod, no 'nothing to accept'); failure path: a refused 'set question=' shows a toast and the note still lands (register.tsx answer(), read, not run); two writers: Execute holds the row lock (once), the writes are jaira's own; DoD 4 (seen in the cockpit) left for the person"
+test-verdict: "pass: claude plugin test . 591 pass 0 fail (exit 0) at 5ca1382c7; go test ./core/release/... ok; DoD 1,2,3,5 verified in the tree; round 2 covers the answer beside a fix note (test) and the no-field surface (needAnswerUntyped, read: no harness for canType=false); failure path: refused 'set question=' toasts, note still lands; writes go through jaira under the row lock; DoD 4 left for the person"
 round: 2
 back-from: testing
 back-by: lane
