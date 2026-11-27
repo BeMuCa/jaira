@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:58:30Z
+updated-at: 2026-11-27T20:59:00Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -102,3 +102,4 @@ review-check: "1. cd into a git worktree that has no .jaira folder, e.g. git -C 
 - **2026-11-27 20:56 · Sascha** — decision (teamlead): Submodul-Fall (r4) bleibt bekannte Grenze – scheitert zu ErrNoStore wie heute, kein Schaden. Kein 4. Rücksprung; weiter zu review.
 - **2026-11-27 20:56 · Sascha** — waiting: fresh review agent (run-lane.sh tab) since 21:56
 - **2026-11-27 20:58 · Sascha** — review: done at e1ae3cc55
+- **2026-11-27 20:59 · Sascha** — report: ticket.Discover falls back to the main checkout's board in a linked worktree without .jaira (only a board inside the main checkout); git questions go to the board's place in the worktree via Store.WorkTree(); git-file reading moved to new core/gitwt | signoff, context 172k of 1000k, cache warm 60 min after last answer | open: DoD 3 (cockpit Accept, seen by a person); 4 note: limit lines in review-gaps; branch feat/3gx3jg not pushed
