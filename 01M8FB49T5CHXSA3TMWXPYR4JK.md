@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:48:12Z
+updated-at: 2026-11-27T20:48:16Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -72,3 +72,4 @@ back-count: 1
 - **2026-11-27 20:45 · Sascha** — critique round 2 (one pass, 49 lines): both bughunt findings addressed in 5ca1382c7 — answer beside a fix note clears the question and says 'answer to'; canType=false gets needAnswerUntyped. Nothing new.
 - **2026-11-27 20:46 · Sascha** — waiting: bughunt round 2 (background subagent) since 21:46
 - **2026-11-27 20:48 · Sascha** — hunt report: 0 findings, nothing written to the board | read as diff since e0d480a8e: core/mod/builtin/jaira-cockpit/hooks/register.tsx (execute, clearQuestion, giveBackWith, givingBack, stillIn, deciding, Discuss button), hooks/texts.ts, tests/board.test.ts; board.ts and core/release/notes/PYR4JK.md unchanged since then | not checked live on the mobile surface (canType=false); the needAnswerUntyped text was checked against the code only - Discuss shows whenever question is set, [accept] under Explain clears the question; claude plugin test: 591 pass
+- **2026-11-27 20:48 · Sascha** — bughunt: done at 5ca1382c7 - 0 findings (0 change, 0 pre-existing) in 5 modules, follow-up hunt since e0d480a8e; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/PYR4JK.md
