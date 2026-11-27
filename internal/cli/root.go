@@ -356,7 +356,7 @@ func loadBoardEnv(s *ticket.Store, board string) (gate.Env, []*ticket.Ticket, er
 			fmt.Fprintf(os.Stderr, "jaira: warning: %s\n", w)
 		}
 	}
-	repo := &gitrepo.Repo{Dir: s.Root}
+	repo := &gitrepo.Repo{Dir: s.WorkTree()}
 	// The index knows the logbook and the archive as well as the board, which
 	// is what keeps a blocker from blocking forever once it is finished and
 	// filed.

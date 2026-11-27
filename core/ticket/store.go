@@ -16,6 +16,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/BeMuCa/jaira/core/gitwt"
 )
 
 const (
@@ -80,6 +82,11 @@ var (
 type Store struct {
 	// Root is the directory containing .jaira.
 	Root string
+
+	// tree is Root's place in the linked worktree a command runs in when that
+	// worktree uses the main checkout's board (see Discover); empty otherwise. Git questions
+	// about HEAD, the branch and the diff go to WorkTree, not Root.
+	tree string
 
 	// Actor is who this process writes as, recorded on every mutation as
 	// updated-by. It is a field rather than a package-level value because a
@@ -265,11 +272,53 @@ func (s *Store) record(id string, content []byte) error {
 func (s *Store) DuplicateIDs() []string { return s.dupIDs }
 
 // Discover walks up from dir looking for an existing .jaira directory.
+//
+// A linked git worktree with no board of its own on the way up - its branch
+// was cut before 'jaira share' put .jaira into git, or the board was never
+// shared - uses the board of the repository's main checkout: the worktree is a
+// second copy of that repository, and its tickets are on the main checkout's
+// board. A worktree that has a board keeps its own.
 func Discover(dir string) (*Store, error) {
 	abs, err := filepath.Abs(dir)
 	if err != nil {
 		return nil, err
 	}
+	if root, ok := boardAbove(abs); ok {
+		return &Store{Root: root}, nil
+	}
+	if main := gitwt.MainCheckout(abs); main != "" {
+		// Only a board inside the main checkout: one above the repository is
+		// not this repository's board, and the worktree has no copy of its
+		// place to ask git from.
+		root, ok := boardAbove(main)
+		inside, err := filepath.Rel(gitwt.Top(main), root)
+		if ok && err == nil && inside != ".." && !strings.HasPrefix(inside, ".."+string(filepath.Separator)) {
+			// The worktree's own copy of root, not the directory the command
+			// ran in: git reads paths relative to it, and board data counts as
+			// board data only from where the board sits.
+			rel, err := filepath.Rel(main, root)
+			if err != nil {
+				return nil, err
+			}
+			return &Store{Root: root, tree: filepath.Join(abs, rel)}, nil
+		}
+	}
+	return nil, ErrNoStore
+}
+
+// WorkTree is the working tree git is asked about - its HEAD, its branch, its
+// diff: the worktree a command runs in when Discover fell back to the main
+// checkout's board, Root otherwise. Questions about the board itself - is
+// .jaira tracked, ignored, where its files live - stay on Root.
+func (s *Store) WorkTree() string {
+	if s.tree != "" {
+		return s.tree
+	}
+	return s.Root
+}
+
+// boardAbove is the nearest directory at or above abs that holds a board.
+func boardAbove(abs string) (string, bool) {
 	for {
 		// A board is identified by its tickets directory, not merely by a
 		// directory named .jaira. The user's global config lives at ~/.jaira, so
@@ -277,11 +326,11 @@ func Discover(dir string) (*Store, error) {
 		// board to anything run underneath it.
 		candidate := filepath.Join(abs, DirName, TicketsSubdir)
 		if fi, err := os.Stat(candidate); err == nil && fi.IsDir() {
-			return &Store{Root: abs}, nil
+			return abs, true
 		}
 		parent := filepath.Dir(abs)
 		if parent == abs {
-			return nil, ErrNoStore
+			return "", false
 		}
 		abs = parent
 	}

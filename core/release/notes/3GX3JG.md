@@ -1,0 +1,1 @@
+- In a git worktree without its own `.jaira` — a branch cut before `jaira share`, or a board never shared — jaira commands now use the main checkout's board instead of failing with "no .jaira directory found"; the cockpit's Accept on such a ticket goes through without a manual move in the main checkout.

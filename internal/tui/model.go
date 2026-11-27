@@ -2105,7 +2105,7 @@ func (m *Model) linkIndex() *link.Index {
 // and gate.Actionable never call it, only CheckAdvance does, and that only
 // runs at the moment a move is actually attempted.
 func (m *Model) gateEnv() gate.Env {
-	repo := &gitrepo.Repo{Dir: m.store.Root}
+	repo := &gitrepo.Repo{Dir: m.store.WorkTree()}
 	return gate.Env{
 		People: boardPeople.Load(),
 		Lanes:  m.lanes,

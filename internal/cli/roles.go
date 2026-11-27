@@ -190,7 +190,7 @@ pending, and the person merges. --json carries may_merge and tickets.`,
 			if err != nil {
 				return err
 			}
-			repo := &gitrepo.Repo{Dir: s.Root}
+			repo := &gitrepo.Repo{Dir: s.WorkTree()}
 			named, err := repo.TicketsNamed(args[0])
 			if errors.Is(err, gitrepo.ErrNoSuchRef) {
 				return fail(ExitUsage, "no_such_ref", "pr-gate: %q is no commit here — fetch the remote first", args[0])
