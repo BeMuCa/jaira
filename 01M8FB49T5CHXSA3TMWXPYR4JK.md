@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:45:56Z
+updated-at: 2026-11-27T20:46:01Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -28,7 +28,7 @@ outcome-what: "Acceptance pane: offene Frage in nicht-endender Person-Lane wird 
 outcome-why: "Bei Lane ohne next_lane lief Execute in 'noNext' und die seen-Liste verleitete zum Abhaken vor Ende der Arbeit"
 outcome-resolves: "Person sieht im human-Lane die Frage und beantwortet sie direkt; kein 'nothing to accept'"
 review-summary: none
-review-gaps: "hoisted waitsForAnswer(w) in the Acceptance pane render into one const asking (was called 7 times); kept t.answer as the fail title, the same shape as t.giveBack; no duplication found — answer() reuses giveBack/givingBack; nothing orphaned (noNext still reached for a lane with no next and no question)"
+review-gaps: "round 2: folded answer() into the giveBack branch of execute (one path for both steps, clearQuestion as first-callback) — answer() is gone; nothing else orphaned; left t.answer as the fail title"
 test-verdict: "pass: claude plugin test . (2.1.332) 590 pass 0 fail, exit 0; go test ./core/release/... ok; DoD 1-3,5 verified in the tree (new tests 'a question waiting in human with/without a lane after it' render the pane and type the answer: note, question=, move to in-progress, no dod, no 'nothing to accept'); failure path: a refused 'set question=' shows a toast and the note still lands (register.tsx answer(), read, not run); two writers: Execute holds the row lock (once), the writes are jaira's own; DoD 4 (seen in the cockpit) left for the person"
 round: 2
 back-from: testing
