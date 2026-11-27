@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:46:06Z
+updated-at: 2026-11-27T20:46:15Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -43,7 +43,7 @@ back-count: 1
 - [x] Ticket in human mit question: cockpit zeigt die Frage, keine seen-Checkliste (Test in tests/board.test.ts)
   proof: tests/board.test.ts: 'a question waiting in human with no lane after it / with a lane after it: the pane shows it and no checklist…'; register.tsx openAcceptance seen=[] while waitsForAnswer
 - [x] Eingetippte Antwort landet als note am Ticket und geht an den Worker zurück; kein 'nothing to accept'-Fehler (Test)
-  proof: tests/board.test.ts same tests: note 'Given back from human: answer to …', set question=, move --to in-progress, no 'nothing to accept'; board.ts executionOf step 'answer'; register.tsx answer()
+  proof: tests/board.test.ts: 'a question waiting in human with/without a lane after it…' and 'an answer typed beside a note marked fix is still the answer…'; register.tsx execute giveBack/answer branch + clearQuestion
 - [x] signoff-Abnahme unverändert (bestehende Tests grün)
   proof: claude plugin test . (2.1.332): 590 pass, 0 fail — describe 'what the person checks themselves' unchanged
 - [ ] Von einer Person im cockpit gesehen
