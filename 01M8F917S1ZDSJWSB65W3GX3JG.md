@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:37:17Z
+updated-at: 2026-11-27T20:37:20Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -37,7 +37,8 @@ claimed-at: 2026-11-27T20:33:41Z
 - [x] Ein worktree mit eigenem .jaira benutzt weiter sein eigenes (Test)
   proof: core/ticket/discover_test.go TestDiscoverInLinkedWorktree cases 'the worktree's own board wins' (+ from below)
 - [ ] cockpit Accept auf ein Ticket, dessen worktree kein .jaira hat, geht durch (gesehen von einer Person)
-- [ ] Release-Note core/release/notes/<ID>.md
+- [x] Release-Note core/release/notes/<ID>.md
+  proof: core/release/notes/3GX3JG.md
 
 ## Options
 
