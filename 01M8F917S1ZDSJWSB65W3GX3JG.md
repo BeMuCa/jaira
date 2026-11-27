@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:40:00Z
+updated-at: 2026-11-27T20:40:03Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -34,6 +34,7 @@ round: 2
 back-from: critique
 back-by: lane
 back-count: 1
+review-gaps: "removed TestDiscoverWorktreeWritesMainBoard - the CLI test TestWorktreeWithoutBoardUsesTheMainCheckouts covers the same write through the main board end to end; DoD 1 proof updated. Left: gitwt has no own tests - core/project/worktree_test.go and core/ticket/discover_test.go exercise every function through their callers"
 ---
 
 # Worktree ohne .jaira findet das Board des Hauptcheckouts
