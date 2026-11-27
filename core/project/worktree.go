@@ -47,10 +47,6 @@ func under(p, dir string) bool {
 // that holds a board. State kept per working tree - an agent's session, its
 // liveness - is read across all of them, so folding a worktree into its main
 // checkout's line hides none of it.
-//
-// Read off the main checkout's git directory, as mainCheckout reads the other
-// direction: each linked worktree has a directory under .git/worktrees whose
-// gitdir file names that worktree's .git file.
 func Trees(root string) []string {
 	trees := []string{root}
 	top := gitwt.Top(root)
