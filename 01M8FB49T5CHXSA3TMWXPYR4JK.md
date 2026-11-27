@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:55:17Z
+updated-at: 2026-11-27T20:55:43Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -89,3 +89,4 @@ stop-after-fix: "true"
 - **2026-11-27 20:53 · Sascha** — review fix: scripts/shipped-history.sh --write regenerated core/shipped/shipped.sha256 (3 cockpit hashes); --check ok, go test ./... rc=0, go vet ok. stop-after-fix=true set by the worker: generated manifest only, no lock, no parser. Edge note (autoFocus on canType=false) left as a note, not fix-now.
 - **2026-11-27 20:54 · Sascha** — waiting: review round 3 (new fresh agent, Herdr tab) since 21:54
 - **2026-11-27 20:55 · Sascha** — review: done at 96a420f2b
+- **2026-11-27 20:55 · Sascha** — report: Acceptance pane beantwortet offene Frage in human (step answer, Frage oben, keine seen-Liste, Antwort als Note + question= + zurück an Worker; auch neben fix-Note; mobil Verweis auf Discuss); shipped.sha256 nachgezogen | signoff, context unknown | offen: DoD 4 im cockpit ansehen; 2 note-Zeilen (limit: Antwort geht nach in-progress; edge: kein autoFocus ohne Eingabefeld); Branch nicht gepusht
