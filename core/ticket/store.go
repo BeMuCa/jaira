@@ -83,8 +83,8 @@ type Store struct {
 	// Root is the directory containing .jaira.
 	Root string
 
-	// tree is where the command runs when that is a linked worktree using the
-	// main checkout's board (see Discover); empty otherwise. Git questions
+	// tree is Root's place in the linked worktree a command runs in when that
+	// worktree uses the main checkout's board (see Discover); empty otherwise. Git questions
 	// about HEAD, the branch and the diff go to WorkTree, not Root.
 	tree string
 
@@ -288,7 +288,14 @@ func Discover(dir string) (*Store, error) {
 	}
 	if main := gitwt.MainCheckout(abs); main != "" {
 		if root, ok := boardAbove(main); ok {
-			return &Store{Root: root, tree: abs}, nil
+			// The worktree's own copy of root, not the directory the command
+			// ran in: git reads paths relative to it, and board data counts as
+			// board data only from where the board sits.
+			rel, err := filepath.Rel(main, root)
+			if err != nil {
+				return nil, err
+			}
+			return &Store{Root: root, tree: filepath.Join(abs, rel)}, nil
 		}
 	}
 	return nil, ErrNoStore

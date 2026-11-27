@@ -1,7 +1,7 @@
 ---
 id: 01M8F917S1ZDSJWSB65W3GX3JG
 title: Worktree ohne .jaira findet das Board des Hauptcheckouts
-status: testing
+status: critique
 ready: true
 creator: Sascha
 goal: "jaira (und damit der cockpit) arbeitet in einem git-worktree auch dann, wenn dort kein .jaira liegt: es nimmt das Board des Hauptcheckouts."
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:46:31Z
+updated-at: 2026-11-27T20:49:47Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -30,13 +30,13 @@ outcome-what: "ticket.Discover falls back to the main checkout's board when a li
 outcome-why: "worktrees cut before jaira share have no .jaira, so every jaira call there - the cockpit's Accept included - failed with no_store"
 outcome-resolves: jaira list/show/move and cockpit Accept work in a worktree without .jaira; a worktree with its own board keeps it
 review-summary: "none"
-round: 3
+round: 4
 back-from: testing
 back-by: lane
-back-count: 1
+back-count: 2
 review-gaps: "round 2: unexported Store.Tree to tree - only Discover sets it, WorkTree() is the one reader. Round 1: removed TestDiscoverWorktreeWritesMainBoard (the CLI test covers it). Left: gitwt has no own tests - its callers' tests exercise every function"
-test-verdict: "fail: suite green (rc=0, -race); binary: list/move from a worktree without .jaira work, a worktree whose main checkout has no board still exits 1; but bughunt blocker - git questions go to the main checkout's HEAD"
-hunt-verdict: "fail: 1 change blocker - gitrepo.Repo{Dir: s.Root} answers with the main checkout's branch/HEAD after the fallback"
+test-verdict: "pass: go test -race ./core/... ./internal/... rc=0 (full ./... -race rc=0 before the unexport); DoD 1,2,4 verified - tests named in the proofs run green and go red with the fallback/WorkTree disabled; binary on a scratch repo: list/move/create from a worktree without .jaira use the main board, create follows the worktree's branch ticket with main on another ticket's branch; worktree whose main has no board exits 1 and writes no .jaira; two parallel notes (worktree + main) both land. DoD 3 (cockpit Accept, seen by a person) left for the person"
+hunt-verdict: "fail: 1 change (edge) - Store.tree is the directory the command ran in, so from a subdirectory board-data paths count as code in HuntCheck/HuntCoverage"
 ---
 
 # Worktree ohne .jaira findet das Board des Hauptcheckouts
@@ -68,3 +68,8 @@ hunt-verdict: "fail: 1 change blocker - gitrepo.Repo{Dir: s.Root} answers with t
 - **2026-11-27 20:42 · Sascha** — hunt report: 1 finding, 1 change (blocker), note on 3GX3JG | read whole: core/gitwt/gitwt.go core/project/worktree.go core/ticket/store.go (Discover/boardAbove) core/ticket/discover_test.go internal/cli/worktreeboard_test.go core/release/notes/3GX3JG.md, plus callers of Discover and of gitrepo.Repo{Dir: s.Root} | not checked: 'jaira pull' from such a worktree (needs a remote; it likely writes the file into the main checkout, same class)
 - **2026-11-27 20:42 · Sascha** — bughunt: done at 807794849 - 1 finding (1 change, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/gitwt/gitwt.go core/project/worktree.go core/release/notes/3GX3JG.md core/ticket/discover_test.go core/ticket/store.go internal/cli/worktreeboard_test.go
 - **2026-11-27 20:45 · Sascha** — fix for bughunt blocker: ticket.Store gets Tree (set by Discover's fallback) and WorkTree(); every gitrepo.Repo that asks about HEAD/branch/diff/commits now uses WorkTree - root.go loadBoardEnv, flow.go diff, roles.go pr-gate, tickets.go branchTicket + LastHunt, tui gateEnv. Left on Root on purpose: questions about the board itself (share/update/tickets.go:83 is .jaira tracked or ignored), pr.Checker (asks by PR number), whoami remotes and refsync (refs and remotes are common to all worktrees), plugin/hook cmd.Dir (documented as the board root). 'jaira pull' in such a worktree writes into the main checkout's board - that is where this board's files live.
+- **2026-11-27 20:48 · Sascha** — waiting: bughunt round 2 (background agent) since 21:48
+- **2026-11-27 20:48 · Sascha** — bughunt: change: core/gitrepo/git.go:401 (anyCode) reached via internal/cli/root.go:359 and internal/tui/model.go:2108 - class: board-data paths are matched against 'git rev-parse --show-prefix' of r.Dir, and r.Dir is now Store.WorkTree(), which core/ticket/store.go:291 sets to the directory the command ran in (abs of -C/cwd), not the worktree's top; from a subdirectory of a board-less worktree the prefix is that subdirectory, so .jaira/tickets, .jaira/tags, .jaira/logbook, milestones all count as code - HuntCheck (hunt.go:102) then reports CodeChanged for a ticket whose commits carry only board data, and HuntCoverage (git.go:374,381,385) reads a hunt as stale when a later commit of the ticket touched only tags/milestones; example: worktree of a shared board whose .jaira/tickets/ is empty in git (git keeps no empty dir, so Discover falls back), 'cd core && jaira move <id> --to human' on a ticket with only ticket-file commits is refused for a missing hunt; before this change Dir was Store.Root (board top, prefix ''); fix: set tree to the worktree's top-level (git rev-parse --show-toplevel), not abs; edge, not blocker - fails toward demanding a hunt, needs subdir + board-less worktree + board-data-only commits; ran: scratch test in core/gitrepo, (&Repo{Dir: top}).anyCode('.jaira/tags')=false, (&Repo{Dir: top/sub}).anyCode(...)=true
+- **2026-11-27 20:48 · Sascha** — hunt report: 1 finding, 1 change (edge, not blocker), as a note on 3GX3JG | read as a diff since 807794849: core/ticket/store.go internal/cli/worktreeboard_test.go; new to the change and read around their changed call (not whole - 6.7k lines of one-line edits): internal/cli/flow.go internal/cli/roles.go internal/cli/root.go internal/cli/tickets.go internal/tui/model.go, plus every gitrepo method those calls reach (git.go, derive.go, hunt.go, named.go) and every remaining gitrepo.Repo{Dir: s.Root} site | not checked end to end: the full move refusal in a board-less worktree with ticket-file-only commits (needs a shared board with an untracked-empty tickets dir); CommitsForTicket's first source now gets an absolute ticket path outside the worktree and git errors silently, judged unreachable since such a worktree has no ticket files in its history
+- **2026-11-27 20:48 · Sascha** — bughunt: done at 17c54243e - 1 finding (1 change, 0 pre-existing) in 8 modules, follow-up hunt since 807794849; concurrency, error paths, input, permissions checked; files: core/gitwt/gitwt.go core/project/worktree.go core/release/notes/3GX3JG.md core/ticket/discover_test.go core/ticket/store.go internal/cli/flow.go internal/cli/roles.go internal/cli/root.go internal/cli/tickets.go internal/cli/worktreeboard_test.go internal/tui/model.go
+- **2026-11-27 20:49 · Sascha** — fix for hunt r2: tree is now Root mirrored into the worktree (abs + rel(main, root)), not the directory the command ran in - git's --show-prefix then matches the board's place, as with Root. TestDiscoverInLinkedWorktree checks WorkTree per case; red with the old value (2 cases).

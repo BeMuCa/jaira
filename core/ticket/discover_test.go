@@ -74,6 +74,12 @@ func TestDiscoverInLinkedWorktree(t *testing.T) {
 			if got, want := realPath(t, s.Root), realPath(t, filepath.Join(base, c.wantRel)); got != want {
 				t.Fatalf("Root = %q, want %q", got, want)
 			}
+			// Git is asked from the board's own place in the worktree, never
+			// from the subdirectory the command ran in: paths under .jaira are
+			// matched relative to it.
+			if got, want := realPath(t, s.WorkTree()), realPath(t, filepath.Join(tree, c.wantRel)); got != want {
+				t.Fatalf("WorkTree = %q, want %q", got, want)
+			}
 		})
 	}
 }
