@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:54:22Z
+updated-at: 2026-11-27T20:54:58Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -27,7 +27,7 @@ claimed-at: 2026-11-27T20:33:49Z
 outcome-what: "Acceptance pane: offene Frage in nicht-endender Person-Lane wird beantwortet statt abgenommen — getippter Text ist die Antwort (Note 'answer to …', question= gelöscht, zurück an den Worker), auch neben einer fix-Note; Frage oben, seen-Liste ausgeblendet; ohne Eingabefeld verweist die Ablehnung auf Discuss"
 outcome-why: "Bei Lane ohne next_lane lief Execute in 'noNext' und die seen-Liste verleitete zum Abhaken vor Ende der Arbeit"
 outcome-resolves: "Person sieht im human-Lane die Frage und beantwortet sie direkt; kein 'nothing to accept'"
-review-summary: "none"
+review-summary: "delta review from 5ca1382c7: only core/shipped/shipped.sha256 changed (+6 lines, the hashes of board.ts, register.tsx and texts.ts as of each of the three branch commits). The round-2 blocker is closed: the current hashes of all three files are in the manifest, scripts/shipped-history.sh --check passes, go test ./core/role passes. The cockpit change itself (question in human -> 'Question:' + 'Your answer' field, typed text clears question= and gives back with 'answer to \"...\"', needAnswer/needAnswerUntyped instead of 'nothing to accept') is unchanged since the previous review."
 review-gaps: "none (round 3: generated manifest lines only)"
 test-verdict: "pass: round 3 ran only what changed — scripts/shipped-history.sh --check exit 0, go test ./core/role ok (TestEveryInstalledFileIsAShippedVersion), full go test ./... rc=0, go vet ok; cockpit suite 591/591 unchanged since 5ca1382c7; DoD 4 left for the person"
 round: 3
