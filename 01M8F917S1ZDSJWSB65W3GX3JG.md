@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:39:18Z
+updated-at: 2026-11-27T20:39:21Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -56,3 +56,4 @@ review-summary: "core/project/worktree.go:50 Trees still explains how .git/workt
 ## Progress
 - **2026-11-27 20:33 · Sascha** — parent session: uds:/run/user/1000/cc-socks/24078.sock
 - **2026-11-27 20:34 · Sascha** — decisions (worker, none open for a person): 1) fallback lives in ticket.Discover, only after the upward walk finds nothing - a worktree with its own .jaira keeps it. 2) the git-file reading of project/worktree.go moves into a new leaf package core/gitwt (Top, MainCheckout, Linked) - project imports ticket, so ticket cannot call project; gitwt keeps one copy. 3) writes from the worktree land on the main checkout's board: locks and state are that board's, refs/jaira are shared by all worktrees, CommitsForTicket reads HEAD plus --branches, so branch commits are still found. Known limit: Branch() (create --follows from the branch name) reads the main checkout's branch when run from such a worktree. 4) DoD 3 is the person's check at signoff.
+- **2026-11-27 20:39 · Sascha** — critique: core/project/worktree.go:50 Trees' second comment paragraph repeats gitwt.Linked's doc - drop it. Let stand: the fallback walks up from the main-checkout place past the repo top, same as a command run in the main checkout itself would - the worktree behaves as its main checkout; a bound to the repo top would make the two disagree.
