@@ -28,7 +28,7 @@ commits:
   - eb1c703587f6dd329a5154fa4442e2a37fbe59bd
   - e1ae3cc55a5589bddea0c23518e560b0877e0245
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T21:04:48Z
+updated-at: 2026-11-27T21:04:54Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -116,3 +116,4 @@ review-check: "1. cd into a git worktree that has no .jaira folder, e.g. git -C 
 - note: limit: a board above the repository (parent/.jaira, repo in parent/repo) is not used from a worktree, ErrNoStore as before - teamlead decision
 - note: limit: in such a worktree the ticket file lives in the main checkout, so it cannot ride in the branch's commits and 'jaira pull' writes into the main checkout - the board is not in git there anyway
 - note: limit: core/gitwt has no tests of its own - covered through core/ticket discover_test.go and core/project tests
+- **2026-11-27 21:04 · Sascha** — cockpit: accepted by the person, signoff -> done
