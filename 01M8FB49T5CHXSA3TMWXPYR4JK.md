@@ -1,7 +1,7 @@
 ---
 id: 01M8FB49T5CHXSA3TMWXPYR4JK
 title: "Cockpit: Ticket mit offener Frage in human zeigt Frage statt Abnahme-Checkliste"
-status: testing
+status: in-progress
 ready: true
 creator: Sascha
 goal: "Steht ein Ticket in einer Frage-Lane (human) mit offener Frage, zeigt der cockpit die Frage und ein Antwortfeld – keine 'Check yourself'-Liste und kein Accept, das danach abgelehnt wird."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:42:54Z
+updated-at: 2026-11-27T20:43:14Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -30,6 +30,10 @@ outcome-resolves: "Person sieht im human-Lane die Frage und beantwortet sie dire
 review-summary: none
 review-gaps: "hoisted waitsForAnswer(w) in the Acceptance pane render into one const asking (was called 7 times); kept t.answer as the fail title, the same shape as t.giveBack; no duplication found — answer() reuses giveBack/givingBack; nothing orphaned (noNext still reached for a lane with no next and no question)"
 test-verdict: "pass: claude plugin test . (2.1.332) 590 pass 0 fail, exit 0; go test ./core/release/... ok; DoD 1-3,5 verified in the tree (new tests 'a question waiting in human with/without a lane after it' render the pane and type the answer: note, question=, move to in-progress, no dod, no 'nothing to accept'); failure path: a refused 'set question=' shows a toast and the note still lands (register.tsx answer(), read, not run); two writers: Execute holds the row lock (once), the writes are jaira's own; DoD 4 (seen in the cockpit) left for the person"
+round: 2
+back-from: testing
+back-by: lane
+back-count: 1
 ---
 
 # Cockpit: Ticket mit offener Frage in human zeigt Frage statt Abnahme-Checkliste
