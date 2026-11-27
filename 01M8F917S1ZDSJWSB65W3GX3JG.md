@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:58:09Z
+updated-at: 2026-11-27T20:58:12Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -34,7 +34,11 @@ round: 5
 back-from: testing
 back-by: lane
 back-count: 3
-review-gaps: "note: limit: jaira run in <wt>/sub, where sub/ is an initialized submodule in the main checkout but not in the worktree, finds no board (inside-check uses the nearest .git) - exits 1 as master does; teamlead accepted 2026-11-27. Optimize: unexported Store.tree; removed TestDiscoverWorktreeWritesMainBoard; gitwt has no own tests - callers' tests exercise every function"
+review-gaps: |-
+  note: limit: a path inside an initialized submodule of the main checkout is measured against the submodule top, so jaira run in <worktree>/<submodule> of a worktree without that submodule finds no board - teamlead decided 2026-11-27 to keep it, fails to ErrNoStore as before
+  note: limit: a board above the repository (parent/.jaira, repo in parent/repo) is not used from a worktree, ErrNoStore as before - teamlead decision
+  note: limit: in such a worktree the ticket file lives in the main checkout, so it cannot ride in the branch's commits and 'jaira pull' writes into the main checkout - the board is not in git there anyway
+  note: limit: core/gitwt has no tests of its own - covered through core/ticket discover_test.go and core/project tests
 test-verdict: "pass: go vet + go test -race ./... rc=0 at e1ae3cc55; DoD 1,2,4 verified by the named tests (each red with its fix disabled); binary on scratch repos: list/move/create from a worktree without .jaira use the main board, create follows the worktree's branch ticket, worktree of a repo without a board exits 1 and writes no .jaira, board above the repo is not borrowed (test); two parallel notes from worktree and main both land. DoD 3 (cockpit Accept, seen by a person) left for the person"
 hunt-verdict: "pass: round 4 finding (submodule top as inside-bound) accepted as known limit by teamlead - fails toward ErrNoStore, as master"
 question: ""
