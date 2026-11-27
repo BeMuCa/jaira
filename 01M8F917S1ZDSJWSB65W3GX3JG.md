@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:59:00Z
+updated-at: 2026-11-27T21:04:24Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -60,7 +60,8 @@ review-check: "1. cd into a git worktree that has no .jaira folder, e.g. git -C 
   proof: core/ticket/store.go Discover fallback + WorkTree; internal/cli/worktreeboard_test.go TestWorktreeWithoutBoardUsesTheMainCheckouts (list/show/move), TestWorktreeWithoutBoardAsksGitAboutItself (branch, commits); core/ticket/discover_test.go TestDiscoverInLinkedWorktree
 - [x] Ein worktree mit eigenem .jaira benutzt weiter sein eigenes (Test)
   proof: core/ticket/discover_test.go TestDiscoverInLinkedWorktree cases 'the worktree's own board wins' (+ from below)
-- [ ] cockpit Accept auf ein Ticket, dessen worktree kein .jaira hat, geht durch (gesehen von einer Person)
+- [x] cockpit Accept auf ein Ticket, dessen worktree kein .jaira hat, geht durch (gesehen von einer Person)
+  proof: Teamlead live: Branch-Binary in Worktree ohne .jaira: list + move gehen, 0.6.9 scheitert mit no_store; Alex hat im cockpit Accept gedrückt (27.11.)
 - [x] Release-Note core/release/notes/<ID>.md
   proof: core/release/notes/3GX3JG.md
 
