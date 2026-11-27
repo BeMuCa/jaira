@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:54:02Z
+updated-at: 2026-11-27T20:54:09Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -29,7 +29,7 @@ outcome-why: "Bei Lane ohne next_lane lief Execute in 'noNext' und die seen-List
 outcome-resolves: "Person sieht im human-Lane die Frage und beantwortet sie direkt; kein 'nothing to accept'"
 review-summary: "none"
 review-gaps: "none (round 3: generated manifest lines only)"
-test-verdict: "pass: claude plugin test . 591 pass 0 fail (exit 0) at 5ca1382c7; go test ./core/release/... ok; DoD 1,2,3,5 verified in the tree; round 2 covers the answer beside a fix note (test) and the no-field surface (needAnswerUntyped, read: no harness for canType=false); failure path: refused 'set question=' toasts, note still lands; writes go through jaira under the row lock; DoD 4 left for the person"
+test-verdict: "pass: round 3 ran only what changed — scripts/shipped-history.sh --check exit 0, go test ./core/role ok (TestEveryInstalledFileIsAShippedVersion), full go test ./... rc=0, go vet ok; cockpit suite 591/591 unchanged since 5ca1382c7; DoD 4 left for the person"
 round: 3
 back-from: review
 back-by: lane
