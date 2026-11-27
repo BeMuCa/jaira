@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:56:22Z
+updated-at: 2026-11-27T20:56:33Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -87,3 +87,4 @@ question: "testing would send 3GX3JG back a 4th time (jaira refuses it without t
 - **2026-11-27 20:55 · Sascha** — bughunt: done at e1ae3cc55 - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since eb1c70358; concurrency, error paths, input, permissions checked; files: core/gitwt/gitwt.go core/project/worktree.go core/release/notes/3GX3JG.md core/ticket/discover_test.go core/ticket/store.go internal/cli/flow.go internal/cli/roles.go internal/cli/root.go internal/cli/tickets.go internal/cli/worktreeboard_test.go internal/tui/model.go
 - **2026-11-27 20:56 · Sascha** — question (4th testing send-back, to teamlead): testing would send 3GX3JG back a 4th time (jaira refuses it without the teamlead). Round 4 finding: the inside-check measures against gitwt.Top(main), the nearest .git - in a path that sits in an initialized submodule of the main checkout that is the submodule top, so jaira run in <wt>/sub of a worktree whose sub/ is not initialized exits 1 (no board); at <wt> it works. Fails toward ErrNoStore, as master. Options: 1) (Recommended) fix: bound by gitwt.MainCheckout(gitwt.Top(abs)) - the real main top, 1 line + 1 test case; you allow the send-back. 2) accept as known limit, go on to review with it as a note.
 - **2026-11-27 20:56 · Sascha** — waiting: teamlead decision on the 4th send-back (uds:/run/user/1000/cc-socks/24078.sock) since 21:56
+- **2026-11-27 20:56 · Sascha** — decision (teamlead): Submodul-Fall (r4) bleibt bekannte Grenze – scheitert zu ErrNoStore wie heute, kein Schaden. Kein 4. Rücksprung; weiter zu review.
