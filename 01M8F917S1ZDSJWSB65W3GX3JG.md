@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:34:47Z
+updated-at: 2026-11-27T20:37:13Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -32,7 +32,8 @@ claimed-at: 2026-11-27T20:33:41Z
 
 ## Definition of Done
 
-- [ ] Im worktree ohne .jaira findet jaira list/show/move das Board des Hauptcheckouts (Test in core/ticket oder core/project)
+- [x] Im worktree ohne .jaira findet jaira list/show/move das Board des Hauptcheckouts (Test in core/ticket oder core/project)
+  proof: core/ticket/store.go:284 fallback; internal/cli/worktreeboard_test.go TestWorktreeWithoutBoardUsesTheMainCheckouts (list/show/move); core/ticket/discover_test.go TestDiscoverInLinkedWorktree, TestDiscoverWorktreeWritesMainBoard
 - [ ] Ein worktree mit eigenem .jaira benutzt weiter sein eigenes (Test)
 - [ ] cockpit Accept auf ein Ticket, dessen worktree kein .jaira hat, geht durch (gesehen von einer Person)
 - [ ] Release-Note core/release/notes/<ID>.md
