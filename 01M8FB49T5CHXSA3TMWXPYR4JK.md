@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:38:56Z
+updated-at: 2026-11-27T20:39:00Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -37,7 +37,8 @@ claimed-at: 2026-11-27T20:33:49Z
 - [x] signoff-Abnahme unverändert (bestehende Tests grün)
   proof: claude plugin test . (2.1.332): 590 pass, 0 fail — describe 'what the person checks themselves' unchanged
 - [ ] Von einer Person im cockpit gesehen
-- [ ] Release-Note core/release/notes/<ID>.md
+- [x] Release-Note core/release/notes/<ID>.md
+  proof: core/release/notes/PYR4JK.md
 
 ## Options
 
