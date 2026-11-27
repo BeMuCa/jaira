@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:58:16Z
+updated-at: 2026-11-27T20:58:19Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -49,6 +49,7 @@ review-verdict-gaps: |-
   note: limit: a board above the repository (parent/.jaira, repo in parent/repo) is not used from a worktree, ErrNoStore as before - teamlead decision
   note: limit: in such a worktree the ticket file lives in the main checkout, so it cannot ride in the branch's commits and 'jaira pull' writes into the main checkout - the board is not in git there anyway
   note: limit: core/gitwt has no tests of its own - covered through core/ticket discover_test.go and core/project tests
+review-check: "1. cd into a git worktree that has no .jaira folder, e.g. git -C <repo> worktree add /tmp/wt -b feat/test (on a board not shared yet)  2. run: jaira list  - you see the main checkout's tickets instead of 'no .jaira directory found'  3. run: jaira show <id>  - the ticket opens  4. in the cockpit press Accept on a ticket whose worktree has no .jaira (DoD 3)  - it moves to done without a manual move in the main checkout  5. automated: go test ./core/ticket -run Discover and go test ./internal/cli -run Worktree pass"
 ---
 
 # Worktree ohne .jaira findet das Board des Hauptcheckouts
