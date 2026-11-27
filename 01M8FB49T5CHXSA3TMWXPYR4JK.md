@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:54:09Z
+updated-at: 2026-11-27T20:54:13Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -34,7 +34,7 @@ round: 3
 back-from: review
 back-by: lane
 back-count: 1
-hunt-verdict: "pass: round 2 hunt at 5ca1382c7, 0 findings; round 1's two change findings fixed in 5ca1382c7"
+hunt-verdict: "pass: stop-after-fix, no hunt in round 3"
 review-verdict: "send-back: failed gate - shipped.sha256 misses the three changed cockpit files, go test ./core/role fails; the code itself meets DoD 1, 2, 3 and 5"
 review-round: 2
 review-verdict-gaps: |-
