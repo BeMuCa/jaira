@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:39:38Z
+updated-at: 2026-11-27T20:41:11Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -28,6 +28,7 @@ outcome-what: "Acceptance pane: offene Frage in nicht-endender Person-Lane wird 
 outcome-why: "Bei Lane ohne next_lane lief Execute in 'noNext' und die seen-Liste verleitete zum Abhaken vor Ende der Arbeit"
 outcome-resolves: "Person sieht im human-Lane die Frage und beantwortet sie direkt; kein 'nothing to accept'"
 review-summary: none
+review-gaps: "hoisted waitsForAnswer(w) in the Acceptance pane render into one const asking (was called 7 times); kept t.answer as the fail title, the same shape as t.giveBack; no duplication found — answer() reuses giveBack/givingBack; nothing orphaned (noNext still reached for a lane with no next and no question)"
 ---
 
 # Cockpit: Ticket mit offener Frage in human zeigt Frage statt Abnahme-Checkliste
