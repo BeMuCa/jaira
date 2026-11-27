@@ -1540,30 +1540,30 @@ async function execute($: EngineInterface, w: Waiting, typed: string, share: num
   const refuse = async (text: string) => void await update($, refusalAtom, () => ({ id: w.id, text }))
   await update($, refusalAtom, () => null)
   if (e.step === 'noNext') return refuse(t.noNext(w.id, w.lane))
-  if (e.step === 'needAnswer') return refuse(t.needAnswer(w.id, w.lane))
+  if (e.step === 'needAnswer') return refuse(canType ? t.needAnswer(w.id, w.lane) : t.needAnswerUntyped(w.id, w.lane))
   if (e.step === 'needWhy') return refuse(canType ? t.blockerNeedsWhy(w.id) : t.blockerNeedsTyping(w.id))
   if (e.step === 'needSeen') return refuse(t.seenMissing(w.id, unticked.map(x => x.text)))
   // The pane closes once the ticket moved, as for Accept: a refusal before
   // that leaves the person's marks in it.
-  if (e.step === 'answer') return answer($, w, typed.trim(), share, () => closeAcceptance($))
-  if (e.step === 'giveBack') {
-    if (items.length === 0) return giveBack($, w.id, w.lane, w.backTo, typed.trim(), share, () => closeAcceptance($))
-    return giveBackWith($, w, items, typed.trim(), share, () => closeAcceptance($))
+  // PYR4JK: words typed while the ticket waits on its question are the
+  // answer, a note to fix beside them or not: said so on the ticket, and the
+  // question comes off it once it moved, so the worker does not read it as
+  // still open.
+  if (e.step === 'giveBack' || e.step === 'answer') {
+    const words = typed.trim()
+    const answers = waitsForAnswer(w) && words !== ''
+    const extra = answers ? t.answered(w.question, words) : words
+    const first = answers ? (dir: string) => clearQuestion($, dir, w.id) : undefined
+    if (items.length === 0) return giveBack($, w.id, w.lane, w.backTo, async dir => (await first?.(dir), extra), share, () => closeAcceptance($))
+    return giveBackWith($, w, items, extra, share, () => closeAcceptance($), first)
   }
   const moved = await acceptWith($, w, items, e.asksWhy ? typed : '', (why, ticked) => refuse(`${ticked.length === 0 ? t.refused(w.id) : t.refusedTicked(w.id, ticked)}\n${why}`), seen)
   if (moved) closeAcceptance($)
 }
 
-// PYR4JK: the person's answer to the question the ticket waits on goes back
-// to the worker the way Give back goes - the same move, note and handover -
-// and the question comes off the ticket once it moved, so the worker does not
-// read it as still open.
-function answer($: EngineInterface, w: Waiting, text: string, share: number, onMoved: () => void): Promise<void> {
-  return giveBack($, w.id, w.lane, w.backTo, async dir => {
-    const cleared = await jaira($, dir, ['set', w.id, 'question='])
-    if (!cleared.ok) await fail($, `${t.answer} ${w.id}`, t.questionNotCleared(w.id, cleared.why))
-    return t.answered(w.question, text)
-  }, share, onMoved)
+async function clearQuestion($: EngineInterface, dir: string, id: string): Promise<void> {
+  const cleared = await jaira($, dir, ['set', id, 'question='])
+  if (!cleared.ok) await fail($, `${t.answer} ${id}`, t.questionNotCleared(id, cleared.why))
 }
 
 // The 'seen by a person' items the Acceptance pane lists for this ticket.
@@ -1705,10 +1705,11 @@ async function createFollowUps($: EngineInterface, dir: string, id: string, onBo
   return out
 }
 
-async function giveBackWith($: EngineInterface, w: Waiting, items: readonly GapItem[], extra: string, share: number, onMoved?: () => void): Promise<void> {
+// first: written once the ticket moved, before the decisions are.
+async function giveBackWith($: EngineInterface, w: Waiting, items: readonly GapItem[], extra: string, share: number, onMoved?: () => void, first?: (dir: string) => Promise<void>): Promise<void> {
   const stand = await stillIn($, w, t.giveBack)
   if (stand === undefined) return
-  await giveBack($, w.id, w.lane, w.backTo, async dir => decisionLines(items, await createFollowUps($, dir, w.id, stand.board, items), extra), share, onMoved)
+  await giveBack($, w.id, w.lane, w.backTo, async dir => (await first?.(dir), decisionLines(items, await createFollowUps($, dir, w.id, stand.board, items), extra)), share, onMoved)
 }
 
 // why: what the person typed to accept a blocker not fixed, which goes onto

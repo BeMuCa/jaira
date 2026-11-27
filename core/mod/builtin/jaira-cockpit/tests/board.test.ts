@@ -993,6 +993,18 @@ describe('waiting for you', () => {
     })
   }
 
+  test('an answer typed beside a note marked fix is still the answer: said so on the ticket, the question cleared', async ($, on) => {
+    const w = world(on)
+    w.tickets = [{ ...HUMAN, review: { verdict: 'approve', gaps: 'note: a test is missing' } }]
+    await startSession($)
+    const pane = await quietly($, await $.ui.mount(BAND), 'K7P2QX', w)
+    await pane.press({ key: 'now-K7P2QX-0' })
+    await pane.input({ key: 'typed-K7P2QX', text: 'Popup' })
+    expect(ran(w, 'jaira', 'move', 'K7P2QX')[0]?.slice(0, 5)).toEqual(['jaira', 'move', 'K7P2QX', '--to', 'in-progress'])
+    expect(ran(w, 'jaira', 'set', 'K7P2QX', 'question=')).toHaveLength(1)
+    expect(ran(w, 'jaira', 'note', 'K7P2QX').map(r => r[3]).join('\n')).toContain('answer to "Popup oder eigene Seite?": Popup')
+  })
+
   test('where jaira names no lane after it, Execute accepts nothing and says so', async ($, on) => {
     const w = world(on)
     w.tickets = [{ ...HUMAN, next_lane: undefined, question: '' }]

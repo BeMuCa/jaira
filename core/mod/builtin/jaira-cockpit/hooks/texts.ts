@@ -91,6 +91,8 @@ export const t = {
   // PYR4JK: a ticket waiting on its question is answered, never accepted -
   // whether or not jaira names a lane after it.
   needAnswer: (id: string, lane: string) => `${id} waits in ${lane} for the answer to its question: type it in the field, and Execute sends it back to the worker. Mark a note fix to give it back without one.`,
+  // Where the surface has no field to type into (mobile).
+  needAnswerUntyped: (id: string, lane: string) => `${id} waits in ${lane} for the answer to its question: there is no field to type it here - answer it with Discuss, or an option marked [accept] under Explain. Mark a note fix to give it back without one.`,
   question: 'Question:',
   answerLabel: 'Your answer',
   answerPlaceholder: 'goes onto the ticket as a note and back to the worker',

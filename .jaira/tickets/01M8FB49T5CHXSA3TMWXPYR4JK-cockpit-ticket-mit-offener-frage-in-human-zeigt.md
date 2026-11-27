@@ -1,7 +1,7 @@
 ---
 id: 01M8FB49T5CHXSA3TMWXPYR4JK
 title: "Cockpit: Ticket mit offener Frage in human zeigt Frage statt Abnahme-Checkliste"
-status: testing
+status: critique
 ready: true
 creator: Sascha
 goal: "Steht ein Ticket in einer Frage-Lane (human) mit offener Frage, zeigt der cockpit die Frage und ein Antwortfeld – keine 'Check yourself'-Liste und kein Accept, das danach abgelehnt wird."
@@ -19,16 +19,21 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:41:16Z
+updated-at: 2026-11-27T20:45:28Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
 claimed-at: 2026-11-27T20:33:49Z
-outcome-what: "Acceptance pane: offene Frage in nicht-endender Person-Lane wird beantwortet statt abgenommen — neuer Execute-step 'answer' (Note + question= + zurück an den Worker über giveBack), Frage oben, seen-Liste ausgeblendet, Feld 'Your answer'"
+outcome-what: "Acceptance pane: offene Frage in nicht-endender Person-Lane wird beantwortet statt abgenommen — getippter Text ist die Antwort (Note 'answer to …', question= gelöscht, zurück an den Worker), auch neben einer fix-Note; Frage oben, seen-Liste ausgeblendet; ohne Eingabefeld verweist die Ablehnung auf Discuss"
 outcome-why: "Bei Lane ohne next_lane lief Execute in 'noNext' und die seen-Liste verleitete zum Abhaken vor Ende der Arbeit"
 outcome-resolves: "Person sieht im human-Lane die Frage und beantwortet sie direkt; kein 'nothing to accept'"
 review-summary: none
 review-gaps: "hoisted waitsForAnswer(w) in the Acceptance pane render into one const asking (was called 7 times); kept t.answer as the fail title, the same shape as t.giveBack; no duplication found — answer() reuses giveBack/givingBack; nothing orphaned (noNext still reached for a lane with no next and no question)"
+test-verdict: "pass: claude plugin test . (2.1.332) 590 pass 0 fail, exit 0; go test ./core/release/... ok; DoD 1-3,5 verified in the tree (new tests 'a question waiting in human with/without a lane after it' render the pane and type the answer: note, question=, move to in-progress, no dod, no 'nothing to accept'); failure path: a refused 'set question=' shows a toast and the note still lands (register.tsx answer(), read, not run); two writers: Execute holds the row lock (once), the writes are jaira's own; DoD 4 (seen in the cockpit) left for the person"
+round: 2
+back-from: testing
+back-by: lane
+back-count: 1
 ---
 
 # Cockpit: Ticket mit offener Frage in human zeigt Frage statt Abnahme-Checkliste
@@ -58,3 +63,9 @@ review-gaps: "hoisted waitsForAnswer(w) in the Acceptance pane render into one c
 - **2026-11-27 20:33 · Sascha** — parent session: uds:/run/user/1000/cc-socks/24078.sock
 - **2026-11-27 20:34 · Sascha** — decision (worker): keine offene Entscheidung. Antwort = neuer step 'answer' in executionOf: question offen + Lane endet nicht (waitsForAnswer) + Text eingetippt -> question= löschen, dann bestehender giveBack nach backTo mit Note 'Given back from <lane>: answer to "<frage>": <text>' (gibt an alten Worker per herdr). Warum giveBack: der Weg an den Worker existiert schon und schreibt die Note. Ohne Text: needAnswer statt noNext, auch wenn acceptTo null. seen-Liste ausgeblendet solange waitsForAnswer.
 - **2026-11-27 20:39 · Sascha** — critique: none. Form passt: answer() reuses giveBack (move, note, handover an alten Worker) statt eigenem Pfad; step in executionOf neben den anderen. Bewusst gelassen: die Antwort geht nach backTo (in-progress), nicht in die Lane, aus der der Worker fragte (z.B. brainstorm) — jaira führt die Herkunftslane nicht; der Worker liest seinen Lane aus status. Discuss/Explain-accept bleibt als zweiter Weg (bewegt nach vorn), der needAnswer-Text nennt nur noch das Feld.
+- **2026-11-27 20:41 · Sascha** — waiting: bughunt (background subagent) since 21:41
+- **2026-11-27 20:42 · Sascha** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/board.ts:1233 (executionOf) with register.tsx:1549 and register.tsx:2716 - class: a ticket that waits on its question AND has a review note marked fix takes the giveBack path, not answer: the field is labelled 'Your answer', but what is typed goes into giveBackWith as an extra 'dazu:' line under the fix heading, the question is never cleared (no jaira set question=), and the note does not say it answers the question; the worker then reads the question as still open and, back in human, the cockpit asks for the same answer again. Reachable whenever w.gaps is non-empty, i.e. a ticket reviewed in an earlier round that comes back to human with a question; example: one note marked fix, typed 'yes, option b', waiting=true -> {step:'giveBack', fix:1}; ran: node --experimental-strip-types scratch calling executionOf(items[now], 'yes, option b', 'review', 0, true) -> giveBack
+- **2026-11-27 20:42 · Sascha** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/texts.ts:93 (needAnswer) with register.tsx:1543 - class: a surface without an Input (execute called with canType=false, register.tsx:2634) and a ticket waiting on its question: executionOf can only return needAnswer there (nothing can be typed), and the refusal now says 'type it in the field' - a field that does not exist; the old text pointed to Discuss / an [accept] option under Explain, which work without a field. needWhy has a canType variant (blockerNeedsTyping), needAnswer has none; example: mobile surface, human-lane ticket with a question, Execute -> dead-end instruction; ran: read (execute passes canType only to needWhy)
+- **2026-11-27 20:42 · Sascha** — hunt report: 2 findings, both change, neither a blocker, as bughunt notes on PYR4JK | read whole: the Acceptance pane path in hooks/register.tsx (openAcceptance, deciding, execute, answer, giveBack/givingBack, giveBackWith, acceptWith, stillIn, once, pane render), hooks/board.ts (Waiting, snapshotOf, executionOf, waitsForAnswer, decisionLines), hooks/texts.ts, release note; tests/board.test.ts only as the test file | not checked: a live cockpit run (no Herdr/claude UI here); the stale-w race in answer() (no stillIn, unlike giveBackWith) was dropped - the pane re-reads w from boardAtom each render and the same gap already exists on the plain giveBack path
+- **2026-11-27 20:42 · Sascha** — bughunt: done at e0d480a8e - 2 findings (2 change, 0 pre-existing) in 5 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/PYR4JK.md
+- **2026-11-27 20:45 · Sascha** — fix round 2 (bughunt): (1) Antwort neben einer fix-Note: execute behandelt giveBack und answer gleich — getippter Text bei waitsForAnswer ist immer 'answer to "…"', question= vor den Decisions (giveBackWith bekommt first-Callback); answer() entfällt, clearQuestion() übernimmt. (2) needAnswer ohne Feld (canType=false): eigener Text needAnswerUntyped, verweist auf Discuss/Explain. Test: 'an answer typed beside a note marked fix…'. Mobile-Pfad nur gelesen, kein Test-Harness dafür.
