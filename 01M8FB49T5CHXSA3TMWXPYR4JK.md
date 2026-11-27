@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:41:38Z
+updated-at: 2026-11-27T20:42:44Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -60,3 +60,4 @@ test-verdict: "pass: claude plugin test . (2.1.332) 590 pass 0 fail, exit 0; go 
 - **2026-11-27 20:34 · Sascha** — decision (worker): keine offene Entscheidung. Antwort = neuer step 'answer' in executionOf: question offen + Lane endet nicht (waitsForAnswer) + Text eingetippt -> question= löschen, dann bestehender giveBack nach backTo mit Note 'Given back from <lane>: answer to "<frage>": <text>' (gibt an alten Worker per herdr). Warum giveBack: der Weg an den Worker existiert schon und schreibt die Note. Ohne Text: needAnswer statt noNext, auch wenn acceptTo null. seen-Liste ausgeblendet solange waitsForAnswer.
 - **2026-11-27 20:39 · Sascha** — critique: none. Form passt: answer() reuses giveBack (move, note, handover an alten Worker) statt eigenem Pfad; step in executionOf neben den anderen. Bewusst gelassen: die Antwort geht nach backTo (in-progress), nicht in die Lane, aus der der Worker fragte (z.B. brainstorm) — jaira führt die Herkunftslane nicht; der Worker liest seinen Lane aus status. Discuss/Explain-accept bleibt als zweiter Weg (bewegt nach vorn), der needAnswer-Text nennt nur noch das Feld.
 - **2026-11-27 20:41 · Sascha** — waiting: bughunt (background subagent) since 21:41
+- **2026-11-27 20:42 · Sascha** — bughunt: change: core/mod/builtin/jaira-cockpit/hooks/board.ts:1233 (executionOf) with register.tsx:1549 and register.tsx:2716 - class: a ticket that waits on its question AND has a review note marked fix takes the giveBack path, not answer: the field is labelled 'Your answer', but what is typed goes into giveBackWith as an extra 'dazu:' line under the fix heading, the question is never cleared (no jaira set question=), and the note does not say it answers the question; the worker then reads the question as still open and, back in human, the cockpit asks for the same answer again. Reachable whenever w.gaps is non-empty, i.e. a ticket reviewed in an earlier round that comes back to human with a question; example: one note marked fix, typed 'yes, option b', waiting=true -> {step:'giveBack', fix:1}; ran: node --experimental-strip-types scratch calling executionOf(items[now], 'yes, option b', 'review', 0, true) -> giveBack
