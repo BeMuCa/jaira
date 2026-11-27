@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:54:16Z
+updated-at: 2026-11-27T20:54:22Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -86,3 +86,4 @@ stop-after-fix: "true"
 - **2026-11-27 20:50 · Sascha** — review: done at 5ca1382c7
 - **2026-11-27 20:51 · Sascha** — review: blocker: core/shipped/shipped.sha256 lacks the new hashes of hooks/board.ts, register.tsx, texts.ts - go test ./core/role (TestEveryInstalledFileIsAShippedVersion) and CI's scripts/shipped-history.sh --check fail. Fix: scripts/shipped-history.sh --write, commit as fix(PYR4JK). Code otherwise meets DoD.
 - **2026-11-27 20:53 · Sascha** — review fix: scripts/shipped-history.sh --write regenerated core/shipped/shipped.sha256 (3 cockpit hashes); --check ok, go test ./... rc=0, go vet ok. stop-after-fix=true set by the worker: generated manifest only, no lock, no parser. Edge note (autoFocus on canType=false) left as a note, not fix-now.
+- **2026-11-27 20:54 · Sascha** — waiting: review round 3 (new fresh agent, Herdr tab) since 21:54
