@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:50:57Z
+updated-at: 2026-11-27T20:51:01Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -86,3 +86,4 @@ review-check: "1. go test ./core/role - passes (fails today until the manifest i
 - **2026-11-27 20:48 · Sascha** — bughunt: done at 5ca1382c7 - 0 findings (0 change, 0 pre-existing) in 5 modules, follow-up hunt since e0d480a8e; concurrency, error paths, input, permissions checked; files: core/mod/builtin/jaira-cockpit/hooks/board.ts core/mod/builtin/jaira-cockpit/hooks/register.tsx core/mod/builtin/jaira-cockpit/hooks/texts.ts core/mod/builtin/jaira-cockpit/tests/board.test.ts core/release/notes/PYR4JK.md
 - **2026-11-27 20:48 · Sascha** — waiting: review (fresh agent, Herdr tab via run-lane.sh) since 21:48
 - **2026-11-27 20:50 · Sascha** — review: done at 5ca1382c7
+- **2026-11-27 20:51 · Sascha** — review: blocker: core/shipped/shipped.sha256 lacks the new hashes of hooks/board.ts, register.tsx, texts.ts - go test ./core/role (TestEveryInstalledFileIsAShippedVersion) and CI's scripts/shipped-history.sh --check fail. Fix: scripts/shipped-history.sh --write, commit as fix(PYR4JK). Code otherwise meets DoD.
