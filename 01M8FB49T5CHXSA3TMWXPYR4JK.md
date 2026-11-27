@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:53:41Z
+updated-at: 2026-11-27T20:53:50Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -27,7 +27,7 @@ claimed-at: 2026-11-27T20:33:49Z
 outcome-what: "Acceptance pane: offene Frage in nicht-endender Person-Lane wird beantwortet statt abgenommen — getippter Text ist die Antwort (Note 'answer to …', question= gelöscht, zurück an den Worker), auch neben einer fix-Note; Frage oben, seen-Liste ausgeblendet; ohne Eingabefeld verweist die Ablehnung auf Discuss"
 outcome-why: "Bei Lane ohne next_lane lief Execute in 'noNext' und die seen-Liste verleitete zum Abhaken vor Ende der Arbeit"
 outcome-resolves: "Person sieht im human-Lane die Frage und beantwortet sie direkt; kein 'nothing to accept'"
-review-summary: "Full review of 6d89a3032..5ca1382c7. executionOf gets a step 'answer': while a ticket waits on its question in a lane that does not end the work (waitsForAnswer), typed words are the answer and nothing typed is needAnswer - checked before noNext, so a human lane with no lane after it no longer says 'nothing to accept'. execute sends 'answer' and 'giveBack' through the existing giveBack/giveBackWith path: after the move it clears the question (jaira set question=) and writes the note as 'answer to \"<question>\": <text>', a fix note beside it or not. The pane shows the question first as a field, labels the input 'Your answer', drops the 'seen by a person' checklist while the ticket asks (openAcceptance seen=[]), and a surface without a field gets needAnswerUntyped pointing to Discuss/Explain. Release note added; cockpit tests 591 pass."
+review-summary: "none"
 review-gaps: |-
   blocker: failed gate - core/shipped/shipped.sha256 lacks the new hashes of hooks/board.ts, register.tsx and texts.ts: go test ./core/role fails (TestEveryInstalledFileIsAShippedVersion) and ci.yaml's scripts/shipped-history.sh --check fails; fix: run scripts/shipped-history.sh --write and commit the manifest with the ticket id
   note: limit: the answer goes back to backTo (in-progress), not to the lane the worker asked from - jaira does not record that lane (critique note 20:39)
