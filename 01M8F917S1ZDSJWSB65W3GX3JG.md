@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:48:27Z
+updated-at: 2026-11-27T20:48:32Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -68,3 +68,4 @@ hunt-verdict: "fail: 1 change blocker - gitrepo.Repo{Dir: s.Root} answers with t
 - **2026-11-27 20:42 · Sascha** — hunt report: 1 finding, 1 change (blocker), note on 3GX3JG | read whole: core/gitwt/gitwt.go core/project/worktree.go core/ticket/store.go (Discover/boardAbove) core/ticket/discover_test.go internal/cli/worktreeboard_test.go core/release/notes/3GX3JG.md, plus callers of Discover and of gitrepo.Repo{Dir: s.Root} | not checked: 'jaira pull' from such a worktree (needs a remote; it likely writes the file into the main checkout, same class)
 - **2026-11-27 20:42 · Sascha** — bughunt: done at 807794849 - 1 finding (1 change, 0 pre-existing) in 6 modules, first hunt; concurrency, error paths, input, permissions checked; files: core/gitwt/gitwt.go core/project/worktree.go core/release/notes/3GX3JG.md core/ticket/discover_test.go core/ticket/store.go internal/cli/worktreeboard_test.go
 - **2026-11-27 20:45 · Sascha** — fix for bughunt blocker: ticket.Store gets Tree (set by Discover's fallback) and WorkTree(); every gitrepo.Repo that asks about HEAD/branch/diff/commits now uses WorkTree - root.go loadBoardEnv, flow.go diff, roles.go pr-gate, tickets.go branchTicket + LastHunt, tui gateEnv. Left on Root on purpose: questions about the board itself (share/update/tickets.go:83 is .jaira tracked or ignored), pr.Checker (asks by PR number), whoami remotes and refsync (refs and remotes are common to all worktrees), plugin/hook cmd.Dir (documented as the board root). 'jaira pull' in such a worktree writes into the main checkout's board - that is where this board's files live.
+- **2026-11-27 20:48 · Sascha** — waiting: bughunt round 2 (background agent) since 21:48
