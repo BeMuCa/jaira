@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:51:12Z
+updated-at: 2026-11-27T20:51:16Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -75,3 +75,4 @@ hunt-verdict: "fail: 1 change (edge) - Store.tree is the directory the command r
 - **2026-11-27 20:49 · Sascha** — fix for hunt r2: tree is now Root mirrored into the worktree (abs + rel(main, root)), not the directory the command ran in - git's --show-prefix then matches the board's place, as with Root. TestDiscoverInLinkedWorktree checks WorkTree per case; red with the old value (2 cases).
 - **2026-11-27 20:51 · Sascha** — bughunt: change: blocker: core/ticket/store.go:294-298 (Discover) - class: board found above the main checkout's top (boardAbove(main) walks past the repo, so Rel(main, root) climbs out of it) makes tree = abs+'../..' point outside the linked worktree, so every WorkTree() caller (cli/tickets.go:171 Branch, :865 LastHunt, cli/root.go:359, cli/flow.go:675, cli/roles.go:193, tui/model.go:2108) asks git in a directory that is not the worktree - no repo at all, or a different enclosing repo; example: board at parent/.jaira (not in git), main checkout parent/repo, worktree elsewhere/wt2 on branch feat/6gwvx6 - 'jaira create' no longer sets follows 6GWVX6, which the 17c54243e build does; fix direction: map root via the worktree top (gitwt.Top(abs)) and fall back to that top when root lies outside the main checkout; ran: built HEAD and 17c54243e, jaira create in a scratch layout (HEAD: no Follows line; old: 'Follows 6GWVX6, from branch feat/6gwvx6')
 - **2026-11-27 20:51 · Sascha** — hunt report: 1 finding, 1 change (blocker), note on 3GX3JG | read as a diff since 17c54243e: core/ticket/store.go, core/ticket/discover_test.go (no other file changed, none new) | not checked: whether the enclosing-repo variant (board root inside another git repo) gives a wrong branch rather than none - same path, not run
+- **2026-11-27 20:51 · Sascha** — bughunt: done at eb1c70358 - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since 17c54243e; concurrency, error paths, input, permissions checked; files: core/gitwt/gitwt.go core/project/worktree.go core/release/notes/3GX3JG.md core/ticket/discover_test.go core/ticket/store.go internal/cli/flow.go internal/cli/roles.go internal/cli/root.go internal/cli/tickets.go internal/cli/worktreeboard_test.go internal/tui/model.go
