@@ -2,7 +2,7 @@
 id: 01M8FB49T5CHXSA3TMWXPYR4JK
 title: "Cockpit: Ticket mit offener Frage in human zeigt Frage statt Abnahme-Checkliste"
 status: backlog
-ready: false
+ready: true
 creator: Sascha
 goal: "Steht ein Ticket in einer Frage-Lane (human) mit offener Frage, zeigt der cockpit die Frage und ein Antwortfeld – keine 'Check yourself'-Liste und kein Accept, das danach abgelehnt wird."
 context: |-
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:28:49Z
+updated-at: 2026-11-27T20:28:51Z
 assignee: Sascha
 updated-by: Sascha
 ---
