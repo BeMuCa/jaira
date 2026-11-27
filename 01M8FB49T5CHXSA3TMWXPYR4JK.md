@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:48:16Z
+updated-at: 2026-11-27T20:48:28Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -34,6 +34,7 @@ round: 2
 back-from: testing
 back-by: lane
 back-count: 1
+hunt-verdict: "pass: round 2 hunt at 5ca1382c7, 0 findings; round 1's two change findings fixed in 5ca1382c7"
 ---
 
 # Cockpit: Ticket mit offener Frage in human zeigt Frage statt Abnahme-Checkliste
