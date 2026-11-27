@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:55:05Z
+updated-at: 2026-11-27T20:55:47Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -82,3 +82,4 @@ question: ""
 - **2026-11-27 20:52 · Sascha** — decision (teamlead): Rückfall nur auf ein Board im Hauptcheckout selbst; ein Board oberhalb des Repos bleibt im worktree ErrNoStore wie bisher. Kleinere Lösung statt tree-Klammer – die Randfälle wuchsen.
 - **2026-11-27 20:54 · Sascha** — fix per teamlead decision (option 1): Discover falls back only to a board inside the main checkout (Rel to gitwt.Top(main) must not climb); a board above the repo stays ErrNoStore in a worktree. Test TestDiscoverIgnoresBoardAboveMainCheckout - red without the bound.
 - **2026-11-27 20:55 · Sascha** — waiting: bughunt round 4 (background agent) since 21:55
+- **2026-11-27 20:55 · Sascha** — bughunt: change: core/ticket/store.go:294 - class: the 'board inside the main checkout' check measures against gitwt.Top(main), the nearest .git above the mapped path, not the main checkout's top; any path that in the main checkout sits inside a nested repository (initialized submodule, nested clone) gets that repository's top, so the main checkout's own board counts as 'above' and is refused; example: main checkout with submodule sub/ initialized, worktree where sub/ is not initialized, 'jaira list' run in <wt>/sub exits 1 'no .jaira directory found' while the same command at <wt> lists the board; filepath.Dir(common) inside gitwt.MainCheckout is the real main top; ran: scratch repo + submodule + worktree, HEAD binary exit=1, binary at eb1c70358 exit=0 (lists ticket); blame: e1ae3cc55 (names the ticket); not a blocker: master had no fallback at all, so nothing that worked before the ticket breaks
