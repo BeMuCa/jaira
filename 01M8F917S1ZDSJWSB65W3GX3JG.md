@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:46:31Z
+updated-at: 2026-11-27T20:48:27Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -35,7 +35,7 @@ back-from: testing
 back-by: lane
 back-count: 1
 review-gaps: "round 2: unexported Store.Tree to tree - only Discover sets it, WorkTree() is the one reader. Round 1: removed TestDiscoverWorktreeWritesMainBoard (the CLI test covers it). Left: gitwt has no own tests - its callers' tests exercise every function"
-test-verdict: "fail: suite green (rc=0, -race); binary: list/move from a worktree without .jaira work, a worktree whose main checkout has no board still exits 1; but bughunt blocker - git questions go to the main checkout's HEAD"
+test-verdict: "pass: go test -race ./core/... ./internal/... rc=0 (full ./... -race rc=0 before the unexport); DoD 1,2,4 verified - tests named in the proofs run green and go red with the fallback/WorkTree disabled; binary on a scratch repo: list/move/create from a worktree without .jaira use the main board, create follows the worktree's branch ticket with main on another ticket's branch; worktree whose main has no board exits 1 and writes no .jaira; two parallel notes (worktree + main) both land. DoD 3 (cockpit Accept, seen by a person) left for the person"
 hunt-verdict: "fail: 1 change blocker - gitrepo.Repo{Dir: s.Root} answers with the main checkout's branch/HEAD after the fallback"
 ---
 
