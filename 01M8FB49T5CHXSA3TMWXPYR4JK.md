@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:55:43Z
+updated-at: 2026-11-27T21:05:02Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -56,7 +56,8 @@ stop-after-fix: "true"
   proof: tests/board.test.ts: 'a question waiting in human with/without a lane after it…' and 'an answer typed beside a note marked fix is still the answer…'; register.tsx execute giveBack/answer branch + clearQuestion
 - [x] signoff-Abnahme unverändert (bestehende Tests grün)
   proof: claude plugin test . (2.1.332): 590 pass, 0 fail — describe 'what the person checks themselves' unchanged
-- [ ] Von einer Person im cockpit gesehen
+- [x] Von einer Person im cockpit gesehen
+  proof: Alex: 'принимаю PYR4JK' (27.11.2026)
 - [x] Release-Note core/release/notes/<ID>.md
   proof: core/release/notes/PYR4JK.md
 
