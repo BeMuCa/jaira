@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:55:02Z
+updated-at: 2026-11-27T20:55:05Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -37,10 +37,9 @@ back-from: review
 back-by: lane
 back-count: 1
 hunt-verdict: "pass: stop-after-fix, no hunt in round 3"
-review-verdict: "send-back: failed gate - shipped.sha256 misses the three changed cockpit files, go test ./core/role fails; the code itself meets DoD 1, 2, 3 and 5"
-review-round: 2
+review-verdict: "accept: manifest blocker closed (go test ./core/role and shipped-history --check green); code meets DoD 1, 2, 3 and 5; DoD 4 is the person's"
+review-round: 3
 review-verdict-gaps: |-
-  blocker: failed gate - core/shipped/shipped.sha256 lacks the new hashes of hooks/board.ts, register.tsx and texts.ts: go test ./core/role fails (TestEveryInstalledFileIsAShippedVersion) and ci.yaml's scripts/shipped-history.sh --check fails; fix: run scripts/shipped-history.sh --write and commit the manifest with the ticket id
   note: limit: the answer goes back to backTo (in-progress), not to the lane the worker asked from - jaira does not record that lane (critique note 20:39)
   note: edge: on a surface without a field (canType=false) nothing gets autoFocus while the ticket asks - the choice buttons skip it when asking and the Input is not rendered; give the first choice button autoFocus when !canType
 review-check: "1. go test ./core/role - passes (fails today until the manifest is regenerated)  2. jaira set <a ticket in human> question=\"option a or b?\"  3. open the cockpit, press the ticket's row to open the Acceptance pane  4. see 'Question:' at the top, no 'Check yourself' list, the field labelled 'Your answer'  5. press Execute with the field empty - it says to type the answer, not 'nothing to accept'  6. type 'b', press Execute  7. jaira show <id> - question is empty, a note reads 'Given back from human: answer to \"option a or b?\": b', the ticket sits in in-progress (DoD 4: seen by a person)"
