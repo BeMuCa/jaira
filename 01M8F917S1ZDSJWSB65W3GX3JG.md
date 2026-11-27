@@ -1,7 +1,7 @@
 ---
 id: 01M8F917S1ZDSJWSB65W3GX3JG
 title: Worktree ohne .jaira findet das Board des Hauptcheckouts
-status: testing
+status: in-progress
 ready: true
 creator: Sascha
 goal: "jaira (und damit der cockpit) arbeitet in einem git-worktree auch dann, wenn dort kein .jaira liegt: es nimmt das Board des Hauptcheckouts."
@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:52:24Z
+updated-at: 2026-11-27T20:52:29Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -30,10 +30,10 @@ outcome-what: "ticket.Discover falls back to the main checkout's board when a li
 outcome-why: "worktrees cut before jaira share have no .jaira, so every jaira call there - the cockpit's Accept included - failed with no_store"
 outcome-resolves: jaira list/show/move and cockpit Accept work in a worktree without .jaira; a worktree with its own board keeps it
 review-summary: "none"
-round: 4
+round: 5
 back-from: testing
 back-by: lane
-back-count: 2
+back-count: 3
 review-gaps: "round 3: nothing to remove - the fix is 8 lines and one test assertion. Earlier: unexported Store.tree; removed TestDiscoverWorktreeWritesMainBoard (CLI test covers it). Left: gitwt has no own tests - callers' tests exercise every function"
 test-verdict: "pass: go test -race ./core/... ./internal/... rc=0 (full ./... -race rc=0 before the unexport); DoD 1,2,4 verified - tests named in the proofs run green and go red with the fallback/WorkTree disabled; binary on a scratch repo: list/move/create from a worktree without .jaira use the main board, create follows the worktree's branch ticket with main on another ticket's branch; worktree whose main has no board exits 1 and writes no .jaira; two parallel notes (worktree + main) both land. DoD 3 (cockpit Accept, seen by a person) left for the person"
 hunt-verdict: "fail: 1 change - board above the main checkout's top makes tree point outside the worktree (round 3)"
