@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:48:46Z
+updated-at: 2026-11-27T20:50:36Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -27,7 +27,7 @@ claimed-at: 2026-11-27T20:33:49Z
 outcome-what: "Acceptance pane: offene Frage in nicht-endender Person-Lane wird beantwortet statt abgenommen — getippter Text ist die Antwort (Note 'answer to …', question= gelöscht, zurück an den Worker), auch neben einer fix-Note; Frage oben, seen-Liste ausgeblendet; ohne Eingabefeld verweist die Ablehnung auf Discuss"
 outcome-why: "Bei Lane ohne next_lane lief Execute in 'noNext' und die seen-Liste verleitete zum Abhaken vor Ende der Arbeit"
 outcome-resolves: "Person sieht im human-Lane die Frage und beantwortet sie direkt; kein 'nothing to accept'"
-review-summary: none
+review-summary: "Full review of 6d89a3032..5ca1382c7. executionOf gets a step 'answer': while a ticket waits on its question in a lane that does not end the work (waitsForAnswer), typed words are the answer and nothing typed is needAnswer - checked before noNext, so a human lane with no lane after it no longer says 'nothing to accept'. execute sends 'answer' and 'giveBack' through the existing giveBack/giveBackWith path: after the move it clears the question (jaira set question=) and writes the note as 'answer to \"<question>\": <text>', a fix note beside it or not. The pane shows the question first as a field, labels the input 'Your answer', drops the 'seen by a person' checklist while the ticket asks (openAcceptance seen=[]), and a surface without a field gets needAnswerUntyped pointing to Discuss/Explain. Release note added; cockpit tests 591 pass."
 review-gaps: "round 2: folded answer() into the giveBack branch of execute (one path for both steps, clearQuestion as first-callback) — answer() is gone; nothing else orphaned; left t.answer as the fail title"
 test-verdict: "pass: claude plugin test . 591 pass 0 fail (exit 0) at 5ca1382c7; go test ./core/release/... ok; DoD 1,2,3,5 verified in the tree; round 2 covers the answer beside a fix note (test) and the no-field surface (needAnswerUntyped, read: no harness for canType=false); failure path: refused 'set question=' toasts, note still lands; writes go through jaira under the row lock; DoD 4 left for the person"
 round: 2
