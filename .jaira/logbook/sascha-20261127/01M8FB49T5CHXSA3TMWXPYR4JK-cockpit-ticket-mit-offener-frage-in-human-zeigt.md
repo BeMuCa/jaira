@@ -1,7 +1,7 @@
 ---
 id: 01M8FB49T5CHXSA3TMWXPYR4JK
 title: "Cockpit: Ticket mit offener Frage in human zeigt Frage statt Abnahme-Checkliste"
-status: critique
+status: done
 ready: true
 creator: Sascha
 goal: "Steht ein Ticket in einer Frage-Lane (human) mit offener Frage, zeigt der cockpit die Frage und ein Antwortfeld – keine 'Check yourself'-Liste und kein Accept, das danach abgelehnt wird."
@@ -17,9 +17,13 @@ tags:
   - cockpit
 blocked-by: []
 related: []
-commits: []
+commits:
+  - 6d89a30322288b2127164a9031a0dcc8523e96a4
+  - e0d480a8edb574fcb7dedb6d5f9a783b89e47885
+  - 5ca1382c7c7f099027612235615da3a74dd44ac1
+  - 96a420f2b4085c610693c19f67793ee4b0c1f129
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:53:41Z
+updated-at: 2026-11-27T21:05:20Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -27,24 +31,22 @@ claimed-at: 2026-11-27T20:33:49Z
 outcome-what: "Acceptance pane: offene Frage in nicht-endender Person-Lane wird beantwortet statt abgenommen — getippter Text ist die Antwort (Note 'answer to …', question= gelöscht, zurück an den Worker), auch neben einer fix-Note; Frage oben, seen-Liste ausgeblendet; ohne Eingabefeld verweist die Ablehnung auf Discuss"
 outcome-why: "Bei Lane ohne next_lane lief Execute in 'noNext' und die seen-Liste verleitete zum Abhaken vor Ende der Arbeit"
 outcome-resolves: "Person sieht im human-Lane die Frage und beantwortet sie direkt; kein 'nothing to accept'"
-review-summary: "Full review of 6d89a3032..5ca1382c7. executionOf gets a step 'answer': while a ticket waits on its question in a lane that does not end the work (waitsForAnswer), typed words are the answer and nothing typed is needAnswer - checked before noNext, so a human lane with no lane after it no longer says 'nothing to accept'. execute sends 'answer' and 'giveBack' through the existing giveBack/giveBackWith path: after the move it clears the question (jaira set question=) and writes the note as 'answer to \"<question>\": <text>', a fix note beside it or not. The pane shows the question first as a field, labels the input 'Your answer', drops the 'seen by a person' checklist while the ticket asks (openAcceptance seen=[]), and a surface without a field gets needAnswerUntyped pointing to Discuss/Explain. Release note added; cockpit tests 591 pass."
+review-summary: "delta review from 5ca1382c7: only core/shipped/shipped.sha256 changed (+6 lines, the hashes of board.ts, register.tsx and texts.ts as of each of the three branch commits). The round-2 blocker is closed: the current hashes of all three files are in the manifest, scripts/shipped-history.sh --check passes, go test ./core/role passes. The cockpit change itself (question in human -> 'Question:' + 'Your answer' field, typed text clears question= and gives back with 'answer to \"...\"', needAnswer/needAnswerUntyped instead of 'nothing to accept') is unchanged since the previous review."
 review-gaps: |-
-  blocker: failed gate - core/shipped/shipped.sha256 lacks the new hashes of hooks/board.ts, register.tsx and texts.ts: go test ./core/role fails (TestEveryInstalledFileIsAShippedVersion) and ci.yaml's scripts/shipped-history.sh --check fails; fix: run scripts/shipped-history.sh --write and commit the manifest with the ticket id
   note: limit: the answer goes back to backTo (in-progress), not to the lane the worker asked from - jaira does not record that lane (critique note 20:39)
   note: edge: on a surface without a field (canType=false) nothing gets autoFocus while the ticket asks - the choice buttons skip it when asking and the Input is not rendered; give the first choice button autoFocus when !canType
-test-verdict: "pass: claude plugin test . 591 pass 0 fail (exit 0) at 5ca1382c7; go test ./core/release/... ok; DoD 1,2,3,5 verified in the tree; round 2 covers the answer beside a fix note (test) and the no-field surface (needAnswerUntyped, read: no harness for canType=false); failure path: refused 'set question=' toasts, note still lands; writes go through jaira under the row lock; DoD 4 left for the person"
+test-verdict: "pass: round 3 ran only what changed — scripts/shipped-history.sh --check exit 0, go test ./core/role ok (TestEveryInstalledFileIsAShippedVersion), full go test ./... rc=0, go vet ok; cockpit suite 591/591 unchanged since 5ca1382c7; DoD 4 left for the person"
 round: 3
 back-from: review
 back-by: lane
 back-count: 1
-hunt-verdict: "pass: round 2 hunt at 5ca1382c7, 0 findings; round 1's two change findings fixed in 5ca1382c7"
-review-verdict: "send-back: failed gate - shipped.sha256 misses the three changed cockpit files, go test ./core/role fails; the code itself meets DoD 1, 2, 3 and 5"
-review-round: 2
+hunt-verdict: "pass: stop-after-fix, no hunt in round 3"
+review-verdict: "accept: manifest blocker closed (go test ./core/role and shipped-history --check green); code meets DoD 1, 2, 3 and 5; DoD 4 is the person's"
+review-round: 3
 review-verdict-gaps: |-
-  blocker: failed gate - core/shipped/shipped.sha256 lacks the new hashes of hooks/board.ts, register.tsx and texts.ts: go test ./core/role fails (TestEveryInstalledFileIsAShippedVersion) and ci.yaml's scripts/shipped-history.sh --check fails; fix: run scripts/shipped-history.sh --write and commit the manifest with the ticket id
   note: limit: the answer goes back to backTo (in-progress), not to the lane the worker asked from - jaira does not record that lane (critique note 20:39)
   note: edge: on a surface without a field (canType=false) nothing gets autoFocus while the ticket asks - the choice buttons skip it when asking and the Input is not rendered; give the first choice button autoFocus when !canType
-review-check: "1. go test ./core/role - passes (fails today until the manifest is regenerated)  2. jaira set <a ticket in human> question=\"option a or b?\"  3. open the cockpit, press the ticket's row to open the Acceptance pane  4. see 'Question:' at the top, no 'Check yourself' list, the field labelled 'Your answer'  5. press Execute with the field empty - it says to type the answer, not 'nothing to accept'  6. type 'b', press Execute  7. jaira show <id> - question is empty, a note reads 'Given back from human: answer to \"option a or b?\": b', the ticket sits in in-progress (DoD 4: seen by a person)"
+review-check: "1. go test ./core/role - passes  2. jaira set <a ticket in human> question=\"option a or b?\"  3. open the cockpit, press that ticket's row to open the Acceptance pane  4. see 'Question:' at the top, no 'Check yourself' list, a field labelled 'Your answer'  5. press Execute with the field empty - it tells you to type the answer, not 'nothing to accept'  6. type b, press Execute  7. jaira show <id> - question is empty, a note reads 'Given back from human: answer to \"option a or b?\": b', the ticket sits in in-progress (this is DoD 4: seen by a person)"
 stop-after-fix: "true"
 ---
 
@@ -58,7 +60,8 @@ stop-after-fix: "true"
   proof: tests/board.test.ts: 'a question waiting in human with/without a lane after it…' and 'an answer typed beside a note marked fix is still the answer…'; register.tsx execute giveBack/answer branch + clearQuestion
 - [x] signoff-Abnahme unverändert (bestehende Tests grün)
   proof: claude plugin test . (2.1.332): 590 pass, 0 fail — describe 'what the person checks themselves' unchanged
-- [ ] Von einer Person im cockpit gesehen
+- [x] Von einer Person im cockpit gesehen
+  proof: Alex: 'принимаю PYR4JK' (27.11.2026)
 - [x] Release-Note core/release/notes/<ID>.md
   proof: core/release/notes/PYR4JK.md
 
@@ -89,3 +92,6 @@ stop-after-fix: "true"
 - **2026-11-27 20:50 · Sascha** — review: done at 5ca1382c7
 - **2026-11-27 20:51 · Sascha** — review: blocker: core/shipped/shipped.sha256 lacks the new hashes of hooks/board.ts, register.tsx, texts.ts - go test ./core/role (TestEveryInstalledFileIsAShippedVersion) and CI's scripts/shipped-history.sh --check fail. Fix: scripts/shipped-history.sh --write, commit as fix(PYR4JK). Code otherwise meets DoD.
 - **2026-11-27 20:53 · Sascha** — review fix: scripts/shipped-history.sh --write regenerated core/shipped/shipped.sha256 (3 cockpit hashes); --check ok, go test ./... rc=0, go vet ok. stop-after-fix=true set by the worker: generated manifest only, no lock, no parser. Edge note (autoFocus on canType=false) left as a note, not fix-now.
+- **2026-11-27 20:54 · Sascha** — waiting: review round 3 (new fresh agent, Herdr tab) since 21:54
+- **2026-11-27 20:55 · Sascha** — review: done at 96a420f2b
+- **2026-11-27 20:55 · Sascha** — report: Acceptance pane beantwortet offene Frage in human (step answer, Frage oben, keine seen-Liste, Antwort als Note + question= + zurück an Worker; auch neben fix-Note; mobil Verweis auf Discuss); shipped.sha256 nachgezogen | signoff, context unknown | offen: DoD 4 im cockpit ansehen; 2 note-Zeilen (limit: Antwort geht nach in-progress; edge: kein autoFocus ohne Eingabefeld); Branch nicht gepusht
