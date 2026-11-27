@@ -1,7 +1,7 @@
 ---
 id: 01M8FB49T5CHXSA3TMWXPYR4JK
 title: "Cockpit: Ticket mit offener Frage in human zeigt Frage statt Abnahme-Checkliste"
-status: review
+status: in-progress
 ready: true
 creator: Sascha
 goal: "Steht ein Ticket in einer Frage-Lane (human) mit offener Frage, zeigt der cockpit die Frage und ein Antwortfeld – keine 'Check yourself'-Liste und kein Accept, das danach abgelehnt wird."
@@ -19,7 +19,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T20:28:41Z
-updated-at: 2026-11-27T20:51:01Z
+updated-at: 2026-11-27T20:51:05Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-69193
@@ -33,8 +33,8 @@ review-gaps: |-
   note: limit: the answer goes back to backTo (in-progress), not to the lane the worker asked from - jaira does not record that lane (critique note 20:39)
   note: edge: on a surface without a field (canType=false) nothing gets autoFocus while the ticket asks - the choice buttons skip it when asking and the Input is not rendered; give the first choice button autoFocus when !canType
 test-verdict: "pass: claude plugin test . 591 pass 0 fail (exit 0) at 5ca1382c7; go test ./core/release/... ok; DoD 1,2,3,5 verified in the tree; round 2 covers the answer beside a fix note (test) and the no-field surface (needAnswerUntyped, read: no harness for canType=false); failure path: refused 'set question=' toasts, note still lands; writes go through jaira under the row lock; DoD 4 left for the person"
-round: 2
-back-from: testing
+round: 3
+back-from: review
 back-by: lane
 back-count: 1
 hunt-verdict: "pass: round 2 hunt at 5ca1382c7, 0 findings; round 1's two change findings fixed in 5ca1382c7"
