@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:54:47Z
+updated-at: 2026-11-27T20:54:51Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -34,7 +34,7 @@ round: 5
 back-from: testing
 back-by: lane
 back-count: 3
-review-gaps: "round 3: nothing to remove - the fix is 8 lines and one test assertion. Earlier: unexported Store.tree; removed TestDiscoverWorktreeWritesMainBoard (CLI test covers it). Left: gitwt has no own tests - callers' tests exercise every function"
+review-gaps: "round 4: nothing to remove - the bound reuses gitwt.Top; the under() check is 1 line and project.under cannot be imported from ticket. Earlier: unexported Store.tree; removed TestDiscoverWorktreeWritesMainBoard. Left: gitwt has no own tests - callers' tests exercise every function"
 test-verdict: "pass: go test -race ./core/... ./internal/... rc=0 (full ./... -race rc=0 before the unexport); DoD 1,2,4 verified - tests named in the proofs run green and go red with the fallback/WorkTree disabled; binary on a scratch repo: list/move/create from a worktree without .jaira use the main board, create follows the worktree's branch ticket with main on another ticket's branch; worktree whose main has no board exits 1 and writes no .jaira; two parallel notes (worktree + main) both land. DoD 3 (cockpit Accept, seen by a person) left for the person"
 hunt-verdict: "fail: 1 change - board above the main checkout's top makes tree point outside the worktree (round 3)"
 question: ""
