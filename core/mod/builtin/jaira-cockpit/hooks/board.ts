@@ -1210,9 +1210,11 @@ export function rephrasedOf(answer: string, n: number): string[] | undefined {
 // typed give it back, nothing typed does nothing. A question still open in a
 // lane that does not end the work (human) is what the ticket waits
 // for - jaira keeps it on the ticket past the move - so it is answered
-// first. An accept with 'seen by a person' items
+// first, whether or not jaira names a lane after it (PYR4JK): words typed
+// are the answer, and go back to the worker with the question cleared;
+// nothing typed waits for them. An accept with 'seen by a person' items
 // still unticked in the pane (unseen) is no accept yet: it waits for them.
-export type Step = 'giveBack' | 'accept' | 'needWhy' | 'noNext' | 'needAnswer' | 'needSeen'
+export type Step = 'giveBack' | 'answer' | 'accept' | 'needWhy' | 'noNext' | 'needAnswer' | 'needSeen'
 export type Execution = { step: Step; fix: number; followUps: number; asksWhy: boolean }
 
 // Whether the ticket waits on a question in a lane that does not end the
@@ -1228,7 +1230,7 @@ export function executionOf(items: readonly GapItem[], typed: string, acceptTo: 
   // what is missing, never a reason to accept.
   const asksWhy = acceptTo !== null && !waiting && fix === 0 && items.some(i => i.cls === 'blocker' && i.choice !== 'now')
   const words = typed.trim() !== ''
-  const step: Step = fix > 0 || (words && !asksWhy) ? 'giveBack' : acceptTo === null ? 'noNext' : waiting ? 'needAnswer' : asksWhy && !words ? 'needWhy' : unseen > 0 ? 'needSeen' : 'accept'
+  const step: Step = fix > 0 ? 'giveBack' : waiting ? (words ? 'answer' : 'needAnswer') : words && !asksWhy ? 'giveBack' : acceptTo === null ? 'noNext' : asksWhy && !words ? 'needWhy' : unseen > 0 ? 'needSeen' : 'accept'
   return { step, fix, followUps, asksWhy }
 }
 
