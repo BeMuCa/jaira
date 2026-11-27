@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:58:19Z
+updated-at: 2026-11-27T20:58:23Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -101,3 +101,4 @@ review-check: "1. cd into a git worktree that has no .jaira folder, e.g. git -C 
 - **2026-11-27 20:56 · Sascha** — waiting: teamlead decision on the 4th send-back (uds:/run/user/1000/cc-socks/24078.sock) since 21:56
 - **2026-11-27 20:56 · Sascha** — decision (teamlead): Submodul-Fall (r4) bleibt bekannte Grenze – scheitert zu ErrNoStore wie heute, kein Schaden. Kein 4. Rücksprung; weiter zu review.
 - **2026-11-27 20:56 · Sascha** — waiting: fresh review agent (run-lane.sh tab) since 21:56
+- **2026-11-27 20:58 · Sascha** — review: done at e1ae3cc55
