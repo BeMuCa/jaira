@@ -1,7 +1,7 @@
 ---
 id: 01M8F917S1ZDSJWSB65W3GX3JG
 title: Worktree ohne .jaira findet das Board des Hauptcheckouts
-status: critique
+status: done
 ready: true
 creator: Sascha
 goal: "jaira (und damit der cockpit) arbeitet in einem git-worktree auch dann, wenn dort kein .jaira liegt: es nimmt das Board des Hauptcheckouts."
@@ -19,9 +19,16 @@ tags:
   - cockpit
 blocked-by: []
 related: []
-commits: []
+commits:
+  - f5b3074649f785dcb1358f79d62cf491badc85bc
+  - bc81ebf1f2360c8f0db25796cc8d83489c0f9c33
+  - 80779484943c946b6f3fddf305d9b5f8b15fe261
+  - 1fbae6be917f44dc953ad6a325a8a88cf47fc065
+  - 17c54243e40c2eb98e729ffe4f75d049d2ba9ce3
+  - eb1c703587f6dd329a5154fa4442e2a37fbe59bd
+  - e1ae3cc55a5589bddea0c23518e560b0877e0245
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:54:40Z
+updated-at: 2026-11-27T21:05:16Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -29,15 +36,27 @@ claimed-at: 2026-11-27T20:33:41Z
 outcome-what: "ticket.Discover falls back to the main checkout's board when a linked worktree has none; the git-file reading moved from core/project into a new leaf package core/gitwt shared by both"
 outcome-why: "worktrees cut before jaira share have no .jaira, so every jaira call there - the cockpit's Accept included - failed with no_store"
 outcome-resolves: jaira list/show/move and cockpit Accept work in a worktree without .jaira; a worktree with its own board keeps it
-review-summary: "none"
+review-summary: "ticket.Discover gets a fallback: when no board lies at or above the directory and that directory sits in a linked git worktree, it maps the path to the same place in the main checkout (read off .git/commondir by the new leaf package core/gitwt, which project/worktree.go now shares instead of its own copy) and takes the board found there - but only a board inside the main checkout, not one above the repository. The Store then remembers the worktree's copy of the board's place (tree), and WorkTree() hands it to every git question about HEAD, branch, diff and commits (gate env in cli/root.go and tui, show --for-lane diff, pr-gate, branchTicket for --follows, LastHunt), while questions about the board itself (tracked/ignored, update, share) stay on Root. A worktree with its own .jaira keeps it. Tests: discover_test.go (own board wins, fallback, board above main ignored, WorkTree value) and cli worktreeboard_test.go (list/show/move in the worktree write the main board; create follows the worktree's branch ticket; the review payload carries the worktree's commit). Full review, first review round, at e1ae3cc55."
 round: 5
 back-from: testing
 back-by: lane
 back-count: 3
-review-gaps: "round 3: nothing to remove - the fix is 8 lines and one test assertion. Earlier: unexported Store.tree; removed TestDiscoverWorktreeWritesMainBoard (CLI test covers it). Left: gitwt has no own tests - callers' tests exercise every function"
-test-verdict: "pass: go test -race ./core/... ./internal/... rc=0 (full ./... -race rc=0 before the unexport); DoD 1,2,4 verified - tests named in the proofs run green and go red with the fallback/WorkTree disabled; binary on a scratch repo: list/move/create from a worktree without .jaira use the main board, create follows the worktree's branch ticket with main on another ticket's branch; worktree whose main has no board exits 1 and writes no .jaira; two parallel notes (worktree + main) both land. DoD 3 (cockpit Accept, seen by a person) left for the person"
-hunt-verdict: "fail: 1 change - board above the main checkout's top makes tree point outside the worktree (round 3)"
+review-gaps: |-
+  note: limit: a path inside an initialized submodule of the main checkout is measured against the submodule top, so jaira run in <worktree>/<submodule> of a worktree without that submodule finds no board - teamlead decided 2026-11-27 to keep it, fails to ErrNoStore as before
+  note: limit: a board above the repository (parent/.jaira, repo in parent/repo) is not used from a worktree, ErrNoStore as before - teamlead decision
+  note: limit: in such a worktree the ticket file lives in the main checkout, so it cannot ride in the branch's commits and 'jaira pull' writes into the main checkout - the board is not in git there anyway
+  note: limit: core/gitwt has no tests of its own - covered through core/ticket discover_test.go and core/project tests
+test-verdict: "pass: go vet + go test -race ./... rc=0 at e1ae3cc55; DoD 1,2,4 verified by the named tests (each red with its fix disabled); binary on scratch repos: list/move/create from a worktree without .jaira use the main board, create follows the worktree's branch ticket, worktree of a repo without a board exits 1 and writes no .jaira, board above the repo is not borrowed (test); two parallel notes from worktree and main both land. DoD 3 (cockpit Accept, seen by a person) left for the person"
+hunt-verdict: "pass: round 4 finding (submodule top as inside-bound) accepted as known limit by teamlead - fails toward ErrNoStore, as master"
 question: ""
+review-verdict: "accept: DoD 1, 2, 4 met and tested; DoD 3 is the person's check; no defect found in gitwt, Discover, WorkTree callers; go test core/ticket core/project and cli Worktree tests green"
+review-round: 5
+review-verdict-gaps: |-
+  note: limit: a path inside an initialized submodule of the main checkout is measured against the submodule top, so jaira run in <worktree>/<submodule> of a worktree without that submodule finds no board - teamlead decided 2026-11-27 to keep it, fails to ErrNoStore as before
+  note: limit: a board above the repository (parent/.jaira, repo in parent/repo) is not used from a worktree, ErrNoStore as before - teamlead decision
+  note: limit: in such a worktree the ticket file lives in the main checkout, so it cannot ride in the branch's commits and 'jaira pull' writes into the main checkout - the board is not in git there anyway
+  note: limit: core/gitwt has no tests of its own - covered through core/ticket discover_test.go and core/project tests
+review-check: "1. cd into a git worktree that has no .jaira folder, e.g. git -C <repo> worktree add /tmp/wt -b feat/test (on a board not shared yet)  2. run: jaira list  - you see the main checkout's tickets instead of 'no .jaira directory found'  3. run: jaira show <id>  - the ticket opens  4. in the cockpit press Accept on a ticket whose worktree has no .jaira (DoD 3)  - it moves to done without a manual move in the main checkout  5. automated: go test ./core/ticket -run Discover and go test ./internal/cli -run Worktree pass"
 ---
 
 # Worktree ohne .jaira findet das Board des Hauptcheckouts
@@ -48,7 +67,8 @@ question: ""
   proof: core/ticket/store.go Discover fallback + WorkTree; internal/cli/worktreeboard_test.go TestWorktreeWithoutBoardUsesTheMainCheckouts (list/show/move), TestWorktreeWithoutBoardAsksGitAboutItself (branch, commits); core/ticket/discover_test.go TestDiscoverInLinkedWorktree
 - [x] Ein worktree mit eigenem .jaira benutzt weiter sein eigenes (Test)
   proof: core/ticket/discover_test.go TestDiscoverInLinkedWorktree cases 'the worktree's own board wins' (+ from below)
-- [ ] cockpit Accept auf ein Ticket, dessen worktree kein .jaira hat, geht durch (gesehen von einer Person)
+- [x] cockpit Accept auf ein Ticket, dessen worktree kein .jaira hat, geht durch (gesehen von einer Person)
+  proof: Teamlead live: Branch-Binary in Worktree ohne .jaira: list + move gehen, 0.6.9 scheitert mit no_store; Alex hat im cockpit Accept gedrückt (27.11.)
 - [x] Release-Note core/release/notes/<ID>.md
   proof: core/release/notes/3GX3JG.md
 
@@ -81,3 +101,19 @@ question: ""
 - **2026-11-27 20:52 · Sascha** — waiting: teamlead decision on the 3rd send-back (uds:/run/user/1000/cc-socks/24078.sock) since 21:52
 - **2026-11-27 20:52 · Sascha** — decision (teamlead): Rückfall nur auf ein Board im Hauptcheckout selbst; ein Board oberhalb des Repos bleibt im worktree ErrNoStore wie bisher. Kleinere Lösung statt tree-Klammer – die Randfälle wuchsen.
 - **2026-11-27 20:54 · Sascha** — fix per teamlead decision (option 1): Discover falls back only to a board inside the main checkout (Rel to gitwt.Top(main) must not climb); a board above the repo stays ErrNoStore in a worktree. Test TestDiscoverIgnoresBoardAboveMainCheckout - red without the bound.
+- **2026-11-27 20:55 · Sascha** — waiting: bughunt round 4 (background agent) since 21:55
+- **2026-11-27 20:55 · Sascha** — bughunt: change: core/ticket/store.go:294 - class: the 'board inside the main checkout' check measures against gitwt.Top(main), the nearest .git above the mapped path, not the main checkout's top; any path that in the main checkout sits inside a nested repository (initialized submodule, nested clone) gets that repository's top, so the main checkout's own board counts as 'above' and is refused; example: main checkout with submodule sub/ initialized, worktree where sub/ is not initialized, 'jaira list' run in <wt>/sub exits 1 'no .jaira directory found' while the same command at <wt> lists the board; filepath.Dir(common) inside gitwt.MainCheckout is the real main top; ran: scratch repo + submodule + worktree, HEAD binary exit=1, binary at eb1c70358 exit=0 (lists ticket); blame: e1ae3cc55 (names the ticket); not a blocker: master had no fallback at all, so nothing that worked before the ticket breaks
+- **2026-11-27 20:55 · Sascha** — hunt report: 1 finding, 1 change (edge, not blocker), as a note on 3GX3JG | read as a diff since eb1c70358: core/ticket/store.go (Discover), core/ticket/discover_test.go; no new files | could not check Windows path case behaviour of the new filepath.Rel test on a real Windows box
+- **2026-11-27 20:55 · Sascha** — bughunt: done at e1ae3cc55 - 1 finding (1 change, 0 pre-existing) in 2 modules, follow-up hunt since eb1c70358; concurrency, error paths, input, permissions checked; files: core/gitwt/gitwt.go core/project/worktree.go core/release/notes/3GX3JG.md core/ticket/discover_test.go core/ticket/store.go internal/cli/flow.go internal/cli/roles.go internal/cli/root.go internal/cli/tickets.go internal/cli/worktreeboard_test.go internal/tui/model.go
+- **2026-11-27 20:56 · Sascha** — question (4th testing send-back, to teamlead): testing would send 3GX3JG back a 4th time (jaira refuses it without the teamlead). Round 4 finding: the inside-check measures against gitwt.Top(main), the nearest .git - in a path that sits in an initialized submodule of the main checkout that is the submodule top, so jaira run in <wt>/sub of a worktree whose sub/ is not initialized exits 1 (no board); at <wt> it works. Fails toward ErrNoStore, as master. Options: 1) (Recommended) fix: bound by gitwt.MainCheckout(gitwt.Top(abs)) - the real main top, 1 line + 1 test case; you allow the send-back. 2) accept as known limit, go on to review with it as a note.
+- **2026-11-27 20:56 · Sascha** — waiting: teamlead decision on the 4th send-back (uds:/run/user/1000/cc-socks/24078.sock) since 21:56
+- **2026-11-27 20:56 · Sascha** — decision (teamlead): Submodul-Fall (r4) bleibt bekannte Grenze – scheitert zu ErrNoStore wie heute, kein Schaden. Kein 4. Rücksprung; weiter zu review.
+- **2026-11-27 20:56 · Sascha** — waiting: fresh review agent (run-lane.sh tab) since 21:56
+- **2026-11-27 20:58 · Sascha** — review: done at e1ae3cc55
+- **2026-11-27 20:59 · Sascha** — report: ticket.Discover falls back to the main checkout's board in a linked worktree without .jaira (only a board inside the main checkout); git questions go to the board's place in the worktree via Store.WorkTree(); git-file reading moved to new core/gitwt | signoff, context 172k of 1000k, cache warm 60 min after last answer | open: DoD 3 (cockpit Accept, seen by a person); 4 note: limit lines in review-gaps; branch feat/3gx3jg not pushed
+- **2026-11-27 21:04 · Sascha** — Accepted from signoff: angenommen:
+- note: limit: a path inside an initialized submodule of the main checkout is measured against the submodule top, so jaira run in <worktree>/<submodule> of a worktree without that submodule finds no board - teamlead decided 2026-11-27 to keep it, fails to ErrNoStore as before
+- note: limit: a board above the repository (parent/.jaira, repo in parent/repo) is not used from a worktree, ErrNoStore as before - teamlead decision
+- note: limit: in such a worktree the ticket file lives in the main checkout, so it cannot ride in the branch's commits and 'jaira pull' writes into the main checkout - the board is not in git there anyway
+- note: limit: core/gitwt has no tests of its own - covered through core/ticket discover_test.go and core/project tests
+- **2026-11-27 21:04 · Sascha** — cockpit: accepted by the person, signoff -> done
