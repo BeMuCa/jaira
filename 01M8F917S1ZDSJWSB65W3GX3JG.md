@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:55:02Z
+updated-at: 2026-11-27T20:55:05Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -81,3 +81,4 @@ question: ""
 - **2026-11-27 20:52 · Sascha** — waiting: teamlead decision on the 3rd send-back (uds:/run/user/1000/cc-socks/24078.sock) since 21:52
 - **2026-11-27 20:52 · Sascha** — decision (teamlead): Rückfall nur auf ein Board im Hauptcheckout selbst; ein Board oberhalb des Repos bleibt im worktree ErrNoStore wie bisher. Kleinere Lösung statt tree-Klammer – die Randfälle wuchsen.
 - **2026-11-27 20:54 · Sascha** — fix per teamlead decision (option 1): Discover falls back only to a board inside the main checkout (Rel to gitwt.Top(main) must not climb); a board above the repo stays ErrNoStore in a worktree. Test TestDiscoverIgnoresBoardAboveMainCheckout - red without the bound.
+- **2026-11-27 20:55 · Sascha** — waiting: bughunt round 4 (background agent) since 21:55
