@@ -21,7 +21,7 @@ blocked-by: []
 related: []
 commits: []
 created-at: 2026-11-27T19:52:04Z
-updated-at: 2026-11-27T20:39:34Z
+updated-at: 2026-11-27T20:39:42Z
 assignee: Sascha
 updated-by: Sascha
 claimed-by: DESKTOP-RFTCH11-68058
@@ -29,7 +29,7 @@ claimed-at: 2026-11-27T20:33:41Z
 outcome-what: "ticket.Discover falls back to the main checkout's board when a linked worktree has none; the git-file reading moved from core/project into a new leaf package core/gitwt shared by both"
 outcome-why: "worktrees cut before jaira share have no .jaira, so every jaira call there - the cockpit's Accept included - failed with no_store"
 outcome-resolves: jaira list/show/move and cockpit Accept work in a worktree without .jaira; a worktree with its own board keeps it
-review-summary: "core/project/worktree.go:50 Trees still explains how .git/worktrees is read; that now lives in gitwt.Linked's doc - drop the paragraph"
+review-summary: "none"
 round: 2
 back-from: critique
 back-by: lane
